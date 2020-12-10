@@ -11,4 +11,5 @@ autocmd BufWipeOut * call lsp#remove_file(expand('<afile>:p'), &filetype)
 
 command! -nargs=0 LspGotoDefinition call lsp#goto_definition(expand('%:p'), &filetype, line('.') - 1, col('.') - 1)
 command! -nargs=0 LspGotoDeclaration call lsp#goto_declaration(expand('%:p'), &filetype, line('.') - 1, col('.') - 1)
+command! -nargs=0 LspGetSignature call lsp#show_signature('')
 
