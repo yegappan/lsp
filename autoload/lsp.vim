@@ -6,24 +6,25 @@ var lsp_servers: dict<dict<any>> = {}
 
 var lsp_log_dir: string = '/tmp/'
 
-# process the initialize reply from the LSP server
+# process the 'initialize' method reply from the LSP server
 def lsp#processInitializeReply(ftype: string, reply: dict<any>): void
   if reply.result->len() <= 0
     return
   endif
 
+  # interface 'InitializeResult'
   var caps: dict<any> = reply.result.capabilities
   lsp_servers[ftype].caps = caps
   if caps->has_key('signatureHelpProvider')
     var triggers = caps.signatureHelpProvider.triggerCharacters
     for ch in triggers
-      exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch .. "<C-R>=lsp#show_signature()<CR>"
+      exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch .. "<C-R>=lsp#showSignature()<CR>"
     endfor
   endif
 enddef
 
-# process the 'textDocument/definition'/'textDocument/declaration' replies
-# from the LSP server
+# process the 'textDocument/definition' / 'textDocument/declaration' method
+# replies from the LSP server
 def lsp#processDefDeclReply(reply: dict<any>): void
   if reply.result->len() == 0
     echomsg "Error: definition is not found"
@@ -42,10 +43,11 @@ def lsp#processDefDeclReply(reply: dict<any>): void
   redraw!
 enddef
 
-# process the signatureHelp reply from the LSP server
-def lsp#process_signatureHelp_reply(reply: dict<any>): void
+# process the 'textDocument/signatureHelp' reply from the LSP server
+def lsp#processSignaturehelpReply(reply: dict<any>): void
   var result: dict<any> = reply.result
   if result.signatures->len() <= 0
+    echomsg 'No signature help available'
     return
   endif
 
@@ -67,6 +69,11 @@ def lsp#process_signatureHelp_reply(reply: dict<any>): void
   endif
 enddef
 
+# process the 'textDocument/completion' reply from the LSP server
+def lsp#processCompletionReply(reply: dict<any>): void
+  echomsg "Completion reply " .. string(reply)
+enddef
+
 # Process varous reply messages from the LSP server
 def lsp#process_reply(ftype: string, req: dict<any>, reply: dict<any>): void
   if req.method == 'initialize'
@@ -74,7 +81,9 @@ def lsp#process_reply(ftype: string, req: dict<any>, reply: dict<any>): void
   elseif req.method == 'textDocument/definition' || req.method == 'textDocument/declaration'
     lsp#processDefDeclReply(reply)
   elseif req.method == 'textDocument/signatureHelp'
-    lsp#process_signatureHelp_reply(reply)
+    lsp#processSignaturehelpReply(reply)
+  elseif req.method == 'textDocument/completion'
+    lsp#processCompletionReply(reply)
   else
     echomsg "Error: Unsupported reply received from LSP server: " .. string(reply)
   endif
@@ -116,7 +125,11 @@ def lsp#process_server_msg(ftype: string): void
       lsp_servers[ftype].requests->remove(string(reply.id))
 
       if reply->has_key('error')
-        echomsg "Error: request " .. req.method .. " failed (" .. reply.error.message .. ")"
+        var msg: string = reply.error.message
+        if reply.error->has_key('data')
+          msg = msg .. ', data = ' .. reply.error.message
+        endif
+        echomsg "Error: request " .. req.method .. " failed (" .. msg .. ")"
       else
         lsp#process_reply(ftype, req, reply)
       endif
@@ -160,9 +173,7 @@ def lsp#sendto_server(ftype: string, content: dict<any>): void
   var msg = "Content-Length: " .. req_js->len() .. "\r\n\r\n"
   var ch = lsp_servers[ftype].job->job_getchannel()
   ch->ch_sendraw(msg)
-  call writefile(["req_js length = " .. req_js->len()], "lsp_trace.txt", 'a')
   ch->ch_sendraw(req_js)
-  call writefile(["After sending data"], "lsp_trace.txt", 'a')
 enddef
 
 def lsp#create_reqmsg(ftype: string, method: string): dict<any>
@@ -190,6 +201,14 @@ enddef
 # Send a "initialize" LSP request
 def lsp#init_server(ftype: string): number
   var req = lsp#create_reqmsg(ftype, 'initialize')
+
+  # interface 'InitializeParams'
+  var initparams: dict<any> = {}
+  initparams.processId = getpid()
+  initparams.clientInfo = {'name': 'Vim', 'version': string(v:versionlong)}
+  initparams.capabilities = {}
+  req.params->extend(initparams)
+
   lsp#sendto_server(ftype, req)
   return 1
 enddef
@@ -350,10 +369,11 @@ def lsp#goto_declaration(fname: string, ftype: string, lnum: number, col: number
   lsp#sendto_server(ftype, req)
 enddef
 
-# Get the signature using "textDocument/signatureHelp" LSP request
-def lsp#show_signature(): string
+# Show the signature using "textDocument/signatureHelp" LSP method
+# Invoked from an insert-mode mapping, so return an empty string.
+def lsp#showSignature(): string
 
-  # first send all the changes to the current buffer to the LSP server
+  # first send all the changes in the current buffer to the LSP server
   listener_flush()
 
   var fname: string = expand('%:p')
@@ -455,18 +475,58 @@ def lsp#add_server(ftype: string, serverpath: string, args: list<string>)
   lsp_servers->extend({[ftype]: sinfo})
 enddef
 
-def lsp#show_servers()
-  echomsg lsp_servers
+def lsp#showServers()
+  for [ftype, server] in items(lsp_servers)
+    var msg = ftype .. "    "
+    if server.running
+      msg ..= 'running'
+    else
+      msg ..= 'not running'
+    endif
+    msg ..= '    ' .. server.path
+    echomsg msg
+  endfor
 enddef
 
-def lsp#showDiagnostics(ftype: string): void
+def lsp#showDiagnostics(): void
+  var ftype: string = &filetype
   var msgs: list<string> = []
-  echomsg lsp_servers[ftype].diags
+
   for diag in lsp_servers[ftype].diags
     diag.message = diag.message->substitute("\n\\+", "\n", 'g')
     msgs->extend(split(diag.message, "\n"))
   endfor
   setqflist([], ' ', {'lines': msgs})
+  cwindow
+enddef
+
+def lsp#getCompletion(): void
+  var fname = expand('%:p')
+  var ftype = &filetype
+  var lnum = line('.') - 1
+  var col = col('.') - 1
+  if fname == '' || ftype == ''
+    return
+  endif
+  if !lsp_servers->has_key(ftype)
+    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not found'
+    return
+  endif
+  if !lsp_servers[ftype].running
+    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not running'
+    return
+  endif
+
+  var req = lsp#create_reqmsg(ftype, 'textDocument/completion')
+
+  # interface CompletionParams
+  # interface TextDocumentPositionParams
+  # interface TextDocumentIdentifier
+  req.params->extend({'textDocument': {'uri': 'file://' .. fname}})
+  # interface Position
+  req.params->extend({'position': {'line': lnum, 'character': col}})
+
+  lsp#sendto_server(ftype, req)
 enddef
 
 # vim: shiftwidth=2 sts=2 expandtab
