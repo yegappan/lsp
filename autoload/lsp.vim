@@ -17,7 +17,7 @@ def lsp#processInitializeReply(ftype: string, reply: dict<any>): void
   if caps->has_key('signatureHelpProvider')
     var triggers = caps.signatureHelpProvider.triggerCharacters
     for ch in triggers
-      exe 'inoremap <silent> ' .. ch .. ' ' .. ch .. "<C-R>=lsp#show_signature()<CR>"
+      exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch .. "<C-R>=lsp#show_signature()<CR>"
     endfor
   endif
 enddef
@@ -75,6 +75,8 @@ def lsp#process_reply(ftype: string, req: dict<any>, reply: dict<any>): void
     lsp#processDefDeclReply(reply)
   elseif req.method == 'textDocument/signatureHelp'
     lsp#process_signatureHelp_reply(reply)
+  else
+    echomsg "Error: Unsupported reply received from LSP server: " .. string(reply)
   endif
 enddef
 
@@ -117,6 +119,13 @@ def lsp#process_server_msg(ftype: string): void
         echomsg "Error: request " .. req.method .. " failed (" .. reply.error.message .. ")"
       else
         lsp#process_reply(ftype, req, reply)
+      endif
+    else
+      if reply.method == 'textDocument/publishDiagnostics'
+        # Todo: process the diagnostics from the LSP server
+        lsp_servers[ftype].diags = reply.params.diagnostics
+      else
+        echomsg 'Error: Unsupported notification received from LSP server ' .. string(reply)
       endif
     endif
 
@@ -198,6 +207,7 @@ def lsp#start_server(ftype: string): number
   var opts = {'in_mode': 'raw',
               'out_mode': 'raw',
               'err_mode': 'raw',
+              'noblock': 1,
               'out_cb': function('lsp#output_cb', [ftype]),
               'err_cb': function('lsp#error_cb', [ftype]),
               'exit_cb': function('lsp#exit_cb', [ftype])}
@@ -214,6 +224,9 @@ def lsp#start_server(ftype: string): number
     echomsg "Error: Failed to start LSP server " .. lsp_servers[ftype].path
     return 1
   endif
+
+  # wait for the LSP server to start
+  sleep 10m
 
   lsp_servers[ftype].job = job
   lsp_servers[ftype].running = v:true
@@ -397,7 +410,7 @@ def lsp#bufchange_listener(bnum: number, start: number, end: number, added: numb
 enddef
 
 def lsp#add_file(fname: string, ftype: string): void
-  if fname == '' || ftype == '' || !lsp_servers->has_key(ftype)
+  if fname == '' || ftype == '' || !filereadable(fname) || !lsp_servers->has_key(ftype)
     return
   endif
   if !lsp_servers[ftype].running
@@ -415,9 +428,6 @@ enddef
 def lsp#remove_file(fname: string, ftype: string): void
   if fname == '' || ftype == '' || !lsp_servers->has_key(ftype)
     return
-  endif
-  if !lsp_servers[ftype].running
-    lsp#start_server(ftype)
   endif
   lsp#textdoc_didclose(fname, ftype)
 enddef
@@ -439,13 +449,24 @@ def lsp#add_server(ftype: string, serverpath: string, args: list<string>)
     'data': '',
     'nextID': 1,
     'caps': {},
-    'requests': {}    # outstanding LSP requests
+    'requests': {},     # outstanding LSP requests
+    'diags': {}
   }
   lsp_servers->extend({[ftype]: sinfo})
 enddef
 
 def lsp#show_servers()
   echomsg lsp_servers
+enddef
+
+def lsp#showDiagnostics(ftype: string): void
+  var msgs: list<string> = []
+  echomsg lsp_servers[ftype].diags
+  for diag in lsp_servers[ftype].diags
+    diag.message = diag.message->substitute("\n\\+", "\n", 'g')
+    msgs->extend(split(diag.message, "\n"))
+  endfor
+  setqflist([], ' ', {'lines': msgs})
 enddef
 
 # vim: shiftwidth=2 sts=2 expandtab
