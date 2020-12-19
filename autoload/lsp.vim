@@ -12,7 +12,7 @@ var lsp_servers: dict<dict<any>> = {}
 var lsp_log_dir: string = '/tmp/'
 
 # process the 'initialize' method reply from the LSP server
-def lsp#processInitializeReply(ftype: string, reply: dict<any>): void
+def LSPprocessInitializeReply(ftype: string, reply: dict<any>): void
   if reply.result->len() <= 0
     return
   endif
@@ -26,11 +26,14 @@ def lsp#processInitializeReply(ftype: string, reply: dict<any>): void
       exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch .. "<C-R>=lsp#showSignature()<CR>"
     endfor
   endif
+
+  # send a "initialized" notification to server
+  lsp#send_initialized(ftype)
 enddef
 
 # process the 'textDocument/definition' / 'textDocument/declaration' method
 # replies from the LSP server
-def lsp#processDefDeclReply(reply: dict<any>): void
+def LSPprocessDefDeclReply(reply: dict<any>): void
   if reply.result->len() == 0
     echomsg "Error: definition is not found"
     return
@@ -49,7 +52,7 @@ def lsp#processDefDeclReply(reply: dict<any>): void
 enddef
 
 # process the 'textDocument/signatureHelp' reply from the LSP server
-def lsp#processSignaturehelpReply(reply: dict<any>): void
+def LSPprocessSignaturehelpReply(reply: dict<any>): void
   var result: dict<any> = reply.result
   if result.signatures->len() <= 0
     echomsg 'No signature help available'
@@ -108,7 +111,7 @@ def LspCompleteItemKindChar(kind: number): string
 enddef
 
 # process the 'textDocument/completion' reply from the LSP server
-def lsp#processCompletionReply(ftype: string, reply: dict<any>): void
+def LSPprocessCompletionReply(ftype: string, reply: dict<any>): void
   var items: list<dict<any>> = reply.result.items
 
   for item in items
@@ -131,16 +134,31 @@ def lsp#processCompletionReply(ftype: string, reply: dict<any>): void
   lsp_servers[ftype].completePending = v:false
 enddef
 
+# process the 'textDocument/hover' reply from the LSP server
+def LSPprocessHoverReply(ftype: string, reply: dict<any>): void
+  if type(reply.result) == v:t_none
+    return
+  endif
+
+  if reply.result.contents.kind == 'plaintext'
+    reply.result.contents.value->split("\n")->popup_atcursor({'moved': 'word'})
+  else
+    echomsg 'Error: Unsupported hover contents type (' .. reply.result.contents.kind .. ')'
+  endif
+enddef
+
 # Process varous reply messages from the LSP server
 def lsp#process_reply(ftype: string, req: dict<any>, reply: dict<any>): void
   if req.method == 'initialize'
-    lsp#processInitializeReply(ftype, reply)
+    LSPprocessInitializeReply(ftype, reply)
   elseif req.method == 'textDocument/definition' || req.method == 'textDocument/declaration'
-    lsp#processDefDeclReply(reply)
+    LSPprocessDefDeclReply(reply)
   elseif req.method == 'textDocument/signatureHelp'
-    lsp#processSignaturehelpReply(reply)
+    LSPprocessSignaturehelpReply(reply)
   elseif req.method == 'textDocument/completion'
-    lsp#processCompletionReply(ftype, reply)
+    LSPprocessCompletionReply(ftype, reply)
+  elseif req.method == 'textDocument/hover'
+    LSPprocessHoverReply(ftype, reply)
   else
     echomsg "Error: Unsupported reply received from LSP server: " .. string(reply)
   endif
@@ -225,7 +243,7 @@ def lsp#next_reqid(ftype: string): number
 enddef
 
 # Send a request message to LSP server
-def lsp#sendto_server(ftype: string, content: dict<any>): void
+def LSPsendto_server(ftype: string, content: dict<any>): void
   var req_js: string = content->json_encode()
   var msg = "Content-Length: " .. req_js->len() .. "\r\n\r\n"
   var ch = lsp_servers[ftype].job->job_getchannel()
@@ -263,11 +281,16 @@ def lsp#init_server(ftype: string): number
   var initparams: dict<any> = {}
   initparams.processId = getpid()
   initparams.clientInfo = {'name': 'Vim', 'version': string(v:versionlong)}
-  initparams.capabilities = {}
   req.params->extend(initparams)
 
-  lsp#sendto_server(ftype, req)
+  LSPsendto_server(ftype, req)
   return 1
+enddef
+
+# Send a "initialized" LSP notification
+def lsp#send_initialized(ftype: string)
+  var notif: dict<any> = lsp#create_notifmsg(ftype, 'initialized')
+  LSPsendto_server(ftype, notif)
 enddef
 
 # Start a LSP server
@@ -316,13 +339,13 @@ enddef
 # Send a 'shutdown' request to the LSP server
 def lsp#shutdown_server(ftype: string): void
   var req = lsp#create_reqmsg(ftype, 'shutdown')
-  lsp#sendto_server(ftype, req)
+  LSPsendto_server(ftype, req)
 enddef
 
 # Send a 'exit' notification to the LSP server
 def lsp#exit_server(ftype: string): void
-  var req: dict<any> = lsp#create_notifmsg(ftype, 'exit')
-  lsp#sendto_server(ftype, req)
+  var notif: dict<any> = lsp#create_notifmsg(ftype, 'exit')
+  LSPsendto_server(ftype, notif)
 enddef
 
 # Stop a LSP server
@@ -359,7 +382,7 @@ def lsp#textdoc_didopen(bnum: number, ftype: string): void
   tdi.text = getbufline(bnum, 1, '$')->join("\n") .. "\n"
   notif.params->extend({'textDocument': tdi})
 
-  lsp#sendto_server(ftype, notif)
+  LSPsendto_server(ftype, notif)
 enddef
 
 # Send a LSP "textDocument/didClose" notification
@@ -372,7 +395,7 @@ def lsp#textdoc_didclose(fname: string, ftype: string): void
   tdid.uri = 'file://' .. fname
   notif.params->extend({'textDocument': tdid})
 
-  lsp#sendto_server(ftype, notif)
+  LSPsendto_server(ftype, notif)
 enddef
 
 # Goto a definition using "textDocument/definition" LSP request
@@ -398,7 +421,7 @@ def lsp#goto_definition(fname: string, ftype: string, lnum: number, col: number)
   # interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
 
-  lsp#sendto_server(ftype, req)
+  LSPsendto_server(ftype, req)
 enddef
 
 # Goto a declaration using "textDocument/declaration" LSP request
@@ -424,7 +447,7 @@ def lsp#goto_declaration(fname: string, ftype: string, lnum: number, col: number
   #     interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
 
-  lsp#sendto_server(ftype, req)
+  LSPsendto_server(ftype, req)
 enddef
 
 # Show the signature using "textDocument/signatureHelp" LSP method
@@ -434,14 +457,11 @@ def lsp#showSignature(): string
   # first send all the changes in the current buffer to the LSP server
   listener_flush()
 
-  var fname: string = expand('%:p')
   var ftype: string = &filetype
-  var lnum: number = line('.') - 1
-  var col: number = col('.') - 1
-
-  if fname == '' || ftype == ''
+  if ftype == ''
     return ''
   endif
+
   if !lsp_servers->has_key(ftype)
     echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not found'
     return ''
@@ -451,6 +471,14 @@ def lsp#showSignature(): string
     return ''
   endif
 
+  var fname: string = expand('%:p')
+  if fname == ''
+    return ''
+  endif
+
+  var lnum: number = line('.') - 1
+  var col: number = col('.') - 1
+
   var req = lsp#create_reqmsg(ftype, 'textDocument/signatureHelp')
   # interface SignatureHelpParams
   #   interface TextDocumentPositionParams
@@ -459,7 +487,7 @@ def lsp#showSignature(): string
   #     interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
 
-  lsp#sendto_server(ftype, req)
+  LSPsendto_server(ftype, req)
   return ''
 enddef
 
@@ -516,7 +544,7 @@ def lsp#bufchange_listener(bnum: number, start: number, end: number, added: numb
   changeset->add({'text': getbufline(bnum, 1, '$')->join("\n") .. "\n"})
   notif.params->extend({'contentChanges': changeset})
 
-  lsp#sendto_server(ftype, notif)
+  LSPsendto_server(ftype, notif)
 enddef
 
 # A new buffer is opened. If LSP is supported for this buffer, then add it
@@ -528,6 +556,9 @@ def lsp#add_file(bnum: number, ftype: string): void
     lsp#start_server(ftype)
   endif
   lsp#textdoc_didopen(bnum, ftype)
+
+  # Display hover information
+  autocmd CursorHold <buffer> call LSPhover()
 
   # add a listener to track changes to this buffer
   listener_add(function('lsp#bufchange_listener'), bnum)
@@ -590,12 +621,9 @@ def lsp#showDiagnostics(): void
   cwindow
 enddef
 
-def lsp#getCompletion(): void
-  var fname = expand('%:p')
+def LSPgetCompletion(): void
   var ftype = &filetype
-  var lnum = line('.') - 1
-  var col = col('.') - 1
-  if fname == '' || ftype == ''
+  if ftype == ''
     return
   endif
   if !lsp_servers->has_key(ftype)
@@ -607,6 +635,14 @@ def lsp#getCompletion(): void
     return
   endif
 
+  var fname = expand('%:p')
+  if fname == ''
+    return
+  endif
+
+  var lnum = line('.') - 1
+  var col = col('.') - 1
+
   var req = lsp#create_reqmsg(ftype, 'textDocument/completion')
 
   # interface CompletionParams
@@ -616,7 +652,7 @@ def lsp#getCompletion(): void
   # interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
 
-  lsp#sendto_server(ftype, req)
+  LSPsendto_server(ftype, req)
 enddef
 
 def lsp#completeFunc(findstart: number, base: string): any
@@ -638,7 +674,7 @@ def lsp#completeFunc(findstart: number, base: string): any
     lsp_servers[ftype].completePending = v:true
     lsp_servers[ftype].completeItems = []
     # initiate a request to LSP server to get list of completions
-    lsp#getCompletion()
+    LSPgetCompletion()
 
     # locate the start of the word
     var line = getline('.')
@@ -657,6 +693,39 @@ def lsp#completeFunc(findstart: number, base: string): any
     endfor
     return res
   endif
+enddef
+
+def LSPhover()
+  var ftype = &filetype
+  if ftype == ''
+    return
+  endif
+
+  if !lsp_servers->has_key(ftype)
+    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not found'
+    return
+  endif
+  if !lsp_servers[ftype].running
+    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not running'
+    return
+  endif
+
+  var fname = expand('%:p')
+  if fname == ''
+    return
+  endif
+  var lnum = line('.') - 1
+  var col = col('.') - 1
+
+  var req = lsp#create_reqmsg(ftype, 'textDocument/hover')
+  # interface HoverParams
+  # interface TextDocumentPositionParams
+  # interface TextDocumentIdentifier
+  req.params->extend({'textDocument': {'uri': 'file://' .. fname}})
+  # interface Position
+  req.params->extend({'position': {'line': lnum, 'character': col}})
+
+  LSPsendto_server(ftype, req)
 enddef
 
 # vim: shiftwidth=2 sts=2 expandtab
