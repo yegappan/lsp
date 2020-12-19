@@ -147,11 +147,39 @@ def LSPprocessHoverReply(ftype: string, reply: dict<any>): void
   endif
 enddef
 
+# process the 'textDocument/references' reply from the LSP server
+def LSPprocessReferencesReply(ftype: string, reply: dict<any>): void
+  if type(reply.result) == v:t_none || reply.result->len() == 0
+    echomsg 'Error: No references found'
+    return
+  endif
+
+  # create a quickfix list with the location of the references
+  var locations: list<dict<any>> = reply.result
+  var qflist: list<dict<any>> = []
+  for loc in locations
+    var fname: string = loc.uri[7:]
+    var text: string = fname->getbufline(loc.range.start.line + 1)[0]
+                                    ->trim("\t ", 1)
+    qflist->add({'filename': fname,
+                    'lnum': loc.range.start.line + 1,
+                    'col': loc.range.start.character + 1,
+                    'text': text})
+  endfor
+  call setqflist([], ' ', {'title': 'Language Server', 'items': qflist})
+  var save_winid = win_getid()
+  copen
+  win_gotoid(save_winid)
+enddef
+
 # Process varous reply messages from the LSP server
 def lsp#process_reply(ftype: string, req: dict<any>, reply: dict<any>): void
   if req.method == 'initialize'
     LSPprocessInitializeReply(ftype, reply)
-  elseif req.method == 'textDocument/definition' || req.method == 'textDocument/declaration'
+  elseif req.method == 'textDocument/definition'
+                || req.method == 'textDocument/declaration'
+                || req.method == 'textDocument/typeDefinition'
+                || req.method == 'textDocument/implementation'
     LSPprocessDefDeclReply(reply)
   elseif req.method == 'textDocument/signatureHelp'
     LSPprocessSignaturehelpReply(reply)
@@ -159,6 +187,8 @@ def lsp#process_reply(ftype: string, req: dict<any>, reply: dict<any>): void
     LSPprocessCompletionReply(ftype, reply)
   elseif req.method == 'textDocument/hover'
     LSPprocessHoverReply(ftype, reply)
+  elseif req.method == 'textDocument/references'
+    LSPprocessReferencesReply(ftype, reply)
   else
     echomsg "Error: Unsupported reply received from LSP server: " .. string(reply)
   endif
@@ -274,7 +304,7 @@ def lsp#create_notifmsg(ftype: string, notif: string): dict<any>
 enddef
 
 # Send a "initialize" LSP request
-def lsp#init_server(ftype: string): number
+def lsp#init_server(ftype: string)
   var req = lsp#create_reqmsg(ftype, 'initialize')
 
   # interface 'InitializeParams'
@@ -284,7 +314,6 @@ def lsp#init_server(ftype: string): number
   req.params->extend(initparams)
 
   LSPsendto_server(ftype, req)
-  return 1
 enddef
 
 # Send a "initialized" LSP notification
@@ -399,7 +428,7 @@ def lsp#textdoc_didclose(fname: string, ftype: string): void
 enddef
 
 # Goto a definition using "textDocument/definition" LSP request
-def lsp#goto_definition(fname: string, ftype: string, lnum: number, col: number)
+def lsp#gotoDefinition(fname: string, ftype: string, lnum: number, col: number)
   if fname == '' || ftype == ''
     return
   endif
@@ -409,6 +438,13 @@ def lsp#goto_definition(fname: string, ftype: string, lnum: number, col: number)
   endif
   if !lsp_servers[ftype].running
     echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not running'
+    return
+  endif
+
+  # Check whether LSP server supports jumping to a definition
+  if !lsp_servers[ftype].caps->has_key('definitionProvider')
+              || !lsp_servers[ftype].caps.definitionProvider
+    echomsg "Error: LSP server does not support jumping to a definition"
     return
   endif
 
@@ -425,7 +461,7 @@ def lsp#goto_definition(fname: string, ftype: string, lnum: number, col: number)
 enddef
 
 # Goto a declaration using "textDocument/declaration" LSP request
-def lsp#goto_declaration(fname: string, ftype: string, lnum: number, col: number)
+def lsp#gotoDeclaration(fname: string, ftype: string, lnum: number, col: number)
   if fname == '' || ftype == ''
     return
   endif
@@ -438,9 +474,82 @@ def lsp#goto_declaration(fname: string, ftype: string, lnum: number, col: number
     return
   endif
 
+  # Check whether LSP server supports jumping to a declaration
+  if !lsp_servers[ftype].caps->has_key('declarationProvider')
+              || !lsp_servers[ftype].caps.declarationProvider
+    echomsg "Error: LSP server does not support jumping to a declaration"
+    return
+  endif
+
   var req = lsp#create_reqmsg(ftype, 'textDocument/declaration')
 
   # interface DeclarationParams
+  #   interface TextDocumentPositionParams
+  #     interface TextDocumentIdentifier
+  req.params->extend({'textDocument': {'uri': 'file://' .. fname}})
+  #     interface Position
+  req.params->extend({'position': {'line': lnum, 'character': col}})
+
+  LSPsendto_server(ftype, req)
+enddef
+
+# Go to a type definition using "textDocument/typeDefinition" LSP request
+def lsp#gotoTypedef(fname: string, ftype: string, lnum: number, col: number)
+  if fname == '' || ftype == ''
+    return
+  endif
+  if !lsp_servers->has_key(ftype)
+    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not found'
+    return
+  endif
+  if !lsp_servers[ftype].running
+    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not running'
+    return
+  endif
+
+  # Check whether LSP server supports jumping to a type definition
+  if !lsp_servers[ftype].caps->has_key('typeDefinitionProvider')
+              || !lsp_servers[ftype].caps.typeDefinitionProvider
+    echomsg "Error: LSP server does not support jumping to a type definition"
+    return
+  endif
+
+  var req = lsp#create_reqmsg(ftype, 'textDocument/typeDefinition')
+
+  # interface TypeDefinitionParams
+  #   interface TextDocumentPositionParams
+  #     interface TextDocumentIdentifier
+  req.params->extend({'textDocument': {'uri': 'file://' .. fname}})
+  #     interface Position
+  req.params->extend({'position': {'line': lnum, 'character': col}})
+
+  LSPsendto_server(ftype, req)
+enddef
+
+# Go to a implementation using "textDocument/implementation" LSP request
+def lsp#gotoImplementation(fname: string, ftype: string, lnum: number, col: number)
+  if fname == '' || ftype == ''
+    return
+  endif
+  if !lsp_servers->has_key(ftype)
+    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not found'
+    return
+  endif
+  if !lsp_servers[ftype].running
+    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not running'
+    return
+  endif
+
+  # Check whether LSP server supports jumping to a type definition
+  if !lsp_servers[ftype].caps->has_key('implementationProvider')
+              || !lsp_servers[ftype].caps.implementationProvider
+    echomsg "Error: LSP server does not support jumping to an implementation"
+    return
+  endif
+
+  var req = lsp#create_reqmsg(ftype, 'textDocument/implementation')
+
+  # interface ImplementationParams
   #   interface TextDocumentPositionParams
   #     interface TextDocumentIdentifier
   req.params->extend({'textDocument': {'uri': 'file://' .. fname}})
@@ -617,7 +726,7 @@ def lsp#showDiagnostics(): void
     diag.message = diag.message->substitute("\n\\+", "\n", 'g')
     msgs->extend(split(diag.message, "\n"))
   endfor
-  setqflist([], ' ', {'lines': msgs})
+  setqflist([], ' ', {'lines': msgs, 'title': 'Language Server'})
   cwindow
 enddef
 
@@ -710,6 +819,12 @@ def LSPhover()
     return
   endif
 
+  # Check whether LSP server supports getting hover information
+  if !lsp_servers[ftype].caps->has_key('hoverProvider')
+              || !lsp_servers[ftype].caps.hoverProvider
+    return
+  endif
+
   var fname = expand('%:p')
   if fname == ''
     return
@@ -724,6 +839,46 @@ def LSPhover()
   req.params->extend({'textDocument': {'uri': 'file://' .. fname}})
   # interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
+
+  LSPsendto_server(ftype, req)
+enddef
+
+def lsp#showReferences()
+  var ftype = &filetype
+  if ftype == ''
+    return
+  endif
+
+  if !lsp_servers->has_key(ftype)
+    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not found'
+    return
+  endif
+  if !lsp_servers[ftype].running
+    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not running'
+    return
+  endif
+
+  # Check whether LSP server supports getting reference information
+  if !lsp_servers[ftype].caps->has_key('referencesProvider')
+              || !lsp_servers[ftype].caps.referencesProvider
+    return
+  endif
+
+  var fname = expand('%:p')
+  if fname == ''
+    return
+  endif
+  var lnum = line('.') - 1
+  var col = col('.') - 1
+
+  var req = lsp#create_reqmsg(ftype, 'textDocument/references')
+  # interface ReferenceParams
+  # interface TextDocumentPositionParams
+  # interface TextDocumentIdentifier
+  req.params->extend({'textDocument': {'uri': 'file://' .. fname}})
+  # interface Position
+  req.params->extend({'position': {'line': lnum, 'character': col}})
+  req.params->extend({'context': {'includeDeclaration': v:true}})
 
   LSPsendto_server(ftype, req)
 enddef

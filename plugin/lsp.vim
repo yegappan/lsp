@@ -13,8 +13,11 @@ autocmd BufWipeOut * call lsp#remove_file(expand('<afile>:p'), &filetype)
 " autocmd VimLeavePre * call lsp#stop_all_servers()
 
 command! -nargs=0 LspShowServers call lsp#showServers()
-command! -nargs=0 LspGotoDefinition call lsp#goto_definition(expand('%:p'), &filetype, line('.') - 1, col('.') - 1)
-command! -nargs=0 LspGotoDeclaration call lsp#goto_declaration(expand('%:p'), &filetype, line('.') - 1, col('.') - 1)
+command! -nargs=0 LspGotoDefinition call lsp#gotoDefinition(expand('%:p'), &filetype, line('.') - 1, col('.') - 1)
+command! -nargs=0 LspGotoDeclaration call lsp#gotoDeclaration(expand('%:p'), &filetype, line('.') - 1, col('.') - 1)
+command! -nargs=0 LspGotoTypeDef call lsp#gotoTypedef(expand('%:p'), &filetype, line('.') - 1, col('.') - 1)
+command! -nargs=0 LspGotoImpl call lsp#gotoImplementation(expand('%:p'), &filetype, line('.') - 1, col('.') - 1)
 command! -nargs=0 LspShowSignature call lsp#showSignature()
 command! -nargs=0 LspShowDiagnostics call lsp#showDiagnostics()
+command! -nargs=0 LspShowReferences call lsp#showReferences()
 
