@@ -1,5 +1,10 @@
 vim9script
 
+# Need Vim 8.2.2082 and higher
+if v:version < 802 || !has('patch-8.2.2082')
+  finish
+endif
+
 # Vim LSP client
 
 var lsp_servers: dict<dict<any>> = {}
@@ -62,16 +67,68 @@ def lsp#processSignaturehelpReply(reply: dict<any>): void
     startcol = text->stridx(label)
   endif
   var popupID = popup_atcursor(text, {})
-  prop_type_add('signature', {'bufnr': popupID->winbufnr(),
-  'highlight': 'Title'})
+  prop_type_add('signature', {'bufnr': popupID->winbufnr(), 'highlight': 'Title'})
   if hllen > 0
     prop_add(1, startcol + 1, {'bufnr': popupID->winbufnr(), 'length': hllen, 'type': 'signature'})
   endif
 enddef
 
+def LspCompleteItemKindChar(kind: number): string
+  var kindMap: list<string> = ['',
+                    't', # Text
+                    'm', # Method
+                    'f', # Function
+                    'C', # Constructor
+                    'F', # Field
+                    'v', # Variable
+                    'c', # Class
+                    'i', # Interface
+                    'M', # Module
+                    'p', # Property
+                    'u', # Unit
+                    'V', # Value
+                    'e', # Enum
+                    'k', # Keyword
+                    'S', # Snippet
+                    'C', # Color
+                    'f', # File
+                    'r', # Reference
+                    'F', # Folder
+                    'E', # EnumMember
+                    'd', # Contant
+                    's', # Struct
+                    'E', # Event
+                    'o', # Operator
+                    'T'  # TypeParameter
+                    ]
+  if kind > 25
+    return ''
+  endif
+  return kindMap[kind]
+enddef
+
 # process the 'textDocument/completion' reply from the LSP server
-def lsp#processCompletionReply(reply: dict<any>): void
-  echomsg "Completion reply " .. string(reply)
+def lsp#processCompletionReply(ftype: string, reply: dict<any>): void
+  var items: list<dict<any>> = reply.result.items
+
+  for item in items
+    var d: dict<any> = {}
+    if item->has_key('insertText')
+      d.word = item.insertText
+    elseif item->has_key('textEdit')
+      d.word = item.textEdit.newText
+    else
+      continue
+    endif
+    if item->has_key('kind')
+      # namespace CompletionItemKind
+      # map LSP kind to complete-item-kind
+      d.kind = LspCompleteItemKindChar(item.kind)
+    endif
+    lsp_servers[ftype].completeItems->add(d)
+  endfor
+
+  lsp_servers[ftype].completePending = v:false
 enddef
 
 # Process varous reply messages from the LSP server
@@ -83,7 +140,7 @@ def lsp#process_reply(ftype: string, req: dict<any>, reply: dict<any>): void
   elseif req.method == 'textDocument/signatureHelp'
     lsp#processSignaturehelpReply(reply)
   elseif req.method == 'textDocument/completion'
-    lsp#processCompletionReply(reply)
+    lsp#processCompletionReply(ftype, reply)
   else
     echomsg "Error: Unsupported reply received from LSP server: " .. string(reply)
   endif
@@ -237,6 +294,7 @@ def lsp#start_server(ftype: string): number
   lsp_servers[ftype].caps = {}
   lsp_servers[ftype].nextID = 1
   lsp_servers[ftype].requests = {}
+  lsp_servers[ftype].completePending = v:false
 
   var job = job_start(cmd, opts)
   if job->job_status() == 'fail'
@@ -289,16 +347,16 @@ def lsp#stop_server(ftype: string): number
 enddef
 
 # Send a LSP "textDocument/didOpen" notification
-def lsp#textdoc_didopen(fname: string, ftype: string): void
+def lsp#textdoc_didopen(bnum: number, ftype: string): void
   var notif: dict<any> = lsp#create_notifmsg(ftype, 'textDocument/didOpen')
 
   # interface DidOpenTextDocumentParams
   # interface TextDocumentItem
   var tdi = {}
-  tdi.uri = 'file://' .. fname
+  tdi.uri = 'file://' .. fnamemodify(bufname(bnum), ':p')
   tdi.languageId = ftype
   tdi.version = 1
-  tdi.text = readfile(fname)->join("\n")
+  tdi.text = getbufline(bnum, 1, '$')->join("\n") .. "\n"
   notif.params->extend({'textDocument': tdi})
 
   lsp#sendto_server(ftype, notif)
@@ -418,31 +476,62 @@ def lsp#bufchange_listener(bnum: number, start: number, end: number, added: numb
   vtdid.version = getbufvar(bnum, 'changedtick')
   notif.params->extend({'textDocument': vtdid})
   #   interface TextDocumentContentChangeEvent
-  var changeset: list<dict<any>> = []
-  #     Range
-  var range: dict<dict<number>> = {}
-  range.start = {'line': start - 1, 'character': 0}
-  range.end = {'line': end - 2, 'character': 0}
-  changeset->add({'range': range, 'text': getbufline(bnum, start, end - 1)->join("\n")})
+  var changeset: list<dict<any>>
+
+  ##### FIXME: Sending specific buffer changes to the LSP server doesn't
+  ##### work properly as the computed line range numbers is not correct.
+  ##### For now, send the entire content of the buffer to LSP server.
+  # #     Range
+  # for change in changes
+  #   var lines: string
+  #   var start_lnum: number
+  #   var end_lnum: number
+  #   var start_col: number
+  #   var end_col: number
+  #   if change.added == 0
+  #     # lines changed
+  #     start_lnum =  change.lnum - 1
+  #     end_lnum = change.end - 1
+  #     lines = getbufline(bnum, change.lnum, change.end - 1)->join("\n") .. "\n"
+  #     start_col = 0
+  #     end_col = 0
+  #   elseif change.added > 0
+  #     # lines added
+  #     start_lnum = change.lnum - 1
+  #     end_lnum = change.lnum - 1
+  #     start_col = 0
+  #     end_col = 0
+  #     lines = getbufline(bnum, change.lnum, change.lnum + change.added - 1)->join("\n") .. "\n"
+  #   else
+  #     # lines removed
+  #     start_lnum = change.lnum - 1
+  #     end_lnum = change.lnum + (-change.added) - 1
+  #     start_col = 0
+  #     end_col = 0
+  #     lines = ''
+  #   endif
+  #   var range: dict<dict<number>> = {'start': {'line': start_lnum, 'character': start_col}, 'end': {'line': end_lnum, 'character': end_col}}
+  #   changeset->add({'range': range, 'text': lines})
+  # endfor
+  changeset->add({'text': getbufline(bnum, 1, '$')->join("\n") .. "\n"})
   notif.params->extend({'contentChanges': changeset})
 
   lsp#sendto_server(ftype, notif)
 enddef
 
-def lsp#add_file(fname: string, ftype: string): void
-  if fname == '' || ftype == '' || !filereadable(fname) || !lsp_servers->has_key(ftype)
+# A new buffer is opened. If LSP is supported for this buffer, then add it
+def lsp#add_file(bnum: number, ftype: string): void
+  if ftype == '' || !lsp_servers->has_key(ftype)
     return
   endif
   if !lsp_servers[ftype].running
     lsp#start_server(ftype)
   endif
-  lsp#textdoc_didopen(fname, ftype)
+  lsp#textdoc_didopen(bnum, ftype)
 
   # add a listener to track changes to this buffer
-  var bnum = bufnr(fname)
-  if bnum != -1
-    listener_add(function('lsp#bufchange_listener'), bnum)
-  endif
+  listener_add(function('lsp#bufchange_listener'), bnum)
+  setbufvar(bnum, '&completefunc', 'lsp#completeFunc')
 enddef
 
 def lsp#remove_file(fname: string, ftype: string): void
@@ -470,7 +559,8 @@ def lsp#add_server(ftype: string, serverpath: string, args: list<string>)
     'nextID': 1,
     'caps': {},
     'requests': {},     # outstanding LSP requests
-    'diags': {}
+    'diags': {},
+    'completePending': v:false
   }
   lsp_servers->extend({[ftype]: sinfo})
 enddef
@@ -527,6 +617,46 @@ def lsp#getCompletion(): void
   req.params->extend({'position': {'line': lnum, 'character': col}})
 
   lsp#sendto_server(ftype, req)
+enddef
+
+def lsp#completeFunc(findstart: number, base: string): any
+  var ftype: string = &filetype
+
+  if findstart
+    if !lsp_servers->has_key(ftype)
+      echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not found'
+      return -2
+    endif
+    if !lsp_servers[ftype].running
+      echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not running'
+      return -2
+    endif
+
+    # first send all the changes in the current buffer to the LSP server
+    listener_flush()
+
+    lsp_servers[ftype].completePending = v:true
+    lsp_servers[ftype].completeItems = []
+    # initiate a request to LSP server to get list of completions
+    lsp#getCompletion()
+
+    # locate the start of the word
+    var line = getline('.')
+    var start = col('.') - 1
+    while start > 0 && line[start - 1] =~ '\k'
+      start -= 1
+    endwhile
+    return start
+  else
+    while lsp_servers[ftype].completePending
+      sleep 2m
+    endwhile
+    var res: list<dict<any>> = []
+    for item in lsp_servers[ftype].completeItems
+      res->add(item)
+    endfor
+    return res
+  endif
 enddef
 
 # vim: shiftwidth=2 sts=2 expandtab
