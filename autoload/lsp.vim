@@ -24,10 +24,20 @@ def LSP_processInitializeReply(ftype: string, req: dict<any>, reply: dict<any>):
   # interface 'InitializeResult'
   var caps: dict<any> = reply.result.capabilities
   lsp_servers[ftype].caps = caps
+
+  # map characters that trigger signature help
   if caps->has_key('signatureHelpProvider')
     var triggers = caps.signatureHelpProvider.triggerCharacters
     for ch in triggers
       exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch .. "<C-R>=lsp#showSignature()<CR>"
+    endfor
+  endif
+
+  # map characters that trigger insert mode completion
+  if caps->has_key('completionProvider')
+    var triggers = caps.completionProvider.triggerCharacters
+    for ch in triggers
+      exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch .. "<C-X><C-U>"
     endfor
   endif
 
@@ -852,6 +862,7 @@ def lsp#addFile(bnum: number, ftype: string): void
   # add a listener to track changes to this buffer
   listener_add(function('lsp#bufchange_listener'), bnum)
   setbufvar(bnum, '&completefunc', 'lsp#completeFunc')
+  setbufvar(bnum, '&completeopt', 'menuone,preview,noinsert')
 enddef
 
 def lsp#removeFile(fname: string, ftype: string): void
@@ -987,6 +998,7 @@ def LSP_getCompletion(): void
   LSP_sendToServer(ftype, req)
 enddef
 
+# Insert mode completion handler
 def lsp#completeFunc(findstart: number, base: string): any
   var ftype: string = &filetype
 
@@ -1016,8 +1028,11 @@ def lsp#completeFunc(findstart: number, base: string): any
     endwhile
     return start
   else
-    while lsp_servers[ftype].completePending
+    var count: number = 0
+    while !complete_check() && lsp_servers[ftype].completePending
+            && count < 15
       sleep 2m
+      count += 1
     endwhile
     var res: list<dict<any>> = []
     for item in lsp_servers[ftype].completeItems
