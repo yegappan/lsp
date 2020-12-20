@@ -15,6 +15,20 @@ prop_type_add('LSPTextRef', {'highlight': 'Search'})
 prop_type_add('LSPReadRef', {'highlight': 'DiffChange'})
 prop_type_add('LSPWriteRef', {'highlight': 'DiffDelete'})
 
+# Display a warning message
+def WarnMsg(msg: string)
+  :echohl WarningMsg
+  :echomsg msg
+  :echohl None
+enddef
+
+# Display an error message
+def ErrMsg(msg: string)
+  :echohl Error
+  :echomsg msg
+  :echohl None
+enddef
+
 # process the 'initialize' method reply from the LSP server
 def LSP_processInitializeReply(ftype: string, req: dict<any>, reply: dict<any>): void
   if reply.result->len() <= 0
@@ -50,7 +64,7 @@ enddef
 # the LSP server
 def LSP_processDefDeclReply(ftype: string, req: dict<any>, reply: dict<any>): void
   if reply.result->empty()
-    echomsg "Error: definition is not found"
+    WarnMsg("Error: definition is not found")
     return
   endif
 
@@ -70,7 +84,7 @@ enddef
 def LSP_processSignaturehelpReply(ftype: string, req: dict<any>, reply: dict<any>): void
   var result: dict<any> = reply.result
   if result.signatures->len() <= 0
-    echomsg 'No signature help available'
+    WarnMsg('No signature help available')
     return
   endif
 
@@ -163,13 +177,13 @@ def LSP_processHoverReply(ftype: string, req: dict<any>, reply: dict<any>): void
       if reply.result.contents.kind == 'plaintext'
         hoverText = reply.result.contents.value->split("\n")
       else
-        echomsg 'Error: Unsupported hover contents type (' .. reply.result.contents.kind .. ')'
+        ErrMsg('Error: Unsupported hover contents type (' .. reply.result.contents.kind .. ')')
         return
       endif
     elseif reply.result.contents->has_key('value')
       hoverText = reply.result.contents.value
     else
-      echomsg 'Error: Unsupported hover contents (' .. reply.result.contents .. ')'
+      ErrMsg('Error: Unsupported hover contents (' .. reply.result.contents .. ')')
       return
     endif
   elseif type(reply.result.contents) == v:t_list
@@ -186,7 +200,7 @@ def LSP_processHoverReply(ftype: string, req: dict<any>, reply: dict<any>): void
     endif
     hoverText->add(reply.result.contents)
   else
-    echomsg 'Error: Unsupported hover contents (' .. reply.result.contents .. ')'
+    ErrMsg('Error: Unsupported hover contents (' .. reply.result.contents .. ')')
     return
   endif
   hoverText->popup_atcursor({'moved': 'word'})
@@ -195,7 +209,7 @@ enddef
 # process the 'textDocument/references' reply from the LSP server
 def LSP_processReferencesReply(ftype: string, req: dict<any>, reply: dict<any>): void
   if type(reply.result) == v:t_none || reply.result->empty()
-    echomsg 'Error: No references found'
+    WarnMsg('Error: No references found')
     return
   endif
 
@@ -282,7 +296,7 @@ enddef
 # Open a symbols window and display the symbols as a tree
 def LSP_processDocSymbolReply(ftype: string, req: dict<any>, reply: dict<any>): void
   if reply.result->empty()
-    echomsg "No symbols are found"
+    WarnMsg('No symbols are found')
     return
   endif
 
@@ -361,7 +375,7 @@ def LSP_processReply(ftype: string, req: dict<any>, reply: dict<any>): void
   if lsp_reply_handlers->has_key(req.method)
     lsp_reply_handlers[req.method](ftype, req, reply)
   else
-    echomsg "Error: Unsupported reply received from LSP server: " .. string(reply)
+    ErrMsg("Error: Unsupported reply received from LSP server: " .. string(reply))
   endif
 enddef
 
@@ -379,7 +393,7 @@ def LSP_processNotif(ftype: string, reply: dict<any>): void
   if lsp_notif_handlers->has_key(reply.method)
     lsp_notif_handlers[reply.method](ftype, reply)
   else
-    echomsg 'Error: Unsupported notification received from LSP server ' .. string(reply)
+    ErrMsg('Error: Unsupported notification received from LSP server ' .. string(reply))
   endif
 enddef
 
@@ -393,21 +407,21 @@ def LSP_processServerMsg(ftype: string): void
 
     var len = str2nr(lsp_servers[ftype].data[idx + 16:])
     if len == 0
-      echomsg "Error: Content length is zero"
+      ErrMsg("Error: Content length is zero")
       return
     endif
 
     # Header and contents are separated by '\r\n\r\n'
     idx = stridx(lsp_servers[ftype].data, "\r\n\r\n")
     if idx == -1
-      echomsg "Error: Content separator is not found"
+      ErrMsg("Error: Content separator is not found")
       return
     endif
 
     idx = idx + 4
 
     if lsp_servers[ftype].data->len() - idx < len
-      echomsg "Error: Didn't receive the complete message"
+      ErrMsg("Error: Didn't receive a complete message")
       return
     endif
 
@@ -424,7 +438,7 @@ def LSP_processServerMsg(ftype: string): void
         if reply.error->has_key('data')
           msg = msg .. ', data = ' .. reply.error.message
         endif
-        echomsg "Error: request " .. req.method .. " failed (" .. msg .. ")"
+        ErrMsg("Error: request " .. req.method .. " failed (" .. msg .. ")")
       else
         LSP_processReply(ftype, req, reply)
       endif
@@ -447,7 +461,7 @@ def lsp#error_cb(ftype: string, chan: channel, emsg: string,): void
 enddef
 
 def lsp#exit_cb(ftype: string, job: job, status: number): void
-  echomsg "LSP server exited with status " .. status
+  WarnMsg("LSP server exited with status " .. status)
 enddef
 
 # Return the next id for a LSP server request message
@@ -510,7 +524,7 @@ enddef
 # Start a LSP server
 def LSP_startServer(ftype: string): number
   if lsp_servers[ftype].running
-    echomsg "LSP server for " .. ftype .. " is already running"
+    WarnMsg("LSP server for " .. ftype .. " is already running")
     return 0
   endif
 
@@ -535,7 +549,7 @@ def LSP_startServer(ftype: string): number
 
   var job = job_start(cmd, opts)
   if job->job_status() == 'fail'
-    echomsg "Error: Failed to start LSP server " .. lsp_servers[ftype].path
+    ErrMsg("Error: Failed to start LSP server " .. lsp_servers[ftype].path)
     return 1
   endif
 
@@ -565,7 +579,7 @@ enddef
 # Stop a LSP server
 def LSP_stopServer(ftype: string): number
   if !lsp_servers[ftype].running
-    echomsg "LSP server for " .. ftype .. " is not running"
+    WarnMsg("LSP server for " .. ftype .. " is not running")
     return 0
   endif
 
@@ -620,17 +634,17 @@ def lsp#gotoDefinition()
   endif
 
   if !lsp_servers->has_key(ftype)
-    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not found'
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lsp_servers[ftype].running
-    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not running'
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
   # Check whether LSP server supports jumping to a definition
   if !lsp_servers[ftype].caps->has_key('definitionProvider')
               || !lsp_servers[ftype].caps.definitionProvider
-    echomsg "Error: LSP server does not support jumping to a definition"
+    ErrMsg("Error: LSP server does not support jumping to a definition")
     return
   endif
 
@@ -662,17 +676,17 @@ def lsp#gotoDeclaration()
   endif
 
   if !lsp_servers->has_key(ftype)
-    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not found'
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lsp_servers[ftype].running
-    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not running'
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
   # Check whether LSP server supports jumping to a declaration
   if !lsp_servers[ftype].caps->has_key('declarationProvider')
               || !lsp_servers[ftype].caps.declarationProvider
-    echomsg "Error: LSP server does not support jumping to a declaration"
+    ErrMsg("Error: LSP server does not support jumping to a declaration")
     return
   endif
 
@@ -704,17 +718,17 @@ def lsp#gotoTypedef()
   endif
 
   if !lsp_servers->has_key(ftype)
-    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not found'
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lsp_servers[ftype].running
-    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not running'
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
   # Check whether LSP server supports jumping to a type definition
   if !lsp_servers[ftype].caps->has_key('typeDefinitionProvider')
               || !lsp_servers[ftype].caps.typeDefinitionProvider
-    echomsg "Error: LSP server does not support jumping to a type definition"
+    ErrMsg("Error: LSP server does not support jumping to a type definition")
     return
   endif
 
@@ -746,17 +760,17 @@ def lsp#gotoImplementation()
   endif
 
   if !lsp_servers->has_key(ftype)
-    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not found'
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lsp_servers[ftype].running
-    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not running'
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
   # Check whether LSP server supports jumping to a type definition
   if !lsp_servers[ftype].caps->has_key('implementationProvider')
               || !lsp_servers[ftype].caps.implementationProvider
-    echomsg "Error: LSP server does not support jumping to an implementation"
+    ErrMsg("Error: LSP server does not support jumping to an implementation")
     return
   endif
 
@@ -789,11 +803,16 @@ def lsp#showSignature(): string
   endif
 
   if !lsp_servers->has_key(ftype)
-    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not found'
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return ''
   endif
   if !lsp_servers[ftype].running
-    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not running'
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    return ''
+  endif
+  # Check whether LSP server supports signature help
+  if !lsp_servers[ftype].caps->has_key('signatureHelpProvider')
+    ErrMsg("Error: LSP server does not support signature help")
     return ''
   endif
 
@@ -910,34 +929,51 @@ def lsp#stopAllServers()
   endfor
 enddef
 
+# Register a LSP server for the given filetype
+def LSP_addServerForFtype(filetype: string, server: dict<any>)
+  if !file_readable(server.path)
+    ErrMsg('Error: LSP server ' .. server.path .. ' is not found')
+    return
+  endif
+  if type(server.args) != v:t_list
+    ErrMsg('Error: Arguments for LSP server ' .. server.path .. ' is not a List')
+    return
+  endif
+
+  lsp_servers[filetype] = {
+    ftype: filetype,
+    path: server.path,
+    args: server.args,
+    running: v:false,
+    job: v:none,
+    data: '',
+    nextID: 1,
+    caps: {},
+    requests: {},
+    diags: {},
+    completePending: v:false
+  }
+enddef
+
+# Register a LSP server for one or more file types
 def lsp#addServer(serverList: list<dict<any>>)
-  var sinfo: dict<any>
   for server in serverList
-    sinfo = {}
     if !server->has_key('filetype') || !server->has_key('path') || !server->has_key('args')
-      echomsg 'Error: LSP server information is missing filetype or path or args'
+      ErrMsg('Error: LSP server information is missing filetype or path or args')
       continue
     endif
-    sinfo.ftype = server.filetype
-    sinfo.path = server.path
-    if !file_readable(sinfo.path)
-      echomsg 'Error: LSP server ' .. sinfo.path .. ' is not found'
+
+    if type(server.filetype) == v:t_string
+      LSP_addServerForFtype(server.filetype, server)
+    elseif type(server.filetype) == v:t_list
+      for ftype in server.filetype
+        LSP_addServerForFtype(ftype, server)
+      endfor
+    else
+      ErrMsg('Error: Unsupported file type information "' .. string(server.filetype)
+                                  .. '" in LSP server registration')
       continue
     endif
-    sinfo.args = server.args
-    if type(sinfo.args) != v:t_list
-      echomsg 'Error: Arguments for LSP server ' .. sinfo.path .. ' is not a List'
-      continue
-    endif
-    sinfo.running = v:false
-    sinfo.job = v:none
-    sinfo.data = ''
-    sinfo.nextID = 1
-    sinfo.caps = {}
-    sinfo.requests = {}
-    sinfo.diags = {}
-    sinfo.completePending = v:false
-    lsp_servers[sinfo.ftype] = sinfo
   endfor
 enddef
 
@@ -969,13 +1005,13 @@ enddef
 def lsp#showDiagnostics(): void
   var ftype: string = &filetype
   if !lsp_servers->has_key(ftype)
-    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not found'
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
 
   var params: dict<any> = lsp_servers[ftype].diags
   if params->empty()
-    echomsg 'No diagnostic messages found for the current file'
+    WarnMsg('No diagnostic messages found for the current file')
     return
   endif
 
@@ -1001,11 +1037,16 @@ def LSP_getCompletion(): void
     return
   endif
   if !lsp_servers->has_key(ftype)
-    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not found'
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lsp_servers[ftype].running
-    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not running'
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    return
+  endif
+  # Check whether LSP server supports completion
+  if !lsp_servers[ftype].caps->has_key('completionProvider')
+    ErrMsg("Error: LSP server does not support completion")
     return
   endif
 
@@ -1035,11 +1076,11 @@ def lsp#completeFunc(findstart: number, base: string): any
 
   if findstart
     if !lsp_servers->has_key(ftype)
-      echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not found'
+      ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
       return -2
     endif
     if !lsp_servers[ftype].running
-      echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not running'
+      ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
       return -2
     endif
 
@@ -1081,14 +1122,13 @@ def LSP_hover()
   endif
 
   if !lsp_servers->has_key(ftype)
-    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not found'
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lsp_servers[ftype].running
-    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not running'
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
-
   # Check whether LSP server supports getting hover information
   if !lsp_servers[ftype].caps->has_key('hoverProvider')
               || !lsp_servers[ftype].caps.hoverProvider
@@ -1120,18 +1160,18 @@ def lsp#showReferences()
   endif
 
   if !lsp_servers->has_key(ftype)
-    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not found'
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lsp_servers[ftype].running
-    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not running'
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
   # Check whether LSP server supports getting reference information
   if !lsp_servers[ftype].caps->has_key('referencesProvider')
               || !lsp_servers[ftype].caps.referencesProvider
-    echomsg "Error: LSP server does not support showing references"
+    ErrMsg("Error: LSP server does not support showing references")
     return
   endif
 
@@ -1161,18 +1201,18 @@ def lsp#docHighlight()
   endif
 
   if !lsp_servers->has_key(ftype)
-    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not found'
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lsp_servers[ftype].running
-    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not running'
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
   # Check whether LSP server supports getting reference information
   if !lsp_servers[ftype].caps->has_key('documentHighlightProvider')
               || !lsp_servers[ftype].caps.documentHighlightProvider
-    echomsg "Error: LSP server does not support document highlight"
+    ErrMsg("Error: LSP server does not support document highlight")
     return
   endif
 
@@ -1207,18 +1247,18 @@ def lsp#showDocSymbols()
   endif
 
   if !lsp_servers->has_key(ftype)
-    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not found'
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lsp_servers[ftype].running
-    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not running'
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
   # Check whether LSP server supports getting reference information
   if !lsp_servers[ftype].caps->has_key('documentSymbolProvider')
               || !lsp_servers[ftype].caps.documentSymbolProvider
-    echomsg "Error: LSP server does not support getting list of symbols"
+    ErrMsg("Error: LSP server does not support getting list of symbols")
     return
   endif
 
