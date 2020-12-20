@@ -38,7 +38,7 @@ enddef
 # process the 'textDocument/definition' / 'textDocument/declaration' method
 # replies from the LSP server
 def LSPprocessDefDeclReply(reply: dict<any>): void
-  if reply.result->len() == 0
+  if reply.result->empty()
     echomsg "Error: definition is not found"
     return
   endif
@@ -153,7 +153,7 @@ enddef
 
 # process the 'textDocument/references' reply from the LSP server
 def LSPprocessReferencesReply(ftype: string, reply: dict<any>): void
-  if type(reply.result) == v:t_none || reply.result->len() == 0
+  if type(reply.result) == v:t_none || reply.result->empty()
     echomsg 'Error: No references found'
     return
   endif
@@ -178,7 +178,7 @@ enddef
 
 # process the 'textDocument/documentHighlight' reply from the LSP server
 def LSPprocessDocHighlightReply(ftype: string, req: dict<any>, reply: dict<any>): void
-  if reply.result->len() == 0
+  if reply.result->empty()
     return
   endif
 
@@ -206,6 +206,93 @@ def LSPprocessDocHighlightReply(ftype: string, req: dict<any>, reply: dict<any>)
   endfor
 enddef
 
+def LSPSymbolKindToName(symkind: number): string
+  var symbolMap: list<string> = ['', 'File', 'Module', 'Namespace', 'Package',
+	'Class', 'Method', 'Property', 'Field', 'Constructor', 'Enum',
+        'Interface', 'Function', 'Variable', 'Constant', 'String', 'Number',
+        'Boolean', 'Array', 'Object', 'Key', 'Null', 'EnumMember', 'Struct',
+        'Event', 'Operator', 'TypeParameter']
+  if symkind > 26
+    return ''
+  endif
+  return symbolMap[symkind]
+enddef
+
+def lsp#jumpToSymbol()
+  var lnum: number = line('.') - 1
+  if w:lsp_info.data[lnum]->empty()
+    return
+  endif
+
+  var slnum: number = w:lsp_info.data[lnum].lnum
+  var scol: number = w:lsp_info.data[lnum].col
+  var wid: number = bufwinid(w:lsp_info.filename)
+  if wid == -1
+    :exe 'rightbelow vertical split ' .. w:lsp_info.filename
+  else
+    win_gotoid(wid)
+  endif
+  cursor(slnum, scol)
+enddef
+
+# process the 'textDocument/documentSymbol' reply from the LSP server
+def LSPprocessDocSymbolReply(ftype: string, req: dict<any>, reply: dict<any>): void
+  if reply.result->empty()
+    echomsg "No symbols are found"
+    return
+  endif
+
+  var symbols: dict<list<dict<any>>>
+  var symbolType: string
+
+  var fname: string = req.params.textDocument.uri[7:]
+  for symbol in reply.result
+    symbolType = LSPSymbolKindToName(symbol.kind)
+    if !symbols->has_key(symbolType)
+      symbols[symbolType] = []
+    endif
+    var name: string = symbol.name
+    if symbol->has_key('containerName')
+      if symbol.containerName != ''
+        name ..= ' [' .. symbol.containerName .. ']'
+      endif
+    endif
+    symbols[symbolType]->add({'name': name,
+                              'lnum': symbol.location.range.start.line + 1,
+                              'col': symbol.location.range.start.character + 1})
+  endfor
+
+  var wid: number = bufwinid('LSP-Symbols')
+  if wid == -1
+    :20vnew LSP-Symbols
+  else
+    win_gotoid(wid)
+  endif
+
+  :setlocal modifiable
+  :silent! :%d _
+  :setlocal buftype=nofile
+  :setlocal noswapfile
+  :setlocal nonumber fdc=0 nowrap winfixheight winfixwidth
+  setline(1, ['# Language Server Symbols', '# ' .. fname])
+  # First two lines in the buffer display comment information
+  var lnumMap: list<dict<number>> = [{}, {}]
+  var text: list<string> = []
+  for [symType, syms] in items(symbols)
+    text->extend(['', symType])
+    lnumMap->extend([{}, {}])
+    for s in syms
+      text->add('  ' .. s.name)
+      lnumMap->add({'lnum': s.lnum, 'col': s.col})
+    endfor
+  endfor
+  append(line('$'), text)
+  w:lsp_info = {'filename': fname, 'data': lnumMap}
+  :nnoremap <silent> <buffer> q :quit<CR>
+  :nnoremap <silent> <buffer> <CR> :call lsp#jumpToSymbol()<CR>
+  :setlocal nomodifiable
+enddef
+
 # Process varous reply messages from the LSP server
 def lsp#process_reply(ftype: string, req: dict<any>, reply: dict<any>): void
   if req.method == 'initialize'
@@ -225,6 +312,8 @@ def lsp#process_reply(ftype: string, req: dict<any>, reply: dict<any>): void
     LSPprocessReferencesReply(ftype, reply)
   elseif req.method == 'textDocument/documentHighlight'
     LSPprocessDocHighlightReply(ftype, req, reply)
+  elseif req.method == 'textDocument/documentSymbol'
+    LSPprocessDocSymbolReply(ftype, req, reply)
   else
     echomsg "Error: Unsupported reply received from LSP server: " .. string(reply)
   endif
@@ -978,6 +1067,41 @@ def lsp#docHighlightClear()
   prop_remove({'type': 'LSPTextRef', 'all': v:true}, 1, line('$'))
   prop_remove({'type': 'LSPReadRef', 'all': v:true}, 1, line('$'))
   prop_remove({'type': 'LSPWriteRef', 'all': v:true}, 1, line('$'))
+enddef
+
+def lsp#showDocSymbols()
+  var ftype = &filetype
+  if ftype == ''
+    return
+  endif
+
+  if !lsp_servers->has_key(ftype)
+    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not found'
+    return
+  endif
+  if !lsp_servers[ftype].running
+    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not running'
+    return
+  endif
+
+  # Check whether LSP server supports getting reference information
+  if !lsp_servers[ftype].caps->has_key('documentSymbolProvider')
+              || !lsp_servers[ftype].caps.documentSymbolProvider
+    echomsg "Error: LSP server does not support getting list of symbols"
+    return
+  endif
+
+  var fname = expand('%:p')
+  if fname == ''
+    return
+  endif
+
+  var req = lsp#create_reqmsg(ftype, 'textDocument/documentSymbol')
+  # interface DocumentSymbolParams
+  # interface TextDocumentIdentifier
+  req.params->extend({'textDocument': {'uri': 'file://' .. fname}})
+
+  LSPsendto_server(ftype, req)
 enddef
 
 # vim: shiftwidth=2 sts=2 expandtab

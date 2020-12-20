@@ -22,4 +22,5 @@ command! -nargs=0 LspShowDiagnostics call lsp#showDiagnostics()
 command! -nargs=0 LspShowReferences call lsp#showReferences()
 command! -nargs=0 LspHighlight call lsp#docHighlight()
 command! -nargs=0 LspHighlightClear call lsp#docHighlightClear()
+command! -nargs=0 LspShowSymbols call lsp#showDocSymbols()
 
