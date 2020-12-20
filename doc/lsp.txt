@@ -1,0 +1,88 @@
+*lsp.txt*	Language Server Protocol (LSP) Plugin for Vim9
+
+Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
+For Vim version 8.2.2082 and above
+Last change: Dec 19, 2020
+
+==============================================================================
+						*lsp-license*
+License: MIT License
+Copyright (c) 2020 Yegappan Lakshmanan
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to
+deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+IN THE SOFTWARE.
+==============================================================================
+1. Overview					*lsp-overview*
+
+The Language Server Protocol (LSP) plugin implements a LSP client for Vim9.
+Refer to the following pages for more information about LSP:
+
+    https://microsoft.github.io/language-server-protocol/
+    https://langserver.org/
+
+This plugin needs Vim version 8.2.2082 and after. You will need a language
+specific server in your system to use this plugin. Refer to the above pages
+for a list of available language servers for the various programming
+languages.
+
+The Github repository for this plugin is available at:
+
+      http://github.com/yegappan/lsp
+
+==============================================================================
+2. Installation					*lsp-installation*
+
+You can install this plugin directly from github using the following steps:
+
+    $ mkdir -p $HOME/.vim/pack/downloads/lsp
+    $ cd $HOME/.vim/packa/downloads/lsp
+    $ git clone https://github.com/yegappan/lsp
+
+or you can use any one of the Vim plugin managers (dein.vim, pathogen, vam,
+vim-plug, volt, Vundle, etc.) to install and manage this plugin.
+
+To uninstall the LSP plugin, either use the uninstall command provided by the
+plugin manager or manually remove the $HOME/.vim/pack/downloads/lsp directory.
+
+To use this plugin, add the following line to your .vimrc file:
+
+    packadd lsp
+
+==============================================================================
+3. Usage					*lsp-usage*
+
+The following commands are provided:
+
+:LspShowServers		Display the list of registered LSP servers
+:LspGotoDefinition	Go to the definition of the keyword under cursor
+:LspGotoDeclaration	Go to the declaration of the keyword under cursor
+:LspGotoTypeDef		Go to the type definition of the keyword under cursor
+:LspGotoImpl		Go to the implementation of the keyword under cursor
+:LspShowSignature	Display the signature of the keyword under cursor
+:LspShowDiagnostics	Display the diagnostics messages from the LSP server for
+			the current buffer
+:LspShowReferences	Display the list of references to the keyword under
+			cursor in a new quickfix list.
+:LspHighlight		Highlight all the matches for the keyword under cursor
+:LspHighlightClear	Clear all the matches highlighted by :LspHighlight
+
+==============================================================================
+4. Configuration				*lsp-configuration*
+
+
+vim:tw=78:ts=8:noet:ft=help:

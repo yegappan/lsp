@@ -11,6 +11,10 @@ var lsp_servers: dict<dict<any>> = {}
 
 var lsp_log_dir: string = '/tmp/'
 
+prop_type_add('LSPTextRef', {'highlight': 'Search'})
+prop_type_add('LSPReadRef', {'highlight': 'DiffChange'})
+prop_type_add('LSPWriteRef', {'highlight': 'DiffDelete'})
+
 # process the 'initialize' method reply from the LSP server
 def LSPprocessInitializeReply(ftype: string, reply: dict<any>): void
   if reply.result->len() <= 0
@@ -172,6 +176,36 @@ def LSPprocessReferencesReply(ftype: string, reply: dict<any>): void
   win_gotoid(save_winid)
 enddef
 
+# process the 'textDocument/documentHighlight' reply from the LSP server
+def LSPprocessDocHighlightReply(ftype: string, req: dict<any>, reply: dict<any>): void
+  if reply.result->len() == 0
+    return
+  endif
+
+  var fname: string = req.params.textDocument.uri[7:]
+  var bnum = bufnr(fname)
+
+  for docHL in reply.result
+    var kind: number = docHL->get('kind', 1)
+    var propName: string
+    if kind == 2
+      # Read-access
+      propName = 'LSPReadRef'
+    elseif kind == 3
+      # Write-access
+      propName = 'LSPWriteRef'
+    else
+      # textual reference
+      propName = 'LSPTextRef'
+    endif
+    prop_add(docHL.range.start.line + 1, docHL.range.start.character + 1,
+               {'end_lnum': docHL.range.end.line + 1,
+                'end_col': docHL.range.end.character + 1,
+                'bufnr': bnum,
+                'type': propName})
+  endfor
+enddef
+
 # Process varous reply messages from the LSP server
 def lsp#process_reply(ftype: string, req: dict<any>, reply: dict<any>): void
   if req.method == 'initialize'
@@ -189,6 +223,8 @@ def lsp#process_reply(ftype: string, req: dict<any>, reply: dict<any>): void
     LSPprocessHoverReply(ftype, reply)
   elseif req.method == 'textDocument/references'
     LSPprocessReferencesReply(ftype, reply)
+  elseif req.method == 'textDocument/documentHighlight'
+    LSPprocessDocHighlightReply(ftype, req, reply)
   else
     echomsg "Error: Unsupported reply received from LSP server: " .. string(reply)
   endif
@@ -861,6 +897,7 @@ def lsp#showReferences()
   # Check whether LSP server supports getting reference information
   if !lsp_servers[ftype].caps->has_key('referencesProvider')
               || !lsp_servers[ftype].caps.referencesProvider
+    echomsg "Error: LSP server does not support showing references"
     return
   endif
 
@@ -881,6 +918,52 @@ def lsp#showReferences()
   req.params->extend({'context': {'includeDeclaration': v:true}})
 
   LSPsendto_server(ftype, req)
+enddef
+
+def lsp#docHighlight()
+  var ftype = &filetype
+  if ftype == ''
+    return
+  endif
+
+  if !lsp_servers->has_key(ftype)
+    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not found'
+    return
+  endif
+  if !lsp_servers[ftype].running
+    echomsg 'Error: LSP server for "' .. ftype .. '" filetype is not running'
+    return
+  endif
+
+  # Check whether LSP server supports getting reference information
+  if !lsp_servers[ftype].caps->has_key('documentHighlightProvider')
+              || !lsp_servers[ftype].caps.documentHighlightProvider
+    echomsg "Error: LSP server does not support document highlight"
+    return
+  endif
+
+  var fname = expand('%:p')
+  if fname == ''
+    return
+  endif
+  var lnum = line('.') - 1
+  var col = col('.') - 1
+
+  var req = lsp#create_reqmsg(ftype, 'textDocument/documentHighlight')
+  # interface DocumentHighlightParams
+  # interface TextDocumentPositionParams
+  # interface TextDocumentIdentifier
+  req.params->extend({'textDocument': {'uri': 'file://' .. fname}})
+  # interface Position
+  req.params->extend({'position': {'line': lnum, 'character': col}})
+
+  LSPsendto_server(ftype, req)
+enddef
+
+def lsp#docHighlightClear()
+  prop_remove({'type': 'LSPTextRef', 'all': v:true}, 1, line('$'))
+  prop_remove({'type': 'LSPReadRef', 'all': v:true}, 1, line('$'))
+  prop_remove({'type': 'LSPWriteRef', 'all': v:true}, 1, line('$'))
 enddef
 
 # vim: shiftwidth=2 sts=2 expandtab
