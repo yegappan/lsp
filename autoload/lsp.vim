@@ -725,20 +725,34 @@ def lsp#stop_all_servers()
   endfor
 enddef
 
-def lsp#add_server(ftype: string, serverpath: string, args: list<string>)
-  var sinfo = {
-    'path': serverpath,
-    'args': args,
-    'running': v:false,
-    'job': v:none,
-    'data': '',
-    'nextID': 1,
-    'caps': {},
-    'requests': {},     # outstanding LSP requests
-    'diags': {},
-    'completePending': v:false
-  }
-  lsp_servers->extend({[ftype]: sinfo})
+def lsp#addServer(serverList: list<dict<any>>)
+  var sinfo: dict<any>
+  for server in serverList
+    if !server->has_key('filetype') || !server->has_key('path') || !server->has_key('args')
+      echomsg 'Error: LSP server information is missing filetype or path or args'
+      continue
+    endif
+    sinfo.ftype = server.filetype
+    sinfo.path = server.path
+    if !file_readable(sinfo.path)
+      echomsg 'Error: LSP server ' .. sinfo.path .. ' is not found'
+      continue
+    endif
+    sinfo.args = server.args
+    if type(sinfo.args) != v:t_list
+      echomsg 'Error: Arguments for LSP server ' .. sinfo.path .. ' is not a List'
+      continue
+    endif
+    sinfo.running = v:false
+    sinfo.job = v:none
+    sinfo.data = ''
+    sinfo.nextID = 1
+    sinfo.caps = {}
+    sinfo.requests = {}
+    sinfo.diags = {}
+    sinfo.completePending = v:false
+    lsp_servers->extend({[sinfo.ftype]: sinfo})
+  endfor
 enddef
 
 def lsp#showServers()
