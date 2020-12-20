@@ -155,11 +155,41 @@ def LSP_processHoverReply(ftype: string, req: dict<any>, reply: dict<any>): void
     return
   endif
 
-  if reply.result.contents.kind == 'plaintext'
-    reply.result.contents.value->split("\n")->popup_atcursor({'moved': 'word'})
+  var hoverText: list<string>
+
+  if type(reply.result.contents) == v:t_dict
+    if reply.result.contents->has_key('kind')
+      # MarkupContent
+      if reply.result.contents.kind == 'plaintext'
+        hoverText = reply.result.contents.value->split("\n")
+      else
+        echomsg 'Error: Unsupported hover contents type (' .. reply.result.contents.kind .. ')'
+        return
+      endif
+    elseif reply.result.contents->has_key('value')
+      hoverText = reply.result.contents.value
+    else
+      echomsg 'Error: Unsupported hover contents (' .. reply.result.contents .. ')'
+      return
+    endif
+  elseif type(reply.result.contents) == v:t_list
+    for e in reply.result.contents
+      if type(e) == v:t_string
+        hoverText->extend(e->split("\n"))
+      else
+        hoverText->extend(e.value->split("\n"))
+      endif
+    endfor
+  elseif type(reply.result.contents) == v:t_string
+    if reply.result.contents->empty()
+      return
+    endif
+    hoverText->add(reply.result.contents)
   else
-    echomsg 'Error: Unsupported hover contents type (' .. reply.result.contents.kind .. ')'
+    echomsg 'Error: Unsupported hover contents (' .. reply.result.contents .. ')'
+    return
   endif
+  hoverText->popup_atcursor({'moved': 'word'})
 enddef
 
 # process the 'textDocument/references' reply from the LSP server
@@ -883,6 +913,7 @@ enddef
 def lsp#addServer(serverList: list<dict<any>>)
   var sinfo: dict<any>
   for server in serverList
+    sinfo = {}
     if !server->has_key('filetype') || !server->has_key('path') || !server->has_key('args')
       echomsg 'Error: LSP server information is missing filetype or path or args'
       continue
@@ -906,7 +937,7 @@ def lsp#addServer(serverList: list<dict<any>>)
     sinfo.requests = {}
     sinfo.diags = {}
     sinfo.completePending = v:false
-    lsp_servers->extend({[sinfo.ftype]: sinfo})
+    lsp_servers[sinfo.ftype] = sinfo
   endfor
 enddef
 
@@ -1030,10 +1061,11 @@ def lsp#completeFunc(findstart: number, base: string): any
   else
     var count: number = 0
     while !complete_check() && lsp_servers[ftype].completePending
-            && count < 15
+            && count < 500
       sleep 2m
       count += 1
     endwhile
+
     var res: list<dict<any>> = []
     for item in lsp_servers[ftype].completeItems
       res->add(item)
