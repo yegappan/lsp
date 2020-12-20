@@ -247,19 +247,21 @@ def LSPprocessDocSymbolReply(ftype: string, req: dict<any>, reply: dict<any>): v
 
   var fname: string = req.params.textDocument.uri[7:]
   for symbol in reply.result
-    symbolType = LSPSymbolKindToName(symbol.kind)
-    if !symbols->has_key(symbolType)
-      symbols[symbolType] = []
-    endif
-    var name: string = symbol.name
-    if symbol->has_key('containerName')
-      if symbol.containerName != ''
-        name ..= ' [' .. symbol.containerName .. ']'
+    if symbol->has_key('location')
+      symbolType = LSPSymbolKindToName(symbol.kind)
+      if !symbols->has_key(symbolType)
+        symbols[symbolType] = []
       endif
+      var name: string = symbol.name
+      if symbol->has_key('containerName')
+        if symbol.containerName != ''
+          name ..= ' [' .. symbol.containerName .. ']'
+        endif
+      endif
+      symbols[symbolType]->add({'name': name,
+                                'lnum': symbol.location.range.start.line + 1,
+                                'col': symbol.location.range.start.character + 1})
     endif
-    symbols[symbolType]->add({'name': name,
-                              'lnum': symbol.location.range.start.line + 1,
-                              'col': symbol.location.range.start.character + 1})
   endfor
 
   var wid: number = bufwinid('LSP-Symbols')
@@ -270,10 +272,12 @@ def LSPprocessDocSymbolReply(ftype: string, req: dict<any>, reply: dict<any>): v
   endif
 
   :setlocal modifiable
+  :setlocal noreadonly
   :silent! :%d _
   :setlocal buftype=nofile
-  :setlocal noswapfile
-  :setlocal nonumber fdc=0 nowrap winfixheight winfixwidth
+  :setlocal bufhidden=delete
+  :setlocal noswapfile nobuflisted
+  :setlocal nonumber norelativenumber fdc=0 nowrap winfixheight winfixwidth
   setline(1, ['# Language Server Symbols', '# ' .. fname])
   # First two lines in the buffer display comment information
   var lnumMap: list<dict<number>> = [{}, {}]
