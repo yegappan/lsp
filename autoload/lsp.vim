@@ -105,11 +105,13 @@ def LSP_processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: d
   var text = sig.label
   var hllen = 0
   var startcol = 0
-  var params_len = sig.parameters->len()
-  if params_len > 0 && result.activeParameter < params_len
-    var label = sig.parameters[result.activeParameter].label
-    hllen = label->len()
-    startcol = text->stridx(label)
+  if sig->has_key('parameters')
+    var params_len = sig.parameters->len()
+    if params_len > 0 && result.activeParameter < params_len
+      var label = sig.parameters[result.activeParameter].label
+      hllen = label->len()
+      startcol = text->stridx(label)
+    endif
   endif
   var popupID = popup_atcursor(text, {})
   prop_type_add('signature', {'bufnr': popupID->winbufnr(), 'highlight': 'Title'})
@@ -169,6 +171,12 @@ def LSP_processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict
       # namespace CompletionItemKind
       # map LSP kind to complete-item-kind
       d.kind = LSP_completeItemKindChar(item.kind)
+    endif
+    if item->has_key('detail')
+      d.menu = item.detail
+    endif
+    if item->has_key('documentation')
+      d.info = item.documentation
     endif
     lspserver.completeItems->add(d)
   endfor
