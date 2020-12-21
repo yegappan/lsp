@@ -38,8 +38,18 @@ enddef
 
 # Return the LSP server for the given file type. Returns null dict if server
 # is not found.
-def LSPgetServer(ftype: string): dict<any>
+def LspGetServer(ftype: string): dict<any>
   return ftypeServerMap->get(ftype, {})
+enddef
+
+# Convert a LSP file URI to a Vim file name
+def LspUriToFile(uri: string): string
+  return uri[7:]
+enddef
+
+# Convert a Vim filenmae to an LSP URI
+def LspFileToUri(fname: string): string
+  return 'file://' .. fnamemodify(fname, ':p')
 enddef
 
 # process the 'initialize' method reply from the LSP server
@@ -82,13 +92,15 @@ def LSP_processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<an
   endif
 
   var result: dict<any> = reply.result[0]
-  var file = result.uri[7:]
+  var file = LspUriToFile(result.uri)
   var wid = bufwinid(file)
   if wid != -1
     win_gotoid(wid)
   else
     exe 'split ' .. file
   endif
+  # Set the previous cursor location mark
+  setpos("'`", getcurpos())
   cursor(result.range.start.line + 1, result.range.start.character + 1)
   redraw!
 enddef
@@ -238,7 +250,7 @@ def LSP_processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict
   var locations: list<dict<any>> = reply.result
   var qflist: list<dict<any>> = []
   for loc in locations
-    var fname: string = loc.uri[7:]
+    var fname: string = LspUriToFile(loc.uri)
     var text: string = fname->getbufline(loc.range.start.line + 1)[0]
                                     ->trim("\t ", 1)
     qflist->add({'filename': fname,
@@ -258,7 +270,7 @@ def LSP_processDocHighlightReply(lspserver: dict<any>, req: dict<any>, reply: di
     return
   endif
 
-  var fname: string = req.params.textDocument.uri[7:]
+  var fname: string = LspUriToFile(req.params.textDocument.uri)
   var bnum = bufnr(fname)
 
   for docHL in reply.result
@@ -324,7 +336,7 @@ def LSP_processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<
   var symbols: dict<list<dict<any>>>
   var symbolType: string
 
-  var fname: string = req.params.textDocument.uri[7:]
+  var fname: string = LspUriToFile(req.params.textDocument.uri)
   for symbol in reply.result
     if symbol->has_key('location')
       symbolType = LSP_symbolKindToName(symbol.kind)
@@ -401,7 +413,7 @@ def LSP_processReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): vo
 enddef
 
 def LSP_processDiagNotif(lspserver: dict<any>, reply: dict<any>): void
-  var fname: string = reply.params.uri[7:]
+  var fname: string = LspUriToFile(reply.params.uri)
   diagsMap->extend({[fname]: reply.params.diagnostics})
 enddef
 
@@ -626,7 +638,7 @@ def LSP_textdocDidOpen(lspserver: dict<any>, bnum: number, ftype: string): void
   # interface DidOpenTextDocumentParams
   # interface TextDocumentItem
   var tdi = {}
-  tdi.uri = 'file://' .. fnamemodify(bufname(bnum), ':p')
+  tdi.uri = LspFileToUri(bufname(bnum))
   tdi.languageId = ftype
   tdi.version = 1
   tdi.text = getbufline(bnum, 1, '$')->join("\n") .. "\n"
@@ -642,7 +654,7 @@ def LSP_textdocDidClose(lspserver: dict<any>, fname: string): void
   # interface DidCloseTextDocumentParams
   #   interface TextDocumentIdentifier
   var tdid = {}
-  tdid.uri = 'file://' .. fname
+  tdid.uri = LspFileToUri(fname)
   notif.params->extend({'textDocument': tdid})
 
   LSP_sendToServer(lspserver, notif)
@@ -655,7 +667,7 @@ def lsp#gotoDefinition()
     return
   endif
 
-  var lspserver: dict<any> = LSPgetServer(ftype)
+  var lspserver: dict<any> = LspGetServer(ftype)
   if lspserver->empty()
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
@@ -671,7 +683,7 @@ def lsp#gotoDefinition()
     return
   endif
 
-  var fname: string = expand('%:p')
+  var fname: string = @%
   if fname == ''
     return
   endif
@@ -684,7 +696,7 @@ def lsp#gotoDefinition()
   # interface DefinitionParams
   # interface TextDocumentPositionParams
   # interface TextDocumentIdentifier
-  req.params->extend({'textDocument': {'uri': 'file://' .. fname}})
+  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
   # interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
 
@@ -698,7 +710,7 @@ def lsp#gotoDeclaration()
     return
   endif
 
-  var lspserver: dict<any> = LSPgetServer(ftype)
+  var lspserver: dict<any> = LspGetServer(ftype)
   if lspserver->empty()
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
@@ -714,7 +726,7 @@ def lsp#gotoDeclaration()
     return
   endif
 
-  var fname: string = expand('%:p')
+  var fname: string = @%
   if fname == ''
     return
   endif
@@ -727,7 +739,7 @@ def lsp#gotoDeclaration()
   # interface DeclarationParams
   #   interface TextDocumentPositionParams
   #     interface TextDocumentIdentifier
-  req.params->extend({'textDocument': {'uri': 'file://' .. fname}})
+  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
   #     interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
 
@@ -741,7 +753,7 @@ def lsp#gotoTypedef()
     return
   endif
 
-  var lspserver: dict<any> = LSPgetServer(ftype)
+  var lspserver: dict<any> = LspGetServer(ftype)
   if lspserver->empty()
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
@@ -757,7 +769,7 @@ def lsp#gotoTypedef()
     return
   endif
 
-  var fname: string = expand('%:p')
+  var fname: string = @%
   if fname == ''
     return
   endif
@@ -770,7 +782,7 @@ def lsp#gotoTypedef()
   # interface TypeDefinitionParams
   #   interface TextDocumentPositionParams
   #     interface TextDocumentIdentifier
-  req.params->extend({'textDocument': {'uri': 'file://' .. fname}})
+  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
   #     interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
 
@@ -784,7 +796,7 @@ def lsp#gotoImplementation()
     return
   endif
 
-  var lspserver: dict<any> = LSPgetServer(ftype)
+  var lspserver: dict<any> = LspGetServer(ftype)
   if lspserver->empty()
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
@@ -800,7 +812,7 @@ def lsp#gotoImplementation()
     return
   endif
 
-  var fname: string = expand('%:p')
+  var fname: string = @%
   if fname == ''
     return
   endif
@@ -813,7 +825,7 @@ def lsp#gotoImplementation()
   # interface ImplementationParams
   #   interface TextDocumentPositionParams
   #     interface TextDocumentIdentifier
-  req.params->extend({'textDocument': {'uri': 'file://' .. fname}})
+  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
   #     interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
 
@@ -828,7 +840,7 @@ def lsp#showSignature(): string
     return ''
   endif
 
-  var lspserver: dict<any> = LSPgetServer(ftype)
+  var lspserver: dict<any> = LspGetServer(ftype)
   if lspserver->empty()
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return ''
@@ -843,7 +855,7 @@ def lsp#showSignature(): string
     return ''
   endif
 
-  var fname: string = expand('%:p')
+  var fname: string = @%
   if fname == ''
     return ''
   endif
@@ -858,7 +870,7 @@ def lsp#showSignature(): string
   # interface SignatureHelpParams
   #   interface TextDocumentPositionParams
   #     interface TextDocumentIdentifier
-  req.params->extend({'textDocument': {'uri': 'file://' .. fname}})
+  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
   #     interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
 
@@ -869,7 +881,7 @@ enddef
 # buffer change notification listener
 def lsp#bufchange_listener(bnum: number, start: number, end: number, added: number, changes: list<dict<number>>)
   var ftype = getbufvar(bnum, '&filetype')
-  var lspserver: dict<any> = LSPgetServer(ftype)
+  var lspserver: dict<any> = LspGetServer(ftype)
   if lspserver->empty() || !lspserver.running
     return
   endif
@@ -879,7 +891,7 @@ def lsp#bufchange_listener(bnum: number, start: number, end: number, added: numb
   # interface DidChangeTextDocumentParams
   #   interface VersionedTextDocumentIdentifier
   var vtdid: dict<any> = {}
-  vtdid.uri = 'file://' .. fnamemodify(bufname(bnum), ':p')
+  vtdid.uri = LspFileToUri(bufname(bnum))
   # Use Vim 'changedtick' as the LSP document version number
   vtdid.version = getbufvar(bnum, 'changedtick')
   notif.params->extend({'textDocument': vtdid})
@@ -932,7 +944,7 @@ def lsp#addFile(bnum: number, ftype: string): void
   if ftype == ''
     return
   endif
-  var lspserver: dict<any> = LSPgetServer(ftype)
+  var lspserver: dict<any> = LspGetServer(ftype)
   if lspserver->empty()
     return
   endif
@@ -954,7 +966,7 @@ def lsp#removeFile(fname: string, ftype: string): void
   if fname == '' || ftype == ''
     return
   endif
-  var lspserver: dict<any> = LSPgetServer(ftype)
+  var lspserver: dict<any> = LspGetServer(ftype)
   if lspserver->empty() || !lspserver.running
     return
   endif
@@ -1073,7 +1085,7 @@ def LSP_getCompletion(lspserver: dict<any>): void
     return
   endif
 
-  var fname = expand('%:p')
+  var fname = @%
   if fname == ''
     return
   endif
@@ -1086,7 +1098,7 @@ def LSP_getCompletion(lspserver: dict<any>): void
   # interface CompletionParams
   # interface TextDocumentPositionParams
   # interface TextDocumentIdentifier
-  req.params->extend({'textDocument': {'uri': 'file://' .. fname}})
+  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
   # interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
 
@@ -1096,7 +1108,7 @@ enddef
 # Insert mode completion handler
 def lsp#completeFunc(findstart: number, base: string): any
   var ftype: string = &filetype
-  var lspserver: dict<any> = LSPgetServer(ftype)
+  var lspserver: dict<any> = LspGetServer(ftype)
 
   if findstart
     if lspserver->empty()
@@ -1145,7 +1157,7 @@ def LSP_hover()
     return
   endif
 
-  var lspserver: dict<any> = LSPgetServer(ftype)
+  var lspserver: dict<any> = LspGetServer(ftype)
   if lspserver->empty()
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
@@ -1160,7 +1172,7 @@ def LSP_hover()
     return
   endif
 
-  var fname = expand('%:p')
+  var fname = @%
   if fname == ''
     return
   endif
@@ -1171,7 +1183,7 @@ def LSP_hover()
   # interface HoverParams
   # interface TextDocumentPositionParams
   # interface TextDocumentIdentifier
-  req.params->extend({'textDocument': {'uri': 'file://' .. fname}})
+  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
   # interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
 
@@ -1184,7 +1196,7 @@ def lsp#showReferences()
     return
   endif
 
-  var lspserver: dict<any> = LSPgetServer(ftype)
+  var lspserver: dict<any> = LspGetServer(ftype)
   if lspserver->empty()
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
@@ -1201,7 +1213,7 @@ def lsp#showReferences()
     return
   endif
 
-  var fname = expand('%:p')
+  var fname = @%
   if fname == ''
     return
   endif
@@ -1212,7 +1224,7 @@ def lsp#showReferences()
   # interface ReferenceParams
   # interface TextDocumentPositionParams
   # interface TextDocumentIdentifier
-  req.params->extend({'textDocument': {'uri': 'file://' .. fname}})
+  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
   # interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
   req.params->extend({'context': {'includeDeclaration': v:true}})
@@ -1226,7 +1238,7 @@ def lsp#docHighlight()
     return
   endif
 
-  var lspserver: dict<any> = LSPgetServer(ftype)
+  var lspserver: dict<any> = LspGetServer(ftype)
   if lspserver->empty()
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
@@ -1243,7 +1255,7 @@ def lsp#docHighlight()
     return
   endif
 
-  var fname = expand('%:p')
+  var fname = @%
   if fname == ''
     return
   endif
@@ -1254,7 +1266,7 @@ def lsp#docHighlight()
   # interface DocumentHighlightParams
   # interface TextDocumentPositionParams
   # interface TextDocumentIdentifier
-  req.params->extend({'textDocument': {'uri': 'file://' .. fname}})
+  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
   # interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
 
@@ -1273,7 +1285,7 @@ def lsp#showDocSymbols()
     return
   endif
 
-  var lspserver: dict<any> = LSPgetServer(ftype)
+  var lspserver: dict<any> = LspGetServer(ftype)
   if lspserver->empty()
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
@@ -1290,7 +1302,7 @@ def lsp#showDocSymbols()
     return
   endif
 
-  var fname = expand('%:p')
+  var fname = @%
   if fname == ''
     return
   endif
@@ -1298,7 +1310,7 @@ def lsp#showDocSymbols()
   var req = LSP_createReqMsg(lspserver, 'textDocument/documentSymbol')
   # interface DocumentSymbolParams
   # interface TextDocumentIdentifier
-  req.params->extend({'textDocument': {'uri': 'file://' .. fname}})
+  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
 
   LSP_sendToServer(lspserver, req)
 enddef
