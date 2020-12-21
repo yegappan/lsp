@@ -1,6 +1,6 @@
 " LSP plugin for vim9
 
-" Need Vim 8.2.2082 and higher
+" Needs Vim 8.2.2082 and higher
 if v:version < 802 || !has('patch-8.2.2082')
   finish
 endif

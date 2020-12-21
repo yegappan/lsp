@@ -1,8 +1,8 @@
 vim9script
 
-# Vim LSP client
+# Vim9 LSP client
 
-# Need Vim 8.2.2082 and higher
+# Needs Vim 8.2.2082 and higher
 if v:version < 802 || !has('patch-8.2.2082')
   finish
 endif
@@ -18,9 +18,9 @@ var diagsMap: dict<any> = {}
 
 var lsp_log_dir: string = '/tmp/'
 
-prop_type_add('LSPTextRef', {'highlight': 'Search'})
-prop_type_add('LSPReadRef', {'highlight': 'DiffChange'})
-prop_type_add('LSPWriteRef', {'highlight': 'DiffDelete'})
+prop_type_add('LspTextRef', {'highlight': 'Search'})
+prop_type_add('LspReadRef', {'highlight': 'DiffChange'})
+prop_type_add('LspWriteRef', {'highlight': 'DiffDelete'})
 
 # Display a warning message
 def WarnMsg(msg: string)
@@ -36,24 +36,43 @@ def ErrMsg(msg: string)
   :echohl None
 enddef
 
-# Return the LSP server for the given file type. Returns null dict if server
-# is not found.
+# Return the LSP server for the a specific filetype. Returns a null dict if
+# the server is not found.
 def LspGetServer(ftype: string): dict<any>
   return ftypeServerMap->get(ftype, {})
 enddef
 
-# Convert a LSP file URI to a Vim file name
+# Add a LSP server for a filetype
+def LspAddServer(ftype: string, lspserver: dict<any>)
+  ftypeServerMap->extend({[ftype]: lspserver})
+enddef
+
+# Show information about all the LSP servers
+def lsp#showServers()
+  for [ftype, lspserver] in items(ftypeServerMap)
+    var msg = ftype .. "    "
+    if lspserver.running
+      msg ..= 'running'
+    else
+      msg ..= 'not running'
+    endif
+    msg ..= '    ' .. lspserver.path
+    echomsg msg
+  endfor
+enddef
+
+# Convert a LSP file URI (file://<absolute_path>) to a Vim file name
 def LspUriToFile(uri: string): string
   return uri[7:]
 enddef
 
-# Convert a Vim filenmae to an LSP URI
+# Convert a Vim filenmae to an LSP URI (file://<absolute_path>)
 def LspFileToUri(fname: string): string
   return 'file://' .. fnamemodify(fname, ':p')
 enddef
 
 # process the 'initialize' method reply from the LSP server
-def LSP_processInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+def s:processInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if reply.result->len() <= 0
     return
   endif
@@ -79,13 +98,13 @@ def LSP_processInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict
   endif
 
   # send a "initialized" notification to server
-  LSP_sendInitializedNotif(lspserver)
+  lspserver.sendInitializedNotif()
 enddef
 
 # process the 'textDocument/definition' / 'textDocument/declaration' /
 # 'textDocument/typeDefinition' and 'textDocument/implementation' replies from
 # the LSP server
-def LSP_processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if reply.result->empty()
     WarnMsg("Error: definition is not found")
     return
@@ -106,7 +125,7 @@ def LSP_processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<an
 enddef
 
 # process the 'textDocument/signatureHelp' reply from the LSP server
-def LSP_processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+def s:processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   var result: dict<any> = reply.result
   if result.signatures->len() <= 0
     WarnMsg('No signature help available')
@@ -132,7 +151,8 @@ def LSP_processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: d
   endif
 enddef
 
-def LSP_completeItemKindChar(kind: number): string
+# Map LSP complete item kind to a character
+def LspCompleteItemKindChar(kind: number): string
   var kindMap: list<string> = ['',
                     't', # Text
                     'm', # Method
@@ -167,7 +187,7 @@ def LSP_completeItemKindChar(kind: number): string
 enddef
 
 # process the 'textDocument/completion' reply from the LSP server
-def LSP_processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+def s:processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   var items: list<dict<any>> = reply.result.items
 
   for item in items
@@ -182,7 +202,7 @@ def LSP_processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict
     if item->has_key('kind')
       # namespace CompletionItemKind
       # map LSP kind to complete-item-kind
-      d.kind = LSP_completeItemKindChar(item.kind)
+      d.kind = LspCompleteItemKindChar(item.kind)
     endif
     if item->has_key('detail')
       d.menu = item.detail
@@ -197,7 +217,7 @@ def LSP_processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict
 enddef
 
 # process the 'textDocument/hover' reply from the LSP server
-def LSP_processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if type(reply.result) == v:t_none
     return
   endif
@@ -240,7 +260,7 @@ def LSP_processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>
 enddef
 
 # process the 'textDocument/references' reply from the LSP server
-def LSP_processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+def s:processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if type(reply.result) == v:t_none || reply.result->empty()
     WarnMsg('Error: No references found')
     return
@@ -265,7 +285,7 @@ def LSP_processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict
 enddef
 
 # process the 'textDocument/documentHighlight' reply from the LSP server
-def LSP_processDocHighlightReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+def s:processDocHighlightReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if reply.result->empty()
     return
   endif
@@ -278,13 +298,13 @@ def LSP_processDocHighlightReply(lspserver: dict<any>, req: dict<any>, reply: di
     var propName: string
     if kind == 2
       # Read-access
-      propName = 'LSPReadRef'
+      propName = 'LspReadRef'
     elseif kind == 3
       # Write-access
-      propName = 'LSPWriteRef'
+      propName = 'LspWriteRef'
     else
       # textual reference
-      propName = 'LSPTextRef'
+      propName = 'LspTextRef'
     endif
     prop_add(docHL.range.start.line + 1, docHL.range.start.character + 1,
                {'end_lnum': docHL.range.end.line + 1,
@@ -295,7 +315,7 @@ def LSP_processDocHighlightReply(lspserver: dict<any>, req: dict<any>, reply: di
 enddef
 
 # map the LSP symbol kind number to string
-def LSP_symbolKindToName(symkind: number): string
+def LspSymbolKindToName(symkind: number): string
   var symbolMap: list<string> = ['', 'File', 'Module', 'Namespace', 'Package',
 	'Class', 'Method', 'Property', 'Field', 'Constructor', 'Enum',
         'Interface', 'Function', 'Variable', 'Constant', 'String', 'Number',
@@ -327,7 +347,7 @@ enddef
 
 # process the 'textDocument/documentSymbol' reply from the LSP server
 # Open a symbols window and display the symbols as a tree
-def LSP_processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+def s:processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if reply.result->empty()
     WarnMsg('No symbols are found')
     return
@@ -339,7 +359,7 @@ def LSP_processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<
   var fname: string = LspUriToFile(req.params.textDocument.uri)
   for symbol in reply.result
     if symbol->has_key('location')
-      symbolType = LSP_symbolKindToName(symbol.kind)
+      symbolType = LspSymbolKindToName(symbol.kind)
       if !symbols->has_key(symbolType)
         symbols[symbolType] = []
       endif
@@ -389,20 +409,20 @@ def LSP_processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<
 enddef
 
 # Process various reply messages from the LSP server
-def LSP_processReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+def s:processReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   var lsp_reply_handlers: dict<func> =
     {
-      'initialize': LSP_processInitializeReply,
-      'textDocument/definition': LSP_processDefDeclReply,
-      'textDocument/declaration': LSP_processDefDeclReply,
-      'textDocument/typeDefinition': LSP_processDefDeclReply,
-      'textDocument/implementation': LSP_processDefDeclReply,
-      'textDocument/signatureHelp': LSP_processSignaturehelpReply,
-      'textDocument/completion': LSP_processCompletionReply,
-      'textDocument/hover': LSP_processHoverReply,
-      'textDocument/references': LSP_processReferencesReply,
-      'textDocument/documentHighlight': LSP_processDocHighlightReply,
-      'textDocument/documentSymbol': LSP_processDocSymbolReply
+      'initialize': function('s:processInitializeReply'),
+      'textDocument/definition': function('s:processDefDeclReply'),
+      'textDocument/declaration': function('s:processDefDeclReply'),
+      'textDocument/typeDefinition': function('s:processDefDeclReply'),
+      'textDocument/implementation': function('s:processDefDeclReply'),
+      'textDocument/signatureHelp': function('s:processSignaturehelpReply'),
+      'textDocument/completion': function('s:processCompletionReply'),
+      'textDocument/hover': function('s:processHoverReply'),
+      'textDocument/references': function('s:processReferencesReply'),
+      'textDocument/documentHighlight': function('s:processDocHighlightReply'),
+      'textDocument/documentSymbol': function('s:processDocSymbolReply')
     }
 
   if lsp_reply_handlers->has_key(req.method)
@@ -412,16 +432,17 @@ def LSP_processReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): vo
   endif
 enddef
 
-def LSP_processDiagNotif(lspserver: dict<any>, reply: dict<any>): void
+# process a diagnostic notification message from the LSP server
+def s:processDiagNotif(lspserver: dict<any>, reply: dict<any>): void
   var fname: string = LspUriToFile(reply.params.uri)
   diagsMap->extend({[fname]: reply.params.diagnostics})
 enddef
 
 # process notification messages from the LSP server
-def LSP_processNotif(lspserver: dict<any>, reply: dict<any>): void
+def s:processNotif(lspserver: dict<any>, reply: dict<any>): void
   var lsp_notif_handlers: dict<func> =
     {
-      'textDocument/publishDiagnostics': LSP_processDiagNotif
+      'textDocument/publishDiagnostics': function('s:processDiagNotif')
     }
 
   if lsp_notif_handlers->has_key(reply.method)
@@ -431,8 +452,8 @@ def LSP_processNotif(lspserver: dict<any>, reply: dict<any>): void
   endif
 enddef
 
-# process a LSP server message
-def LSP_processServerMsg(lspserver: dict<any>): void
+# process LSP server messages
+def s:processMessages(lspserver: dict<any>): void
   while lspserver.data->len() > 0
     var idx = stridx(lspserver.data, 'Content-Length: ')
     if idx == -1
@@ -474,39 +495,45 @@ def LSP_processServerMsg(lspserver: dict<any>): void
         endif
         ErrMsg("Error: request " .. req.method .. " failed (" .. msg .. ")")
       else
-        LSP_processReply(lspserver, req, reply)
+        lspserver.processReply(req, reply)
       endif
     else
-      LSP_processNotif(lspserver, reply)
+      lspserver.processNotif(reply)
     endif
 
     lspserver.data = lspserver.data[idx + len :]
   endwhile
 enddef
 
+# LSP server standard output handler
 def lsp#output_cb(lspserver: dict<any>, chan: channel, msg: string): void
   writefile(split(msg, "\n"), lsp_log_dir .. 'lsp_server.out', 'a')
   lspserver.data = lspserver.data .. msg
-  LSP_processServerMsg(lspserver)
+  lspserver.processMessages()
 enddef
 
+# LSP server error output handler
 def lsp#error_cb(lspserver: dict<any>, chan: channel, emsg: string,): void
   writefile(split(emsg, "\n"), lsp_log_dir .. 'lsp_server.err', 'a')
 enddef
 
+# LSP server exit callback
 def lsp#exit_cb(lspserver: dict<any>, job: job, status: number): void
   WarnMsg("LSP server exited with status " .. status)
+  lspserver.job = v:none
+  lspserver.running = v:false
+  lspserver.requests = {}
 enddef
 
 # Return the next id for a LSP server request message
-def LSP_nextReqID(lspserver: dict<any>): number
+def s:nextReqID(lspserver: dict<any>): number
   var id = lspserver.nextID
   lspserver.nextID = id + 1
   return id
 enddef
 
 # Send a request message to LSP server
-def LSP_sendToServer(lspserver: dict<any>, content: dict<any>): void
+def s:sendMessage(lspserver: dict<any>, content: dict<any>): void
   var req_js: string = content->json_encode()
   var msg = "Content-Length: " .. req_js->len() .. "\r\n\r\n"
   var ch = lspserver.job->job_getchannel()
@@ -514,10 +541,11 @@ def LSP_sendToServer(lspserver: dict<any>, content: dict<any>): void
   ch->ch_sendraw(req_js)
 enddef
 
-def LSP_createReqMsg(lspserver: dict<any>, method: string): dict<any>
+# create a LSP server request message
+def s:createRequest(lspserver: dict<any>, method: string): dict<any>
   var req = {}
   req.jsonrpc = '2.0'
-  req.id = LSP_nextReqID(lspserver)
+  req.id = lspserver.nextReqID()
   req.method = method
   req.params = {}
 
@@ -527,7 +555,8 @@ def LSP_createReqMsg(lspserver: dict<any>, method: string): dict<any>
   return req
 enddef
 
-def LSP_createNotifMsg(notif: string): dict<any>
+# create a LSP server notification message
+def s:createNotification(lspserver: dict<any>, notif: string): dict<any>
   var req = {}
   req.jsonrpc = '2.0'
   req.method = notif
@@ -537,8 +566,8 @@ def LSP_createNotifMsg(notif: string): dict<any>
 enddef
 
 # Send a "initialize" LSP request
-def LSP_initServer(lspserver: dict<any>)
-  var req = LSP_createReqMsg(lspserver, 'initialize')
+def s:initServer(lspserver: dict<any>)
+  var req = lspserver.createRequest('initialize')
 
   # interface 'InitializeParams'
   var initparams: dict<any> = {}
@@ -546,17 +575,17 @@ def LSP_initServer(lspserver: dict<any>)
   initparams.clientInfo = {'name': 'Vim', 'version': string(v:versionlong)}
   req.params->extend(initparams)
 
-  LSP_sendToServer(lspserver, req)
+  lspserver.sendMessage(req)
 enddef
 
 # Send a "initialized" LSP notification
-def LSP_sendInitializedNotif(lspserver: dict<any>)
-  var notif: dict<any> = LSP_createNotifMsg('initialized')
-  LSP_sendToServer(lspserver, notif)
+def s:sendInitializedNotif(lspserver: dict<any>)
+  var notif: dict<any> = lspserver.createNotification('initialized')
+  lspserver.sendMessage(notif)
 enddef
 
 # Start a LSP server
-def LSP_startServer(lspserver: dict<any>): number
+def s:startServer(lspserver: dict<any>): number
   if lspserver.running
     WarnMsg("LSP server for is already running")
     return 0
@@ -593,36 +622,36 @@ def LSP_startServer(lspserver: dict<any>): number
   lspserver.job = job
   lspserver.running = v:true
 
-  LSP_initServer(lspserver)
+  lspserver.initServer()
 
   return 0
 enddef
 
 # Send a 'shutdown' request to the LSP server
-def LSP_shutdownServer(lspserver: dict<any>): void
-  var req = LSP_createReqMsg(lspserver, 'shutdown')
-  LSP_sendToServer(lspserver, req)
+def s:shutdownServer(lspserver: dict<any>): void
+  var req = lspserver.createRequest('shutdown')
+  lspserver.sendMessage(req)
 enddef
 
 # Send a 'exit' notification to the LSP server
-def LSP_exitServer(lspserver: dict<any>): void
-  var notif: dict<any> = LSP_createNotifMsg('exit')
-  LSP_sendToServer(lspserver, notif)
+def s:exitServer(lspserver: dict<any>): void
+  var notif: dict<any> = lspserver.createNotification('exit')
+  lspserver.sendMessage(notif)
 enddef
 
 # Stop a LSP server
-def LSP_stopServer(lspserver: dict<any>): number
+def s:stopServer(lspserver: dict<any>): number
   if !lspserver.running
     WarnMsg("LSP server is not running")
     return 0
   endif
 
-  LSP_shutdownServer(lspserver)
+  lspserver.shutdownServer()
 
   # Wait for the server to process the shutodwn request
   sleep 1
 
-  LSP_exitServer(lspserver)
+  lspserver.exitServer()
 
   lspserver.job->job_stop()
   lspserver.job = v:none
@@ -632,8 +661,8 @@ def LSP_stopServer(lspserver: dict<any>): number
 enddef
 
 # Send a LSP "textDocument/didOpen" notification
-def LSP_textdocDidOpen(lspserver: dict<any>, bnum: number, ftype: string): void
-  var notif: dict<any> = LSP_createNotifMsg('textDocument/didOpen')
+def s:textdocDidOpen(lspserver: dict<any>, bnum: number, ftype: string): void
+  var notif: dict<any> = lspserver.createNotification('textDocument/didOpen')
 
   # interface DidOpenTextDocumentParams
   # interface TextDocumentItem
@@ -644,12 +673,12 @@ def LSP_textdocDidOpen(lspserver: dict<any>, bnum: number, ftype: string): void
   tdi.text = getbufline(bnum, 1, '$')->join("\n") .. "\n"
   notif.params->extend({'textDocument': tdi})
 
-  LSP_sendToServer(lspserver, notif)
+  lspserver.sendMessage(notif)
 enddef
 
 # Send a LSP "textDocument/didClose" notification
-def LSP_textdocDidClose(lspserver: dict<any>, fname: string): void
-  var notif: dict<any> = LSP_createNotifMsg('textDocument/didClose')
+def s:textdocDidClose(lspserver: dict<any>, fname: string): void
+  var notif: dict<any> = lspserver.createNotification('textDocument/didClose')
 
   # interface DidCloseTextDocumentParams
   #   interface TextDocumentIdentifier
@@ -657,10 +686,10 @@ def LSP_textdocDidClose(lspserver: dict<any>, fname: string): void
   tdid.uri = LspFileToUri(fname)
   notif.params->extend({'textDocument': tdid})
 
-  LSP_sendToServer(lspserver, notif)
+  lspserver.sendMessage(notif)
 enddef
 
-# Goto a definition using "textDocument/definition" LSP request
+# Go to a definition using "textDocument/definition" LSP request
 def lsp#gotoDefinition()
   var ftype: string = &filetype
   if ftype == ''
@@ -691,7 +720,7 @@ def lsp#gotoDefinition()
   var lnum: number = line('.') - 1
   var col: number = col('.') - 1
 
-  var req = LSP_createReqMsg(lspserver, 'textDocument/definition')
+  var req = lspserver.createRequest('textDocument/definition')
 
   # interface DefinitionParams
   # interface TextDocumentPositionParams
@@ -700,10 +729,10 @@ def lsp#gotoDefinition()
   # interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
 
-  LSP_sendToServer(lspserver, req)
+  lspserver.sendMessage(req)
 enddef
 
-# Goto a declaration using "textDocument/declaration" LSP request
+# Go to a declaration using "textDocument/declaration" LSP request
 def lsp#gotoDeclaration()
   var ftype: string = &filetype
   if ftype == ''
@@ -734,7 +763,7 @@ def lsp#gotoDeclaration()
   var lnum: number = line('.') - 1
   var col: number = col('.') - 1
 
-  var req = LSP_createReqMsg(lspserver, 'textDocument/declaration')
+  var req = lspserver.createRequest('textDocument/declaration')
 
   # interface DeclarationParams
   #   interface TextDocumentPositionParams
@@ -743,7 +772,7 @@ def lsp#gotoDeclaration()
   #     interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
 
-  LSP_sendToServer(lspserver, req)
+  lspserver.sendMessage(req)
 enddef
 
 # Go to a type definition using "textDocument/typeDefinition" LSP request
@@ -777,7 +806,7 @@ def lsp#gotoTypedef()
   var lnum: number = line('.') - 1
   var col: number = col('.') - 1
 
-  var req = LSP_createReqMsg(lspserver, 'textDocument/typeDefinition')
+  var req = lspserver.createRequest('textDocument/typeDefinition')
 
   # interface TypeDefinitionParams
   #   interface TextDocumentPositionParams
@@ -786,7 +815,7 @@ def lsp#gotoTypedef()
   #     interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
 
-  LSP_sendToServer(lspserver, req)
+  lspserver.sendMessage(req)
 enddef
 
 # Go to a implementation using "textDocument/implementation" LSP request
@@ -820,7 +849,7 @@ def lsp#gotoImplementation()
   var lnum: number = line('.') - 1
   var col: number = col('.') - 1
 
-  var req = LSP_createReqMsg(lspserver, 'textDocument/implementation')
+  var req = lspserver.createRequest('textDocument/implementation')
 
   # interface ImplementationParams
   #   interface TextDocumentPositionParams
@@ -829,7 +858,7 @@ def lsp#gotoImplementation()
   #     interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
 
-  LSP_sendToServer(lspserver, req)
+  lspserver.sendMessage(req)
 enddef
 
 # Show the signature using "textDocument/signatureHelp" LSP method
@@ -866,7 +895,7 @@ def lsp#showSignature(): string
   var lnum: number = line('.') - 1
   var col: number = col('.') - 1
 
-  var req = LSP_createReqMsg(lspserver, 'textDocument/signatureHelp')
+  var req = lspserver.createRequest('textDocument/signatureHelp')
   # interface SignatureHelpParams
   #   interface TextDocumentPositionParams
   #     interface TextDocumentIdentifier
@@ -874,7 +903,7 @@ def lsp#showSignature(): string
   #     interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
 
-  LSP_sendToServer(lspserver, req)
+  lspserver.sendMessage(req)
   return ''
 enddef
 
@@ -886,7 +915,7 @@ def lsp#bufchange_listener(bnum: number, start: number, end: number, added: numb
     return
   endif
 
-  var notif: dict<any> = LSP_createNotifMsg('textDocument/didChange')
+  var notif: dict<any> = lspserver.createNotification('textDocument/didChange')
 
   # interface DidChangeTextDocumentParams
   #   interface VersionedTextDocumentIdentifier
@@ -936,7 +965,7 @@ def lsp#bufchange_listener(bnum: number, start: number, end: number, added: numb
   changeset->add({'text': getbufline(bnum, 1, '$')->join("\n") .. "\n"})
   notif.params->extend({'contentChanges': changeset})
 
-  LSP_sendToServer(lspserver, notif)
+  lspserver.sendMessage(notif)
 enddef
 
 # A new buffer is opened. If LSP is supported for this buffer, then add it
@@ -949,12 +978,12 @@ def lsp#addFile(bnum: number, ftype: string): void
     return
   endif
   if !lspserver.running
-    LSP_startServer(lspserver)
+    lspserver.startServer()
   endif
-  LSP_textdocDidOpen(lspserver, bnum, ftype)
+  lspserver.textdocDidOpen(bnum, ftype)
 
   # Display hover information
-  autocmd CursorHold <buffer> call LSP_hover()
+  autocmd CursorHold <buffer> call s:LspHover()
 
   # add a listener to track changes to this buffer
   listener_add(function('lsp#bufchange_listener'), bnum)
@@ -962,6 +991,7 @@ def lsp#addFile(bnum: number, ftype: string): void
   setbufvar(bnum, '&completeopt', 'menuone,preview,noinsert')
 enddef
 
+# Notify LSP server to remove a file
 def lsp#removeFile(fname: string, ftype: string): void
   if fname == '' || ftype == ''
     return
@@ -970,16 +1000,17 @@ def lsp#removeFile(fname: string, ftype: string): void
   if lspserver->empty() || !lspserver.running
     return
   endif
-  LSP_textdocDidClose(lspserver, fname)
+  lspserver.textdocDidClose(fname)
   if diagsMap->has_key(fname)
     diagsMap->remove(fname)
   endif
 enddef
 
+# Stop all the LSP servers
 def lsp#stopAllServers()
   for lspserver in lspServers
     if lspserver.running
-      LSP_stopServer(lspserver)
+      lspserver.stopServer()
     endif
   endfor
 enddef
@@ -1012,12 +1043,31 @@ def lsp#addServer(serverList: list<dict<any>>)
       requests: {},
       completePending: v:false
     }
+    # Add the LSP server functions
+    lspserver->extend({
+        'startServer': function('s:startServer', [lspserver]),
+        'initServer': function('s:initServer', [lspserver]),
+        'stopServer': function('s:stopServer', [lspserver]),
+        'shutdownServer': function('s:shutdownServer', [lspserver]),
+        'exitServer': function('s:exitServer', [lspserver]),
+        'nextReqID': function('s:nextReqID', [lspserver]),
+        'createRequest': function('s:createRequest', [lspserver]),
+        'createNotification': function('s:createNotification', [lspserver]),
+        'sendMessage': function('s:sendMessage', [lspserver]),
+        'processReply': function('s:processReply', [lspserver]),
+        'processNotif': function('s:processNotif', [lspserver]),
+        'processMessages': function('s:processMessages', [lspserver]),
+        'textdocDidOpen': function('s:textdocDidOpen', [lspserver]),
+        'textdocDidClose': function('s:textdocDidClose', [lspserver]),
+        'sendInitializedNotif': function('s:sendInitializedNotif', [lspserver]),
+        'getCompletion': function('s:getCompletion', [lspserver])
+      })
 
     if type(server.filetype) == v:t_string
-      ftypeServerMap->extend({[server.filetype]: lspserver})
+      LspAddServer(server.filetype, lspserver)
     elseif type(server.filetype) == v:t_list
       for ftype in server.filetype
-        ftypeServerMap->extend({[ftype]: lspserver})
+        LspAddServer(ftype, lspserver)
       endfor
     else
       ErrMsg('Error: Unsupported file type information "' .. string(server.filetype)
@@ -1027,21 +1077,8 @@ def lsp#addServer(serverList: list<dict<any>>)
   endfor
 enddef
 
-def lsp#showServers()
-  for [ftype, lspserver] in items(ftypeServerMap)
-    var msg = ftype .. "    "
-    if lspserver.running
-      msg ..= 'running'
-    else
-      msg ..= 'not running'
-    endif
-    msg ..= '    ' .. lspserver.path
-    echomsg msg
-  endfor
-enddef
-
 # Map the LSP DiagnosticSeverity to a type character
-def LSPdiagSevToType(severity: number): string
+def LspDiagSevToType(severity: number): string
   var typeMap: list<string> = ['E', 'W', 'I', 'N']
 
   if severity > 4
@@ -1072,13 +1109,13 @@ def lsp#showDiagnostics(): void
                     'lnum': diag.range.start.line + 1,
                     'col': diag.range.start.character + 1,
                     'text': text,
-                    'type': LSPdiagSevToType(diag.severity)})
+                    'type': LspDiagSevToType(diag.severity)})
   endfor
   setqflist([], ' ', {'title': 'Language Server Diagnostics', 'items': qflist})
   :copen
 enddef
 
-def LSP_getCompletion(lspserver: dict<any>): void
+def s:getCompletion(lspserver: dict<any>): void
   # Check whether LSP server supports completion
   if !lspserver.caps->has_key('completionProvider')
     ErrMsg("Error: LSP server does not support completion")
@@ -1093,7 +1130,7 @@ def LSP_getCompletion(lspserver: dict<any>): void
   var lnum = line('.') - 1
   var col = col('.') - 1
 
-  var req = LSP_createReqMsg(lspserver, 'textDocument/completion')
+  var req = lspserver.createRequest('textDocument/completion')
 
   # interface CompletionParams
   # interface TextDocumentPositionParams
@@ -1102,7 +1139,7 @@ def LSP_getCompletion(lspserver: dict<any>): void
   # interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
 
-  LSP_sendToServer(lspserver, req)
+  lspserver.sendMessage(req)
 enddef
 
 # Insert mode completion handler
@@ -1126,7 +1163,7 @@ def lsp#completeFunc(findstart: number, base: string): any
     lspserver.completePending = v:true
     lspserver.completeItems = []
     # initiate a request to LSP server to get list of completions
-    LSP_getCompletion(lspserver)
+    lspserver.getCompletion()
 
     # locate the start of the word
     var line = getline('.')
@@ -1151,7 +1188,9 @@ def lsp#completeFunc(findstart: number, base: string): any
   endif
 enddef
 
-def LSP_hover()
+# Display the hover message from the LSP server for the current cursor
+# location
+def LspHover()
   var ftype = &filetype
   if ftype == ''
     return
@@ -1159,11 +1198,9 @@ def LSP_hover()
 
   var lspserver: dict<any> = LspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
   # Check whether LSP server supports getting hover information
@@ -1179,7 +1216,7 @@ def LSP_hover()
   var lnum = line('.') - 1
   var col = col('.') - 1
 
-  var req = LSP_createReqMsg(lspserver, 'textDocument/hover')
+  var req = lspserver.createRequest('textDocument/hover')
   # interface HoverParams
   # interface TextDocumentPositionParams
   # interface TextDocumentIdentifier
@@ -1187,9 +1224,10 @@ def LSP_hover()
   # interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
 
-  LSP_sendToServer(lspserver, req)
+  lspserver.sendMessage(req)
 enddef
 
+# show symbol references
 def lsp#showReferences()
   var ftype = &filetype
   if ftype == ''
@@ -1220,7 +1258,7 @@ def lsp#showReferences()
   var lnum = line('.') - 1
   var col = col('.') - 1
 
-  var req = LSP_createReqMsg(lspserver, 'textDocument/references')
+  var req = lspserver.createRequest('textDocument/references')
   # interface ReferenceParams
   # interface TextDocumentPositionParams
   # interface TextDocumentIdentifier
@@ -1229,9 +1267,10 @@ def lsp#showReferences()
   req.params->extend({'position': {'line': lnum, 'character': col}})
   req.params->extend({'context': {'includeDeclaration': v:true}})
 
-  LSP_sendToServer(lspserver, req)
+  lspserver.sendMessage(req)
 enddef
 
+# highlight all the places where a symbol is referenced
 def lsp#docHighlight()
   var ftype = &filetype
   if ftype == ''
@@ -1262,7 +1301,7 @@ def lsp#docHighlight()
   var lnum = line('.') - 1
   var col = col('.') - 1
 
-  var req = LSP_createReqMsg(lspserver, 'textDocument/documentHighlight')
+  var req = lspserver.createRequest('textDocument/documentHighlight')
   # interface DocumentHighlightParams
   # interface TextDocumentPositionParams
   # interface TextDocumentIdentifier
@@ -1270,15 +1309,17 @@ def lsp#docHighlight()
   # interface Position
   req.params->extend({'position': {'line': lnum, 'character': col}})
 
-  LSP_sendToServer(lspserver, req)
+  lspserver.sendMessage(req)
 enddef
 
+# clear the symbol reference highlight
 def lsp#docHighlightClear()
-  prop_remove({'type': 'LSPTextRef', 'all': v:true}, 1, line('$'))
-  prop_remove({'type': 'LSPReadRef', 'all': v:true}, 1, line('$'))
-  prop_remove({'type': 'LSPWriteRef', 'all': v:true}, 1, line('$'))
+  prop_remove({'type': 'LspTextRef', 'all': v:true}, 1, line('$'))
+  prop_remove({'type': 'LspReadRef', 'all': v:true}, 1, line('$'))
+  prop_remove({'type': 'LspWriteRef', 'all': v:true}, 1, line('$'))
 enddef
 
+# open a window and display all the symbols in a file
 def lsp#showDocSymbols()
   var ftype = &filetype
   if ftype == ''
@@ -1307,12 +1348,12 @@ def lsp#showDocSymbols()
     return
   endif
 
-  var req = LSP_createReqMsg(lspserver, 'textDocument/documentSymbol')
+  var req = lspserver.createRequest('textDocument/documentSymbol')
   # interface DocumentSymbolParams
   # interface TextDocumentIdentifier
   req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
 
-  LSP_sendToServer(lspserver, req)
+  lspserver.sendMessage(req)
 enddef
 
 # vim: shiftwidth=2 sts=2 expandtab
