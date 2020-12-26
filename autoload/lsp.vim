@@ -107,6 +107,11 @@ enddef
 def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if reply.result->empty()
     WarnMsg("Error: definition is not found")
+    # pop the tag stack
+    var tagstack: dict<any> = gettagstack()
+    if tagstack.length > 0
+      settagstack(winnr(), {'curidx': tagstack.length}, 't')
+    endif
     return
   endif
 
@@ -408,6 +413,229 @@ def s:processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<an
   :setlocal nomodifiable
 enddef
 
+# Returns the byte number of the specified line/col position.  Returns a
+# zero-indexed column.  'pos' is LSP "interface position".
+def s:get_line_byte_from_position(bnr: number, pos: dict<number>): number
+  # LSP's line and characters are 0-indexed
+  # Vim's line and columns are 1-indexed
+  var col: number = pos.character
+  # When on the first character, we can ignore the difference between byte and
+  # character
+  if col > 0
+    if !bnr->bufloaded()
+      bnr->bufload()
+    endif
+
+    var ltext: list<string> = bnr->getbufline(pos.line + 1)
+    if !ltext->empty()
+      var bidx = ltext[0]->byteidx(col)
+      if bidx != -1
+	return bidx
+      endif
+    endif
+  endif
+
+  return col
+enddef
+
+# sort the list of edit operations in the descending order of line and column
+# numbers.
+# 'a': {'A': [lnum, col], 'B': [lnum, col]}
+# 'b': {'A': [lnum, col], 'B': [lnum, col]}
+def s:edit_sort_func(a: dict<any>, b: dict<any>): number
+  # line number
+  if a.A[0] != b.A[0]
+    return b.A[0] - a.A[0]
+  endif
+  # column number
+  if a.A[1] != b.A[1]
+    return b.A[1] - a.A[1]
+  endif
+
+  return 0
+enddef
+
+# Replaces text in a range with new text.
+#
+# CAUTION: Changes in-place!
+#
+# 'lines': Original list of strings
+# 'A': Start position; [line, col]
+# 'B': End position [line, col]
+# 'new_lines' A list of strings to replace the original
+#
+# returns the modified 'lines'
+def s:set_lines(lines: list<string>, A: list<number>, B: list<number>,
+					new_lines: list<string>): list<string>
+  var i_0: number = A[0]
+
+  # If it extends past the end, truncate it to the end. This is because the
+  # way the LSP describes the range including the last newline is by
+  # specifying a line number after what we would call the last line.
+  var numlines: number = lines->len()
+  var i_n = [B[0], numlines - 1]->min()
+
+  if i_0 < 0 || i_0 >= numlines || i_n < 0 || i_n >= numlines
+    WarnMsg("set_lines: Invalid range, A = " .. string(A)
+		.. ", B = " ..  string(B) .. ", numlines = " .. numlines
+		.. ", new lines = " .. string(new_lines))
+    return lines
+  endif
+
+  # save the prefix and suffix text before doing the replacements
+  var prefix: string = ''
+  var suffix: string = lines[i_n][B[1] :]
+  if A[1] > 0
+    prefix = lines[i_0][0 : A[1] - 1]
+  endif
+
+  var new_lines_len: number = new_lines->len()
+
+  #echomsg 'i_0 = ' .. i_0 .. ', i_n = ' .. i_n .. ', new_lines = ' .. string(new_lines)
+  var n: number = i_n - i_0 + 1
+  if n != new_lines_len
+    if n > new_lines_len
+      # remove the deleted lines
+      lines->remove(i_0, i_0 + n - new_lines_len - 1)
+    else
+      # add empty lines for newly the added lines (will be replaced with the
+      # actual lines below)
+      lines->extend(repeat([''], new_lines_len - n), i_0)
+    endif
+  endif
+  #echomsg "lines(1) = " .. string(lines)
+
+  # replace the previous lines with the new lines
+  for i in range(new_lines_len)
+    lines[i_0 + i] = new_lines[i]
+  endfor
+  #echomsg "lines(2) = " .. string(lines)
+
+  # append the suffix (if any) to the last line
+  if suffix != ''
+    var i = i_0 + new_lines_len - 1
+    lines[i] = lines[i] .. suffix
+  endif
+  #echomsg "lines(3) = " .. string(lines)
+
+  # prepend the prefix (if any) to the first line
+  if prefix != ''
+    lines[i_0] = prefix .. lines[i_0]
+  endif
+  #echomsg "lines(4) = " .. string(lines)
+
+  return lines
+enddef
+
+# Apply set of text edits to the specified buffer
+# The text edit logic is ported from the Neovim lua implementation
+def s:apply_text_edits(bnr: number, text_edits: list<dict<any>>): void
+  if text_edits->empty()
+    return
+  endif
+
+  # if the buffer is not loaded, load it and make it a listed buffer
+  if !bnr->bufloaded()
+    bnr->bufload()
+  endif
+  bnr->setbufvar('&buflisted', v:true)
+
+  var start_line: number = 4294967295           # 2 ^ 32
+  var finish_line: number = -1
+  var updated_edits: list<dict<any>> = []
+  var start_row: number
+  var start_col: number
+  var end_row: number
+  var end_col: number
+
+  # create a list of buffer positions where the edits have to be applied.
+  for e in text_edits
+    # Adjust the start and end columns for multibyte characters
+    start_row = e.range.start.line
+    start_col = s:get_line_byte_from_position(bnr, e.range.start)
+    end_row = e.range.end.line
+    end_col = s:get_line_byte_from_position(bnr, e.range.end)
+    start_line = [e.range.start.line, start_line]->min()
+    finish_line = [e.range.end.line, finish_line]->max()
+
+    updated_edits->add({'A': [start_row, start_col],
+			'B': [end_row, end_col],
+			'lines': e.newText->split("\n", v:true)})
+  endfor
+
+  # Reverse sort the edit operations by descending line and column numbers so
+  # that they can be applied without interfering with each other.
+  updated_edits->sort('s:edit_sort_func')
+
+  var lines: list<string> = bnr->getbufline(start_line + 1, finish_line + 1)
+  var fix_eol: number = bnr->getbufvar('&fixeol')
+  var set_eol = fix_eol && bnr->getbufinfo()[0].linecount <= finish_line + 1
+  if set_eol && lines[-1]->len() != 0
+    lines->add('')
+  endif
+
+  #echomsg 'lines(1) = ' .. string(lines)
+  #echomsg updated_edits
+
+  for e in updated_edits
+    var A: list<number> = [e.A[0] - start_line, e.A[1]]
+    var B: list<number> = [e.B[0] - start_line, e.B[1]]
+    lines = s:set_lines(lines, A, B, e.lines)
+  endfor
+
+  #echomsg 'lines(2) = ' .. string(lines)
+
+  # If the last line is empty and we need to set EOL, then remove it.
+  if set_eol && lines[-1]->len() == 0
+    lines->remove(-1)
+  endif
+
+  #echomsg 'apply_text_edits: start_line = ' .. start_line .. ', finish_line = ' .. finish_line
+  #echomsg 'lines = ' .. string(lines)
+
+  # Delete all the lines that need to be modified
+  bnr->deletebufline(start_line + 1, finish_line + 1)
+
+  # if the buffer is empty, appending lines before the first line adds an
+  # extra empty line at the end. Delete the empty line after appending the
+  # lines.
+  var dellastline: bool = v:false
+  if start_line == 0 && bnr->getbufinfo()[0].linecount == 1 &&
+				     bnr->getbufline(1)[0] == ''
+    dellastline = v:true
+  endif
+
+  # Append the updated lines
+  appendbufline(bnr, start_line, lines)
+
+  if dellastline
+    bnr->deletebufline(bnr->getbufinfo()[0].linecount)
+  endif
+enddef
+
+# process the 'textDocument/formatting' reply from the LSP server
+def s:processFormatReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+  if reply.result->empty()
+    # nothing to format
+    return
+  endif
+
+  # result: TextEdit[]
+
+  var fname: string = LspUriToFile(req.params.textDocument.uri)
+  var bnr: number = bufnr(fname)
+  if bnr == -1
+    # file is already removed
+    return
+  endif
+
+  # interface TextEdit
+  # Apply each of the text edit operations
+  var save_cursor: list<number> = getcurpos()
+  s:apply_text_edits(bnr, reply.result)
+  save_cursor->setpos('.')
+enddef
+
 # Process various reply messages from the LSP server
 def s:processReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   var lsp_reply_handlers: dict<func> =
@@ -422,7 +650,9 @@ def s:processReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
       'textDocument/hover': function('s:processHoverReply'),
       'textDocument/references': function('s:processReferencesReply'),
       'textDocument/documentHighlight': function('s:processDocHighlightReply'),
-      'textDocument/documentSymbol': function('s:processDocSymbolReply')
+      'textDocument/documentSymbol': function('s:processDocSymbolReply'),
+      'textDocument/formatting': function('s:processFormatReply'),
+      'textDocument/rangeFormatting': function('s:processFormatReply')
     }
 
   if lsp_reply_handlers->has_key(req.method)
@@ -717,6 +947,14 @@ def lsp#gotoDefinition()
     return
   endif
 
+  # push the current location on to the tag stack
+  settagstack(winnr(), {'items':
+                         [{'bufnr': bufnr(),
+                           'from': getpos('.'),
+                           'matchnr': 1,
+                           'tagname': expand('<cword>')}
+                         ]}, 'a')
+
   var lnum: number = line('.') - 1
   var col: number = col('.') - 1
 
@@ -759,6 +997,14 @@ def lsp#gotoDeclaration()
   if fname == ''
     return
   endif
+
+  # push the current location on to the tag stack
+  settagstack(winnr(), {'items':
+                         [{'bufnr': bufnr(),
+                           'from': getpos('.'),
+                           'matchnr': 1,
+                           'tagname': expand('<cword>')}
+                         ]}, 'a')
 
   var lnum: number = line('.') - 1
   var col: number = col('.') - 1
@@ -803,6 +1049,14 @@ def lsp#gotoTypedef()
     return
   endif
 
+  # push the current location on to the tag stack
+  settagstack(winnr(), {'items':
+                         [{'bufnr': bufnr(),
+                           'from': getpos('.'),
+                           'matchnr': 1,
+                           'tagname': expand('<cword>')}
+                         ]}, 'a')
+
   var lnum: number = line('.') - 1
   var col: number = col('.') - 1
 
@@ -845,6 +1099,14 @@ def lsp#gotoImplementation()
   if fname == ''
     return
   endif
+
+  # push the current location on to the tag stack
+  settagstack(winnr(), {'items':
+                         [{'bufnr': bufnr(),
+                           'from': getpos('.'),
+                           'matchnr': 1,
+                           'tagname': expand('<cword>')}
+                         ]}, 'a')
 
   var lnum: number = line('.') - 1
   var col: number = col('.') - 1
@@ -909,7 +1171,7 @@ enddef
 
 # buffer change notification listener
 def lsp#bufchange_listener(bnum: number, start: number, end: number, added: number, changes: list<dict<number>>)
-  var ftype = getbufvar(bnum, '&filetype')
+  var ftype = bnum->getbufvar('&filetype')
   var lspserver: dict<any> = LspGetServer(ftype)
   if lspserver->empty() || !lspserver.running
     return
@@ -922,7 +1184,7 @@ def lsp#bufchange_listener(bnum: number, start: number, end: number, added: numb
   var vtdid: dict<any> = {}
   vtdid.uri = LspFileToUri(bufname(bnum))
   # Use Vim 'changedtick' as the LSP document version number
-  vtdid.version = getbufvar(bnum, 'changedtick')
+  vtdid.version = bnum->getbufvar('changedtick')
   notif.params->extend({'textDocument': vtdid})
   #   interface TextDocumentContentChangeEvent
   var changeset: list<dict<any>>
@@ -1356,4 +1618,73 @@ def lsp#showDocSymbols()
   lspserver.sendMessage(req)
 enddef
 
-# vim: shiftwidth=2 sts=2 expandtab
+# Format the entire file
+def lsp#textDocFormat(range_args: number, line1: number, line2: number)
+  if !&modifiable
+    ErrMsg('Error: Current file is not a modifiable file')
+    return
+  endif
+
+  var ftype = &filetype
+  if ftype == ''
+    return
+  endif
+
+  var lspserver: dict<any> = LspGetServer(ftype)
+  if lspserver->empty()
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    return
+  endif
+  if !lspserver.running
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    return
+  endif
+
+  # Check whether LSP server supports getting reference information
+  if !lspserver.caps->has_key('documentFormattingProvider')
+              || !lspserver.caps.documentFormattingProvider
+    ErrMsg("Error: LSP server does not support formatting documents")
+    return
+  endif
+
+  var fname = @%
+  if fname == ''
+    return
+  endif
+
+  var cmd: string
+  if range_args > 0
+    cmd = 'textDocument/rangeFormatting'
+  else
+    cmd = 'textDocument/formatting'
+  endif
+  var req = lspserver.createRequest(cmd)
+
+  # interface DocumentFormattingParams
+  # interface TextDocumentIdentifier
+  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
+  var tabsz: number
+  if &sts > 0
+    tabsz = &sts
+  elseif &sts < 0
+    tabsz = &shiftwidth
+  else
+    tabsz = &tabstop
+  endif
+  # interface FormattingOptions
+  var fmtopts: dict<any> = {
+    tabSize: tabsz,
+    insertSpaces: &expandtab ? v:true : v:false,
+  }
+  req.params->extend({'options': fmtopts})
+  if range_args > 0
+    var r: dict<dict<number>> = {
+	'start': {'line': line1 - 1, 'character': 0},
+	'end': {'line': line2, 'character': 0}}
+    req.params->extend({'range': r})
+  endif
+
+  lspserver.sendMessage(req)
+enddef
+
+# vim: shiftwidth=2 softtabstop=2
