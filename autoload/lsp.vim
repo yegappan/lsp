@@ -636,6 +636,33 @@ def s:processFormatReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   save_cursor->setpos('.')
 enddef
 
+# process the 'textDocument/rename' reply from the LSP server
+def s:processRenameReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+  if reply.result->empty()
+    # nothing to rename
+    return
+  endif
+
+  # result: WorkspaceEdit
+
+  if reply.result->has_key('changes')
+    for [uri, changes] in items(reply.result.changes)
+      var fname: string = LspUriToFile(uri)
+      var bnr: number = bufnr(fname)
+      if bnr == -1
+	# file is already removed
+	return
+      endif
+
+      # interface TextEdit
+      # Apply each of the text edit operations
+      var save_cursor: list<number> = getcurpos()
+      s:apply_text_edits(bnr, changes)
+      save_cursor->setpos('.')
+    endfor
+  endif
+enddef
+
 # Process various reply messages from the LSP server
 def s:processReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   var lsp_reply_handlers: dict<func> =
@@ -652,7 +679,8 @@ def s:processReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
       'textDocument/documentHighlight': function('s:processDocHighlightReply'),
       'textDocument/documentSymbol': function('s:processDocSymbolReply'),
       'textDocument/formatting': function('s:processFormatReply'),
-      'textDocument/rangeFormatting': function('s:processFormatReply')
+      'textDocument/rangeFormatting': function('s:processFormatReply'),
+      'textDocument/rename': function('s:processRenameReply')
     }
 
   if lsp_reply_handlers->has_key(req.method)
@@ -919,6 +947,26 @@ def s:textdocDidClose(lspserver: dict<any>, fname: string): void
   lspserver.sendMessage(notif)
 enddef
 
+# Return the current cursor position as a LSP position.
+# LSP line and column numbers start from zero, whereas Vim line and column
+# numbers start from one. The LSP column number is the character index in the
+# line and not the byte index in the line.
+def s:getLspPosition(): dict<number>
+  var lnum: number = line('.') - 1
+  # FIXME: need to convert this to a character position
+  var col: number = col('.') - 1
+  return {'line': lnum, 'character': col}
+enddef
+
+# Return the current file name and current cursor position as a LSP
+# TextDocumentPositionParams structure
+def s:getLspTextDocPosition(): dict<dict<any>>
+  # interface TextDocumentIdentifier
+  # interface Position
+  return {'textDocument': {'uri': LspFileToUri(@%)},
+	  'position': s:getLspPosition()}
+enddef
+
 # Go to a definition using "textDocument/definition" LSP request
 def lsp#gotoDefinition()
   var ftype: string = &filetype
@@ -955,17 +1003,11 @@ def lsp#gotoDefinition()
                            'tagname': expand('<cword>')}
                          ]}, 'a')
 
-  var lnum: number = line('.') - 1
-  var col: number = col('.') - 1
-
   var req = lspserver.createRequest('textDocument/definition')
 
   # interface DefinitionParams
-  # interface TextDocumentPositionParams
-  # interface TextDocumentIdentifier
-  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
-  # interface Position
-  req.params->extend({'position': {'line': lnum, 'character': col}})
+  #   interface TextDocumentPositionParams
+  req.params->extend(s:getLspTextDocPosition())
 
   lspserver.sendMessage(req)
 enddef
@@ -1006,17 +1048,11 @@ def lsp#gotoDeclaration()
                            'tagname': expand('<cword>')}
                          ]}, 'a')
 
-  var lnum: number = line('.') - 1
-  var col: number = col('.') - 1
-
   var req = lspserver.createRequest('textDocument/declaration')
 
   # interface DeclarationParams
   #   interface TextDocumentPositionParams
-  #     interface TextDocumentIdentifier
-  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
-  #     interface Position
-  req.params->extend({'position': {'line': lnum, 'character': col}})
+  req.params->extend(s:getLspTextDocPosition())
 
   lspserver.sendMessage(req)
 enddef
@@ -1057,17 +1093,11 @@ def lsp#gotoTypedef()
                            'tagname': expand('<cword>')}
                          ]}, 'a')
 
-  var lnum: number = line('.') - 1
-  var col: number = col('.') - 1
-
   var req = lspserver.createRequest('textDocument/typeDefinition')
 
   # interface TypeDefinitionParams
   #   interface TextDocumentPositionParams
-  #     interface TextDocumentIdentifier
-  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
-  #     interface Position
-  req.params->extend({'position': {'line': lnum, 'character': col}})
+  req.params->extend(s:getLspTextDocPosition())
 
   lspserver.sendMessage(req)
 enddef
@@ -1108,17 +1138,11 @@ def lsp#gotoImplementation()
                            'tagname': expand('<cword>')}
                          ]}, 'a')
 
-  var lnum: number = line('.') - 1
-  var col: number = col('.') - 1
-
   var req = lspserver.createRequest('textDocument/implementation')
 
   # interface ImplementationParams
   #   interface TextDocumentPositionParams
-  #     interface TextDocumentIdentifier
-  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
-  #     interface Position
-  req.params->extend({'position': {'line': lnum, 'character': col}})
+  req.params->extend(s:getLspTextDocPosition())
 
   lspserver.sendMessage(req)
 enddef
@@ -1154,16 +1178,10 @@ def lsp#showSignature(): string
   # first send all the changes in the current buffer to the LSP server
   listener_flush()
 
-  var lnum: number = line('.') - 1
-  var col: number = col('.') - 1
-
   var req = lspserver.createRequest('textDocument/signatureHelp')
   # interface SignatureHelpParams
   #   interface TextDocumentPositionParams
-  #     interface TextDocumentIdentifier
-  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
-  #     interface Position
-  req.params->extend({'position': {'line': lnum, 'character': col}})
+  req.params->extend(s:getLspTextDocPosition())
 
   lspserver.sendMessage(req)
   return ''
@@ -1389,17 +1407,11 @@ def s:getCompletion(lspserver: dict<any>): void
     return
   endif
 
-  var lnum = line('.') - 1
-  var col = col('.') - 1
-
   var req = lspserver.createRequest('textDocument/completion')
 
   # interface CompletionParams
-  # interface TextDocumentPositionParams
-  # interface TextDocumentIdentifier
-  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
-  # interface Position
-  req.params->extend({'position': {'line': lnum, 'character': col}})
+  #   interface TextDocumentPositionParams
+  req.params->extend(s:getLspTextDocPosition())
 
   lspserver.sendMessage(req)
 enddef
@@ -1475,16 +1487,11 @@ def LspHover()
   if fname == ''
     return
   endif
-  var lnum = line('.') - 1
-  var col = col('.') - 1
 
   var req = lspserver.createRequest('textDocument/hover')
   # interface HoverParams
-  # interface TextDocumentPositionParams
-  # interface TextDocumentIdentifier
-  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
-  # interface Position
-  req.params->extend({'position': {'line': lnum, 'character': col}})
+  #   interface TextDocumentPositionParams
+  req.params->extend(s:getLspTextDocPosition())
 
   lspserver.sendMessage(req)
 enddef
@@ -1517,16 +1524,11 @@ def lsp#showReferences()
   if fname == ''
     return
   endif
-  var lnum = line('.') - 1
-  var col = col('.') - 1
 
   var req = lspserver.createRequest('textDocument/references')
   # interface ReferenceParams
-  # interface TextDocumentPositionParams
-  # interface TextDocumentIdentifier
-  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
-  # interface Position
-  req.params->extend({'position': {'line': lnum, 'character': col}})
+  #   interface TextDocumentPositionParams
+  req.params->extend(s:getLspTextDocPosition())
   req.params->extend({'context': {'includeDeclaration': v:true}})
 
   lspserver.sendMessage(req)
@@ -1560,16 +1562,11 @@ def lsp#docHighlight()
   if fname == ''
     return
   endif
-  var lnum = line('.') - 1
-  var col = col('.') - 1
 
   var req = lspserver.createRequest('textDocument/documentHighlight')
   # interface DocumentHighlightParams
-  # interface TextDocumentPositionParams
-  # interface TextDocumentIdentifier
-  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
-  # interface Position
-  req.params->extend({'position': {'line': lnum, 'character': col}})
+  #   interface TextDocumentPositionParams
+  req.params->extend(s:getLspTextDocPosition())
 
   lspserver.sendMessage(req)
 enddef
@@ -1683,6 +1680,83 @@ def lsp#textDocFormat(range_args: number, line1: number, line2: number)
 	'end': {'line': line2, 'character': 0}}
     req.params->extend({'range': r})
   endif
+
+  lspserver.sendMessage(req)
+enddef
+
+# TODO: Add support for textDocument.onTypeFormatting?
+# Will this slow down Vim?
+
+# Display all the locations where the current symbol is called from.
+# Uses LSP "callHierarchy/incomingCalls" request
+def lsp#incomingCalls()
+  var ftype = &filetype
+  if ftype == ''
+    return
+  endif
+
+  var lspserver: dict<any> = LspGetServer(ftype)
+  if lspserver->empty()
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    return
+  endif
+  if !lspserver.running
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    return
+  endif
+
+  # Check whether LSP server supports getting reference information
+  if !lspserver.caps->has_key('documentHighlightProvider')
+              || !lspserver.caps.documentHighlightProvider
+    ErrMsg("Error: LSP server does not support document highlight")
+    return
+  endif
+
+  echomsg 'Error: Not implemented yet'
+enddef
+
+def lsp#outgoingCalls()
+  echomsg 'Error: Not implemented yet'
+enddef
+
+def lsp#rename()
+  var ftype = &filetype
+  if ftype == ''
+    return
+  endif
+
+  var lspserver: dict<any> = LspGetServer(ftype)
+  if lspserver->empty()
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    return
+  endif
+  if !lspserver.running
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    return
+  endif
+
+  # Check whether LSP server supports getting reference information
+  if !lspserver.caps->has_key('renameProvider')
+              || !lspserver.caps.renameProvider
+    ErrMsg("Error: LSP server does not support rename operation")
+    return
+  endif
+
+  var newName: string = input("Enter new name: ", expand('<cword>'))
+  if newName == ''
+    return
+  endif
+
+  var fname = @%
+  if fname == ''
+    return
+  endif
+
+  var req = lspserver.createRequest('textDocument/rename')
+  # interface RenameParams
+  #   interface TextDocumentPositionParams
+  req.params->extend(s:getLspTextDocPosition())
+  req.params->extend({'newName': newName})
 
   lspserver.sendMessage(req)
 enddef

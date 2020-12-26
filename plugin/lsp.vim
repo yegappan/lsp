@@ -25,4 +25,7 @@ command! -nargs=0 -bar LspHighlight call lsp#docHighlight()
 command! -nargs=0 -bar LspHighlightClear call lsp#docHighlightClear()
 command! -nargs=0 -bar LspShowSymbols call lsp#showDocSymbols()
 command! -nargs=0 -bar -range=% LspFormat call lsp#textDocFormat(<range>, <line1>, <line2>)
+command! -nargs=0 -bar -range=% LspCalledBy call lsp#incomingCalls()
+command! -nargs=0 -bar -range=% LspCalling call lsp#outgoingCalls()
+command! -nargs=0 -bar -range=% LspRename call lsp#rename()
 
