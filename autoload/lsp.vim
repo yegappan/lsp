@@ -953,7 +953,7 @@ enddef
 # line and not the byte index in the line.
 def s:getLspPosition(): dict<number>
   var lnum: number = line('.') - 1
-  # FIXME: need to convert this to a character position
+  #var col: number = strchars(getline('.')[: col('.') - 1]) - 1
   var col: number = col('.') - 1
   return {'line': lnum, 'character': col}
 enddef
@@ -1118,7 +1118,7 @@ def lsp#gotoImplementation()
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
-  # Check whether LSP server supports jumping to a type definition
+  # Check whether LSP server supports jumping to a implementation
   if !lspserver.caps->has_key('implementationProvider')
               || !lspserver.caps.implementationProvider
     ErrMsg("Error: LSP server does not support jumping to an implementation")
@@ -1209,7 +1209,7 @@ def lsp#bufchange_listener(bnum: number, start: number, end: number, added: numb
 
   ##### FIXME: Sending specific buffer changes to the LSP server doesn't
   ##### work properly as the computed line range numbers is not correct.
-  ##### For now, send the entire content of the buffer to LSP server.
+  ##### For now, send the entire buffer content to LSP server.
   # #     Range
   # for change in changes
   #   var lines: string
@@ -1248,6 +1248,32 @@ def lsp#bufchange_listener(bnum: number, start: number, end: number, added: numb
   lspserver.sendMessage(notif)
 enddef
 
+# A buffer is saved. Send the "textDocument/didSave" LSP notification
+def s:lspSavedFile()
+  var bnr: number = str2nr(expand('<abuf>'))
+  var ftype: string = bnr->getbufvar('&filetype')
+  var lspserver: dict<any> = LspGetServer(ftype)
+  if lspserver->empty() || !lspserver.running
+    return
+  endif
+
+  # Check whether the LSP server supports the didSave notification
+  if !lspserver.caps->has_key('textDocumentSync')
+		|| lspserver.caps.textDocumentSync->type() == v:t_number
+		|| !lspserver.caps.textDocumentSync->has_key('save')
+		|| !lspserver.caps.textDocumentSync.save
+    # LSP server doesn't support text document synchronization
+    return
+  endif
+
+  var notif: dict<any> = lspserver.createNotification('textDocument/didSave')
+
+  # interface: DidSaveTextDocumentParams
+  notif.params->extend({'textDocument': {'uri': LspFileToUri(bufname(bnr))}})
+
+  lspserver.sendMessage(notif)
+enddef
+
 # A new buffer is opened. If LSP is supported for this buffer, then add it
 def lsp#addFile(bnum: number, ftype: string): void
   if ftype == ''
@@ -1264,6 +1290,8 @@ def lsp#addFile(bnum: number, ftype: string): void
 
   # Display hover information
   autocmd CursorHold <buffer> call s:LspHover()
+  # file saved notification handler
+  autocmd BufWritePost <buffer> call s:lspSavedFile()
 
   # add a listener to track changes to this buffer
   listener_add(function('lsp#bufchange_listener'), bnum)
@@ -1551,7 +1579,7 @@ def lsp#docHighlight()
     return
   endif
 
-  # Check whether LSP server supports getting reference information
+  # Check whether LSP server supports getting highlight information
   if !lspserver.caps->has_key('documentHighlightProvider')
               || !lspserver.caps.documentHighlightProvider
     ErrMsg("Error: LSP server does not support document highlight")
@@ -1595,7 +1623,7 @@ def lsp#showDocSymbols()
     return
   endif
 
-  # Check whether LSP server supports getting reference information
+  # Check whether LSP server supports getting document symbol information
   if !lspserver.caps->has_key('documentSymbolProvider')
               || !lspserver.caps.documentSymbolProvider
     ErrMsg("Error: LSP server does not support getting list of symbols")
@@ -1637,7 +1665,7 @@ def lsp#textDocFormat(range_args: number, line1: number, line2: number)
     return
   endif
 
-  # Check whether LSP server supports getting reference information
+  # Check whether LSP server supports formatting documents
   if !lspserver.caps->has_key('documentFormattingProvider')
               || !lspserver.caps.documentFormattingProvider
     ErrMsg("Error: LSP server does not support formatting documents")
@@ -1705,7 +1733,7 @@ def lsp#incomingCalls()
     return
   endif
 
-  # Check whether LSP server supports getting reference information
+  # Check whether LSP server supports document highlight
   if !lspserver.caps->has_key('documentHighlightProvider')
               || !lspserver.caps.documentHighlightProvider
     ErrMsg("Error: LSP server does not support document highlight")
@@ -1735,7 +1763,7 @@ def lsp#rename()
     return
   endif
 
-  # Check whether LSP server supports getting reference information
+  # Check whether LSP server supports rename operation
   if !lspserver.caps->has_key('renameProvider')
               || !lspserver.caps.renameProvider
     ErrMsg("Error: LSP server does not support rename operation")
