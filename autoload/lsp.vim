@@ -16,8 +16,6 @@ var ftypeServerMap: dict<dict<any>> = {}
 # List of diagnostics for each opened file
 var diagsMap: dict<any> = {}
 
-var lsp_log_dir: string = '/tmp/'
-
 prop_type_add('LspTextRef', {'highlight': 'Search'})
 prop_type_add('LspReadRef', {'highlight': 'DiffChange'})
 prop_type_add('LspWriteRef', {'highlight': 'DiffDelete'})
@@ -38,13 +36,43 @@ enddef
 
 # Return the LSP server for the a specific filetype. Returns a null dict if
 # the server is not found.
-def LspGetServer(ftype: string): dict<any>
+def s:lspGetServer(ftype: string): dict<any>
   return ftypeServerMap->get(ftype, {})
 enddef
 
 # Add a LSP server for a filetype
-def LspAddServer(ftype: string, lspserver: dict<any>)
+def s:lspAddServer(ftype: string, lspserver: dict<any>)
   ftypeServerMap->extend({[ftype]: lspserver})
+enddef
+
+# Lsp server trace log directory
+var lsp_log_dir: string = '/tmp/'
+var lsp_server_trace: bool = v:false
+
+def lsp#enableServerTrace()
+  lsp_server_trace = v:true
+enddef
+
+# Log a message from the LSP server. stderr is v:true for logging messages
+# from the standard error and v:false for stdout.
+def s:traceLog(stderr: bool, msg: string)
+  if !lsp_server_trace
+    return
+  endif
+  if stderr
+    writefile(split(msg, "\n"), lsp_log_dir .. 'lsp_server.err', 'a')
+  else
+    writefile(split(msg, "\n"), lsp_log_dir .. 'lsp_server.out', 'a')
+  endif
+enddef
+
+# Empty out the LSP server trace logs
+def s:clearTraceLogs()
+  if !lsp_server_trace
+    return
+  endif
+  writefile([], lsp_log_dir .. 'lsp_server.out')
+  writefile([], lsp_log_dir .. 'lsp_server.err')
 enddef
 
 # Show information about all the LSP servers
@@ -765,14 +793,14 @@ enddef
 
 # LSP server standard output handler
 def lsp#output_cb(lspserver: dict<any>, chan: channel, msg: string): void
-  writefile(split(msg, "\n"), lsp_log_dir .. 'lsp_server.out', 'a')
+  s:traceLog(v:false, msg)
   lspserver.data = lspserver.data .. msg
   lspserver.processMessages()
 enddef
 
 # LSP server error output handler
 def lsp#error_cb(lspserver: dict<any>, chan: channel, emsg: string,): void
-  writefile(split(emsg, "\n"), lsp_log_dir .. 'lsp_server.err', 'a')
+  s:traceLog(v:true, emsg)
 enddef
 
 # LSP server exit callback
@@ -860,8 +888,7 @@ def s:startServer(lspserver: dict<any>): number
               'err_cb': function('lsp#error_cb', [lspserver]),
               'exit_cb': function('lsp#exit_cb', [lspserver])}
 
-  writefile([], lsp_log_dir .. 'lsp_server.out')
-  writefile([], lsp_log_dir .. 'lsp_server.err')
+  s:clearTraceLogs()
   lspserver.data = ''
   lspserver.caps = {}
   lspserver.nextID = 1
@@ -974,7 +1001,7 @@ def lsp#gotoDefinition()
     return
   endif
 
-  var lspserver: dict<any> = LspGetServer(ftype)
+  var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
@@ -1019,7 +1046,7 @@ def lsp#gotoDeclaration()
     return
   endif
 
-  var lspserver: dict<any> = LspGetServer(ftype)
+  var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
@@ -1064,7 +1091,7 @@ def lsp#gotoTypedef()
     return
   endif
 
-  var lspserver: dict<any> = LspGetServer(ftype)
+  var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
@@ -1109,7 +1136,7 @@ def lsp#gotoImplementation()
     return
   endif
 
-  var lspserver: dict<any> = LspGetServer(ftype)
+  var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
@@ -1155,7 +1182,7 @@ def lsp#showSignature(): string
     return ''
   endif
 
-  var lspserver: dict<any> = LspGetServer(ftype)
+  var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return ''
@@ -1190,7 +1217,7 @@ enddef
 # buffer change notification listener
 def lsp#bufchange_listener(bnum: number, start: number, end: number, added: number, changes: list<dict<number>>)
   var ftype = bnum->getbufvar('&filetype')
-  var lspserver: dict<any> = LspGetServer(ftype)
+  var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty() || !lspserver.running
     return
   endif
@@ -1252,7 +1279,7 @@ enddef
 def s:lspSavedFile()
   var bnr: number = str2nr(expand('<abuf>'))
   var ftype: string = bnr->getbufvar('&filetype')
-  var lspserver: dict<any> = LspGetServer(ftype)
+  var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty() || !lspserver.running
     return
   endif
@@ -1279,7 +1306,7 @@ def lsp#addFile(bnum: number, ftype: string): void
   if ftype == ''
     return
   endif
-  var lspserver: dict<any> = LspGetServer(ftype)
+  var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
     return
   endif
@@ -1304,7 +1331,7 @@ def lsp#removeFile(fname: string, ftype: string): void
   if fname == '' || ftype == ''
     return
   endif
-  var lspserver: dict<any> = LspGetServer(ftype)
+  var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty() || !lspserver.running
     return
   endif
@@ -1372,10 +1399,10 @@ def lsp#addServer(serverList: list<dict<any>>)
       })
 
     if type(server.filetype) == v:t_string
-      LspAddServer(server.filetype, lspserver)
+      s:lspAddServer(server.filetype, lspserver)
     elseif type(server.filetype) == v:t_list
       for ftype in server.filetype
-        LspAddServer(ftype, lspserver)
+        s:lspAddServer(ftype, lspserver)
       endfor
     else
       ErrMsg('Error: Unsupported file type information "' .. string(server.filetype)
@@ -1447,7 +1474,7 @@ enddef
 # Insert mode completion handler
 def lsp#completeFunc(findstart: number, base: string): any
   var ftype: string = &filetype
-  var lspserver: dict<any> = LspGetServer(ftype)
+  var lspserver: dict<any> = s:lspGetServer(ftype)
 
   if findstart
     if lspserver->empty()
@@ -1498,7 +1525,7 @@ def LspHover()
     return
   endif
 
-  var lspserver: dict<any> = LspGetServer(ftype)
+  var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
     return
   endif
@@ -1531,7 +1558,7 @@ def lsp#showReferences()
     return
   endif
 
-  var lspserver: dict<any> = LspGetServer(ftype)
+  var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
@@ -1569,7 +1596,7 @@ def lsp#docHighlight()
     return
   endif
 
-  var lspserver: dict<any> = LspGetServer(ftype)
+  var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
@@ -1613,7 +1640,7 @@ def lsp#showDocSymbols()
     return
   endif
 
-  var lspserver: dict<any> = LspGetServer(ftype)
+  var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
@@ -1655,7 +1682,7 @@ def lsp#textDocFormat(range_args: number, line1: number, line2: number)
     return
   endif
 
-  var lspserver: dict<any> = LspGetServer(ftype)
+  var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
@@ -1723,7 +1750,7 @@ def lsp#incomingCalls()
     return
   endif
 
-  var lspserver: dict<any> = LspGetServer(ftype)
+  var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
@@ -1753,7 +1780,7 @@ def lsp#rename()
     return
   endif
 
-  var lspserver: dict<any> = LspGetServer(ftype)
+  var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
