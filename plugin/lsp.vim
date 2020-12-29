@@ -5,8 +5,13 @@ if v:version < 802 || !has('patch-8.2.2082')
   finish
 endif
 
-autocmd BufNewFile,BufReadPost * call lsp#addFile(expand('<abuf>') + 0, &filetype)
-autocmd BufWipeOut * call lsp#removeFile(expand('<afile>:p'), &filetype)
+augroup LSPAutoCmds
+  au!
+  autocmd BufNewFile,BufReadPost *
+			  \ call lsp#addFile(expand('<abuf>') + 0)
+  autocmd BufWipeOut *
+			  \ call lsp#removeFile(expand('<abuf>') + 0)
+augroup END
 
 " TODO: Is it needed to shutdown all the LSP servers when exiting Vim?
 " This takes some time.

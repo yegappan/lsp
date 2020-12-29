@@ -13,6 +13,9 @@ var lspServers: list<dict<any>> = []
 # filetype to LSP server map
 var ftypeServerMap: dict<dict<any>> = {}
 
+# Buffer number to LSP server map
+var bufnrToServer: dict<dict<any>> = {}
+
 # List of diagnostics for each opened file
 var diagsMap: dict<any> = {}
 
@@ -46,7 +49,12 @@ def s:lspAddServer(ftype: string, lspserver: dict<any>)
 enddef
 
 # Lsp server trace log directory
-var lsp_log_dir: string = '/tmp/'
+var lsp_log_dir: string
+if has('unix')
+  lsp_log_dir = '/tmp/'
+else
+  lsp_log_dir = $TEMP .. '\\'
+endif
 var lsp_server_trace: bool = v:false
 
 def lsp#enableServerTrace()
@@ -91,12 +99,46 @@ enddef
 
 # Convert a LSP file URI (file://<absolute_path>) to a Vim file name
 def LspUriToFile(uri: string): string
-  return uri[7:]
+  # Replace all the %xx numbers (e.g. %20 for space) in the URI to character
+  var uri_decoded: string = substitute(uri, '%\(\x\x\)',
+			      '\=nr2char(str2nr(submatch(1), 16))', 'g')
+
+  # File URIs on MS-Windows start with file:///[a-zA-Z]:'
+  if uri_decoded =~? '^file:///\a:'
+    # MS-Windows URI
+    uri_decoded = uri_decoded[8:]
+    uri_decoded = uri_decoded->substitute('/', '\\', 'g')
+  else
+    uri_decoded = uri_decoded[7:]
+  endif
+
+  return uri_decoded
 enddef
 
 # Convert a Vim filenmae to an LSP URI (file://<absolute_path>)
 def LspFileToUri(fname: string): string
-  return 'file://' .. fnamemodify(fname, ':p')
+  var uri: string = fnamemodify(fname, ':p')
+
+  var on_windows: bool = v:false
+  if uri =~? '^\a:'
+    on_windows = v:true
+  endif
+
+  if on_windows
+    # MS-Windows
+    uri = uri->substitute('\\', '/', 'g')
+  endif
+
+  uri = uri->substitute('\([^A-Za-z0-9-._~:/]\)',
+		      '\=printf("%%%02x", char2nr(submatch(1)))', 'g')
+
+  if on_windows
+    uri = 'file:///' .. uri
+  else
+    uri = 'file://' .. uri
+  endif
+
+  return uri
 enddef
 
 # process the 'initialize' method reply from the LSP server
@@ -324,7 +366,7 @@ def s:processDocHighlightReply(lspserver: dict<any>, req: dict<any>, reply: dict
   endif
 
   var fname: string = LspUriToFile(req.params.textDocument.uri)
-  var bnum = bufnr(fname)
+  var bnr = bufnr(fname)
 
   for docHL in reply.result
     var kind: number = docHL->get('kind', 1)
@@ -342,7 +384,7 @@ def s:processDocHighlightReply(lspserver: dict<any>, req: dict<any>, reply: dict
     prop_add(docHL.range.start.line + 1, docHL.range.start.character + 1,
                {'end_lnum': docHL.range.end.line + 1,
                 'end_col': docHL.range.end.character + 1,
-                'bufnr': bnum,
+                'bufnr': bnr,
                 'type': propName})
   endfor
 enddef
@@ -722,6 +764,8 @@ enddef
 def s:processDiagNotif(lspserver: dict<any>, reply: dict<any>): void
   var fname: string = LspUriToFile(reply.params.uri)
   diagsMap->extend({[fname]: reply.params.diagnostics})
+
+  # store the diagnostic for each line separately
 enddef
 
 # process notification messages from the LSP server
@@ -762,7 +806,8 @@ def s:processMessages(lspserver: dict<any>): void
     idx = idx + 4
 
     if lspserver.data->len() - idx < len
-      ErrMsg("Error: Didn't receive a complete message")
+      # message is not fully received. Process the message after more data is
+      # received
       return
     endif
 
@@ -946,29 +991,29 @@ def s:stopServer(lspserver: dict<any>): number
 enddef
 
 # Send a LSP "textDocument/didOpen" notification
-def s:textdocDidOpen(lspserver: dict<any>, bnum: number, ftype: string): void
+def s:textdocDidOpen(lspserver: dict<any>, bnr: number, ftype: string): void
   var notif: dict<any> = lspserver.createNotification('textDocument/didOpen')
 
   # interface DidOpenTextDocumentParams
   # interface TextDocumentItem
   var tdi = {}
-  tdi.uri = LspFileToUri(bufname(bnum))
+  tdi.uri = LspFileToUri(bufname(bnr))
   tdi.languageId = ftype
   tdi.version = 1
-  tdi.text = getbufline(bnum, 1, '$')->join("\n") .. "\n"
+  tdi.text = getbufline(bnr, 1, '$')->join("\n") .. "\n"
   notif.params->extend({'textDocument': tdi})
 
   lspserver.sendMessage(notif)
 enddef
 
 # Send a LSP "textDocument/didClose" notification
-def s:textdocDidClose(lspserver: dict<any>, fname: string): void
+def s:textdocDidClose(lspserver: dict<any>, bnr: number): void
   var notif: dict<any> = lspserver.createNotification('textDocument/didClose')
 
   # interface DidCloseTextDocumentParams
   #   interface TextDocumentIdentifier
   var tdid = {}
-  tdid.uri = LspFileToUri(fname)
+  tdid.uri = LspFileToUri(bufname(bnr))
   notif.params->extend({'textDocument': tdid})
 
   lspserver.sendMessage(notif)
@@ -1215,8 +1260,8 @@ def lsp#showSignature(): string
 enddef
 
 # buffer change notification listener
-def lsp#bufchange_listener(bnum: number, start: number, end: number, added: number, changes: list<dict<number>>)
-  var ftype = bnum->getbufvar('&filetype')
+def lsp#bufchange_listener(bnr: number, start: number, end: number, added: number, changes: list<dict<number>>)
+  var ftype = bnr->getbufvar('&filetype')
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty() || !lspserver.running
     return
@@ -1227,9 +1272,9 @@ def lsp#bufchange_listener(bnum: number, start: number, end: number, added: numb
   # interface DidChangeTextDocumentParams
   #   interface VersionedTextDocumentIdentifier
   var vtdid: dict<any> = {}
-  vtdid.uri = LspFileToUri(bufname(bnum))
+  vtdid.uri = LspFileToUri(bufname(bnr))
   # Use Vim 'changedtick' as the LSP document version number
-  vtdid.version = bnum->getbufvar('changedtick')
+  vtdid.version = bnr->getbufvar('changedtick')
   notif.params->extend({'textDocument': vtdid})
   #   interface TextDocumentContentChangeEvent
   var changeset: list<dict<any>>
@@ -1248,7 +1293,7 @@ def lsp#bufchange_listener(bnum: number, start: number, end: number, added: numb
   #     # lines changed
   #     start_lnum =  change.lnum - 1
   #     end_lnum = change.end - 1
-  #     lines = getbufline(bnum, change.lnum, change.end - 1)->join("\n") .. "\n"
+  #     lines = getbufline(bnr, change.lnum, change.end - 1)->join("\n") .. "\n"
   #     start_col = 0
   #     end_col = 0
   #   elseif change.added > 0
@@ -1257,7 +1302,7 @@ def lsp#bufchange_listener(bnum: number, start: number, end: number, added: numb
   #     end_lnum = change.lnum - 1
   #     start_col = 0
   #     end_col = 0
-  #     lines = getbufline(bnum, change.lnum, change.lnum + change.added - 1)->join("\n") .. "\n"
+  #     lines = getbufline(bnr, change.lnum, change.lnum + change.added - 1)->join("\n") .. "\n"
   #   else
   #     # lines removed
   #     start_lnum = change.lnum - 1
@@ -1269,7 +1314,7 @@ def lsp#bufchange_listener(bnum: number, start: number, end: number, added: numb
   #   var range: dict<dict<number>> = {'start': {'line': start_lnum, 'character': start_col}, 'end': {'line': end_lnum, 'character': end_col}}
   #   changeset->add({'range': range, 'text': lines})
   # endfor
-  changeset->add({'text': getbufline(bnum, 1, '$')->join("\n") .. "\n"})
+  changeset->add({'text': getbufline(bnr, 1, '$')->join("\n") .. "\n"})
   notif.params->extend({'contentChanges': changeset})
 
   lspserver.sendMessage(notif)
@@ -1302,7 +1347,13 @@ def s:lspSavedFile()
 enddef
 
 # A new buffer is opened. If LSP is supported for this buffer, then add it
-def lsp#addFile(bnum: number, ftype: string): void
+def lsp#addFile(bnr: number): void
+  if bufnrToServer->has_key(bnr)
+    # LSP server for this buffer is already initialized and running
+    return
+  endif
+
+  var ftype: string = bnr->getbufvar('&filetype')
   if ftype == ''
     return
   endif
@@ -1313,7 +1364,7 @@ def lsp#addFile(bnum: number, ftype: string): void
   if !lspserver.running
     lspserver.startServer()
   endif
-  lspserver.textdocDidOpen(bnum, ftype)
+  lspserver.textdocDidOpen(bnr, ftype)
 
   # Display hover information
   autocmd CursorHold <buffer> call s:LspHover()
@@ -1321,13 +1372,22 @@ def lsp#addFile(bnum: number, ftype: string): void
   autocmd BufWritePost <buffer> call s:lspSavedFile()
 
   # add a listener to track changes to this buffer
-  listener_add(function('lsp#bufchange_listener'), bnum)
-  setbufvar(bnum, '&completefunc', 'lsp#completeFunc')
-  setbufvar(bnum, '&completeopt', 'menuone,preview,noinsert')
+  listener_add(function('lsp#bufchange_listener'), bnr)
+  setbufvar(bnr, '&completefunc', 'lsp#completeFunc')
+  setbufvar(bnr, '&completeopt', 'menuone,preview,noinsert')
+
+  bufnrToServer[bnr] = lspserver
 enddef
 
 # Notify LSP server to remove a file
-def lsp#removeFile(fname: string, ftype: string): void
+def lsp#removeFile(bnr: number): void
+  if !bufnrToServer->has_key(bnr)
+    # LSP server for this buffer is not running
+    return
+  endif
+
+  var fname: string = bufname(bnr)
+  var ftype: string = bnr->getbufvar('&filetype')
   if fname == '' || ftype == ''
     return
   endif
@@ -1335,10 +1395,11 @@ def lsp#removeFile(fname: string, ftype: string): void
   if lspserver->empty() || !lspserver.running
     return
   endif
-  lspserver.textdocDidClose(fname)
+  lspserver.textdocDidClose(bnr)
   if diagsMap->has_key(fname)
     diagsMap->remove(fname)
   endif
+  remove(bufnrToServer, bnr)
 enddef
 
 # Stop all the LSP servers
