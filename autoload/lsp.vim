@@ -17,7 +17,7 @@ var ftypeServerMap: dict<dict<any>> = {}
 var bufnrToServer: dict<dict<any>> = {}
 
 # List of diagnostics for each opened file
-var diagsMap: dict<any> = {}
+var diagsMap: dict<dict<any>> = {}
 
 prop_type_add('LspTextRef', {'highlight': 'Search'})
 prop_type_add('LspReadRef', {'highlight': 'DiffChange'})
@@ -599,7 +599,7 @@ enddef
 
 # Apply set of text edits to the specified buffer
 # The text edit logic is ported from the Neovim lua implementation
-def s:apply_text_edits(bnr: number, text_edits: list<dict<any>>): void
+def s:applyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   if text_edits->empty()
     return
   endif
@@ -660,7 +660,7 @@ def s:apply_text_edits(bnr: number, text_edits: list<dict<any>>): void
     lines->remove(-1)
   endif
 
-  #echomsg 'apply_text_edits: start_line = ' .. start_line .. ', finish_line = ' .. finish_line
+  #echomsg 'applyTextEdits: start_line = ' .. start_line .. ', finish_line = ' .. finish_line
   #echomsg 'lines = ' .. string(lines)
 
   # Delete all the lines that need to be modified
@@ -683,6 +683,48 @@ def s:apply_text_edits(bnr: number, text_edits: list<dict<any>>): void
   endif
 enddef
 
+# interface TextDocumentEdit
+def s:applyTextDocumentEdit(textDocEdit: dict<any>)
+  var bnr: number = bufnr(LspUriToFile(textDocEdit.textDocument.uri))
+  if bnr == -1
+    ErrMsg('Error: Text Document edit, buffer ' .. textDocEdit.textDocument.uri .. ' is not found')
+    return
+  endif
+  s:applyTextEdits(bnr, textDocEdit.edits)
+enddef
+
+# interface WorkspaceEdit
+def s:applyWorkspaceEdit(workspaceEdit: dict<any>)
+  if workspaceEdit->has_key('documentChanges')
+    for change in workspaceEdit.documentChanges
+      if change->has_key('kind')
+	ErrMsg('Error: Unsupported change in workspace edit [' .. change.kind .. ']')
+      else
+	s:applyTextDocumentEdit(change)
+      endif
+    endfor
+    return
+  endif
+
+  if !workspaceEdit->has_key('changes')
+    return
+  endif
+
+  var save_cursor: list<number> = getcurpos()
+  for [uri, changes] in items(workspaceEdit.changes)
+    var fname: string = LspUriToFile(uri)
+    var bnr: number = bufnr(fname)
+    if bnr == -1
+      # file is already removed
+      continue
+    endif
+
+    # interface TextEdit
+    s:applyTextEdits(bnr, changes)
+  endfor
+  save_cursor->setpos('.')
+enddef
+
 # process the 'textDocument/formatting' reply from the LSP server
 def s:processFormatReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   if reply.result->empty()
@@ -702,7 +744,7 @@ def s:processFormatReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   # interface TextEdit
   # Apply each of the text edit operations
   var save_cursor: list<number> = getcurpos()
-  s:apply_text_edits(bnr, reply.result)
+  s:applyTextEdits(bnr, reply.result)
   save_cursor->setpos('.')
 enddef
 
@@ -714,23 +756,65 @@ def s:processRenameReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   endif
 
   # result: WorkspaceEdit
+  s:applyWorkspaceEdit(reply.result)
+enddef
 
-  if reply.result->has_key('changes')
-    for [uri, changes] in items(reply.result.changes)
-      var fname: string = LspUriToFile(uri)
-      var bnr: number = bufnr(fname)
-      if bnr == -1
-	# file is already removed
-	return
-      endif
+# interface ExecuteCommandParams
+def s:executeCommand(lspserver: dict<any>, cmd: dict<any>)
+  var req = lspserver.createRequest('workspace/executeCommand')
+  req.params->extend(cmd)
+  lspserver.sendMessage(req)
+enddef
 
-      # interface TextEdit
-      # Apply each of the text edit operations
-      var save_cursor: list<number> = getcurpos()
-      s:apply_text_edits(bnr, changes)
-      save_cursor->setpos('.')
-    endfor
+# process the 'textDocument/codeAction' reply from the LSP server
+# params: interface Command[] | interface CodeAction[]
+def s:processCodeActionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+  if reply.result->empty()
+    # no action can be performed
+    WarnMsg('No code action is available')
+    return
   endif
+
+  var actions: list<dict<any>> = reply.result
+
+  var prompt: list<string> = ['Code Actions:']
+  var act: dict<any>
+  for i in range(actions->len())
+    act = actions[i]
+    var t: string = act.title->substitute('\r\n', '\\r\\n', 'g')
+    t = t->substitute('\n', '\\n', 'g')
+    prompt->add(printf("%d. %s", i + 1, t))
+  endfor
+  var choice = inputlist(prompt)
+  if choice < 1 || choice > prompt->len()
+    return
+  endif
+
+  var selAction = actions[choice - 1]
+
+  # textDocument/codeAction can return either Command[] or CodeAction[].
+  # If it is a CodeAction, it can have either an edit, a command or both.
+  # Edits should be executed first.
+  if selAction->has_key('edit') || selAction->has_key('command')
+    if selAction->has_key('edit')
+      # apply edit first
+      s:applyWorkspaceEdit(selAction.edit)
+    endif
+    if selAction->has_key('command')
+      s:executeCommand(lspserver, selAction)
+    endif
+  else
+    s:executeCommand(lspserver, selAction)
+  endif
+enddef
+
+# process the 'workspace/executeCommand' reply from the LSP server
+def s:processWorkspaceExecuteReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+  if reply.result->empty()
+    return
+  endif
+
+  # Nothing to do for the reply
 enddef
 
 # Process various reply messages from the LSP server
@@ -750,7 +834,9 @@ def s:processReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
       'textDocument/documentSymbol': function('s:processDocSymbolReply'),
       'textDocument/formatting': function('s:processFormatReply'),
       'textDocument/rangeFormatting': function('s:processFormatReply'),
-      'textDocument/rename': function('s:processRenameReply')
+      'textDocument/rename': function('s:processRenameReply'),
+      'textDocument/codeAction': function('s:processCodeActionReply'),
+      'workspace/executeCommand': function('s:processWorkspaceExecuteReply')
     }
 
   if lsp_reply_handlers->has_key(req.method)
@@ -761,11 +847,17 @@ def s:processReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
 enddef
 
 # process a diagnostic notification message from the LSP server
+# params: interface PublishDiagnosticsParams
 def s:processDiagNotif(lspserver: dict<any>, reply: dict<any>): void
   var fname: string = LspUriToFile(reply.params.uri)
-  diagsMap->extend({[fname]: reply.params.diagnostics})
 
   # store the diagnostic for each line separately
+  var diag_by_lnum: dict<dict<any>> = {}
+  for diag in reply.params.diagnostics
+    diag_by_lnum[diag.range.start.line + 1] = diag
+  endfor
+
+  diagsMap->extend({[fname]: diag_by_lnum})
 enddef
 
 # process notification messages from the LSP server
@@ -779,6 +871,34 @@ def s:processNotif(lspserver: dict<any>, reply: dict<any>): void
     lsp_notif_handlers[reply.method](lspserver, reply)
   else
     ErrMsg('Error: Unsupported notification received from LSP server ' .. string(reply))
+  endif
+enddef
+
+# send a response message to the server
+def s:sendResponse(lspserver: dict<any>, request: dict<any>, result: dict<any>, error: dict<any>)
+  var resp: dict<any> = lspserver.createResponse(request.id)
+  if type(result) != v:t_none
+    resp->extend({'result': result})
+  else
+    resp->extend({'error': error})
+  endif
+  lspserver.sendMessage(resp)
+enddef
+
+# process request message from the server
+def s:processRequest(lspserver: dict<any>, request: dict<any>)
+  if request.method == 'workspace/applyEdit'
+    # interface ApplyWorkspaceEditParams
+    if !request->has_key('params')
+      return
+    endif
+    var workspaceEditParams: dict<any> = request.params
+    if workspaceEditParams->has_key('label')
+      echomsg "Workspace edit" .. workspaceEditParams.label
+    endif
+    s:applyWorkspaceEdit(workspaceEditParams.edit)
+    # TODO: Need to return the proper result of the edit operation
+    lspserver.sendResponse(request, {'applied': v:true}, v:null)
   endif
 enddef
 
@@ -812,24 +932,29 @@ def s:processMessages(lspserver: dict<any>): void
     endif
 
     var content = lspserver.data[idx : idx + len - 1]
-    var reply = content->json_decode()
+    var msg = content->json_decode()
 
-    if reply->has_key('id')
-      var req = lspserver.requests->get(string(reply.id))
+    if msg->has_key('result') || msg->has_key('error')
+      # response message from the server
+      var req = lspserver.requests->get(string(msg.id))
       # Remove the corresponding stored request message
-      lspserver.requests->remove(string(reply.id))
+      lspserver.requests->remove(string(msg.id))
 
-      if reply->has_key('error')
-        var msg: string = reply.error.message
-        if reply.error->has_key('data')
-          msg = msg .. ', data = ' .. reply.error.message
-        endif
-        ErrMsg("Error: request " .. req.method .. " failed (" .. msg .. ")")
+      if msg->has_key('result')
+        lspserver.processReply(req, msg)
       else
-        lspserver.processReply(req, reply)
+        var emsg: string = msg.error.message
+        if msg.error->has_key('data')
+          emsg = emsg .. ', data = ' .. msg.error.message
+        endif
+        ErrMsg("Error: request " .. req.method .. " failed (" .. emsg .. ")")
       endif
+    elseif msg->has_key('id')
+      # request message from the server
+      lspserver.processRequest(msg)
     else
-      lspserver.processNotif(reply)
+      # notification message from the server
+      lspserver.processNotif(msg)
     endif
 
     lspserver.data = lspserver.data[idx + len :]
@@ -865,11 +990,11 @@ enddef
 
 # Send a request message to LSP server
 def s:sendMessage(lspserver: dict<any>, content: dict<any>): void
-  var req_js: string = content->json_encode()
-  var msg = "Content-Length: " .. req_js->len() .. "\r\n\r\n"
+  var payload_js: string = content->json_encode()
+  var msg = "Content-Length: " .. payload_js->len() .. "\r\n\r\n"
   var ch = lspserver.job->job_getchannel()
   ch->ch_sendraw(msg)
-  ch->ch_sendraw(req_js)
+  ch->ch_sendraw(payload_js)
 enddef
 
 # create a LSP server request message
@@ -884,6 +1009,15 @@ def s:createRequest(lspserver: dict<any>, method: string): dict<any>
   lspserver.requests->extend({[string(req.id)]: req})
 
   return req
+enddef
+
+# create a LSP server response message
+def s:createResponse(lspserver: dict<any>, req_id: number): dict<any>
+  var resp = {}
+  resp.jsonrpc = '2.0'
+  resp.id = req_id
+
+  return resp
 enddef
 
 # create a LSP server notification message
@@ -1448,10 +1582,13 @@ def lsp#addServer(serverList: list<dict<any>>)
         'exitServer': function('s:exitServer', [lspserver]),
         'nextReqID': function('s:nextReqID', [lspserver]),
         'createRequest': function('s:createRequest', [lspserver]),
+        'createResponse': function('s:createResponse', [lspserver]),
         'createNotification': function('s:createNotification', [lspserver]),
+        'sendResponse': function('s:sendResponse', [lspserver]),
         'sendMessage': function('s:sendMessage', [lspserver]),
         'processReply': function('s:processReply', [lspserver]),
         'processNotif': function('s:processNotif', [lspserver]),
+	'processRequest': function('s:processRequest', [lspserver]),
         'processMessages': function('s:processMessages', [lspserver]),
         'textdocDidOpen': function('s:textdocDidOpen', [lspserver]),
         'textdocDidClose': function('s:textdocDidClose', [lspserver]),
@@ -1499,7 +1636,7 @@ def lsp#showDiagnostics(): void
   var qflist: list<dict<any>> = []
   var text: string
 
-  for diag in diagsMap[fname]
+  for [lnum, diag] in items(diagsMap[fname])
     text = diag.message->substitute("\n\\+", "\n", 'g')
     qflist->add({'filename': fname,
                     'lnum': diag.range.start.line + 1,
@@ -1831,10 +1968,14 @@ def lsp#incomingCalls()
   echomsg 'Error: Not implemented yet'
 enddef
 
+# Display all the symbols used by the current symbol.
+# Uses LSP "callHierarchy/outgoingCalls" request
 def lsp#outgoingCalls()
   echomsg 'Error: Not implemented yet'
 enddef
 
+# Rename a symbol
+# Uses LSP "textDocument/rename" request
 def lsp#rename()
   var ftype = &filetype
   if ftype == ''
@@ -1858,13 +1999,13 @@ def lsp#rename()
     return
   endif
 
-  var newName: string = input("Enter new name: ", expand('<cword>'))
-  if newName == ''
+  var fname = @%
+  if fname == ''
     return
   endif
 
-  var fname = @%
-  if fname == ''
+  var newName: string = input("Enter new name: ", expand('<cword>'))
+  if newName == ''
     return
   endif
 
@@ -1873,6 +2014,55 @@ def lsp#rename()
   #   interface TextDocumentPositionParams
   req.params->extend(s:getLspTextDocPosition())
   req.params->extend({'newName': newName})
+
+  lspserver.sendMessage(req)
+enddef
+
+# Perform a code action
+# Uses LSP "textDocument/codeAction" request
+def lsp#codeAction()
+  var ftype = &filetype
+  if ftype == ''
+    return
+  endif
+
+  var lspserver: dict<any> = s:lspGetServer(ftype)
+  if lspserver->empty()
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    return
+  endif
+  if !lspserver.running
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    return
+  endif
+
+  # Check whether LSP server supports code action operation
+  if !lspserver.caps->has_key('codeActionProvider')
+              || !lspserver.caps.codeActionProvider
+    ErrMsg("Error: LSP server does not support code action operation")
+    return
+  endif
+
+  var fname = @%
+  if fname == ''
+    return
+  endif
+
+  var req = lspserver.createRequest('textDocument/codeAction')
+
+  # interface CodeActionParams
+  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
+  var r: dict<dict<number>> = {
+		  'start': {'line': line('.') - 1, 'character': col('.') - 1},
+		  'end': {'line': line('.') - 1, 'character': col('.') - 1}}
+  req.params->extend({'range': r})
+  var diag: list<dict<any>> = []
+  var lnum = line('.')
+  fname = fnamemodify(fname, ':p')
+  if diagsMap->has_key(fname) && diagsMap[fname]->has_key(lnum)
+    diag->add(diagsMap[fname][lnum])
+  endif
+  req.params->extend({'context': {'diagnostics': diag}})
 
   lspserver.sendMessage(req)
 enddef
