@@ -19,6 +19,7 @@ augroup END
 
 " LSP commands
 command! -nargs=0 -bar LspShowServers call lsp#showServers()
+command! -nargs=1 -bar LspSetTrace call lsp#setTraceServer(<q-args>)
 command! -nargs=0 -bar LspGotoDefinition call lsp#gotoDefinition()
 command! -nargs=0 -bar LspGotoDeclaration call lsp#gotoDeclaration()
 command! -nargs=0 -bar LspGotoTypeDef call lsp#gotoTypedef()
@@ -34,4 +35,5 @@ command! -nargs=0 -bar LspCalledBy call lsp#incomingCalls()
 command! -nargs=0 -bar LspCalling call lsp#outgoingCalls()
 command! -nargs=0 -bar LspRename call lsp#rename()
 command! -nargs=0 -bar LspCodeAction call lsp#codeAction()
+command! -nargs=0 -bar LspShowWorkspaceSymbols call lsp#showWorkspaceSymbols()
 

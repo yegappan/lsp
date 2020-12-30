@@ -429,42 +429,57 @@ def lsp#jumpToSymbol()
 
   var slnum: number = w:lsp_info.data[lnum].lnum
   var scol: number = w:lsp_info.data[lnum].col
-  var wid: number = bufwinid(w:lsp_info.filename)
+  var fname: string = w:lsp_info.filename
+
+  # If the file is already opened in a window, jump to it. Otherwise open it
+  # in another window
+  var wid: number = fname->bufwinid()
   if wid == -1
-    :exe 'rightbelow vertical split ' .. w:lsp_info.filename
+    # Find a window showing a normal buffer and use it
+    for w in getwininfo()
+      if w.winid->getwinvar('&buftype') == ''
+	wid = w.winid
+	wid->win_gotoid()
+	break
+      endif
+    endfor
+    if wid == -1
+      var symWinid: number = win_getid()
+      :rightbelow vnew
+      # retain the fixed symbol window width
+      win_execute(symWinid, 'vertical resize 20')
+    endif
+
+    exe 'edit ' .. fname
   else
-    win_gotoid(wid)
+    wid->win_gotoid()
   endif
-  cursor(slnum, scol)
+  [slnum, scol]->cursor()
 enddef
 
-# process the 'textDocument/documentSymbol' reply from the LSP server
-# Open a symbols window and display the symbols as a tree
-def s:processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
-  if reply.result->empty()
-    WarnMsg('No symbols are found')
-    return
-  endif
-
+# display the list of document symbols from the LSP server in a window as a
+# tree
+def s:showSymbols(symTable: list<dict<any>>)
   var symbols: dict<list<dict<any>>>
   var symbolType: string
+  var fname: string
 
-  var fname: string = LspUriToFile(req.params.textDocument.uri)
-  for symbol in reply.result
+  for symbol in symTable
     if symbol->has_key('location')
+      fname = LspUriToFile(symbol.location.uri)
       symbolType = LspSymbolKindToName(symbol.kind)
       if !symbols->has_key(symbolType)
-        symbols[symbolType] = []
+	symbols[symbolType] = []
       endif
       var name: string = symbol.name
       if symbol->has_key('containerName')
-        if symbol.containerName != ''
-          name ..= ' [' .. symbol.containerName .. ']'
-        endif
+	if symbol.containerName != ''
+	  name ..= ' [' .. symbol.containerName .. ']'
+	endif
       endif
       symbols[symbolType]->add({'name': name,
-                                'lnum': symbol.location.range.start.line + 1,
-                                'col': symbol.location.range.start.character + 1})
+			'lnum': symbol.location.range.start.line + 1,
+                        'col': symbol.location.range.start.character + 1})
     endif
   endfor
 
@@ -499,6 +514,17 @@ def s:processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<an
   :nnoremap <silent> <buffer> q :quit<CR>
   :nnoremap <silent> <buffer> <CR> :call lsp#jumpToSymbol()<CR>
   :setlocal nomodifiable
+enddef
+
+# process the 'textDocument/documentSymbol' reply from the LSP server
+# Open a symbols window and display the symbols as a tree
+def s:processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+  if reply.result->empty()
+    WarnMsg('No symbols are found')
+    return
+  endif
+
+  s:showSymbols(reply.result)
 enddef
 
 # Returns the byte number of the specified line/col position.  Returns a
@@ -835,6 +861,16 @@ def s:processWorkspaceExecuteReply(lspserver: dict<any>, req: dict<any>, reply: 
   # Nothing to do for the reply
 enddef
 
+# process the 'workspace/symbol' reply from the LSP server
+def s:processWorkspaceSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+  if reply.result->empty()
+    WarnMsg('Error: Symbol not found')
+    return
+  endif
+
+  s:showSymbols(reply.result)
+enddef
+
 # Process various reply messages from the LSP server
 def s:processReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   var lsp_reply_handlers: dict<func> =
@@ -854,7 +890,8 @@ def s:processReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
       'textDocument/rangeFormatting': function('s:processFormatReply'),
       'textDocument/rename': function('s:processRenameReply'),
       'textDocument/codeAction': function('s:processCodeActionReply'),
-      'workspace/executeCommand': function('s:processWorkspaceExecuteReply')
+      'workspace/executeCommand': function('s:processWorkspaceExecuteReply'),
+      'workspace/symbol': function('s:processWorkspaceSymbolReply')
     }
 
   if lsp_reply_handlers->has_key(req.method)
@@ -902,6 +939,7 @@ def s:processNotif(lspserver: dict<any>, reply: dict<any>): void
   var lsp_notif_handlers: dict<func> =
     {
       'textDocument/publishDiagnostics': function('s:processDiagNotif'),
+      'window/showMessage': function('s:processLogMsgNotif'),
       'window/logMessage': function('s:processLogMsgNotif')
     }
 
@@ -923,20 +961,33 @@ def s:sendResponse(lspserver: dict<any>, request: dict<any>, result: dict<any>, 
   lspserver.sendMessage(resp)
 enddef
 
-# process request message from the server
+# process the workspace/applyEdit LSP server request
+def s:processApplyEditReq(lspserver: dict<any>, request: dict<any>)
+  # interface ApplyWorkspaceEditParams
+  if !request->has_key('params')
+    return
+  endif
+  var workspaceEditParams: dict<any> = request.params
+  if workspaceEditParams->has_key('label')
+    :echomsg "Workspace edit" .. workspaceEditParams.label
+  endif
+  s:applyWorkspaceEdit(workspaceEditParams.edit)
+  # TODO: Need to return the proper result of the edit operation
+  lspserver.sendResponse(request, {'applied': v:true}, v:null)
+enddef
+
+# process a request message from the server
 def s:processRequest(lspserver: dict<any>, request: dict<any>)
-  if request.method == 'workspace/applyEdit'
-    # interface ApplyWorkspaceEditParams
-    if !request->has_key('params')
-      return
-    endif
-    var workspaceEditParams: dict<any> = request.params
-    if workspaceEditParams->has_key('label')
-      :echomsg "Workspace edit" .. workspaceEditParams.label
-    endif
-    s:applyWorkspaceEdit(workspaceEditParams.edit)
-    # TODO: Need to return the proper result of the edit operation
-    lspserver.sendResponse(request, {'applied': v:true}, v:null)
+  var lspRequestHandlers: dict<func> =
+    {
+      'workspace/applyEdit': function('s:processApplyEditReq')
+    }
+
+  if lspRequestHandlers->has_key(request.method)
+    lspRequestHandlers[request.method](lspserver, request)
+  else
+    ErrMsg('Error: Unsupported request received from LSP server ' ..
+							string(request))
   endif
 enddef
 
@@ -981,9 +1032,11 @@ def s:processMessages(lspserver: dict<any>): void
       if msg->has_key('result')
         lspserver.processReply(req, msg)
       else
+	# request failed
         var emsg: string = msg.error.message
+	emsg ..= ', code = ' .. msg.code
         if msg.error->has_key('data')
-          emsg = emsg .. ', data = ' .. msg.error.message
+          emsg = emsg .. ', data = ' .. string(msg.error.data)
         endif
         ErrMsg("Error: request " .. req.method .. " failed (" .. emsg .. ")")
       endif
@@ -1179,6 +1232,13 @@ def s:stopServer(lspserver: dict<any>): number
   lspserver.running = v:false
   lspserver.requests = {}
   return 0
+enddef
+
+# set the LSP server trace level using $/setTrace notification
+def s:setTrace(lspserver: dict<any>, traceVal: string)
+  var notif: dict<any> = lspserver.createNotification('$/setTrace')
+  notif.params->extend({'value': traceVal})
+  lspserver.sendMessage(notif)
 enddef
 
 # Send a LSP "textDocument/didOpen" notification
@@ -1654,6 +1714,7 @@ def lsp#addServer(serverList: list<dict<any>>)
         'stopServer': function('s:stopServer', [lspserver]),
         'shutdownServer': function('s:shutdownServer', [lspserver]),
         'exitServer': function('s:exitServer', [lspserver]),
+	'setTrace': function('s:setTrace', [lspserver]),
         'nextReqID': function('s:nextReqID', [lspserver]),
         'createRequest': function('s:createRequest', [lspserver]),
         'createResponse': function('s:createResponse', [lspserver]),
@@ -1682,6 +1743,31 @@ def lsp#addServer(serverList: list<dict<any>>)
       continue
     endif
   endfor
+enddef
+
+# set the LSP server trace level for the current buffer
+def lsp#setTraceServer(traceVal: string)
+  if ['off', 'message', 'verbose']->index(traceVal) == -1
+    ErrMsg("Error: Unsupported LSP server trace value " .. traceVal)
+    return
+  endif
+
+  var ftype = &filetype
+  if ftype == ''
+    return
+  endif
+
+  var lspserver: dict<any> = s:lspGetServer(ftype)
+  if lspserver->empty()
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    return
+  endif
+  if !lspserver.running
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    return
+  endif
+
+  lspserver.setTrace(traceVal)
 enddef
 
 # Map the LSP DiagnosticSeverity to a type character
@@ -2137,6 +2223,46 @@ def lsp#codeAction()
     diag->add(diagsMap[fname][lnum])
   endif
   req.params->extend({'context': {'diagnostics': diag}})
+
+  lspserver.sendMessage(req)
+enddef
+
+# Perform a workspace wide symbol lookup
+# Uses LSP "workspace/symbol" request
+def lsp#showWorkspaceSymbols()
+  var ftype = &filetype
+  if ftype == ''
+    return
+  endif
+
+  var lspserver: dict<any> = s:lspGetServer(ftype)
+  if lspserver->empty()
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    return
+  endif
+  if !lspserver.running
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    return
+  endif
+
+  # Check whether the LSP server supports listing workspace symbols
+  if !lspserver.caps->has_key('workspaceSymbolProvider')
+              || !lspserver.caps.workspaceSymbolProvider
+    ErrMsg("Error: LSP server does not support listing workspace symbols")
+    return
+  endif
+
+  var fname = @%
+  if fname == ''
+    return
+  endif
+
+  var req = lspserver.createRequest('workspace/symbol')
+  var sym: string = input("Lookup symbol: ", expand('<cword>'))
+  if sym == ''
+    return
+  endif
+  req.params->extend({'query': sym})
 
   lspserver.sendMessage(req)
 enddef
