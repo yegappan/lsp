@@ -93,7 +93,7 @@ def lsp#showServers()
       msg ..= 'not running'
     endif
     msg ..= '    ' .. lspserver.path
-    echomsg msg
+    :echomsg msg
   endfor
 enddef
 
@@ -150,6 +150,9 @@ def s:processInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
   # interface 'InitializeResult'
   var caps: dict<any> = reply.result.capabilities
   lspserver.caps = caps
+
+  # TODO: Check all the buffers with filetype corresponding to this LSP server
+  # and then setup the below mapping for those buffers.
 
   # map characters that trigger signature help
   if caps->has_key('signatureHelpProvider')
@@ -263,7 +266,13 @@ enddef
 
 # process the 'textDocument/completion' reply from the LSP server
 def s:processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
-  var items: list<dict<any>> = reply.result.items
+
+  var items: list<dict<any>>
+  if type(reply.result) == v:t_list
+    items = reply.result
+  else
+    items = reply.result.items
+  endif
 
   for item in items
     var d: dict<any> = {}
@@ -272,7 +281,7 @@ def s:processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
     elseif item->has_key('textEdit')
       d.word = item.textEdit.newText
     else
-      continue
+      d.word = item.label
     endif
     if item->has_key('kind')
       # namespace CompletionItemKind
@@ -304,17 +313,21 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
       # MarkupContent
       if reply.result.contents.kind == 'plaintext'
         hoverText = reply.result.contents.value->split("\n")
+      elseif reply.result.contents.kind == 'markdown'
+        hoverText = reply.result.contents.value->split("\n")
       else
         ErrMsg('Error: Unsupported hover contents type (' .. reply.result.contents.kind .. ')')
         return
       endif
     elseif reply.result.contents->has_key('value')
+      # MarkedString
       hoverText = reply.result.contents.value
     else
       ErrMsg('Error: Unsupported hover contents (' .. reply.result.contents .. ')')
       return
     endif
   elseif type(reply.result.contents) == v:t_list
+    # interface MarkedString[]
     for e in reply.result.contents
       if type(e) == v:t_string
         hoverText->extend(e->split("\n"))
@@ -346,8 +359,13 @@ def s:processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
   var qflist: list<dict<any>> = []
   for loc in locations
     var fname: string = LspUriToFile(loc.uri)
-    var text: string = fname->getbufline(loc.range.start.line + 1)[0]
-                                    ->trim("\t ", 1)
+    var bnr: number = fname->bufnr()
+    if bnr == -1
+      bnr = fname->bufadd()
+      bnr->bufload()
+    endif
+    var text: string = bnr->getbufline(loc.range.start.line + 1)[0]
+						->trim("\t ", 1)
     qflist->add({'filename': fname,
                     'lnum': loc.range.start.line + 1,
                     'col': loc.range.start.character + 1,
@@ -860,11 +878,31 @@ def s:processDiagNotif(lspserver: dict<any>, reply: dict<any>): void
   diagsMap->extend({[fname]: diag_by_lnum})
 enddef
 
+# process a log notification message from the LSP server
+def s:processLogMsgNotif(lspserver: dict<any>, reply: dict<any>)
+  # interface LogMessageParams
+  var msgType: list<string> = ['', 'Error: ', 'Warning: ', 'Info: ', 'Log: ']
+  if reply.params.type == 4
+    # ignore log messages from the LSP server (too chatty)
+    # TODO: Add a configuration to control the message level that will be
+    # displayed. Also store these messages and provide a command to display
+    # them.
+    return
+  endif
+  var mtype: string = 'Log: '
+  if reply.params.type > 0 && reply.params.type < 5
+    mtype = msgType[reply.params.type]
+  endif
+
+  :echomsg 'Lsp ' .. mtype .. reply.params.message
+enddef
+
 # process notification messages from the LSP server
 def s:processNotif(lspserver: dict<any>, reply: dict<any>): void
   var lsp_notif_handlers: dict<func> =
     {
-      'textDocument/publishDiagnostics': function('s:processDiagNotif')
+      'textDocument/publishDiagnostics': function('s:processDiagNotif'),
+      'window/logMessage': function('s:processLogMsgNotif')
     }
 
   if lsp_notif_handlers->has_key(reply.method)
@@ -894,7 +932,7 @@ def s:processRequest(lspserver: dict<any>, request: dict<any>)
     endif
     var workspaceEditParams: dict<any> = request.params
     if workspaceEditParams->has_key('label')
-      echomsg "Workspace edit" .. workspaceEditParams.label
+      :echomsg "Workspace edit" .. workspaceEditParams.label
     endif
     s:applyWorkspaceEdit(workspaceEditParams.edit)
     # TODO: Need to return the proper result of the edit operation
@@ -1034,10 +1072,29 @@ enddef
 def s:initServer(lspserver: dict<any>)
   var req = lspserver.createRequest('initialize')
 
+  var clientCaps: dict<any> = {
+	'workspace': {
+	    'applyEdit': v:true,
+	},
+	'textDocument': {},
+	'window': {},
+	'general': {}
+    }
+
   # interface 'InitializeParams'
   var initparams: dict<any> = {}
   initparams.processId = getpid()
-  initparams.clientInfo = {'name': 'Vim', 'version': string(v:versionlong)}
+  initparams.clientInfo = {
+	'name': 'Vim',
+	'version': string(v:versionlong),
+      }
+  initparams.rootPath = getcwd()
+  initparams.rootUri = LspFileToUri(getcwd())
+  initparams.workspaceFolders = {
+	'uri': LspFileToUri(getcwd()),
+	'name': getcwd()
+      }
+  initparams.capabilities = clientCaps
   req.params->extend(initparams)
 
   lspserver.sendMessage(req)
@@ -1510,6 +1567,23 @@ def lsp#addFile(bnr: number): void
   setbufvar(bnr, '&completefunc', 'lsp#completeFunc')
   setbufvar(bnr, '&completeopt', 'menuone,preview,noinsert')
 
+  # map characters that trigger signature help
+  if lspserver.caps->has_key('signatureHelpProvider')
+    var triggers = lspserver.caps.signatureHelpProvider.triggerCharacters
+    for ch in triggers
+      exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch
+				.. "<C-R>=lsp#showSignature()<CR>"
+    endfor
+  endif
+
+  # map characters that trigger insert mode completion
+  if lspserver.caps->has_key('completionProvider')
+    var triggers = lspserver.caps.completionProvider.triggerCharacters
+    for ch in triggers
+      exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch .. "<C-X><C-U>"
+    endfor
+  endif
+
   bufnrToServer[bnr] = lspserver
 enddef
 
@@ -1702,7 +1776,7 @@ def lsp#completeFunc(findstart: number, base: string): any
   else
     var count: number = 0
     while !complete_check() && lspserver.completePending
-            && count < 500
+            && count < 1000
       sleep 2m
       count += 1
     endwhile
@@ -1965,13 +2039,13 @@ def lsp#incomingCalls()
     return
   endif
 
-  echomsg 'Error: Not implemented yet'
+  :echomsg 'Error: Not implemented yet'
 enddef
 
 # Display all the symbols used by the current symbol.
 # Uses LSP "callHierarchy/outgoingCalls" request
 def lsp#outgoingCalls()
-  echomsg 'Error: Not implemented yet'
+  :echomsg 'Error: Not implemented yet'
 enddef
 
 # Rename a symbol
