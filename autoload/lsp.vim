@@ -1127,6 +1127,7 @@ def s:initServer(lspserver: dict<any>)
 
   var clientCaps: dict<any> = {
 	'workspace': {
+	    'workspaceFolders': v:true,
 	    'applyEdit': v:true,
 	},
 	'textDocument': {},
@@ -1183,6 +1184,7 @@ def s:startServer(lspserver: dict<any>): number
   lspserver.nextID = 1
   lspserver.requests = {}
   lspserver.completePending = v:false
+  lspserver.workspaceFolders = [getcwd()]
 
   var job = job_start(cmd, opts)
   if job->job_status() == 'fail'
@@ -2265,6 +2267,129 @@ def lsp#showWorkspaceSymbols()
   req.params->extend({'query': sym})
 
   lspserver.sendMessage(req)
+enddef
+
+# Display the list of workspace folders
+def lsp#listWorkspaceFolders()
+  var ftype = &filetype
+  if ftype == ''
+    return
+  endif
+
+  var lspserver: dict<any> = s:lspGetServer(ftype)
+  if lspserver->empty()
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    return
+  endif
+  if !lspserver.running
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    return
+  endif
+
+  echomsg 'Workspace Folders: ' .. string(lspserver.workspaceFolders)
+enddef
+
+# Add a workspace folder. Default is to use the current folder.
+def lsp#addWorkspaceFolder(dirArg: string)
+  var ftype = &filetype
+  if ftype == ''
+    return
+  endif
+
+  var lspserver: dict<any> = s:lspGetServer(ftype)
+  if lspserver->empty()
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    return
+  endif
+  if !lspserver.running
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    return
+  endif
+
+  if !lspserver.caps->has_key('workspace')
+	  || !lspserver.caps.workspace->has_key('workspaceFolders')
+	  || !lspserver.caps.workspace.workspaceFolders->has_key('supported')
+	  || !lspserver.caps.workspace.workspaceFolders.supported
+      ErrMsg('Error: LSP server does not support workspace folders')
+    return
+  endif
+
+  var dirName: string = dirArg
+  if dirName == ''
+    dirName = input("Add Workspace Folder: ", getcwd(), 'dir')
+    if dirName == ''
+      return
+    endif
+  endif
+  :redraw!
+  if !dirName->isdirectory()
+    ErrMsg('Error: ' .. dirName .. ' is not a directory')
+    return
+  endif
+
+  if lspserver.workspaceFolders->index(dirName) != -1
+    ErrMsg('Error: ' .. dirName .. ' is already part of this workspace')
+    return
+  endif
+
+  var notif: dict<any> = lspserver.createNotification('workspace/didChangeWorkspaceFolders')
+  # interface DidChangeWorkspaceFoldersParams
+  notif.params->extend({'event': {'added': [dirName], 'removed': []}})
+  lspserver.sendMessage(notif)
+
+  lspserver.workspaceFolders->add(dirName)
+enddef
+
+# Remove a workspace folder. Default is to use the current folder.
+def lsp#removeWorkspaceFolder(dirArg: string)
+  var ftype = &filetype
+  if ftype == ''
+    return
+  endif
+
+  var lspserver: dict<any> = s:lspGetServer(ftype)
+  if lspserver->empty()
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    return
+  endif
+  if !lspserver.running
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    return
+  endif
+
+  if !lspserver.caps->has_key('workspace')
+	  || !lspserver.caps.workspace->has_key('workspaceFolders')
+	  || !lspserver.caps.workspace.workspaceFolders->has_key('supported')
+	  || !lspserver.caps.workspace.workspaceFolders.supported
+      ErrMsg('Error: LSP server does not support workspace folders')
+    return
+  endif
+
+  var dirName: string = dirArg
+  if dirName == ''
+    dirName = input("Remove Workspace Folder: ", getcwd(), 'dir')
+    if dirName == ''
+      return
+    endif
+  endif
+  :redraw!
+  if !dirName->isdirectory()
+    ErrMsg('Error: ' .. dirName .. ' is not a directory')
+    return
+  endif
+
+  var idx: number = lspserver.workspaceFolders->index(dirName)
+  if idx == -1
+    ErrMsg('Error: ' .. dirName .. ' is not currently part of this workspace')
+    return
+  endif
+
+  var notif: dict<any> = lspserver.createNotification('workspace/didChangeWorkspaceFolders')
+  # interface DidChangeWorkspaceFoldersParams
+  notif.params->extend({'event': {'added': [], 'removed': [dirName]}})
+  lspserver.sendMessage(notif)
+
+  lspserver.workspaceFolders->remove(idx)
 enddef
 
 # vim: shiftwidth=2 softtabstop=2
