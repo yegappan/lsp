@@ -432,7 +432,7 @@ def s:showSignature(lspserver: dict<any>): void
   lspserver.sendMessage(req)
 enddef
 
-def s:didSaveFile(lspserver: dict<any>): void
+def s:didSaveFile(lspserver: dict<any>, bnr: number): void
   # Check whether the LSP server supports the didSave notification
   if !lspserver.caps->has_key('textDocumentSync')
 		|| lspserver.caps.textDocumentSync->type() == v:t_number

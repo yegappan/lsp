@@ -184,7 +184,7 @@ def s:lspSavedFile()
     return
   endif
 
-  lspserver.didSaveFile()
+  lspserver.didSaveFile(bnr)
 enddef
 
 # A new buffer is opened. If LSP is supported for this buffer, then add it
