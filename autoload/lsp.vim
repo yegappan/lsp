@@ -755,4 +755,60 @@ def lsp#removeWorkspaceFolder(dirArg: string)
   lspserver.removeWorkspaceFolder(dirName)
 enddef
 
+# visually select a range of positions around the current cursor.
+def lsp#selectionRange()
+  var ftype = &filetype
+  if ftype == ''
+    return
+  endif
+
+  var lspserver: dict<any> = s:lspGetServer(ftype)
+  if lspserver->empty()
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    return
+  endif
+  if !lspserver.running
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    return
+  endif
+
+  var fname = @%
+  if fname == ''
+    return
+  endif
+
+  # TODO: Also support passing a range
+  lspserver.selectionRange(fname)
+enddef
+
+# fold the entire document
+def lsp#foldDocument()
+  var ftype = &filetype
+  if ftype == ''
+    return
+  endif
+
+  var lspserver: dict<any> = s:lspGetServer(ftype)
+  if lspserver->empty()
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    return
+  endif
+  if !lspserver.running
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    return
+  endif
+
+  var fname = @%
+  if fname == ''
+    return
+  endif
+
+  if &foldmethod != 'manual'
+    ErrMsg("Error: Only works when 'foldmethod' is 'manual'")
+    return
+  endif
+
+  lspserver.foldRange(fname)
+enddef
+
 # vim: shiftwidth=2 softtabstop=2

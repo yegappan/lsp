@@ -73,14 +73,16 @@ def s:initServer(lspserver: dict<any>)
   var req = lspserver.createRequest('initialize')
 
   var clientCaps: dict<any> = {
-	workspace: {
-	    workspaceFolders: v:true,
-	    applyEdit: v:true,
-	},
-	textDocument: {},
-	window: {},
-	general: {}
-    }
+    workspace: {
+      workspaceFolders: v:true,
+      applyEdit: v:true,
+    },
+    textDocument: {
+      foldingRange: {lineFoldingOnly: v:true}
+    },
+    window: {},
+    general: {}
+  }
 
   # interface 'InitializeParams'
   var initparams: dict<any> = {}
@@ -655,6 +657,39 @@ def s:removeWorkspaceFolder(lspserver: dict<any>, dirName: string): void
   lspserver.workspaceFolders->remove(idx)
 enddef
 
+# select the text around the current cursor location
+def s:selectionRange(lspserver: dict<any>, fname: string)
+  # Check whether LSP server supports selection ranges
+  if !lspserver.caps->has_key('selectionRangeProvider')
+			|| !lspserver.caps.selectionRangeProvider
+    ErrMsg("Error: LSP server does not support selection ranges")
+    return
+  endif
+
+  var req = lspserver.createRequest('textDocument/selectionRange')
+  # interface SelectionRangeParams
+  # interface TextDocumentIdentifier
+  req.params->extend({textDocument: {uri: LspFileToUri(fname)}})
+  req.params->extend({positions: [s:getLspPosition()]})
+  lspserver.sendMessage(req)
+enddef
+
+# fold the entire document
+def s:foldRange(lspserver: dict<any>, fname: string)
+  # Check whether LSP server supports fold ranges
+  if !lspserver.caps->has_key('foldingRangeProvider')
+			|| !lspserver.caps.foldingRangeProvider
+    ErrMsg("Error: LSP server does not support folding")
+    return
+  endif
+
+  var req = lspserver.createRequest('textDocument/foldingRange')
+  # interface FoldingRangeParams
+  # interface TextDocumentIdentifier
+  req.params->extend({textDocument: {uri: LspFileToUri(fname)}})
+  lspserver.sendMessage(req)
+enddef
+
 export def NewLspServer(path: string, args: list<string>): dict<any>
   var lspserver: dict<any> = {
     path: path,
@@ -706,7 +741,9 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
     codeAction: function('s:codeAction', [lspserver]),
     workspaceSymbols: function('s:workspaceSymbols', [lspserver]),
     addWorkspaceFolder: function('s:addWorkspaceFolder', [lspserver]),
-    removeWorkspaceFolder: function('s:removeWorkspaceFolder', [lspserver])
+    removeWorkspaceFolder: function('s:removeWorkspaceFolder', [lspserver]),
+    selectionRange: function('s:selectionRange', [lspserver]),
+    foldRange: function('s:foldRange', [lspserver])
   })
 
   return lspserver

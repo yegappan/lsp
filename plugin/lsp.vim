@@ -39,4 +39,5 @@ command! -nargs=0 -bar LspShowWorkspaceSymbols call lsp#showWorkspaceSymbols()
 command! -nargs=0 -bar LspWorkspaceListFolders call lsp#listWorkspaceFolders()
 command! -nargs=1 -bar -complete=dir LspWorkspaceAddFolder call lsp#addWorkspaceFolder(<q-args>)
 command! -nargs=1 -bar -complete=dir LspWorkspaceRemoveFolder call lsp#removeWorkspaceFolder(<q-args>)
-
+command! -nargs=0 -bar LspSelectionRange call lsp#selectionRange()
+command! -nargs=0 -bar LspFold call lsp#foldDocument()

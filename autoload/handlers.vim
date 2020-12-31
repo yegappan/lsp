@@ -713,6 +713,36 @@ def s:processCodeActionReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
   endif
 enddef
 
+# process the 'textDocument/selectionRange' reply from the LSP server
+def s:processSelectionRangeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+  if reply.result->empty()
+    return
+  endif
+
+  var r: dict<dict<number>> = reply.result[0].range
+
+  setpos("'<", [0, r.start.line + 1, r.start.character + 1, 0])
+  setpos("'>", [0, r.end.line + 1, r.end.character, 0])
+  :normal gv
+enddef
+
+# process the 'textDocument/foldingRange' reply from the LSP server
+def s:processFoldingRangeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+  if reply.result->empty()
+    return
+  endif
+
+  # result: FoldingRange[]
+  for foldRange in reply.result
+    exe ':' .. (foldRange.startLine + 1) .. ',' .. (foldRange.endLine + 2) .. 'fold'
+    :foldopen!
+  endfor
+
+  if &foldcolumn == 0
+    :setlocal foldcolumn=2
+  endif
+enddef
+
 # process the 'workspace/executeCommand' reply from the LSP server
 def s:processWorkspaceExecuteReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   if reply.result->empty()
@@ -751,6 +781,8 @@ export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
       'textDocument/rangeFormatting': function('s:processFormatReply'),
       'textDocument/rename': function('s:processRenameReply'),
       'textDocument/codeAction': function('s:processCodeActionReply'),
+      'textDocument/selectionRange': function('s:processSelectionRangeReply'),
+      'textDocument/foldingRange': function('s:processFoldingRangeReply'),
       'workspace/executeCommand': function('s:processWorkspaceExecuteReply'),
       'workspace/symbol': function('s:processWorkspaceSymbolReply')
     }
