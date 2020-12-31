@@ -1292,6 +1292,46 @@ def s:getLspTextDocPosition(): dict<dict<any>>
 	  'position': s:getLspPosition()}
 enddef
 
+def s:gotoDefinition(lspserver: dict<any>): void
+  var req = lspserver.createRequest('textDocument/definition')
+
+  # interface DefinitionParams
+  #   interface TextDocumentPositionParams
+  req.params->extend(s:getLspTextDocPosition())
+
+  lspserver.sendMessage(req)
+enddef
+
+def s:gotoDeclaration(lspserver: dict<any>): void
+  var req = lspserver.createRequest('textDocument/declaration')
+
+  # interface DeclarationParams
+  #   interface TextDocumentPositionParams
+  req.params->extend(s:getLspTextDocPosition())
+
+  lspserver.sendMessage(req)
+enddef
+
+def s:gotoTypeDef(lspserver: dict<any>): void
+  var req = lspserver.createRequest('textDocument/typeDefinition')
+
+  # interface TypeDefinitionParams
+  #   interface TextDocumentPositionParams
+  req.params->extend(s:getLspTextDocPosition())
+
+  lspserver.sendMessage(req)
+enddef
+
+def s:gotoImplementation(lspserver: dict<any>): void
+  var req = lspserver.createRequest('textDocument/implementation')
+
+  # interface ImplementationParams
+  #   interface TextDocumentPositionParams
+  req.params->extend(s:getLspTextDocPosition())
+
+  lspserver.sendMessage(req)
+enddef
+
 # Go to a definition using "textDocument/definition" LSP request
 def lsp#gotoDefinition()
   var ftype: string = &filetype
@@ -1328,13 +1368,7 @@ def lsp#gotoDefinition()
                            'tagname': expand('<cword>')}
                          ]}, 'a')
 
-  var req = lspserver.createRequest('textDocument/definition')
-
-  # interface DefinitionParams
-  #   interface TextDocumentPositionParams
-  req.params->extend(s:getLspTextDocPosition())
-
-  lspserver.sendMessage(req)
+  lspserver.gotoDefinition()
 enddef
 
 # Go to a declaration using "textDocument/declaration" LSP request
@@ -1373,13 +1407,7 @@ def lsp#gotoDeclaration()
                            'tagname': expand('<cword>')}
                          ]}, 'a')
 
-  var req = lspserver.createRequest('textDocument/declaration')
-
-  # interface DeclarationParams
-  #   interface TextDocumentPositionParams
-  req.params->extend(s:getLspTextDocPosition())
-
-  lspserver.sendMessage(req)
+  lspserver.gotoDeclaration()
 enddef
 
 # Go to a type definition using "textDocument/typeDefinition" LSP request
@@ -1418,13 +1446,7 @@ def lsp#gotoTypedef()
                            'tagname': expand('<cword>')}
                          ]}, 'a')
 
-  var req = lspserver.createRequest('textDocument/typeDefinition')
-
-  # interface TypeDefinitionParams
-  #   interface TextDocumentPositionParams
-  req.params->extend(s:getLspTextDocPosition())
-
-  lspserver.sendMessage(req)
+  lspserver.gotoTypeDef()
 enddef
 
 # Go to a implementation using "textDocument/implementation" LSP request
@@ -1463,9 +1485,18 @@ def lsp#gotoImplementation()
                            'tagname': expand('<cword>')}
                          ]}, 'a')
 
-  var req = lspserver.createRequest('textDocument/implementation')
+  lspserver.gotoImplementation()
+enddef
 
-  # interface ImplementationParams
+def s:showSignature(lspserver: dict<any>): void
+  # Check whether LSP server supports signature help
+  if !lspserver.caps->has_key('signatureHelpProvider')
+    ErrMsg("Error: LSP server does not support signature help")
+    return
+  endif
+
+  var req = lspserver.createRequest('textDocument/signatureHelp')
+  # interface SignatureHelpParams
   #   interface TextDocumentPositionParams
   req.params->extend(s:getLspTextDocPosition())
 
@@ -1489,11 +1520,6 @@ def lsp#showSignature(): string
     ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return ''
   endif
-  # Check whether LSP server supports signature help
-  if !lspserver.caps->has_key('signatureHelpProvider')
-    ErrMsg("Error: LSP server does not support signature help")
-    return ''
-  endif
 
   var fname: string = @%
   if fname == ''
@@ -1502,13 +1528,7 @@ def lsp#showSignature(): string
 
   # first send all the changes in the current buffer to the LSP server
   listener_flush()
-
-  var req = lspserver.createRequest('textDocument/signatureHelp')
-  # interface SignatureHelpParams
-  #   interface TextDocumentPositionParams
-  req.params->extend(s:getLspTextDocPosition())
-
-  lspserver.sendMessage(req)
+  lspserver.showSignature()
   return ''
 enddef
 
@@ -1573,6 +1593,13 @@ def lsp#bufchange_listener(bnr: number, start: number, end: number, added: numbe
   lspserver.sendMessage(notif)
 enddef
 
+def s:didSaveFile(lspserver: dict<any>): void
+  var notif: dict<any> = lspserver.createNotification('textDocument/didSave')
+  # interface: DidSaveTextDocumentParams
+  notif.params->extend({'textDocument': {'uri': LspFileToUri(bufname(bnr))}})
+  lspserver.sendMessage(notif)
+enddef
+
 # A buffer is saved. Send the "textDocument/didSave" LSP notification
 def s:lspSavedFile()
   var bnr: number = str2nr(expand('<abuf>'))
@@ -1591,12 +1618,7 @@ def s:lspSavedFile()
     return
   endif
 
-  var notif: dict<any> = lspserver.createNotification('textDocument/didSave')
-
-  # interface: DidSaveTextDocumentParams
-  notif.params->extend({'textDocument': {'uri': LspFileToUri(bufname(bnr))}})
-
-  lspserver.sendMessage(notif)
+  lspserver.didSaveFile()
 enddef
 
 # A new buffer is opened. If LSP is supported for this buffer, then add it
@@ -1730,7 +1752,21 @@ def lsp#addServer(serverList: list<dict<any>>)
         'textdocDidOpen': function('s:textdocDidOpen', [lspserver]),
         'textdocDidClose': function('s:textdocDidClose', [lspserver]),
         'sendInitializedNotif': function('s:sendInitializedNotif', [lspserver]),
-        'getCompletion': function('s:getCompletion', [lspserver])
+        'getCompletion': function('s:getCompletion', [lspserver]),
+	'gotoDefinition': function('s:gotoDefinition', [lspserver]),
+	'gotoDeclaration': function('s:gotoDeclaration', [lspserver]),
+	'gotoTypeDef': function('s:gotoTypeDef', [lspserver]),
+	'gotoImplementation': function('s:gotoImplementation', [lspserver]),
+	'showSignature': function('s:showSignature', [lspserver]),
+	'didSaveFile': function('s:didSaveFile', [lspserver]),
+	'hover': function('s:hover', [lspserver]),
+	'showReferences': function('s:showReferences', [lspserver]),
+	'docHighlight': function('s:docHighlight', [lspserver]),
+	'showDocSymbols': function('s:showDocSymbols', [lspserver]),
+	'renameSymbol': function('s:renameSymbol', [lspserver]),
+	'workspaceSymbols': function('s:workspaceSymbols', [lspserver]),
+	'addWorkspaceFolder': function('s:addWorkspaceFolder', [lspserver]),
+	'removeWorkspaceFolder': function('s:removeWorkspaceFolder', [lspserver])
       })
 
     if type(server.filetype) == v:t_string
@@ -1877,6 +1913,20 @@ def lsp#completeFunc(findstart: number, base: string): any
   endif
 enddef
 
+def s:hover(lspserver: dict<any>): void
+  # Check whether LSP server supports getting hover information
+  if !lspserver.caps->has_key('hoverProvider')
+              || !lspserver.caps.hoverProvider
+    return
+  endif
+
+  var req = lspserver.createRequest('textDocument/hover')
+  # interface HoverParams
+  #   interface TextDocumentPositionParams
+  req.params->extend(s:getLspTextDocPosition())
+  lspserver.sendMessage(req)
+enddef
+
 # Display the hover message from the LSP server for the current cursor
 # location
 def LspHover()
@@ -1892,21 +1942,28 @@ def LspHover()
   if !lspserver.running
     return
   endif
-  # Check whether LSP server supports getting hover information
-  if !lspserver.caps->has_key('hoverProvider')
-              || !lspserver.caps.hoverProvider
-    return
-  endif
 
   var fname = @%
   if fname == ''
     return
   endif
 
-  var req = lspserver.createRequest('textDocument/hover')
-  # interface HoverParams
+  lspserver.hover()
+enddef
+
+def s:showReferences(lspserver: dict<any>): void
+  # Check whether LSP server supports getting reference information
+  if !lspserver.caps->has_key('referencesProvider')
+              || !lspserver.caps.referencesProvider
+    ErrMsg("Error: LSP server does not support showing references")
+    return
+  endif
+
+  var req = lspserver.createRequest('textDocument/references')
+  # interface ReferenceParams
   #   interface TextDocumentPositionParams
   req.params->extend(s:getLspTextDocPosition())
+  req.params->extend({'context': {'includeDeclaration': v:true}})
 
   lspserver.sendMessage(req)
 enddef
@@ -1928,24 +1985,26 @@ def lsp#showReferences()
     return
   endif
 
-  # Check whether LSP server supports getting reference information
-  if !lspserver.caps->has_key('referencesProvider')
-              || !lspserver.caps.referencesProvider
-    ErrMsg("Error: LSP server does not support showing references")
-    return
-  endif
-
   var fname = @%
   if fname == ''
     return
   endif
 
-  var req = lspserver.createRequest('textDocument/references')
-  # interface ReferenceParams
+  lspserver.showReferences()
+enddef
+
+def s:docHighlight(lspserver: dict<any>): void
+  # Check whether LSP server supports getting highlight information
+  if !lspserver.caps->has_key('documentHighlightProvider')
+              || !lspserver.caps.documentHighlightProvider
+    ErrMsg("Error: LSP server does not support document highlight")
+    return
+  endif
+
+  var req = lspserver.createRequest('textDocument/documentHighlight')
+  # interface DocumentHighlightParams
   #   interface TextDocumentPositionParams
   req.params->extend(s:getLspTextDocPosition())
-  req.params->extend({'context': {'includeDeclaration': v:true}})
-
   lspserver.sendMessage(req)
 enddef
 
@@ -1966,24 +2025,12 @@ def lsp#docHighlight()
     return
   endif
 
-  # Check whether LSP server supports getting highlight information
-  if !lspserver.caps->has_key('documentHighlightProvider')
-              || !lspserver.caps.documentHighlightProvider
-    ErrMsg("Error: LSP server does not support document highlight")
-    return
-  endif
-
   var fname = @%
   if fname == ''
     return
   endif
 
-  var req = lspserver.createRequest('textDocument/documentHighlight')
-  # interface DocumentHighlightParams
-  #   interface TextDocumentPositionParams
-  req.params->extend(s:getLspTextDocPosition())
-
-  lspserver.sendMessage(req)
+  lspserver.docHighlight()
 enddef
 
 # clear the symbol reference highlight
@@ -1991,6 +2038,21 @@ def lsp#docHighlightClear()
   prop_remove({'type': 'LspTextRef', 'all': v:true}, 1, line('$'))
   prop_remove({'type': 'LspReadRef', 'all': v:true}, 1, line('$'))
   prop_remove({'type': 'LspWriteRef', 'all': v:true}, 1, line('$'))
+enddef
+
+def s:showDocSymbols(lspserver: dict<any>, fname: string): void
+  # Check whether LSP server supports getting document symbol information
+  if !lspserver.caps->has_key('documentSymbolProvider')
+              || !lspserver.caps.documentSymbolProvider
+    ErrMsg("Error: LSP server does not support getting list of symbols")
+    return
+  endif
+
+  var req = lspserver.createRequest('textDocument/documentSymbol')
+  # interface DocumentSymbolParams
+  # interface TextDocumentIdentifier
+  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
+  lspserver.sendMessage(req)
 enddef
 
 # open a window and display all the symbols in a file
@@ -2010,24 +2072,12 @@ def lsp#showDocSymbols()
     return
   endif
 
-  # Check whether LSP server supports getting document symbol information
-  if !lspserver.caps->has_key('documentSymbolProvider')
-              || !lspserver.caps.documentSymbolProvider
-    ErrMsg("Error: LSP server does not support getting list of symbols")
-    return
-  endif
-
   var fname = @%
   if fname == ''
     return
   endif
 
-  var req = lspserver.createRequest('textDocument/documentSymbol')
-  # interface DocumentSymbolParams
-  # interface TextDocumentIdentifier
-  req.params->extend({'textDocument': {'uri': LspFileToUri(fname)}})
-
-  lspserver.sendMessage(req)
+  lspserver.showDocSymbols(fname)
 enddef
 
 # Format the entire file
@@ -2136,6 +2186,22 @@ def lsp#outgoingCalls()
   :echomsg 'Error: Not implemented yet'
 enddef
 
+def s:renameSymbol(lspserver: dict<any>, newName: string)
+  # Check whether LSP server supports rename operation
+  if !lspserver.caps->has_key('renameProvider')
+              || !lspserver.caps.renameProvider
+    ErrMsg("Error: LSP server does not support rename operation")
+    return
+  endif
+
+  var req = lspserver.createRequest('textDocument/rename')
+  # interface RenameParams
+  #   interface TextDocumentPositionParams
+  req.params->extend(s:getLspTextDocPosition())
+  req.params->extend({'newName': newName})
+  lspserver.sendMessage(req)
+enddef
+
 # Rename a symbol
 # Uses LSP "textDocument/rename" request
 def lsp#rename()
@@ -2154,13 +2220,6 @@ def lsp#rename()
     return
   endif
 
-  # Check whether LSP server supports rename operation
-  if !lspserver.caps->has_key('renameProvider')
-              || !lspserver.caps.renameProvider
-    ErrMsg("Error: LSP server does not support rename operation")
-    return
-  endif
-
   var fname = @%
   if fname == ''
     return
@@ -2171,13 +2230,7 @@ def lsp#rename()
     return
   endif
 
-  var req = lspserver.createRequest('textDocument/rename')
-  # interface RenameParams
-  #   interface TextDocumentPositionParams
-  req.params->extend(s:getLspTextDocPosition())
-  req.params->extend({'newName': newName})
-
-  lspserver.sendMessage(req)
+  lspserver.renameSymbol(newName)
 enddef
 
 # Perform a code action
@@ -2229,6 +2282,19 @@ def lsp#codeAction()
   lspserver.sendMessage(req)
 enddef
 
+def s:workspaceSymbols(lspserver: dict<any>, sym: string)
+  # Check whether the LSP server supports listing workspace symbols
+  if !lspserver.caps->has_key('workspaceSymbolProvider')
+              || !lspserver.caps.workspaceSymbolProvider
+    ErrMsg("Error: LSP server does not support listing workspace symbols")
+    return
+  endif
+
+  var req = lspserver.createRequest('workspace/symbol')
+  req.params->extend({'query': sym})
+  lspserver.sendMessage(req)
+enddef
+
 # Perform a workspace wide symbol lookup
 # Uses LSP "workspace/symbol" request
 def lsp#showWorkspaceSymbols()
@@ -2247,26 +2313,17 @@ def lsp#showWorkspaceSymbols()
     return
   endif
 
-  # Check whether the LSP server supports listing workspace symbols
-  if !lspserver.caps->has_key('workspaceSymbolProvider')
-              || !lspserver.caps.workspaceSymbolProvider
-    ErrMsg("Error: LSP server does not support listing workspace symbols")
-    return
-  endif
-
   var fname = @%
   if fname == ''
     return
   endif
 
-  var req = lspserver.createRequest('workspace/symbol')
   var sym: string = input("Lookup symbol: ", expand('<cword>'))
   if sym == ''
     return
   endif
-  req.params->extend({'query': sym})
 
-  lspserver.sendMessage(req)
+  lspserver.workspaceSymbols(sym)
 enddef
 
 # Display the list of workspace folders
@@ -2289,6 +2346,53 @@ def lsp#listWorkspaceFolders()
   echomsg 'Workspace Folders: ' .. string(lspserver.workspaceFolders)
 enddef
 
+def s:addWorkspaceFolder(lspserver: dict<any>, dirName: string): void
+  if !lspserver.caps->has_key('workspace')
+	  || !lspserver.caps.workspace->has_key('workspaceFolders')
+	  || !lspserver.caps.workspace.workspaceFolders->has_key('supported')
+	  || !lspserver.caps.workspace.workspaceFolders.supported
+      ErrMsg('Error: LSP server does not support workspace folders')
+    return
+  endif
+
+  if lspserver.workspaceFolders->index(dirName) != -1
+    ErrMsg('Error: ' .. dirName .. ' is already part of this workspace')
+    return
+  endif
+
+  var notif: dict<any> =
+	lspserver.createNotification('workspace/didChangeWorkspaceFolders')
+  # interface DidChangeWorkspaceFoldersParams
+  notif.params->extend({'event': {'added': [dirName], 'removed': []}})
+  lspserver.sendMessage(notif)
+
+  lspserver.workspaceFolders->add(dirName)
+enddef
+
+def s:removeWorkspaceFolder(lspserver: dict<any>, dirName: string): void
+  if !lspserver.caps->has_key('workspace')
+	  || !lspserver.caps.workspace->has_key('workspaceFolders')
+	  || !lspserver.caps.workspace.workspaceFolders->has_key('supported')
+	  || !lspserver.caps.workspace.workspaceFolders.supported
+      ErrMsg('Error: LSP server does not support workspace folders')
+    return
+  endif
+
+  var idx: number = lspserver.workspaceFolders->index(dirName)
+  if idx == -1
+    ErrMsg('Error: ' .. dirName .. ' is not currently part of this workspace')
+    return
+  endif
+
+  var notif: dict<any> =
+	lspserver.createNotification('workspace/didChangeWorkspaceFolders')
+  # interface DidChangeWorkspaceFoldersParams
+  notif.params->extend({'event': {'added': [], 'removed': [dirName]}})
+  lspserver.sendMessage(notif)
+
+  lspserver.workspaceFolders->remove(idx)
+enddef
+
 # Add a workspace folder. Default is to use the current folder.
 def lsp#addWorkspaceFolder(dirArg: string)
   var ftype = &filetype
@@ -2306,14 +2410,6 @@ def lsp#addWorkspaceFolder(dirArg: string)
     return
   endif
 
-  if !lspserver.caps->has_key('workspace')
-	  || !lspserver.caps.workspace->has_key('workspaceFolders')
-	  || !lspserver.caps.workspace.workspaceFolders->has_key('supported')
-	  || !lspserver.caps.workspace.workspaceFolders.supported
-      ErrMsg('Error: LSP server does not support workspace folders')
-    return
-  endif
-
   var dirName: string = dirArg
   if dirName == ''
     dirName = input("Add Workspace Folder: ", getcwd(), 'dir')
@@ -2327,17 +2423,7 @@ def lsp#addWorkspaceFolder(dirArg: string)
     return
   endif
 
-  if lspserver.workspaceFolders->index(dirName) != -1
-    ErrMsg('Error: ' .. dirName .. ' is already part of this workspace')
-    return
-  endif
-
-  var notif: dict<any> = lspserver.createNotification('workspace/didChangeWorkspaceFolders')
-  # interface DidChangeWorkspaceFoldersParams
-  notif.params->extend({'event': {'added': [dirName], 'removed': []}})
-  lspserver.sendMessage(notif)
-
-  lspserver.workspaceFolders->add(dirName)
+  lspserver.addWorkspaceFolder(dirName)
 enddef
 
 # Remove a workspace folder. Default is to use the current folder.
@@ -2357,14 +2443,6 @@ def lsp#removeWorkspaceFolder(dirArg: string)
     return
   endif
 
-  if !lspserver.caps->has_key('workspace')
-	  || !lspserver.caps.workspace->has_key('workspaceFolders')
-	  || !lspserver.caps.workspace.workspaceFolders->has_key('supported')
-	  || !lspserver.caps.workspace.workspaceFolders.supported
-      ErrMsg('Error: LSP server does not support workspace folders')
-    return
-  endif
-
   var dirName: string = dirArg
   if dirName == ''
     dirName = input("Remove Workspace Folder: ", getcwd(), 'dir')
@@ -2378,18 +2456,7 @@ def lsp#removeWorkspaceFolder(dirArg: string)
     return
   endif
 
-  var idx: number = lspserver.workspaceFolders->index(dirName)
-  if idx == -1
-    ErrMsg('Error: ' .. dirName .. ' is not currently part of this workspace')
-    return
-  endif
-
-  var notif: dict<any> = lspserver.createNotification('workspace/didChangeWorkspaceFolders')
-  # interface DidChangeWorkspaceFoldersParams
-  notif.params->extend({'event': {'added': [], 'removed': [dirName]}})
-  lspserver.sendMessage(notif)
-
-  lspserver.workspaceFolders->remove(idx)
+  lspserver.removeWorkspaceFolder(dirName)
 enddef
 
 # vim: shiftwidth=2 softtabstop=2
