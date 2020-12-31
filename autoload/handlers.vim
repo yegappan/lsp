@@ -44,7 +44,7 @@ def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>
     # pop the tag stack
     var tagstack: dict<any> = gettagstack()
     if tagstack.length > 0
-      settagstack(winnr(), {'curidx': tagstack.length}, 't')
+      settagstack(winnr(), {curidx: tagstack.length}, 't')
     endif
     return
   endif
@@ -84,41 +84,41 @@ def s:processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dic
     endif
   endif
   var popupID = popup_atcursor(text, {})
-  prop_type_add('signature', {'bufnr': popupID->winbufnr(), 'highlight': 'Title'})
+  prop_type_add('signature', {bufnr: popupID->winbufnr(), highlight: 'Title'})
   if hllen > 0
-    prop_add(1, startcol + 1, {'bufnr': popupID->winbufnr(), 'length': hllen, 'type': 'signature'})
+    prop_add(1, startcol + 1, {bufnr: popupID->winbufnr(), length: hllen, type: 'signature'})
   endif
 enddef
 
 # Map LSP complete item kind to a character
 def LspCompleteItemKindChar(kind: number): string
   var kindMap: list<string> = ['',
-                    't', # Text
-                    'm', # Method
-                    'f', # Function
-                    'C', # Constructor
-                    'F', # Field
-                    'v', # Variable
-                    'c', # Class
-                    'i', # Interface
-                    'M', # Module
-                    'p', # Property
-                    'u', # Unit
-                    'V', # Value
-                    'e', # Enum
-                    'k', # Keyword
-                    'S', # Snippet
-                    'C', # Color
-                    'f', # File
-                    'r', # Reference
-                    'F', # Folder
-                    'E', # EnumMember
-                    'd', # Contant
-                    's', # Struct
-                    'E', # Event
-                    'o', # Operator
-                    'T'  # TypeParameter
-                    ]
+		't', # Text
+		'm', # Method
+		'f', # Function
+		'C', # Constructor
+		'F', # Field
+		'v', # Variable
+		'c', # Class
+		'i', # Interface
+		'M', # Module
+		'p', # Property
+		'u', # Unit
+		'V', # Value
+		'e', # Enum
+		'k', # Keyword
+		'S', # Snippet
+		'C', # Color
+		'f', # File
+		'r', # Reference
+		'F', # Folder
+		'E', # EnumMember
+		'd', # Contant
+		's', # Struct
+		'E', # Event
+		'o', # Operator
+		'T'  # TypeParameter
+	]
   if kind > 25
     return ''
   endif
@@ -173,12 +173,12 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
     if reply.result.contents->has_key('kind')
       # MarkupContent
       if reply.result.contents.kind == 'plaintext'
-        hoverText = reply.result.contents.value->split("\n")
+	hoverText = reply.result.contents.value->split("\n")
       elseif reply.result.contents.kind == 'markdown'
-        hoverText = reply.result.contents.value->split("\n")
+	hoverText = reply.result.contents.value->split("\n")
       else
-        ErrMsg('Error: Unsupported hover contents type (' .. reply.result.contents.kind .. ')')
-        return
+	ErrMsg('Error: Unsupported hover contents type (' .. reply.result.contents.kind .. ')')
+	return
       endif
     elseif reply.result.contents->has_key('value')
       # MarkedString
@@ -191,9 +191,9 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
     # interface MarkedString[]
     for e in reply.result.contents
       if type(e) == v:t_string
-        hoverText->extend(e->split("\n"))
+	hoverText->extend(e->split("\n"))
       else
-        hoverText->extend(e.value->split("\n"))
+	hoverText->extend(e.value->split("\n"))
       endif
     endfor
   elseif type(reply.result.contents) == v:t_string
@@ -205,7 +205,7 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
     ErrMsg('Error: Unsupported hover contents (' .. reply.result.contents .. ')')
     return
   endif
-  hoverText->popup_atcursor({'moved': 'word'})
+  hoverText->popup_atcursor({moved: 'word'})
 enddef
 
 # process the 'textDocument/references' reply from the LSP server
@@ -227,12 +227,12 @@ def s:processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
     endif
     var text: string = bnr->getbufline(loc.range.start.line + 1)[0]
 						->trim("\t ", 1)
-    qflist->add({'filename': fname,
-                    'lnum': loc.range.start.line + 1,
-                    'col': loc.range.start.character + 1,
-                    'text': text})
+    qflist->add({filename: fname,
+			lnum: loc.range.start.line + 1,
+			col: loc.range.start.character + 1,
+			text: text})
   endfor
-  setqflist([], ' ', {'title': 'Language Server', 'items': qflist})
+  setqflist([], ' ', {title: 'Language Server', items: qflist})
   var save_winid = win_getid()
   copen
   win_gotoid(save_winid)
@@ -261,10 +261,10 @@ def s:processDocHighlightReply(lspserver: dict<any>, req: dict<any>, reply: dict
       propName = 'LspTextRef'
     endif
     prop_add(docHL.range.start.line + 1, docHL.range.start.character + 1,
-               {'end_lnum': docHL.range.end.line + 1,
-                'end_col': docHL.range.end.character + 1,
-                'bufnr': bnr,
-                'type': propName})
+		{end_lnum: docHL.range.end.line + 1,
+		  end_col: docHL.range.end.character + 1,
+		  bufnr: bnr,
+		  type: propName})
   endfor
 enddef
 
@@ -272,9 +272,9 @@ enddef
 def LspSymbolKindToName(symkind: number): string
   var symbolMap: list<string> = ['', 'File', 'Module', 'Namespace', 'Package',
 	'Class', 'Method', 'Property', 'Field', 'Constructor', 'Enum',
-        'Interface', 'Function', 'Variable', 'Constant', 'String', 'Number',
-        'Boolean', 'Array', 'Object', 'Key', 'Null', 'EnumMember', 'Struct',
-        'Event', 'Operator', 'TypeParameter']
+	'Interface', 'Function', 'Variable', 'Constant', 'String', 'Number',
+	'Boolean', 'Array', 'Object', 'Key', 'Null', 'EnumMember', 'Struct',
+	'Event', 'Operator', 'TypeParameter']
   if symkind > 26
     return ''
   endif
@@ -338,9 +338,9 @@ def s:showSymbols(symTable: list<dict<any>>)
 	  name ..= ' [' .. symbol.containerName .. ']'
 	endif
       endif
-      symbols[symbolType]->add({'name': name,
-			'lnum': symbol.location.range.start.line + 1,
-                        'col': symbol.location.range.start.character + 1})
+      symbols[symbolType]->add({name: name,
+			lnum: symbol.location.range.start.line + 1,
+			col: symbol.location.range.start.character + 1})
     endif
   endfor
 
@@ -367,11 +367,11 @@ def s:showSymbols(symTable: list<dict<any>>)
     lnumMap->extend([{}, {}])
     for s in syms
       text->add('  ' .. s.name)
-      lnumMap->add({'lnum': s.lnum, 'col': s.col})
+      lnumMap->add({lnum: s.lnum, col: s.col})
     endfor
   endfor
   append(line('$'), text)
-  w:lsp_info = {'filename': fname, 'data': lnumMap}
+  w:lsp_info = {filename: fname, data: lnumMap}
   :nnoremap <silent> <buffer> q :quit<CR>
   :nnoremap <silent> <buffer> <CR> :call handlers#jumpToSymbol()<CR>
   :setlocal nomodifiable
@@ -515,7 +515,7 @@ def s:applyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   endif
   bnr->setbufvar('&buflisted', v:true)
 
-  var start_line: number = 4294967295           # 2 ^ 32
+  var start_line: number = 4294967295		# 2 ^ 32
   var finish_line: number = -1
   var updated_edits: list<dict<any>> = []
   var start_row: number
@@ -533,9 +533,9 @@ def s:applyTextEdits(bnr: number, text_edits: list<dict<any>>): void
     start_line = [e.range.start.line, start_line]->min()
     finish_line = [e.range.end.line, finish_line]->max()
 
-    updated_edits->add({'A': [start_row, start_col],
-			'B': [end_row, end_col],
-			'lines': e.newText->split("\n", v:true)})
+    updated_edits->add({A: [start_row, start_col],
+			B: [end_row, end_col],
+			lines: e.newText->split("\n", v:true)})
   endfor
 
   # Reverse sort the edit operations by descending line and column numbers so
@@ -576,7 +576,7 @@ def s:applyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   # lines.
   var dellastline: bool = v:false
   if start_line == 0 && bnr->getbufinfo()[0].linecount == 1 &&
-				     bnr->getbufline(1)[0] == ''
+						bnr->getbufline(1)[0] == ''
     dellastline = v:true
   endif
 
@@ -823,7 +823,7 @@ def s:processApplyEditReq(lspserver: dict<any>, request: dict<any>)
   endif
   s:applyWorkspaceEdit(workspaceEditParams.edit)
   # TODO: Need to return the proper result of the edit operation
-  lspserver.sendResponse(request, {'applied': v:true}, v:null)
+  lspserver.sendResponse(request, {applied: v:true}, v:null)
 enddef
 
 # process a request message from the server
@@ -880,15 +880,15 @@ export def ProcessMessages(lspserver: dict<any>): void
       lspserver.requests->remove(string(msg.id))
 
       if msg->has_key('result')
-        lspserver.processReply(req, msg)
+	lspserver.processReply(req, msg)
       else
 	# request failed
-        var emsg: string = msg.error.message
+	var emsg: string = msg.error.message
 	emsg ..= ', code = ' .. msg.code
-        if msg.error->has_key('data')
-          emsg = emsg .. ', data = ' .. string(msg.error.data)
-        endif
-        ErrMsg("Error: request " .. req.method .. " failed (" .. emsg .. ")")
+	if msg.error->has_key('data')
+	  emsg = emsg .. ', data = ' .. string(msg.error.data)
+	endif
+	ErrMsg("Error: request " .. req.method .. " failed (" .. emsg .. ")")
       endif
     elseif msg->has_key('id')
       # request message from the server
@@ -902,3 +902,4 @@ export def ProcessMessages(lspserver: dict<any>): void
   endwhile
 enddef
 
+# vim: shiftwidth=2 softtabstop=2

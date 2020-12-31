@@ -36,12 +36,12 @@ def s:startServer(lspserver: dict<any>): number
   cmd->extend(lspserver.args)
 
   var opts = {in_mode: 'raw',
-              out_mode: 'raw',
-              err_mode: 'raw',
-              noblock: 1,
-              out_cb: function('s:output_cb', [lspserver]),
-              err_cb: function('s:error_cb', [lspserver]),
-              exit_cb: function('s:exit_cb', [lspserver])}
+		out_mode: 'raw',
+		err_mode: 'raw',
+		noblock: 1,
+		out_cb: function('s:output_cb', [lspserver]),
+		err_cb: function('s:error_cb', [lspserver]),
+		exit_cb: function('s:exit_cb', [lspserver])}
 
   ClearTraceLogs()
   lspserver.data = ''
@@ -348,7 +348,7 @@ enddef
 def s:gotoDefinition(lspserver: dict<any>): void
   # Check whether LSP server supports jumping to a definition
   if !lspserver.caps->has_key('definitionProvider')
-              || !lspserver.caps.definitionProvider
+				|| !lspserver.caps.definitionProvider
     ErrMsg("Error: LSP server does not support jumping to a definition")
     return
   endif
@@ -364,7 +364,7 @@ enddef
 def s:gotoDeclaration(lspserver: dict<any>): void
   # Check whether LSP server supports jumping to a declaration
   if !lspserver.caps->has_key('declarationProvider')
-              || !lspserver.caps.declarationProvider
+			|| !lspserver.caps.declarationProvider
     ErrMsg("Error: LSP server does not support jumping to a declaration")
     return
   endif
@@ -382,7 +382,7 @@ enddef
 def s:gotoTypeDef(lspserver: dict<any>): void
   # Check whether LSP server supports jumping to a type definition
   if !lspserver.caps->has_key('typeDefinitionProvider')
-              || !lspserver.caps.typeDefinitionProvider
+			|| !lspserver.caps.typeDefinitionProvider
     ErrMsg("Error: LSP server does not support jumping to a type definition")
     return
   endif
@@ -400,7 +400,7 @@ enddef
 def s:gotoImplementation(lspserver: dict<any>): void
   # Check whether LSP server supports jumping to a implementation
   if !lspserver.caps->has_key('implementationProvider')
-              || !lspserver.caps.implementationProvider
+			|| !lspserver.caps.implementationProvider
     ErrMsg("Error: LSP server does not support jumping to an implementation")
     return
   endif
@@ -449,7 +449,7 @@ enddef
 def s:hover(lspserver: dict<any>): void
   # Check whether LSP server supports getting hover information
   if !lspserver.caps->has_key('hoverProvider')
-              || !lspserver.caps.hoverProvider
+			|| !lspserver.caps.hoverProvider
     return
   endif
 
@@ -463,7 +463,7 @@ enddef
 def s:showReferences(lspserver: dict<any>): void
   # Check whether LSP server supports getting reference information
   if !lspserver.caps->has_key('referencesProvider')
-              || !lspserver.caps.referencesProvider
+			|| !lspserver.caps.referencesProvider
     ErrMsg("Error: LSP server does not support showing references")
     return
   endif
@@ -480,7 +480,7 @@ enddef
 def s:docHighlight(lspserver: dict<any>): void
   # Check whether LSP server supports getting highlight information
   if !lspserver.caps->has_key('documentHighlightProvider')
-              || !lspserver.caps.documentHighlightProvider
+			|| !lspserver.caps.documentHighlightProvider
     ErrMsg("Error: LSP server does not support document highlight")
     return
   endif
@@ -495,7 +495,7 @@ enddef
 def s:showDocSymbols(lspserver: dict<any>, fname: string): void
   # Check whether LSP server supports getting document symbol information
   if !lspserver.caps->has_key('documentSymbolProvider')
-              || !lspserver.caps.documentSymbolProvider
+			|| !lspserver.caps.documentSymbolProvider
     ErrMsg("Error: LSP server does not support getting list of symbols")
     return
   endif
@@ -511,7 +511,7 @@ def s:textDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
 				start_lnum: number, end_lnum: number)
   # Check whether LSP server supports formatting documents
   if !lspserver.caps->has_key('documentFormattingProvider')
-              || !lspserver.caps.documentFormattingProvider
+			|| !lspserver.caps.documentFormattingProvider
     ErrMsg("Error: LSP server does not support formatting documents")
     return
   endif
@@ -554,7 +554,7 @@ enddef
 def s:renameSymbol(lspserver: dict<any>, newName: string)
   # Check whether LSP server supports rename operation
   if !lspserver.caps->has_key('renameProvider')
-              || !lspserver.caps.renameProvider
+			|| !lspserver.caps.renameProvider
     ErrMsg("Error: LSP server does not support rename operation")
     return
   endif
@@ -570,7 +570,7 @@ enddef
 def s:codeAction(lspserver: dict<any>, fname_arg: string)
   # Check whether LSP server supports code action operation
   if !lspserver.caps->has_key('codeActionProvider')
-              || !lspserver.caps.codeActionProvider
+			|| !lspserver.caps.codeActionProvider
     ErrMsg("Error: LSP server does not support code action operation")
     return
   endif
@@ -598,7 +598,7 @@ enddef
 def s:workspaceSymbols(lspserver: dict<any>, sym: string)
   # Check whether the LSP server supports listing workspace symbols
   if !lspserver.caps->has_key('workspaceSymbolProvider')
-              || !lspserver.caps.workspaceSymbolProvider
+				|| !lspserver.caps.workspaceSymbolProvider
     ErrMsg("Error: LSP server does not support listing workspace symbols")
     return
   endif

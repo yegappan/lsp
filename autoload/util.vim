@@ -49,7 +49,7 @@ enddef
 export def LspUriToFile(uri: string): string
   # Replace all the %xx numbers (e.g. %20 for space) in the URI to character
   var uri_decoded: string = substitute(uri, '%\(\x\x\)',
-			      '\=nr2char(str2nr(submatch(1), 16))', 'g')
+				'\=nr2char(str2nr(submatch(1), 16))', 'g')
 
   # File URIs on MS-Windows start with file:///[a-zA-Z]:'
   if uri_decoded =~? '^file:///\a:'
@@ -78,7 +78,7 @@ export def LspFileToUri(fname: string): string
   endif
 
   uri = uri->substitute('\([^A-Za-z0-9-._~:/]\)',
-		      '\=printf("%%%02x", char2nr(submatch(1)))', 'g')
+			'\=printf("%%%02x", char2nr(submatch(1)))', 'g')
 
   if on_windows
     uri = 'file:///' .. uri
@@ -89,3 +89,4 @@ export def LspFileToUri(fname: string): string
   return uri
 enddef
 
+# vim: shiftwidth=2 softtabstop=2

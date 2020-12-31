@@ -292,11 +292,11 @@ def lsp#addServer(serverList: list<dict<any>>)
       s:lspAddServer(server.filetype, lspserver)
     elseif type(server.filetype) == v:t_list
       for ftype in server.filetype
-        s:lspAddServer(ftype, lspserver)
+	s:lspAddServer(ftype, lspserver)
       endfor
     else
-      ErrMsg('Error: Unsupported file type information "' .. string(server.filetype)
-                                  .. '" in LSP server registration')
+      ErrMsg('Error: Unsupported file type information "' ..
+		string(server.filetype) .. '" in LSP server registration')
       continue
     endif
   endfor
@@ -371,10 +371,10 @@ def lsp#showDiagnostics(): void
   for [lnum, diag] in items(lspserver.diagsMap[fname])
     text = diag.message->substitute("\n\\+", "\n", 'g')
     qflist->add({'filename': fname,
-                    'lnum': diag.range.start.line + 1,
-                    'col': diag.range.start.character + 1,
-                    'text': text,
-                    'type': LspDiagSevToType(diag.severity)})
+		    'lnum': diag.range.start.line + 1,
+		    'col': diag.range.start.character + 1,
+		    'text': text,
+		    'type': LspDiagSevToType(diag.severity)})
   endfor
   setqflist([], ' ', {'title': 'Language Server Diagnostics', 'items': qflist})
   :copen
@@ -413,7 +413,7 @@ def lsp#completeFunc(findstart: number, base: string): any
   else
     var count: number = 0
     while !complete_check() && lspserver.completePending
-            && count < 1000
+				&& count < 1000
       sleep 2m
       count += 1
     endwhile
