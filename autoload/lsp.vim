@@ -215,7 +215,8 @@ def lsp#addFile(bnr: number): void
   # add a listener to track changes to this buffer
   listener_add(function('lsp#bufchange_listener'), bnr)
   setbufvar(bnr, '&completefunc', 'lsp#completeFunc')
-  setbufvar(bnr, '&completeopt', 'menuone,preview,noinsert')
+  setbufvar(bnr, '&completeopt', 'menuone,popup,noinsert,noselect')
+  setbufvar(bnr, '&completepopup', 'border:off')
 
   # map characters that trigger signature help
   if lspserver.caps->has_key('signatureHelpProvider')

@@ -72,16 +72,31 @@ enddef
 def s:initServer(lspserver: dict<any>)
   var req = lspserver.createRequest('initialize')
 
+  # client capabilities (ClientCapabilities)
   var clientCaps: dict<any> = {
     workspace: {
       workspaceFolders: v:true,
       applyEdit: v:true,
     },
     textDocument: {
-      foldingRange: {lineFoldingOnly: v:true}
+      foldingRange: {lineFoldingOnly: v:true},
+      completion: {
+	snippetSupport: v:true,
+	completionItem: {
+	  documentationFormat: ['plaintext', 'markdown'],
+	},
+	completionItemKind: {valueSet: range(1, 25)}
+      },
+      documentSymbol: {
+	hierarchicalDocumentSymbolSupport: v:true,
+	symbolKind: {valueSet: range(1, 25)}
+      },
+      hover: {
+        contentFormat: ['plaintext', 'markdown']
+      }
     },
     window: {},
-    general: {}
+    general: {},
   }
 
   # interface 'InitializeParams'
@@ -91,12 +106,14 @@ def s:initServer(lspserver: dict<any>)
 	name: 'Vim',
 	version: string(v:versionlong),
       }
-  initparams.rootPath = getcwd()
-  initparams.rootUri = LspFileToUri(getcwd())
+  var curdir: string = getcwd()
+  initparams.rootPath = curdir
+  initparams.rootUri = LspFileToUri(curdir)
   initparams.workspaceFolders = {
-	uri: LspFileToUri(getcwd()),
-	name: getcwd()
+	name: fnamemodify(curdir, ':t'),
+	uri: LspFileToUri(curdir)
       }
+  initparams.trace = 'off'
   initparams.capabilities = clientCaps
   req.params->extend(initparams)
 
@@ -332,6 +349,8 @@ def s:getCompletion(lspserver: dict<any>): void
   # interface CompletionParams
   #   interface TextDocumentPositionParams
   req.params->extend(s:getLspTextDocPosition())
+  #   interface CompletionContext
+  req.params->extend({context: {triggerKind: 1}})
 
   lspserver.sendMessage(req)
 enddef

@@ -84,9 +84,9 @@ def s:processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dic
     endif
   endif
   var popupID = popup_atcursor(text, {})
-  prop_type_add('signature', {bufnr: popupID->winbufnr(), highlight: 'Title'})
+  prop_type_add('signature', {bufnr: winbufnr(popupID), highlight: 'Title'})
   if hllen > 0
-    prop_add(1, startcol + 1, {bufnr: popupID->winbufnr(), length: hllen, type: 'signature'})
+    prop_add(1, startcol + 1, {bufnr: winbufnr(popupID), length: hllen, type: 'signature'})
   endif
 enddef
 
@@ -150,10 +150,10 @@ def s:processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
       d.kind = LspCompleteItemKindChar(item.kind)
     endif
     if item->has_key('detail')
-      d.menu = item.detail
+      d.info = item.detail
     endif
     if item->has_key('documentation')
-      d.info = item.documentation
+      d.menu = item.documentation
     endif
     lspserver.completeItems->add(d)
   endfor
@@ -733,8 +733,14 @@ def s:processFoldingRangeReply(lspserver: dict<any>, req: dict<any>, reply: dict
   endif
 
   # result: FoldingRange[]
+  var end_lnum: number
+  var last_lnum: number = line('$')
   for foldRange in reply.result
-    exe ':' .. (foldRange.startLine + 1) .. ',' .. (foldRange.endLine + 2) .. 'fold'
+    end_lnum = foldRange.endLine + 1
+    if end_lnum < foldRange.startLine + 2
+    end_lnum = foldRange.startLine + 2
+    endif
+    exe ':' .. (foldRange.startLine + 2) .. ',' .. end_lnum .. 'fold'
     :foldopen!
   endfor
 
