@@ -137,23 +137,29 @@ def s:processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
 
   for item in items
     var d: dict<any> = {}
-    if item->has_key('insertText')
-      d.word = item.insertText
-    elseif item->has_key('textEdit')
+    if item->has_key('textEdit') && item.textEdit->has_key('newText')
       d.word = item.textEdit.newText
+    elseif item->has_key('insertText')
+      d.word = item.insertText
     else
       d.word = item.label
     endif
+    d.abbr = item.label
     if item->has_key('kind')
       # namespace CompletionItemKind
       # map LSP kind to complete-item-kind
       d.kind = LspCompleteItemKindChar(item.kind)
     endif
     if item->has_key('detail')
-      d.info = item.detail
+      d.menu = item.detail
     endif
     if item->has_key('documentation')
-      d.menu = item.documentation
+      if item.documentation->type() == v:t_string && item.documentation != ''
+	d.info = item.documentation
+      elseif item.documentation->type() == v:t_dict
+			&& item.documentation.value->type() == v:t_string
+	d.info = item.documentation.value
+      endif
     endif
     lspserver.completeItems->add(d)
   endfor
@@ -223,6 +229,8 @@ def s:processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
     var bnr: number = fname->bufnr()
     if bnr == -1
       bnr = fname->bufadd()
+    endif
+    if !bnr->bufloaded()
       bnr->bufload()
     endif
     var text: string = bnr->getbufline(loc.range.start.line + 1)[0]
@@ -543,7 +551,7 @@ def s:applyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   updated_edits->sort('s:edit_sort_func')
 
   var lines: list<string> = bnr->getbufline(start_line + 1, finish_line + 1)
-  var fix_eol: number = bnr->getbufvar('&fixeol')
+  var fix_eol: bool = bnr->getbufvar('&fixeol')
   var set_eol = fix_eol && bnr->getbufinfo()[0].linecount <= finish_line + 1
   if set_eol && lines[-1]->len() != 0
     lines->add('')
@@ -887,7 +895,7 @@ export def ProcessMessages(lspserver: dict<any>): void
       return
     endif
 
-    var len = str2nr(lspserver.data[idx + 16:])
+    var len = str2nr(lspserver.data[idx + 16 : ])
     if len == 0
       ErrMsg("Error: Content length is zero")
       return

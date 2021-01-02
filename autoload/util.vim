@@ -54,10 +54,10 @@ export def LspUriToFile(uri: string): string
   # File URIs on MS-Windows start with file:///[a-zA-Z]:'
   if uri_decoded =~? '^file:///\a:'
     # MS-Windows URI
-    uri_decoded = uri_decoded[8:]
+    uri_decoded = uri_decoded[8 : ]
     uri_decoded = uri_decoded->substitute('/', '\\', 'g')
   else
-    uri_decoded = uri_decoded[7:]
+    uri_decoded = uri_decoded[7 : ]
   endif
 
   return uri_decoded
