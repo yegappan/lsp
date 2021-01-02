@@ -328,28 +328,40 @@ enddef
 
 # display the list of document symbols from the LSP server in a window as a
 # tree
-def s:showSymbols(symTable: list<dict<any>>)
+def s:showSymbols(symTable: list<dict<any>>, uri: string)
   var symbols: dict<list<dict<any>>>
   var symbolType: string
   var fname: string
+  var r: dict<dict<number>>
+  var name: string
+
+  if uri != ''
+    fname = LspUriToFile(uri)
+  endif
 
   for symbol in symTable
     if symbol->has_key('location')
+      # interface SymbolInformation
       fname = LspUriToFile(symbol.location.uri)
       symbolType = LspSymbolKindToName(symbol.kind)
-      if !symbols->has_key(symbolType)
-	symbols[symbolType] = []
-      endif
-      var name: string = symbol.name
+      name = symbol.name
       if symbol->has_key('containerName')
 	if symbol.containerName != ''
 	  name ..= ' [' .. symbol.containerName .. ']'
 	endif
       endif
-      symbols[symbolType]->add({name: name,
-			lnum: symbol.location.range.start.line + 1,
-			col: symbol.location.range.start.character + 1})
+      r = symbol.location.range
+    else
+      # interface DocumentSymbol
+      name = symbol.name
+      symbolType = LspSymbolKindToName(symbol.kind)
+      r = symbol.range
     endif
+    if !symbols->has_key(symbolType)
+      symbols[symbolType] = []
+    endif
+    symbols[symbolType]->add({name: name,
+		      lnum: r.start.line + 1, col: r.start.character + 1})
   endfor
 
   var wid: number = bufwinid('LSP-Symbols')
@@ -393,7 +405,7 @@ def s:processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<an
     return
   endif
 
-  s:showSymbols(reply.result)
+  s:showSymbols(reply.result, req.params.textDocument.uri)
 enddef
 
 # Returns the byte number of the specified line/col position.  Returns a
@@ -773,7 +785,7 @@ def s:processWorkspaceSymbolReply(lspserver: dict<any>, req: dict<any>, reply: d
     return
   endif
 
-  s:showSymbols(reply.result)
+  s:showSymbols(reply.result, '')
 enddef
 
 # Process various reply messages from the LSP server
