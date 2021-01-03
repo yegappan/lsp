@@ -639,9 +639,130 @@ def lsp#codeAction()
   lspserver.codeAction(fname)
 enddef
 
+# Handle keys pressed when the workspace symbol popup menu is displayed
+def LspFilterNames(lspserver: dict<any>, popupID: number, key: string): bool
+  var key_handled: bool = false
+  var update_popup: bool = false
+  var query: string = lspserver.workspaceSymbolQuery
+
+  if key == "\<BS>" || key == "\<C-H>"
+    # Erase one character from the filter text
+    if query->len() >= 1
+      query = query[: -2]
+      update_popup = true
+    endif
+    key_handled = true
+  elseif key == "\<C-U>"
+    # clear the filter text
+    query = ''
+    update_popup = true
+    key_handled = true
+  elseif key == "\<C-F>"
+        || key == "\<C-B>"
+        || key == "\<PageUp>"
+        || key == "\<PageDown>"
+        || key == "\<C-Home>"
+        || key == "\<C-End>"
+        || key == "\<C-N>"
+        || key == "\<C-P>"
+    # scroll the popup window
+    var cmd: string = 'normal! ' .. (key == "\<C-N>" ? 'j' : key == "\<C-P>" ? 'k' : key)
+    cmd->win_execute(popupID)
+    key_handled = true
+  elseif key == "\<Up>" || key == "\<Down>"
+    # Use native Vim handling for these keys
+    key_handled = false
+  elseif key =~ '^\f$' || key == "\<Space>"
+    # Filter the names based on the typed key and keys typed before
+    query ..= key
+    update_popup = true
+    key_handled = true
+  endif
+
+  if update_popup
+    # Update the popup with the new list of symbol names
+    popupID->popup_settext('')
+    if query != ''
+      lspserver.workspaceSymbols(query)
+    endif
+    echo 'Symbol: ' .. query
+  endif
+
+  # Update the workspace symbol query string
+  lspserver.workspaceSymbolQuery = query
+
+  if key_handled
+    return v:true
+  endif
+
+  return popupID->popup_filter_menu(key)
+enddef
+
+# Jump to the location of a symbol selected in the popup menu
+def LspJumpToSymbol(popupID: number, result: number): void
+  # clear the message displayed at the command-line
+  echo ''
+
+  if result <= 0
+    # popup is canceled
+    return
+  endif
+
+  var symTbl: list<dict<any>> = popupID->getwinvar('LspSymbolTable')
+  echomsg symTbl
+  try
+    # if the selected file is already present in a window, then jump to it
+    var fname: string = symTbl[result - 1].file
+    var winList: list<number> = fname->bufnr()->win_findbuf()
+    if winList->len() == 0
+      # Not present in any window
+      if &modified || &buftype != ''
+	# the current buffer is modified or is not a normal buffer, then open
+	# the file in a new window
+	exe "split " .. symTbl[result - 1].file
+      else
+	exe "confirm edit " .. symTbl[result - 1].file
+      endif
+    else
+      winList[0]->win_gotoid()
+    endif
+    cursor(symTbl[result - 1].lnum, symTbl[result - 1].col)
+  catch
+    # ignore exceptions
+  endtry
+enddef
+
+# display a list of symbols from the workspace
+def s:showSymbolMenu(lspserver: dict<any>, query: string)
+  # Create the popup menu
+  var lnum = &lines - &cmdheight - 2 - 10
+  var popupAttr = {
+      title: 'Workspace Symbol Search',
+      wrap: 0,
+      pos: 'topleft',
+      line: lnum,
+      col: 2,
+      minwidth: 60,
+      minheight: 10,
+      maxheight: 10,
+      maxwidth: 60,
+      mapping: false,
+      fixed: 1,
+      close: "button",
+      filter: function('s:LspFilterNames', [lspserver]),
+      callback: LspJumpToSymbol
+  }
+  lspserver.workspaceSymbolPopup = popup_menu([], popupAttr)
+  lspserver.workspaceSymbolQuery = query
+  prop_type_add('lspworkspacesymbol',
+			{bufnr: lspserver.workspaceSymbolPopup->winbufnr(),
+			 highlight: 'Title'})
+  echo 'Symbol: ' .. query
+enddef
+
 # Perform a workspace wide symbol lookup
 # Uses LSP "workspace/symbol" request
-def lsp#showWorkspaceSymbols()
+def lsp#showWorkspaceSymbols(queryArg: string)
   var ftype = &filetype
   if ftype == ''
     return
@@ -662,12 +783,20 @@ def lsp#showWorkspaceSymbols()
     return
   endif
 
-  var sym: string = input("Lookup symbol: ", expand('<cword>'))
-  if sym == ''
-    return
+  var query: string = queryArg
+  if query == ''
+    query = input("Lookup symbol: ", expand('<cword>'))
+    if query == ''
+      return
+    endif
   endif
+  redraw!
 
-  lspserver.workspaceSymbols(sym)
+  s:showSymbolMenu(lspserver, query)
+
+  if !lspserver.workspaceSymbols(query)
+    lspserver.workspaceSymbolPopup->popup_close()
+  endif
 enddef
 
 # Display the list of workspace folders

@@ -87,16 +87,16 @@ def s:initServer(lspserver: dict<any>)
 	},
 	completionItemKind: {valueSet: range(1, 25)}
       },
+      hover: {
+        contentFormat: ['plaintext', 'markdown']
+      },
       documentSymbol: {
 	hierarchicalDocumentSymbolSupport: v:true,
 	symbolKind: {valueSet: range(1, 25)}
       },
-      hover: {
-        contentFormat: ['plaintext', 'markdown']
-      }
     },
     window: {},
-    general: {},
+    general: {}
   }
 
   # interface 'InitializeParams'
@@ -616,17 +616,19 @@ def s:codeAction(lspserver: dict<any>, fname_arg: string)
   lspserver.sendMessage(req)
 enddef
 
-def s:workspaceSymbols(lspserver: dict<any>, sym: string)
+def s:workspaceSymbols(lspserver: dict<any>, sym: string): bool
   # Check whether the LSP server supports listing workspace symbols
   if !lspserver.caps->has_key('workspaceSymbolProvider')
 				|| !lspserver.caps.workspaceSymbolProvider
     ErrMsg("Error: LSP server does not support listing workspace symbols")
-    return
+    return false
   endif
 
   var req = lspserver.createRequest('workspace/symbol')
   req.params->extend({query: sym})
   lspserver.sendMessage(req)
+
+  return true
 enddef
 
 def s:addWorkspaceFolder(lspserver: dict<any>, dirName: string): void
@@ -720,7 +722,9 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
     caps: {},
     requests: {},
     completePending: v:false,
-    diagsMap: {}
+    diagsMap: {},
+    workspaceSymbolPopup: 0,
+    workspaceSymbolQuery: ''
   }
   # Add the LSP server functions
   lspserver->extend({

@@ -778,14 +778,66 @@ def s:processWorkspaceExecuteReply(lspserver: dict<any>, req: dict<any>, reply: 
   # Nothing to do for the reply
 enddef
 
+# Convert a file name <filename> (<dirname>) format.
+# Make sure the popup does't occupy the entire screen by reducing the width.
+def s:makeMenuName(popupWidth: number, fname: string): string
+  var filename: string = fname->fnamemodify(':t')
+  var flen: number = filename->len()
+  var dirname: string = fname->fnamemodify(':h')
+
+  if fname->len() > popupWidth && flen < popupWidth
+    # keep the full file name and reduce directory name length
+    # keep some characters at the beginning and end (equally).
+    # 6 spaces are used for "..." and " ()"
+    var dirsz = (popupWidth - flen - 6) / 2
+    dirname = dirname[:dirsz] .. '...' .. dirname[-dirsz:]
+  endif
+  var str: string = filename
+  if dirname != '.'
+    str ..= ' (' .. dirname .. '/)'
+  endif
+  return str
+enddef
+
 # process the 'workspace/symbol' reply from the LSP server
 def s:processWorkspaceSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   if reply.result->empty()
-    WarnMsg('Error: Symbol not found')
     return
   endif
 
-  s:showSymbols(reply.result, '')
+  var symbols: list<dict<any>> = []
+  var symbolType: string
+  var fileName: string
+  var r: dict<dict<number>>
+  var symName: string
+
+  for symbol in reply.result
+    if !symbol->has_key('location')
+      # ignore entries without location information
+      continue
+    endif
+
+    # interface SymbolInformation
+    fileName = LspUriToFile(symbol.location.uri)
+    r = symbol.location.range
+
+    symName = symbol.name
+    if symbol->has_key('containerName') && symbol.containerName != ''
+      symName = symbol.containerName .. '::' .. symName
+    endif
+    symName ..= ' [' .. LspSymbolKindToName(symbol.kind) .. ']'
+    symName ..= ' ' .. s:makeMenuName(
+		lspserver.workspaceSymbolPopup->popup_getpos().core_width,
+		fileName)
+
+    symbols->add({name: symName,
+			file: fileName,
+			lnum: r.start.line + 1,
+			col: r.start.character + 1})
+  endfor
+  symbols->setwinvar(lspserver.workspaceSymbolPopup, 'LspSymbolTable')
+  lspserver.workspaceSymbolPopup->popup_settext(
+					symbols->copy()->map('v:val.name'))
 enddef
 
 # Process various reply messages from the LSP server
