@@ -640,7 +640,7 @@ def lsp#codeAction()
 enddef
 
 # Handle keys pressed when the workspace symbol popup menu is displayed
-def LspFilterNames(lspserver: dict<any>, popupID: number, key: string): bool
+def s:filterSymbols(lspserver: dict<any>, popupID: number, key: string): bool
   var key_handled: bool = false
   var update_popup: bool = false
   var query: string = lspserver.workspaceSymbolQuery
@@ -699,7 +699,7 @@ def LspFilterNames(lspserver: dict<any>, popupID: number, key: string): bool
 enddef
 
 # Jump to the location of a symbol selected in the popup menu
-def LspJumpToSymbol(popupID: number, result: number): void
+def s:jumpToSymbol(popupID: number, result: number): void
   # clear the message displayed at the command-line
   echo ''
 
@@ -749,8 +749,8 @@ def s:showSymbolMenu(lspserver: dict<any>, query: string)
       mapping: false,
       fixed: 1,
       close: "button",
-      filter: function('s:LspFilterNames', [lspserver]),
-      callback: LspJumpToSymbol
+      filter: function('s:filterSymbols', [lspserver]),
+      callback: function('s:jumpToSymbol')
   }
   lspserver.workspaceSymbolPopup = popup_menu([], popupAttr)
   lspserver.workspaceSymbolQuery = query
@@ -762,7 +762,7 @@ enddef
 
 # Perform a workspace wide symbol lookup
 # Uses LSP "workspace/symbol" request
-def lsp#showWorkspaceSymbols(queryArg: string)
+def lsp#symbolSearch(queryArg: string)
   var ftype = &filetype
   if ftype == ''
     return
