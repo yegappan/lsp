@@ -513,7 +513,7 @@ def s:docHighlight(lspserver: dict<any>): void
   lspserver.sendMessage(req)
 enddef
 
-def s:showDocSymbols(lspserver: dict<any>, fname: string): void
+def s:getDocSymbols(lspserver: dict<any>, fname: string): void
   # Check whether LSP server supports getting document symbol information
   if !lspserver.caps->has_key('documentSymbolProvider')
 			|| !lspserver.caps.documentSymbolProvider
@@ -758,7 +758,7 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
     hover: function('s:hover', [lspserver]),
     showReferences: function('s:showReferences', [lspserver]),
     docHighlight: function('s:docHighlight', [lspserver]),
-    showDocSymbols: function('s:showDocSymbols', [lspserver]),
+    getDocSymbols: function('s:getDocSymbols', [lspserver]),
     textDocFormat: function('s:textDocFormat', [lspserver]),
     renameSymbol: function('s:renameSymbol', [lspserver]),
     codeAction: function('s:codeAction', [lspserver]),

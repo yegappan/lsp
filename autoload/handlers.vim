@@ -289,57 +289,29 @@ def LspSymbolKindToName(symkind: number): string
   return symbolMap[symkind]
 enddef
 
-# jump to a symbol selected in the symbols window
-def handlers#jumpToSymbol()
-  var lnum: number = line('.') - 1
-  if w:lsp_info.data[lnum]->empty()
+# process the 'textDocument/documentSymbol' reply from the LSP server
+# Open a symbols window and display the symbols as a tree
+def s:processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+  if reply.result->empty()
+    WarnMsg('No symbols are found')
     return
   endif
 
-  var slnum: number = w:lsp_info.data[lnum].lnum
-  var scol: number = w:lsp_info.data[lnum].col
-  var fname: string = w:lsp_info.filename
-
-  # If the file is already opened in a window, jump to it. Otherwise open it
-  # in another window
-  var wid: number = fname->bufwinid()
-  if wid == -1
-    # Find a window showing a normal buffer and use it
-    for w in getwininfo()
-      if w.winid->getwinvar('&buftype') == ''
-	wid = w.winid
-	wid->win_gotoid()
-	break
-      endif
-    endfor
-    if wid == -1
-      var symWinid: number = win_getid()
-      :rightbelow vnew
-      # retain the fixed symbol window width
-      win_execute(symWinid, 'vertical resize 20')
-    endif
-
-    exe 'edit ' .. fname
-  else
-    wid->win_gotoid()
-  endif
-  [slnum, scol]->cursor()
-enddef
-
-# display the list of document symbols from the LSP server in a window as a
-# tree
-def s:showSymbols(symTable: list<dict<any>>, uri: string)
-  var symbols: dict<list<dict<any>>>
-  var symbolType: string
   var fname: string
-  var r: dict<dict<number>>
+  var symbolTypeTable: dict<list<dict<any>>>
+  var symbolLineTable: list<dict<any>> = []
   var name: string
+  var symbolType: string
+  var r: dict<dict<number>>
+  var symbolDetail: string
+  var symInfo: dict<any>
 
-  if uri != ''
-    fname = LspUriToFile(uri)
+  if req.params.textDocument.uri != ''
+    fname = LspUriToFile(req.params.textDocument.uri)
   endif
 
-  for symbol in symTable
+  for symbol in reply.result
+    symbolDetail = ''
     if symbol->has_key('location')
       # interface SymbolInformation
       fname = LspUriToFile(symbol.location.uri)
@@ -356,56 +328,20 @@ def s:showSymbols(symTable: list<dict<any>>, uri: string)
       name = symbol.name
       symbolType = LspSymbolKindToName(symbol.kind)
       r = symbol.range
+      if symbol->has_key('detail')
+	symbolDetail = symbol.detail
+      endif
     endif
-    if !symbols->has_key(symbolType)
-      symbols[symbolType] = []
+    if !symbolTypeTable->has_key(symbolType)
+      symbolTypeTable[symbolType] = []
     endif
-    symbols[symbolType]->add({name: name,
-		      lnum: r.start.line + 1, col: r.start.character + 1})
+    symInfo = {name: name, range: r, detail: symbolDetail}
+    symbolTypeTable[symbolType]->add(symInfo)
+    symbolLineTable->add(symInfo)
   endfor
-
-  var wid: number = bufwinid('LSP-Symbols')
-  if wid == -1
-    :20vnew LSP-Symbols
-  else
-    win_gotoid(wid)
-  endif
-
-  :setlocal modifiable
-  :setlocal noreadonly
-  :silent! :%d _
-  :setlocal buftype=nofile
-  :setlocal bufhidden=delete
-  :setlocal noswapfile nobuflisted
-  :setlocal nonumber norelativenumber fdc=0 nowrap winfixheight winfixwidth
-  setline(1, ['# Language Server Symbols', '# ' .. fname])
-  # First two lines in the buffer display comment information
-  var lnumMap: list<dict<number>> = [{}, {}]
-  var text: list<string> = []
-  for [symType, syms] in items(symbols)
-    text->extend(['', symType])
-    lnumMap->extend([{}, {}])
-    for s in syms
-      text->add('  ' .. s.name)
-      lnumMap->add({lnum: s.lnum, col: s.col})
-    endfor
-  endfor
-  append(line('$'), text)
-  w:lsp_info = {filename: fname, data: lnumMap}
-  :nnoremap <silent> <buffer> q :quit<CR>
-  :nnoremap <silent> <buffer> <CR> :call handlers#jumpToSymbol()<CR>
-  :setlocal nomodifiable
-enddef
-
-# process the 'textDocument/documentSymbol' reply from the LSP server
-# Open a symbols window and display the symbols as a tree
-def s:processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
-  if reply.result->empty()
-    WarnMsg('No symbols are found')
-    return
-  endif
-
-  s:showSymbols(reply.result, req.params.textDocument.uri)
+  # sort the symbols by line number
+  symbolLineTable->sort({a, b -> a.range.start.line - b.range.start.line})
+  lsp#updateOutlineWindow(fname, symbolTypeTable, symbolLineTable)
 enddef
 
 # Returns the byte number of the specified line/col position.  Returns a

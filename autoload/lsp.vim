@@ -508,8 +508,223 @@ def lsp#docHighlightClear()
   prop_remove({'type': 'LspWriteRef', 'all': v:true}, 1, line('$'))
 enddef
 
-# open a window and display all the symbols in a file
-def lsp#showDocSymbols()
+# jump to a symbol selected in the outline window
+def s:outlineJumpToSymbol()
+  var lnum: number = line('.') - 1
+  if w:lspSymbols.lnumTable[lnum]->empty()
+    return
+  endif
+
+  var slnum: number = w:lspSymbols.lnumTable[lnum].lnum
+  var scol: number = w:lspSymbols.lnumTable[lnum].col
+  var fname: string = w:lspSymbols.filename
+
+  # Highlight the selected symbol
+  prop_remove({type: 'LspOutlineHighlight'})
+  prop_add(line('.'), 3, {type: 'LspOutlineHighlight',
+			length: w:lspSymbols.lnumTable[lnum].name->len()})
+
+  # disable the outline window refresh
+  skipOutlineRefresh = true
+
+  # If the file is already opened in a window, jump to it. Otherwise open it
+  # in another window
+  var wid: number = fname->bufwinid()
+  if wid == -1
+    # Find a window showing a normal buffer and use it
+    for w in getwininfo()
+      if w.winid->getwinvar('&buftype') == ''
+	wid = w.winid
+	wid->win_gotoid()
+	break
+      endif
+    endfor
+    if wid == -1
+      var symWinid: number = win_getid()
+      :rightbelow vnew
+      # retain the fixed symbol window width
+      win_execute(symWinid, 'vertical resize 20')
+    endif
+
+    exe 'edit ' .. fname
+  else
+    wid->win_gotoid()
+  endif
+  [slnum, scol]->cursor()
+  skipOutlineRefresh = false
+enddef
+
+var skipOutlineRefresh: bool = false
+
+# update the symbols displayed in the outline window
+def lsp#updateOutlineWindow(fname: string,
+				symbolTypeTable: dict<list<dict<any>>>,
+				symbolLineTable: list<dict<any>>)
+  var wid: number = bufwinid('LSP-Outline')
+  if wid == -1
+    return
+  endif
+
+  # stop refreshing the outline window recursively
+  skipOutlineRefresh = true
+
+  var prevWinID: number = win_getid()
+  win_gotoid(wid)
+
+  # if the file displayed in the outline window is same as the new file, then
+  # save and restore the cursor position
+  var symbols = getwinvar(wid, 'lspSymbols', {})
+  var saveCursor: list<number> = []
+  if !symbols->empty() && symbols.filename == fname
+    saveCursor = getcurpos()
+  endif
+
+  :setlocal modifiable
+  :silent! :%d _
+  setline(1, ['# File Outline', '# ' .. fname])
+
+  # First two lines in the buffer display comment information
+  var lnumMap: list<dict<any>> = [{}, {}]
+  var text: list<string> = []
+  for [symType, syms] in items(symbolTypeTable)
+    text->extend(['', symType])
+    lnumMap->extend([{}, {}])
+    for s in syms
+      text->add('  ' .. s.name)
+      # remember the line number for the symbol
+      lnumMap->add({name: s.name, lnum: s.range.start.line + 1,
+					col: s.range.start.character + 1})
+      s.outlineLine = lnumMap->len()
+    endfor
+  endfor
+  append('$', text)
+  w:lspSymbols = {filename: fname, lnumTable: lnumMap,
+				symbolsByLine: symbolLineTable}
+  :setlocal nomodifiable
+
+  if !saveCursor->empty()
+    setpos('.', saveCursor)
+  endif
+  win_gotoid(prevWinID)
+
+  # Highlight the current symbol
+  s:outlineHighlightCurrentSymbol()
+
+  # re-enable refreshing the outline window
+  skipOutlineRefresh = false
+enddef
+
+def s:outlineHighlightCurrentSymbol()
+  var fname: string = fnamemodify(expand('%'), ':p')
+  if fname == '' || &filetype == ''
+    return
+  endif
+
+  var wid: number = bufwinid('LSP-Outline')
+  if wid == -1
+    return
+  endif
+
+  # Check whether the symbols for this file are displayed in the outline
+  # window
+  var lspSymbols = getwinvar(wid, 'lspSymbols', {})
+  if lspSymbols->empty() || lspSymbols.filename != fname
+    return
+  endif
+
+  var symbolTable: list<dict<any>> = lspSymbols.symbolsByLine
+
+  # line number to locate the symbol
+  var lnum: number = line('.')
+
+  # Find the symbol for the current line number (binary search)
+  var left: number = 0
+  var right: number = symbolTable->len() - 1
+  var mid: number
+  while left <= right
+    mid = (left + right) / 2
+    if lnum >= (symbolTable[mid].range.start.line + 1) &&
+		lnum <= (symbolTable[mid].range.end.line + 1)
+      break
+    endif
+    if lnum > (symbolTable[mid].range.start.line + 1)
+      left = mid + 1
+    else
+      right = mid - 1
+    endif
+  endwhile
+
+  # clear the highlighting in the outline window
+  var bnr: number = wid->winbufnr()
+  prop_remove({bufnr: bnr, type: 'LspOutlineHighlight'})
+
+  if left > right
+    # symbol not found
+    return
+  endif
+
+  # Highlight the selected symbol
+  prop_add(symbolTable[mid].outlineLine, 3,
+			{bufnr: bnr, type: 'LspOutlineHighlight',
+			length: symbolTable[mid].name->len()})
+
+  # if the line is not visible, then scroll the outline window to make the
+  # line visible
+  var wininfo = wid->getwininfo()
+  if symbolTable[mid].outlineLine < wininfo[0].topline
+			|| symbolTable[mid].outlineLine > wininfo[0].botline
+    var cmd: string = 'call cursor(' ..
+			symbolTable[mid].outlineLine .. ', 1) | normal z.'
+    win_execute(wid, cmd)
+  endif
+enddef
+
+# when the outline window is closed, do the cleanup
+def s:outlineCleanup()
+  # Remove the outline autocommands
+  :silent! autocmd! LSPOutline
+enddef
+
+# open the symbol outline window
+def s:openOutlineWindow()
+  var wid: number = bufwinid('LSP-Outline')
+  if wid != -1
+    return
+  endif
+
+  var prevWinID: number = win_getid()
+
+  :topleft :20vnew LSP-Outline
+  :setlocal modifiable
+  :setlocal noreadonly
+  :silent! :%d _
+  :setlocal buftype=nofile
+  :setlocal bufhidden=delete
+  :setlocal noswapfile nobuflisted
+  :setlocal nonumber norelativenumber fdc=0 nowrap winfixheight winfixwidth
+  setline(1, ['# File Outline'])
+  :nnoremap <silent> <buffer> q :quit<CR>
+  :nnoremap <silent> <buffer> <CR> :call <SID>outlineJumpToSymbol()<CR>
+  :setlocal nomodifiable
+
+  prop_type_add('LspOutlineHighlight', {bufnr: bufnr(), highlight: 'Search'})
+
+  augroup LSPOutline
+    au!
+    autocmd BufEnter * call s:requestDocSymbols()
+    # when the outline window is closed, do the cleanup
+    autocmd BufUnload LSP-Outline call s:outlineCleanup()
+    autocmd CursorHold * call s:outlineHighlightCurrentSymbol()
+  augroup END
+
+  win_gotoid(prevWinID)
+enddef
+
+def s:requestDocSymbols()
+  if skipOutlineRefresh
+    return
+  endif
+
   var ftype = &filetype
   if ftype == ''
     return
@@ -517,11 +732,9 @@ def lsp#showDocSymbols()
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
@@ -530,7 +743,13 @@ def lsp#showDocSymbols()
     return
   endif
 
-  lspserver.showDocSymbols(fname)
+  lspserver.getDocSymbols(fname)
+enddef
+
+# open a window and display all the symbols in a file (outline)
+def lsp#outline()
+  s:openOutlineWindow()
+  s:requestDocSymbols()
 enddef
 
 # Format the entire file
@@ -699,7 +918,7 @@ def s:filterSymbols(lspserver: dict<any>, popupID: number, key: string): bool
 enddef
 
 # Jump to the location of a symbol selected in the popup menu
-def s:jumpToSymbol(popupID: number, result: number): void
+def s:jumpToWorkspaceSymbol(popupID: number, result: number): void
   # clear the message displayed at the command-line
   echo ''
 
@@ -750,7 +969,7 @@ def s:showSymbolMenu(lspserver: dict<any>, query: string)
       fixed: 1,
       close: "button",
       filter: function('s:filterSymbols', [lspserver]),
-      callback: function('s:jumpToSymbol')
+      callback: function('s:jumpToWorkspaceSymbol')
   }
   lspserver.workspaceSymbolPopup = popup_menu([], popupAttr)
   lspserver.workspaceSymbolQuery = query
