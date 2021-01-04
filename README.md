@@ -1,8 +1,7 @@
-# LSP vim9 plugin
 
 Language Server Protocol (LSP) plugin for Vim9. You need Vim version 8.2.2241 or above to use this plugin.
 
-# Installation
+## Installation
 
 You can install this plugin directly from github using the following steps:
 
@@ -16,7 +15,7 @@ or you can use any one of the Vim plugin managers (dein.vim, pathogen, vam, vim-
 
 You will also need to install one or more language servers corresponding to the programming languages that you are using. Refer to the https://langserver.org/ page for the list of available language servers.
 
-# Configuration
+## Configuration
 
 To register a LSP server, add the following lines to your .vimrc file:
 ```
@@ -51,3 +50,30 @@ path|complete path to the LSP server executable (without any arguments).
 args|a list of command-line arguments passed to the LSP server. Each argument is a separate List item.
 
 The LSP servers are added using the lsp#addServer() function. This function accepts a list of LSP servers with the above information.
+
+## Commands
+Command|Description
+-------|-----------
+:LspShowServers|Display the list of registered LSP servers
+:LspGotoDefinition|Go to the definition of the keyword under cursor
+:LspGotoDeclaration|Go to the declaration of the keyword under cursor
+:LspGotoTypeDef|Go to the type definition of the keyword under cursor
+:LspGotoImpl|Go to the implementation of the keyword under cursor
+:LspShowSignature|Display the signature of the keyword under cursor
+:LspShowDiagnostics|Display the diagnostics messages from the LSP server for the current buffer
+:LspShowReferences|Display the list of references to the keyword under cursor in a new quickfix list.
+:LspHighlight|Highlight all the matches for the keyword under cursor
+:LspHighlightClear|Clear all the matches highlighted by :LspHighlight
+:LspOutline|Show the list of symbols defined in the current file in a separate window.
+:LspFormat|Format the current file using the LSP server.
+:{range}LspFormat|Format the specified range of files.
+:LspCalledBy|Display the list of symbols called by the current symbol. (NOT IMPLEMENTED YET).
+:LspCalling|Display the list of symbols calling the current symbol (NOT IMPLEMENTED YET).
+:LspRename|Rename the current symbol
+:LspCodeAction|Apply the code action supplied by the LSP server to the diagnostic in the current line.
+:LspSymbolSearch|Perform a workspace wide search for a symbol
+:LSPSelectionRange|Visually select the current symbol range
+:LSPFold|Fold the current file
+:LspWorkspaceAddFolder `{folder}`| Add a folder to the workspace
+:LspWorkspaceRemoveFolder `{folder}`|Remove a folder from the workspace
+:LspWorkspaceListFolders|Show the list of folders in the workspace
