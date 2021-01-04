@@ -615,7 +615,9 @@ def lsp#updateOutlineWindow(fname: string,
 
   :setlocal modifiable
   :silent! :%d _
-  setline(1, ['# File Outline', '# ' .. fname])
+  setline(1, ['# LSP Outline View',
+		'# ' .. fnamemodify(fname, ':t') .. ' ('
+				.. fnamemodify(fname, ':h') .. ')'])
 
   # First two lines in the buffer display comment information
   var lnumMap: list<dict<any>> = [{}, {}]
@@ -710,6 +712,8 @@ enddef
 def s:outlineCleanup()
   # Remove the outline autocommands
   :silent! autocmd! LSPOutline
+
+  :silent! syntax clear LSPTitle
 enddef
 
 # open the symbol outline window
@@ -738,6 +742,17 @@ def s:openOutlineWindow()
   :nnoremap <silent> <buffer> q :quit<CR>
   :nnoremap <silent> <buffer> <CR> :call <SID>outlineJumpToSymbol()<CR>
   :setlocal nomodifiable
+
+  # highlight all the symbol types
+  :syntax keyword LSPTitle File Module Namespace Package Class Method Property
+  :syntax keyword LSPTitle Field Constructor Enum Interface Function Variable
+  :syntax keyword LSPTitle Constant String Number Boolean Array Object Key Null
+  :syntax keyword LSPTitle EnumMember Struct Event Operator TypeParameter
+
+  if str2nr(&t_Co) > 2
+    highlight clear LSPTitle
+    highlight default link LSPTitle Title
+  endif
 
   prop_type_add('LspOutlineHighlight', {bufnr: bufnr(), highlight: 'Search'})
 

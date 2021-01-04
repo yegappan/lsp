@@ -80,7 +80,7 @@ The following commands are provided:
 			cursor in a new quickfix list.
 :LspHighlight		Highlight all the matches for the keyword under cursor
 :LspHighlightClear	Clear all the matches highlighted by :LspHighlight
-:LspShowSymbols		Show the list of symbols defined in the current file
+:LspOutline		Show the list of symbols defined in the current file
 			in a separate window.
 :LspFormat		Format the current file using the LSP server.
 :{range}LspFormat	Format the specified range of files.
@@ -91,6 +91,15 @@ The following commands are provided:
 :LspRename		Rename the current symbol
 :LspCodeAction		Apply the code action supplied by the LSP server to
 			the diagnostic in the current line.
+:LspSymbolSearch	Perform a workspace wide search for a symbol
+:LSPSelectionRange	Visually select the current symbol range
+:LSPFold		Fold the current file
+:LspWorkspaceAddFolder {folder}
+			Add a folder to the workspace
+:LspWorkspaceRemoveFolder {folder}
+			Remove a folder from the workspace
+:LspWorkspaceListFolders
+			Show the list of folders in the workspace
 
 ==============================================================================
 4. Configuration				*lsp-configuration*
