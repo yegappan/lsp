@@ -72,8 +72,8 @@ Command|Description
 :LspRename|Rename the current symbol
 :LspCodeAction|Apply the code action supplied by the LSP server to the diagnostic in the current line.
 :LspSymbolSearch|Perform a workspace wide search for a symbol
-:LSPSelectionRange|Visually select the current symbol range
-:LSPFold|Fold the current file
+:LspSelectionRange|Visually select the current symbol range
+:LspFold|Fold the current file
 :LspWorkspaceAddFolder `{folder}`| Add a folder to the workspace
 :LspWorkspaceRemoveFolder `{folder}`|Remove a folder from the workspace
 :LspWorkspaceListFolders|Show the list of folders in the workspace
