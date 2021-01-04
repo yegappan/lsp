@@ -1,6 +1,6 @@
 # LSP vim9 plugin
 
-Language Server Protocol (LSP) plugin for Vim9.
+Language Server Protocol (LSP) plugin for Vim9. You need Vim version 8.2.2241 or above to use this plugin.
 
 # Installation
 
@@ -12,12 +12,9 @@ You can install this plugin directly from github using the following steps:
     $ git clone https://github.com/yegappan/lsp
 ```
 
-or you can use any one of the Vim plugin managers (dein.vim, pathogen, vam,
-vim-plug, volt, Vundle, etc.) to install and manage this plugin.
+or you can use any one of the Vim plugin managers (dein.vim, pathogen, vam, vim-plug, volt, Vundle, etc.) to install and manage this plugin.
 
-You will also need to install one or more language servers corresponding to the
-programming languages that you are using. Refer to the https://langserver.org/
-page for the list of available language servers.
+You will also need to install one or more language servers corresponding to the programming languages that you are using. Refer to the https://langserver.org/ page for the list of available language servers.
 
 # Configuration
 
@@ -43,8 +40,7 @@ To register a LSP server, add the following lines to your .vimrc file:
    call lsp#addServer(lspServers)
 ```
 
-The above lines add the LSP servers for C, C++, Javascript, Typescript and
-Shell script file types.
+The above lines add the LSP servers for C, C++, Javascript, Typescript and Shell script file types.
 
 To add a LSP server, the following information is needed:
 
@@ -54,5 +50,4 @@ filetype|One or more file types supported by the LSP server.  This can be a Stri
 path|complete path to the LSP server executable (without any arguments).
 args|a list of command-line arguments passed to the LSP server. Each argument is a separate List item.
 
-The LSP servers are added using the lsp#addServer() function. This function
-accepts a list of LSP servers with the above information.
+The LSP servers are added using the lsp#addServer() function. This function accepts a list of LSP servers with the above information.
