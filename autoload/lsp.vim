@@ -521,7 +521,8 @@ def s:outlineJumpToSymbol()
 
   # Highlight the selected symbol
   prop_remove({type: 'LspOutlineHighlight'})
-  prop_add(line('.'), 3, {type: 'LspOutlineHighlight',
+  var col: number = match(getline('.'), '\S') + 1
+  prop_add(line('.'), col, {type: 'LspOutlineHighlight',
 			length: w:lspSymbols.lnumTable[lnum].name->len()})
 
   # disable the outline window refresh
@@ -556,6 +557,39 @@ enddef
 
 var skipOutlineRefresh: bool = false
 
+def s:addSymbolText(symbolTypeTable: dict<list<dict<any>>>,
+				pfx: string,
+				text: list<string>,
+				lnumMap: list<dict<any>>,
+				children: bool)
+  var prefix: string = pfx .. '  '
+  for [symType, symbols] in items(symbolTypeTable)
+    if !children
+      # Add an empty line for the top level symbol types. For types in the
+      # children symbols, don't add the empty line.
+      text->extend([''])
+      lnumMap->extend([{}])
+    endif
+    if children
+      text->extend([prefix .. symType])
+      prefix ..= '  '
+    else
+      text->extend([symType])
+    endif
+    lnumMap->extend([{}])
+    for s in symbols
+      text->add(prefix .. s.name)
+      # remember the line number for the symbol
+      lnumMap->add({name: s.name, lnum: s.range.start.line + 1,
+      col: s.range.start.character + 1})
+      s.outlineLine = lnumMap->len()
+      if !s.children->empty()
+	s:addSymbolText(s.children, prefix, text, lnumMap, true)
+      endif
+    endfor
+  endfor
+enddef
+
 # update the symbols displayed in the outline window
 def lsp#updateOutlineWindow(fname: string,
 				symbolTypeTable: dict<list<dict<any>>>,
@@ -586,17 +620,7 @@ def lsp#updateOutlineWindow(fname: string,
   # First two lines in the buffer display comment information
   var lnumMap: list<dict<any>> = [{}, {}]
   var text: list<string> = []
-  for [symType, syms] in items(symbolTypeTable)
-    text->extend(['', symType])
-    lnumMap->extend([{}, {}])
-    for s in syms
-      text->add('  ' .. s.name)
-      # remember the line number for the symbol
-      lnumMap->add({name: s.name, lnum: s.range.start.line + 1,
-					col: s.range.start.character + 1})
-      s.outlineLine = lnumMap->len()
-    endfor
-  endfor
+  s:addSymbolText(symbolTypeTable, '', text, lnumMap, false)
   append('$', text)
   w:lspSymbols = {filename: fname, lnumTable: lnumMap,
 				symbolsByLine: symbolLineTable}
@@ -605,6 +629,7 @@ def lsp#updateOutlineWindow(fname: string,
   if !saveCursor->empty()
     setpos('.', saveCursor)
   endif
+
   win_gotoid(prevWinID)
 
   # Highlight the current symbol
@@ -664,7 +689,9 @@ def s:outlineHighlightCurrentSymbol()
   endif
 
   # Highlight the selected symbol
-  prop_add(symbolTable[mid].outlineLine, 3,
+  var col: number =
+	match(getbufline(bnr, symbolTable[mid].outlineLine)[0], '\S') + 1
+  prop_add(symbolTable[mid].outlineLine, col,
 			{bufnr: bnr, type: 'LspOutlineHighlight',
 			length: symbolTable[mid].name->len()})
 
@@ -702,6 +729,11 @@ def s:openOutlineWindow()
   :setlocal bufhidden=delete
   :setlocal noswapfile nobuflisted
   :setlocal nonumber norelativenumber fdc=0 nowrap winfixheight winfixwidth
+  :setlocal shiftwidth=2
+  :setlocal foldenable
+  :setlocal foldcolumn=4
+  :setlocal foldlevel=4
+  :setlocal foldmethod=indent
   setline(1, ['# File Outline'])
   :nnoremap <silent> <buffer> q :quit<CR>
   :nnoremap <silent> <buffer> <CR> :call <SID>outlineJumpToSymbol()<CR>

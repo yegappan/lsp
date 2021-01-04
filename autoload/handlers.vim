@@ -289,6 +289,68 @@ def LspSymbolKindToName(symkind: number): string
   return symbolMap[symkind]
 enddef
 
+# process SymbolInformation[]
+def s:processSymbolInfoTable(symbolInfoTable: list<dict<any>>,
+				symbolTypeTable: dict<list<dict<any>>>,
+				symbolLineTable: list<dict<any>>)
+  var fname: string
+  var symbolType: string
+  var name: string
+  var r: dict<dict<number>>
+  var symInfo: dict<any>
+
+  for symbol in symbolInfoTable
+    fname = LspUriToFile(symbol.location.uri)
+    symbolType = LspSymbolKindToName(symbol.kind)
+    name = symbol.name
+    if symbol->has_key('containerName')
+      if symbol.containerName != ''
+	name ..= ' [' .. symbol.containerName .. ']'
+      endif
+    endif
+    r = symbol.location.range
+
+    if !symbolTypeTable->has_key(symbolType)
+      symbolTypeTable[symbolType] = []
+    endif
+    symInfo = {name: name, range: r}
+    symbolTypeTable[symbolType]->add(symInfo)
+    symbolLineTable->add(symInfo)
+  endfor
+enddef
+
+# process DocumentSymbol[]
+def s:processDocSymbolTable(docSymbolTable: list<dict<any>>,
+				symbolTypeTable: dict<list<dict<any>>>,
+				symbolLineTable: list<dict<any>>)
+  var symbolType: string
+  var name: string
+  var r: dict<dict<number>>
+  var symInfo: dict<any>
+  var symbolDetail: string
+  var childSymbols: dict<list<dict<any>>>
+
+  for symbol in docSymbolTable
+    name = symbol.name
+    symbolType = LspSymbolKindToName(symbol.kind)
+    r = symbol.range
+    if symbol->has_key('detail')
+      symbolDetail = symbol.detail
+    endif
+    if !symbolTypeTable->has_key(symbolType)
+      symbolTypeTable[symbolType] = []
+    endif
+    childSymbols = {}
+    if symbol->has_key('children')
+      s:processDocSymbolTable(symbol.children, childSymbols, symbolLineTable)
+    endif
+    symInfo = {name: name, range: r, detail: symbolDetail,
+						children: childSymbols}
+    symbolTypeTable[symbolType]->add(symInfo)
+    symbolLineTable->add(symInfo)
+  endfor
+enddef
+
 # process the 'textDocument/documentSymbol' reply from the LSP server
 # Open a symbols window and display the symbols as a tree
 def s:processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
@@ -300,45 +362,19 @@ def s:processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<an
   var fname: string
   var symbolTypeTable: dict<list<dict<any>>>
   var symbolLineTable: list<dict<any>> = []
-  var name: string
-  var symbolType: string
-  var r: dict<dict<number>>
-  var symbolDetail: string
-  var symInfo: dict<any>
 
   if req.params.textDocument.uri != ''
     fname = LspUriToFile(req.params.textDocument.uri)
   endif
 
-  for symbol in reply.result
-    symbolDetail = ''
-    if symbol->has_key('location')
-      # interface SymbolInformation
-      fname = LspUriToFile(symbol.location.uri)
-      symbolType = LspSymbolKindToName(symbol.kind)
-      name = symbol.name
-      if symbol->has_key('containerName')
-	if symbol.containerName != ''
-	  name ..= ' [' .. symbol.containerName .. ']'
-	endif
-      endif
-      r = symbol.location.range
-    else
-      # interface DocumentSymbol
-      name = symbol.name
-      symbolType = LspSymbolKindToName(symbol.kind)
-      r = symbol.range
-      if symbol->has_key('detail')
-	symbolDetail = symbol.detail
-      endif
-    endif
-    if !symbolTypeTable->has_key(symbolType)
-      symbolTypeTable[symbolType] = []
-    endif
-    symInfo = {name: name, range: r, detail: symbolDetail}
-    symbolTypeTable[symbolType]->add(symInfo)
-    symbolLineTable->add(symInfo)
-  endfor
+  if reply.result[0]->has_key('location')
+    # SymbolInformation[]
+    s:processSymbolInfoTable(reply.result, symbolTypeTable, symbolLineTable)
+  else
+    # DocumentSymbol[]
+    s:processDocSymbolTable(reply.result, symbolTypeTable, symbolLineTable)
+  endif
+
   # sort the symbols by line number
   symbolLineTable->sort({a, b -> a.range.start.line - b.range.start.line})
   lsp#updateOutlineWindow(fname, symbolTypeTable, symbolLineTable)
