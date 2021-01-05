@@ -304,6 +304,7 @@ def lsp#addServer(serverList: list<dict<any>>)
 enddef
 
 # set the LSP server trace level for the current buffer
+# Params: SetTraceParams
 def lsp#setTraceServer(traceVal: string)
   if ['off', 'message', 'verbose']->index(traceVal) == -1
     ErrMsg("Error: Unsupported LSP server trace value " .. traceVal)
@@ -949,7 +950,7 @@ def s:filterSymbols(lspserver: dict<any>, popupID: number, key: string): bool
     # Update the popup with the new list of symbol names
     popupID->popup_settext('')
     if query != ''
-      lspserver.workspaceSymbols(query)
+      lspserver.workspaceQuery(query)
     endif
     echo 'Symbol: ' .. query
   endif
@@ -1060,7 +1061,7 @@ def lsp#symbolSearch(queryArg: string)
 
   s:showSymbolMenu(lspserver, query)
 
-  if !lspserver.workspaceSymbols(query)
+  if !lspserver.workspaceQuery(query)
     lspserver.workspaceSymbolPopup->popup_close()
   endif
 enddef

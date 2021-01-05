@@ -51,7 +51,7 @@ args|a list of command-line arguments passed to the LSP server. Each argument is
 
 The LSP servers are added using the lsp#addServer() function. This function accepts a list of LSP servers with the above information.
 
-## Commands
+## Supported Commands
 Command|Description
 -------|-----------
 :LspShowServers|Display the list of registered LSP servers
@@ -77,3 +77,12 @@ Command|Description
 :LspWorkspaceAddFolder `{folder}`| Add a folder to the workspace
 :LspWorkspaceRemoveFolder `{folder}`|Remove a folder from the workspace
 :LspWorkspaceListFolders|Show the list of folders in the workspace
+
+## Similar Vim LSP Plugins
+
+1. [vim-lsp](https://github.com/prabirshrestha/vim-lsp)
+1. [Coc](https://github.com/neoclide/coc.nvim)
+1. [vim-lsc](https://github.com/natebosch/vim-lsc)
+1. [LanguageClient-neovim](https://github.com/autozimu/LanguageClient-neovim)
+1. [Neovim built-in LSP client](https://neovim.io/doc/user/lsp.html)
+1. [ALE](https://github.com/dense-analysis/ale)

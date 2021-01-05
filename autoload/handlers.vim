@@ -1,14 +1,18 @@
 vim9script
 
-import {WarnMsg, ErrMsg, LspUriToFile} from './util.vim'
+# Handlers for messages from the LSP server
+# Refer to https://microsoft.github.io/language-server-protocol/specification
+# for the Language Server Protocol (LSP) specificaiton.
+
+import {WarnMsg, ErrMsg, TraceLog, LspUriToFile} from './util.vim'
 
 # process the 'initialize' method reply from the LSP server
+# Result: InitializeResult
 def s:processInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if reply.result->len() <= 0
     return
   endif
 
-  # interface 'InitializeResult'
   var caps: dict<any> = reply.result.capabilities
   lspserver.caps = caps
 
@@ -38,6 +42,7 @@ enddef
 # process the 'textDocument/definition' / 'textDocument/declaration' /
 # 'textDocument/typeDefinition' and 'textDocument/implementation' replies from
 # the LSP server
+# Result: Location | Location[] | LocationLink[] | null
 def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if reply.result->empty()
     WarnMsg("Error: definition is not found")
@@ -64,6 +69,7 @@ def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>
 enddef
 
 # process the 'textDocument/signatureHelp' reply from the LSP server
+# Result: SignatureHelp | null
 def s:processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   var result: dict<any> = reply.result
   if result.signatures->len() <= 0
@@ -126,6 +132,7 @@ def LspCompleteItemKindChar(kind: number): string
 enddef
 
 # process the 'textDocument/completion' reply from the LSP server
+# Result: CompletionItem[] | CompletionList | null
 def s:processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
 
   var items: list<dict<any>>
@@ -168,6 +175,7 @@ def s:processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
 enddef
 
 # process the 'textDocument/hover' reply from the LSP server
+# Result: Hover | null
 def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if type(reply.result) == v:t_none
     return
@@ -215,6 +223,7 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
 enddef
 
 # process the 'textDocument/references' reply from the LSP server
+# Result: Location[] | null
 def s:processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if type(reply.result) == v:t_none || reply.result->empty()
     WarnMsg('Error: No references found')
@@ -247,6 +256,7 @@ def s:processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
 enddef
 
 # process the 'textDocument/documentHighlight' reply from the LSP server
+# Result: DocumentHighlight[] | null
 def s:processDocHighlightReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if reply.result->empty()
     return
@@ -353,6 +363,7 @@ enddef
 
 # process the 'textDocument/documentSymbol' reply from the LSP server
 # Open a symbols window and display the symbols as a tree
+# Result: DocumentSymbol[] | SymbolInformation[] | null
 def s:processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if reply.result->empty()
     WarnMsg('No symbols are found')
@@ -623,6 +634,7 @@ def s:applyWorkspaceEdit(workspaceEdit: dict<any>)
 enddef
 
 # process the 'textDocument/formatting' reply from the LSP server
+# Result: TextEdit[] | null
 def s:processFormatReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   if reply.result->empty()
     # nothing to format
@@ -645,7 +657,9 @@ def s:processFormatReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   save_cursor->setpos('.')
 enddef
 
-# process the 'textDocument/rename' reply from the LSP server
+# Reply: 'textDocument/rename'
+# Result: Range | { range: Range, placeholder: string }
+#	        | { defaultBehavior: boolean } | null
 def s:processRenameReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   if reply.result->empty()
     # nothing to rename
@@ -656,7 +670,9 @@ def s:processRenameReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   s:applyWorkspaceEdit(reply.result)
 enddef
 
-# interface ExecuteCommandParams
+# Request the LSP server to execute a command
+# Request: workspace/executeCommand
+# Params: ExecuteCommandParams
 def s:executeCommand(lspserver: dict<any>, cmd: dict<any>)
   var req = lspserver.createRequest('workspace/executeCommand')
   req.params->extend(cmd)
@@ -664,7 +680,7 @@ def s:executeCommand(lspserver: dict<any>, cmd: dict<any>)
 enddef
 
 # process the 'textDocument/codeAction' reply from the LSP server
-# params: interface Command[] | interface CodeAction[]
+# Result: (Command | CodeAction)[] | null
 def s:processCodeActionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   if reply.result->empty()
     # no action can be performed
@@ -705,7 +721,8 @@ def s:processCodeActionReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
   endif
 enddef
 
-# process the 'textDocument/selectionRange' reply from the LSP server
+# Reply: 'textDocument/selectionRange'
+# Result: SelectionRange[] | null
 def s:processSelectionRangeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   if reply.result->empty()
     return
@@ -718,7 +735,8 @@ def s:processSelectionRangeReply(lspserver: dict<any>, req: dict<any>, reply: di
   :normal gv
 enddef
 
-# process the 'textDocument/foldingRange' reply from the LSP server
+# Reply: 'textDocument/foldingRange'
+# Result: FoldingRange[] | null
 def s:processFoldingRangeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   if reply.result->empty()
     return
@@ -762,7 +780,7 @@ def s:makeMenuName(popupWidth: number, fname: string): string
     # keep some characters at the beginning and end (equally).
     # 6 spaces are used for "..." and " ()"
     var dirsz = (popupWidth - flen - 6) / 2
-    dirname = dirname[:dirsz] .. '...' .. dirname[-dirsz:]
+    dirname = dirname[: dirsz] .. '...' .. dirname[-dirsz : ]
   endif
   var str: string = filename
   if dirname != '.'
@@ -772,6 +790,7 @@ def s:makeMenuName(popupWidth: number, fname: string): string
 enddef
 
 # process the 'workspace/symbol' reply from the LSP server
+# Result: SymbolInformation[] | null
 def s:processWorkspaceSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   if reply.result->empty()
     return
@@ -845,7 +864,7 @@ export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
 enddef
 
 # process a diagnostic notification message from the LSP server
-# params: interface PublishDiagnosticsParams
+# Param: PublishDiagnosticsParams
 def s:processDiagNotif(lspserver: dict<any>, reply: dict<any>): void
   var fname: string = LspUriToFile(reply.params.uri)
 
@@ -858,9 +877,9 @@ def s:processDiagNotif(lspserver: dict<any>, reply: dict<any>): void
   lspserver.diagsMap->extend({[fname]: diag_by_lnum})
 enddef
 
-# process a log notification message from the LSP server
-def s:processLogMsgNotif(lspserver: dict<any>, reply: dict<any>)
-  # interface LogMessageParams
+# process a show notification message from the LSP server
+# Param: ShowMessageParams
+def s:processShowMsgNotif(lspserver: dict<any>, reply: dict<any>)
   var msgType: list<string> = ['', 'Error: ', 'Warning: ', 'Info: ', 'Log: ']
   if reply.params.type == 4
     # ignore log messages from the LSP server (too chatty)
@@ -877,12 +896,24 @@ def s:processLogMsgNotif(lspserver: dict<any>, reply: dict<any>)
   :echomsg 'Lsp ' .. mtype .. reply.params.message
 enddef
 
+# process a log notification message from the LSP server
+# Param: LogMessageParams
+def s:processLogMsgNotif(lspserver: dict<any>, reply: dict<any>)
+  var msgType: list<string> = ['', 'Error: ', 'Warning: ', 'Info: ', 'Log: ']
+  var mtype: string = 'Log: '
+  if reply.params.type > 0 && reply.params.type < 5
+    mtype = msgType[reply.params.type]
+  endif
+
+  TraceLog(false, '[' .. mtype .. ']: ' .. reply.params.message)
+enddef
+
 # process notification messages from the LSP server
 export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
   var lsp_notif_handlers: dict<func> =
     {
       'textDocument/publishDiagnostics': function('s:processDiagNotif'),
-      'window/showMessage': function('s:processLogMsgNotif'),
+      'window/showMessage': function('s:processShowMsgNotif'),
       'window/logMessage': function('s:processLogMsgNotif')
     }
 
@@ -894,6 +925,7 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
 enddef
 
 # process the workspace/applyEdit LSP server request
+# Param: ApplyWorkspaceEditParams
 def s:processApplyEditReq(lspserver: dict<any>, request: dict<any>)
   # interface ApplyWorkspaceEditParams
   if !request->has_key('params')
