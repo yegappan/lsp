@@ -80,9 +80,9 @@ Command|Description
 
 ## Similar Vim LSP Plugins
 
-1. [vim-lsp](https://github.com/prabirshrestha/vim-lsp)
-1. [Coc](https://github.com/neoclide/coc.nvim)
-1. [vim-lsc](https://github.com/natebosch/vim-lsc)
+1. [vim-lsp: Async Language Server Protocol](https://github.com/prabirshrestha/vim-lsp)
+1. [Coc: Conquer of Completion](https://github.com/neoclide/coc.nvim)
+1. [vim-lsc: Vim Language Server Client](https://github.com/natebosch/vim-lsc)
 1. [LanguageClient-neovim](https://github.com/autozimu/LanguageClient-neovim)
+1. [ALE: Asynchronous Lint Engine](https://github.com/dense-analysis/ale)
 1. [Neovim built-in LSP client](https://neovim.io/doc/user/lsp.html)
-1. [ALE](https://github.com/dense-analysis/ale)
