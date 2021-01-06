@@ -388,7 +388,7 @@ def s:processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<an
   endif
 
   # sort the symbols by line number
-  symbolLineTable->sort({a, b -> a.range.start.line - b.range.start.line})
+  symbolLineTable->sort((a, b) => a.range.start.line - b.range.start.line)
   lsp#updateOutlineWindow(fname, symbolTypeTable, symbolLineTable)
 enddef
 
