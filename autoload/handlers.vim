@@ -5,6 +5,7 @@ vim9script
 # for the Language Server Protocol (LSP) specificaiton.
 
 import {WarnMsg, ErrMsg, TraceLog, LspUriToFile} from './util.vim'
+import {LspDiagsUpdated} from './buf.vim'
 
 # process the 'initialize' method reply from the LSP server
 # Result: InitializeResult
@@ -760,6 +761,7 @@ def s:processFoldingRangeReply(lspserver: dict<any>, req: dict<any>, reply: dict
 enddef
 
 # process the 'workspace/executeCommand' reply from the LSP server
+# Result: any | null
 def s:processWorkspaceExecuteReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   if reply.result->empty()
     return
@@ -864,20 +866,37 @@ export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
 enddef
 
 # process a diagnostic notification message from the LSP server
+# Notification: textDocument/publishDiagnostics
 # Param: PublishDiagnosticsParams
 def s:processDiagNotif(lspserver: dict<any>, reply: dict<any>): void
   var fname: string = LspUriToFile(reply.params.uri)
+  var bnr: number = bufnr(fname)
+  if bnr == -1
+    # Is this condition possible?
+    return
+  endif
+
+  # TODO: Is the buffer (bnr) always a loaded buffer? Should we load it here?
+  var lastlnum: number = bnr->getbufinfo()[0].linecount
+  var lnum: number
 
   # store the diagnostic for each line separately
   var diag_by_lnum: dict<dict<any>> = {}
   for diag in reply.params.diagnostics
-    diag_by_lnum[diag.range.start.line + 1] = diag
+    lnum = diag.range.start.line + 1
+    if lnum > lastlnum
+      # Make sure the line number is a valid buffer line number
+      lnum = lastlnum
+    endif
+    diag_by_lnum[lnum] = diag
   endfor
 
-  lspserver.diagsMap->extend({[fname]: diag_by_lnum})
+  lspserver.diagsMap->extend({['' .. bnr]: diag_by_lnum})
+  LspDiagsUpdated(lspserver, bnr)
 enddef
 
 # process a show notification message from the LSP server
+# Notification: window/showMessage
 # Param: ShowMessageParams
 def s:processShowMsgNotif(lspserver: dict<any>, reply: dict<any>)
   var msgType: list<string> = ['', 'Error: ', 'Warning: ', 'Info: ', 'Log: ']
@@ -897,6 +916,7 @@ def s:processShowMsgNotif(lspserver: dict<any>, reply: dict<any>)
 enddef
 
 # process a log notification message from the LSP server
+# Notification: window/logMessage
 # Param: LogMessageParams
 def s:processLogMsgNotif(lspserver: dict<any>, reply: dict<any>)
   var msgType: list<string> = ['', 'Error: ', 'Warning: ', 'Info: ', 'Log: ']
@@ -908,13 +928,20 @@ def s:processLogMsgNotif(lspserver: dict<any>, reply: dict<any>)
   TraceLog(false, '[' .. mtype .. ']: ' .. reply.params.message)
 enddef
 
+# process unsupported notification messages
+def s:processUnsupportedNotif(lspserver: dict<any>, reply: dict<any>)
+  ErrMsg('Error: Unsupported notification message received from the LSP server (' .. lspserver.path .. '), message = ' .. string(reply))
+enddef
+
 # process notification messages from the LSP server
 export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
   var lsp_notif_handlers: dict<func> =
     {
-      'textDocument/publishDiagnostics': function('s:processDiagNotif'),
       'window/showMessage': function('s:processShowMsgNotif'),
-      'window/logMessage': function('s:processLogMsgNotif')
+      'window/logMessage': function('s:processLogMsgNotif'),
+      'textDocument/publishDiagnostics': function('s:processDiagNotif'),
+      '$/progress': function('s:processUnsupportedNotif'),
+      'telemetry/event': function('s:processUnsupportedNotif')
     }
 
   if lsp_notif_handlers->has_key(reply.method)
@@ -925,6 +952,7 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
 enddef
 
 # process the workspace/applyEdit LSP server request
+# Request: "workspace/applyEdit"
 # Param: ApplyWorkspaceEditParams
 def s:processApplyEditReq(lspserver: dict<any>, request: dict<any>)
   # interface ApplyWorkspaceEditParams
@@ -940,11 +968,22 @@ def s:processApplyEditReq(lspserver: dict<any>, request: dict<any>)
   lspserver.sendResponse(request, {applied: v:true}, v:null)
 enddef
 
+def s:processUnsupportedReq(lspserver: dict<any>, request: dict<any>)
+  ErrMsg('Error: Unsupported request message received from the LSP server (' .. lspserver.path .. '), message = ' .. string(request))
+enddef
+
 # process a request message from the server
 export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
   var lspRequestHandlers: dict<func> =
     {
-      'workspace/applyEdit': function('s:processApplyEditReq')
+      'workspace/applyEdit': function('s:processApplyEditReq'),
+      'window/workDoneProgress/create': function('s:processUnsupportedReq'),
+      'client/registerCapability': function('s:processUnsupportedReq'),
+      'client/unregisterCapability': function('s:processUnsupportedReq'),
+      'workspace/workspaceFolders': function('s:processUnsupportedReq'),
+      'workspace/configuration': function('s:processUnsupportedReq'),
+      'workspace/codeLens/refresh': function('s:processUnsupportedReq'),
+      'workspace/semanticTokens/refresh': function('s:processUnsupportedReq')
     }
 
   if lspRequestHandlers->has_key(request.method)
@@ -998,7 +1037,7 @@ export def ProcessMessages(lspserver: dict<any>): void
       else
 	# request failed
 	var emsg: string = msg.error.message
-	emsg ..= ', code = ' .. msg.code
+	emsg ..= ', code = ' .. msg.error.code
 	if msg.error->has_key('data')
 	  emsg = emsg .. ', data = ' .. string(msg.error.data)
 	endif

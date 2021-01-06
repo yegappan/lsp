@@ -19,12 +19,25 @@ var ftypeServerMap: dict<dict<any>> = {}
 # Buffer number to LSP server map
 var bufnrToServer: dict<dict<any>> = {}
 
-# List of diagnostics for each opened file
-#var diagsMap: dict<dict<any>> = {}
+var lspInitializedOnce = false
 
-prop_type_add('LspTextRef', {'highlight': 'Search'})
-prop_type_add('LspReadRef', {'highlight': 'DiffChange'})
-prop_type_add('LspWriteRef', {'highlight': 'DiffDelete'})
+def s:lspInitOnce()
+  # Signs used for LSP diagnostics
+  sign_define([{name: 'LspDiagError', text: 'E ', texthl: 'ErrorMsg',
+						linehl: 'MatchParen'},
+		{name: 'LspDiagWarning', text: 'W ', texthl: 'Search',
+						linehl: 'MatchParen'},
+		{name: 'LspDiagInfo', text: 'I ', texthl: 'Pmenu',
+						linehl: 'MatchParen'},
+		{name: 'LspDiagHint', text: 'H ', texthl: 'Question',
+						linehl: 'MatchParen'}])
+
+  prop_type_add('LspTextRef', {'highlight': 'Search'})
+  prop_type_add('LspReadRef', {'highlight': 'DiffChange'})
+  prop_type_add('LspWriteRef', {'highlight': 'DiffDelete'})
+  set ballooneval balloonevalterm
+  lspInitializedOnce = true
+enddef
 
 # Return the LSP server for the a specific filetype. Returns a null dict if
 # the server is not found.
@@ -187,6 +200,25 @@ def s:lspSavedFile()
   lspserver.didSaveFile(bnr)
 enddef
 
+# Return the diagnostic text from the LSP server for the current mouse line to
+# display in a balloon
+var lspDiagPopupID: number = 0
+var lspDiagPopupInfo: dict<any> = {}
+def g:LspDiagExpr(): string
+  var lspserver: dict<any> = bufnrToServer->get(v:beval_bufnr, {})
+  if lspserver->empty() || !lspserver.running
+    return ''
+  endif
+
+  var diagInfo: dict<any> = lspserver.getDiagByLine(v:beval_bufnr, v:beval_lnum)
+  if diagInfo->empty()
+    # No diagnostic for the current cursor location
+    return ''
+  endif
+
+  return diagInfo.message
+enddef
+
 # A new buffer is opened. If LSP is supported for this buffer, then add it
 def lsp#addFile(bnr: number): void
   if bufnrToServer->has_key(bnr)
@@ -203,6 +235,9 @@ def lsp#addFile(bnr: number): void
     return
   endif
   if !lspserver.running
+    if !lspInitializedOnce
+      s:lspInitOnce()
+    endif
     lspserver.startServer()
   endif
   lspserver.textdocDidOpen(bnr, ftype)
@@ -217,6 +252,7 @@ def lsp#addFile(bnr: number): void
   setbufvar(bnr, '&completefunc', 'lsp#completeFunc')
   setbufvar(bnr, '&completeopt', 'menuone,popup,noinsert,noselect')
   setbufvar(bnr, '&completepopup', 'border:off')
+  setbufvar(bnr, '&balloonexpr', 'LspDiagExpr()')
 
   # map characters that trigger signature help
   if lspserver.caps->has_key('signatureHelpProvider')
@@ -255,8 +291,8 @@ def lsp#removeFile(bnr: number): void
     return
   endif
   lspserver.textdocDidClose(bnr)
-  if lspserver.diagsMap->has_key(fname)
-    lspserver.diagsMap->remove(fname)
+  if lspserver.diagsMap->has_key(bnr)
+    lspserver.diagsMap->remove(bnr)
   endif
   remove(bufnrToServer, bnr)
 enddef
@@ -329,8 +365,8 @@ def lsp#setTraceServer(traceVal: string)
   lspserver.setTrace(traceVal)
 enddef
 
-# Map the LSP DiagnosticSeverity to a type character
-def LspDiagSevToType(severity: number): string
+# Map the LSP DiagnosticSeverity to a quickfix type character
+def s:lspDiagSevToQfType(severity: number): string
   var typeMap: list<string> = ['E', 'W', 'I', 'N']
 
   if severity > 4
@@ -361,8 +397,9 @@ def lsp#showDiagnostics(): void
   if fname == ''
     return
   endif
+  var bnr: number = bufnr()
 
-  if !lspserver.diagsMap->has_key(fname) || lspserver.diagsMap[fname]->empty()
+  if !lspserver.diagsMap->has_key(bnr) || lspserver.diagsMap[bnr]->empty()
     WarnMsg('No diagnostic messages found for ' .. fname)
     return
   endif
@@ -370,13 +407,13 @@ def lsp#showDiagnostics(): void
   var qflist: list<dict<any>> = []
   var text: string
 
-  for [lnum, diag] in items(lspserver.diagsMap[fname])
+  for [lnum, diag] in items(lspserver.diagsMap[bnr])
     text = diag.message->substitute("\n\\+", "\n", 'g')
     qflist->add({'filename': fname,
 		    'lnum': diag.range.start.line + 1,
 		    'col': diag.range.start.character + 1,
 		    'text': text,
-		    'type': LspDiagSevToType(diag.severity)})
+		    'type': s:lspDiagSevToQfType(diag.severity)})
   endfor
   setqflist([], ' ', {'title': 'Language Server Diagnostics', 'items': qflist})
   :copen
@@ -584,7 +621,7 @@ def s:addSymbolText(symbolTypeTable: dict<list<dict<any>>>,
       lnumMap->add({name: s.name, lnum: s.range.start.line + 1,
       col: s.range.start.character + 1})
       s.outlineLine = lnumMap->len()
-      if !s.children->empty()
+      if s->has_key('children') && !s.children->empty()
 	s:addSymbolText(s.children, prefix, text, lnumMap, true)
       endif
     endfor
@@ -976,7 +1013,6 @@ def s:jumpToWorkspaceSymbol(popupID: number, result: number): void
   endif
 
   var symTbl: list<dict<any>> = popupID->getwinvar('LspSymbolTable')
-  echomsg symTbl
   try
     # if the selected file is already present in a window, then jump to it
     var fname: string = symTbl[result - 1].file

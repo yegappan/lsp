@@ -626,6 +626,15 @@ def s:renameSymbol(lspserver: dict<any>, newName: string)
   lspserver.sendMessage(req)
 enddef
 
+# Get the diagnostic from the LSP server for a particular line in a file
+def s:getDiagByLine(lspserver: dict<any>, bnr: number, lnum: number): dict<any>
+  if lspserver.diagsMap->has_key(bnr) &&
+				lspserver.diagsMap[bnr]->has_key(lnum)
+    return lspserver.diagsMap[bnr][lnum]
+  endif
+  return {}
+enddef
+
 # Request: "textDocument/codeAction"
 # Param: CodeActionParams
 def s:codeAction(lspserver: dict<any>, fname_arg: string)
@@ -640,6 +649,7 @@ def s:codeAction(lspserver: dict<any>, fname_arg: string)
 
   # interface CodeActionParams
   var fname: string = fnamemodify(fname_arg, ':p')
+  var bnr: number = bufnr(fname_arg)
   req.params->extend({textDocument: {uri: LspFileToUri(fname)}})
   var r: dict<dict<number>> = {
 		  start: {line: line('.') - 1, character: col('.') - 1},
@@ -647,9 +657,9 @@ def s:codeAction(lspserver: dict<any>, fname_arg: string)
   req.params->extend({range: r})
   var diag: list<dict<any>> = []
   var lnum = line('.')
-  if lspserver.diagsMap->has_key(fname) &&
-				lspserver.diagsMap[fname]->has_key(lnum)
-    diag->add(lspserver.diagsMap[fname][lnum])
+  var diagInfo: dict<any> = lspserver.getDiagByLine(bnr, lnum)
+  if !diagInfo->empty()
+    diag->add(diagInfo)
   endif
   req.params->extend({context: {diagnostics: diag}})
 
@@ -797,6 +807,7 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
     processNotif: function('ProcessNotif', [lspserver]),
     processRequest: function('ProcessRequest', [lspserver]),
     processMessages: function('ProcessMessages', [lspserver]),
+    getDiagByLine: function('s:getDiagByLine', [lspserver]),
     textdocDidOpen: function('s:textdocDidOpen', [lspserver]),
     textdocDidClose: function('s:textdocDidClose', [lspserver]),
     textdocDidChange: function('s:textdocDidChange', [lspserver]),
