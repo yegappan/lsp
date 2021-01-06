@@ -17,7 +17,7 @@ export def LspDiagsUpdated(lspserver: dict<any>, bnr: number)
   endif
 
   # Remove all the existing diagnostic signs
-  sign_unplace('LSPDiag')
+  sign_unplace('LSPDiag', {buffer: bnr})
 
   if lspserver.diagsMap[bnr]->empty()
     return
