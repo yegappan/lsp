@@ -377,6 +377,7 @@ def s:lspDiagSevToQfType(severity: number): string
 enddef
 
 # Display the diagnostic messages from the LSP server for the current buffer
+# in a quickfix list
 def lsp#showDiagnostics(): void
   var ftype = &filetype
   if ftype == ''
@@ -417,6 +418,88 @@ def lsp#showDiagnostics(): void
   endfor
   setqflist([], ' ', {'title': 'Language Server Diagnostics', 'items': qflist})
   :copen
+enddef
+
+# Show the diagnostic message for the current line
+def lsp#showCurrentDiag()
+  var ftype = &filetype
+  if ftype == ''
+    return
+  endif
+
+  var lspserver: dict<any> = s:lspGetServer(ftype)
+  if lspserver->empty()
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    return
+  endif
+  if !lspserver.running
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    return
+  endif
+
+  var bnr: number = bufnr()
+  var lnum: number = line('.')
+  var diag: dict<any> = lspserver.getDiagByLine(bnr, lnum)
+  if diag->empty()
+    WarnMsg('No diagnostic messages found for current line')
+  else
+    echo diag.message
+  endif
+enddef
+
+# sort the diaganostics messages for a buffer by line number
+def s:getSortedDiagLines(lspserver: dict<any>, bnr: number): list<number>
+  var lnums: list<number> =
+		lspserver.diagsMap[bnr]->keys()->map((_, v) => str2nr(v))
+  return lnums->sort((a, b) => a - b)
+enddef
+
+def lsp#jumpToDiag(which: string): void
+  var ftype = &filetype
+  if ftype == ''
+    return
+  endif
+
+  var lspserver: dict<any> = s:lspGetServer(ftype)
+  if lspserver->empty()
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    return
+  endif
+  if !lspserver.running
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    return
+  endif
+
+  var fname: string = expand('%:p')
+  if fname == ''
+    return
+  endif
+  var bnr: number = bufnr()
+
+  if !lspserver.diagsMap->has_key(bnr) || lspserver.diagsMap[bnr]->empty()
+    WarnMsg('No diagnostic messages found for ' .. fname)
+    return
+  endif
+
+  # sort the diagnostics by line number
+  var sortedDiags: list<number> = s:getSortedDiagLines(lspserver, bnr)
+
+  if which == 'first'
+    cursor(sortedDiags[0], 1)
+    return
+  endif
+
+  # Find the entry just before the current line (binary search)
+  var curlnum: number = line('.')
+  for lnum in (which == 'next') ? sortedDiags : reverse(sortedDiags)
+    if (which == 'next' && lnum > curlnum)
+	  || (which == 'prev' && lnum < curlnum)
+      call cursor(lnum, 1)
+      return
+    endif
+  endfor
+
+  WarnMsg('Error: No more diagnostics found')
 enddef
 
 # Insert mode completion handler
@@ -461,7 +544,7 @@ def lsp#completeFunc(findstart: number, base: string): any
     for item in lspserver.completeItems
       res->add(item)
     endfor
-    return res
+    return res->empty() ? v:none : res
   endif
 enddef
 

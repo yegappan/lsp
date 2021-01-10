@@ -2,7 +2,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 8.2.2082 and above
-Last change: Dec 30, 2020
+Last change: Jan 10, 2021
 
 ==============================================================================
 						*lsp-license*
@@ -74,8 +74,15 @@ The following commands are provided:
 :LspGotoTypeDef		Go to the type definition of the keyword under cursor
 :LspGotoImpl		Go to the implementation of the keyword under cursor
 :LspShowSignature	Display the signature of the keyword under cursor
-:LspShowDiagnostics	Display the diagnostics messages from the LSP server for
+:LspDiagShow		Display the diagnostics messages from the LSP server for
 			the current buffer
+:LspDiagFirst		Display the first diagnostic message for the current
+			buffer
+:LspDiagNext		Display the next diagnostic message for the current
+			buffer after the current line
+:LspDiagPrev		Display the previous diagnostic message for the current
+			buffer before the current line
+:LspDiagCurrent		Display the diagnostic message for the current line
 :LspShowReferences	Display the list of references to the keyword under
 			cursor in a new quickfix list.
 :LspHighlight		Highlight all the matches for the keyword under cursor
