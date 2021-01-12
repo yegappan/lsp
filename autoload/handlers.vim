@@ -72,6 +72,10 @@ enddef
 # process the 'textDocument/signatureHelp' reply from the LSP server
 # Result: SignatureHelp | null
 def s:processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+  if reply.result->empty()
+    return
+  endif
+
   var result: dict<any> = reply.result
   if result.signatures->len() <= 0
     WarnMsg('No signature help available')
@@ -135,6 +139,9 @@ enddef
 # process the 'textDocument/completion' reply from the LSP server
 # Result: CompletionItem[] | CompletionList | null
 def s:processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+  if reply.result->empty()
+    return
+  endif
 
   var items: list<dict<any>>
   if type(reply.result) == v:t_list
@@ -178,7 +185,7 @@ enddef
 # process the 'textDocument/hover' reply from the LSP server
 # Result: Hover | null
 def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
-  if type(reply.result) == v:t_none
+  if reply.result->empty()
     return
   endif
 
@@ -226,7 +233,7 @@ enddef
 # process the 'textDocument/references' reply from the LSP server
 # Result: Location[] | null
 def s:processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
-  if type(reply.result) == v:t_none || reply.result->empty()
+  if reply.result->empty()
     WarnMsg('Error: No references found')
     return
   endif
@@ -749,10 +756,12 @@ def s:processFoldingRangeReply(lspserver: dict<any>, req: dict<any>, reply: dict
   for foldRange in reply.result
     end_lnum = foldRange.endLine + 1
     if end_lnum < foldRange.startLine + 2
-    end_lnum = foldRange.startLine + 2
+      end_lnum = foldRange.startLine + 2
     endif
     exe ':' .. (foldRange.startLine + 2) .. ',' .. end_lnum .. 'fold'
-    :foldopen!
+    # Open all the folds, otherwise the subsequently created folds are not
+    # correct.
+    :silent! foldopen!
   endfor
 
   if &foldcolumn == 0
@@ -830,7 +839,7 @@ def s:processWorkspaceSymbolReply(lspserver: dict<any>, req: dict<any>, reply: d
   endfor
   symbols->setwinvar(lspserver.workspaceSymbolPopup, 'LspSymbolTable')
   lspserver.workspaceSymbolPopup->popup_settext(
-					symbols->copy()->map('v:val.name'))
+				symbols->copy()->mapnew('v:val.name'))
 enddef
 
 # Process various reply messages from the LSP server

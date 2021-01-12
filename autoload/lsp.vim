@@ -450,7 +450,7 @@ enddef
 # sort the diaganostics messages for a buffer by line number
 def s:getSortedDiagLines(lspserver: dict<any>, bnr: number): list<number>
   var lnums: list<number> =
-		lspserver.diagsMap[bnr]->keys()->map((_, v) => str2nr(v))
+		lspserver.diagsMap[bnr]->keys()->mapnew((_, v) => str2nr(v))
   return lnums->sort((a, b) => a - b)
 enddef
 
