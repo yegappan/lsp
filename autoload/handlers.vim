@@ -4,7 +4,11 @@ vim9script
 # Refer to https://microsoft.github.io/language-server-protocol/specification
 # for the Language Server Protocol (LSP) specificaiton.
 
-import {WarnMsg, ErrMsg, TraceLog, LspUriToFile} from './util.vim'
+import {WarnMsg,
+	ErrMsg,
+	TraceLog,
+	LspUriToFile,
+	GetLineByteFromPos} from './util.vim'
 import {LspDiagsUpdated} from './buf.vim'
 
 # process the 'initialize' method reply from the LSP server
@@ -57,7 +61,7 @@ def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>
 
   var result: dict<any> = reply.result[0]
   var file = LspUriToFile(result.uri)
-  var wid = bufwinid(file)
+  var wid = file->bufwinid()
   if wid != -1
     win_gotoid(wid)
   else
@@ -65,7 +69,8 @@ def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>
   endif
   # Set the previous cursor location mark
   setpos("'`", getcurpos())
-  cursor(result.range.start.line + 1, result.range.start.character + 1)
+  setcursorcharpos(result.range.start.line + 1,
+			result.range.start.character + 1)
   redraw!
 enddef
 
@@ -254,7 +259,7 @@ def s:processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
 						->trim("\t ", 1)
     qflist->add({filename: fname,
 			lnum: loc.range.start.line + 1,
-			col: loc.range.start.character + 1,
+			col: GetLineByteFromPos(bnr, loc.range.start) + 1,
 			text: text})
   endfor
   setqflist([], ' ', {title: 'Language Server', items: qflist})
@@ -286,9 +291,10 @@ def s:processDocHighlightReply(lspserver: dict<any>, req: dict<any>, reply: dict
       # textual reference
       propName = 'LspTextRef'
     endif
-    prop_add(docHL.range.start.line + 1, docHL.range.start.character + 1,
+    prop_add(docHL.range.start.line + 1,
+		GetLineByteFromPos(bnr, docHL.range.start) + 1,
 		{end_lnum: docHL.range.end.line + 1,
-		  end_col: docHL.range.end.character + 1,
+		  end_col: GetLineByteFromPos(bnr, docHL.range.end) + 1,
 		  bufnr: bnr,
 		  type: propName})
   endfor
@@ -397,31 +403,6 @@ def s:processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<an
   # sort the symbols by line number
   symbolLineTable->sort((a, b) => a.range.start.line - b.range.start.line)
   lsp#updateOutlineWindow(fname, symbolTypeTable, symbolLineTable)
-enddef
-
-# Returns the byte number of the specified line/col position.  Returns a
-# zero-indexed column.  'pos' is LSP "interface position".
-def s:get_line_byte_from_position(bnr: number, pos: dict<number>): number
-  # LSP's line and characters are 0-indexed
-  # Vim's line and columns are 1-indexed
-  var col: number = pos.character
-  # When on the first character, we can ignore the difference between byte and
-  # character
-  if col > 0
-    if !bnr->bufloaded()
-      bnr->bufload()
-    endif
-
-    var ltext: list<string> = bnr->getbufline(pos.line + 1)
-    if !ltext->empty()
-      var bidx = ltext[0]->byteidx(col)
-      if bidx != -1
-	return bidx
-      endif
-    endif
-  endif
-
-  return col
 enddef
 
 # sort the list of edit operations in the descending order of line and column
@@ -538,9 +519,9 @@ def s:applyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   for e in text_edits
     # Adjust the start and end columns for multibyte characters
     start_row = e.range.start.line
-    start_col = s:get_line_byte_from_position(bnr, e.range.start)
+    start_col = GetLineByteFromPos(bnr, e.range.start)
     end_row = e.range.end.line
-    end_col = s:get_line_byte_from_position(bnr, e.range.end)
+    end_col = GetLineByteFromPos(bnr, e.range.end)
     start_line = [e.range.start.line, start_line]->min()
     finish_line = [e.range.end.line, finish_line]->max()
 
@@ -638,6 +619,7 @@ def s:applyWorkspaceEdit(workspaceEdit: dict<any>)
     # interface TextEdit
     s:applyTextEdits(bnr, changes)
   endfor
+  # Restore the cursor to the location before the edit
   save_cursor->setpos('.')
 enddef
 
@@ -737,9 +719,12 @@ def s:processSelectionRangeReply(lspserver: dict<any>, req: dict<any>, reply: di
   endif
 
   var r: dict<dict<number>> = reply.result[0].range
+  var bnr: number = bufnr()
+  var start_col: number = GetLineByteFromPos(bnr, r.start) + 1
+  var end_col: number = GetLineByteFromPos(bnr, r.end)
 
-  setpos("'<", [0, r.start.line + 1, r.start.character + 1, 0])
-  setpos("'>", [0, r.end.line + 1, r.end.character, 0])
+  setcharpos("'<", [0, r.start.line + 1, start_col, 0])
+  setcharpos("'>", [0, r.end.line + 1, end_col, 0])
   :normal gv
 enddef
 
@@ -834,8 +819,7 @@ def s:processWorkspaceSymbolReply(lspserver: dict<any>, req: dict<any>, reply: d
 
     symbols->add({name: symName,
 			file: fileName,
-			lnum: r.start.line + 1,
-			col: r.start.character + 1})
+			pos: r.start})
   endfor
   symbols->setwinvar(lspserver.workspaceSymbolPopup, 'LspSymbolTable')
   lspserver.workspaceSymbolPopup->popup_settext(

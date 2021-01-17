@@ -3,10 +3,13 @@ vim9script
 # Vim9 LSP client
 
 import NewLspServer from './lspserver.vim'
-import {WarnMsg, ErrMsg, lsp_server_trace} from './util.vim'
+import {WarnMsg,
+	ErrMsg,
+	lsp_server_trace,
+	GetLineByteFromPos} from './util.vim'
 
-# Needs Vim 8.2.2082 and higher
-if v:version < 802 || !has('patch-8.2.2082')
+# Needs Vim 8.2.2342 and higher
+if v:version < 802 || !has('patch-8.2.2342')
   finish
 endif
 
@@ -412,7 +415,7 @@ def lsp#showDiagnostics(): void
     text = diag.message->substitute("\n\\+", "\n", 'g')
     qflist->add({'filename': fname,
 		    'lnum': diag.range.start.line + 1,
-		    'col': diag.range.start.character + 1,
+		    'col': GetLineByteFromPos(bnr, diag.range.start) + 1,
 		    'text': text,
 		    'type': s:lspDiagSevToQfType(diag.severity)})
   endfor
@@ -494,7 +497,7 @@ def lsp#jumpToDiag(which: string): void
   for lnum in (which == 'next') ? sortedDiags : reverse(sortedDiags)
     if (which == 'next' && lnum > curlnum)
 	  || (which == 'prev' && lnum < curlnum)
-      call cursor(lnum, 1)
+      cursor(lnum, 1)
       return
     endif
   endfor
@@ -527,7 +530,7 @@ def lsp#completeFunc(findstart: number, base: string): any
 
     # locate the start of the word
     var line = getline('.')
-    var start = col('.') - 1
+    var start = charcol('.') - 1
     while start > 0 && line[start - 1] =~ '\k'
       start -= 1
     endwhile
@@ -678,11 +681,12 @@ enddef
 
 var skipOutlineRefresh: bool = false
 
-def s:addSymbolText(symbolTypeTable: dict<list<dict<any>>>,
-				pfx: string,
-				text: list<string>,
-				lnumMap: list<dict<any>>,
-				children: bool)
+def s:addSymbolText(bnr: number,
+			symbolTypeTable: dict<list<dict<any>>>,
+			pfx: string,
+			text: list<string>,
+			lnumMap: list<dict<any>>,
+			children: bool)
   var prefix: string = pfx .. '  '
   for [symType, symbols] in items(symbolTypeTable)
     if !children
@@ -701,11 +705,12 @@ def s:addSymbolText(symbolTypeTable: dict<list<dict<any>>>,
     for s in symbols
       text->add(prefix .. s.name)
       # remember the line number for the symbol
+      var start_col: number = GetLineByteFromPos(bnr, s.range.start) + 1
       lnumMap->add({name: s.name, lnum: s.range.start.line + 1,
-      col: s.range.start.character + 1})
+			col: start_col})
       s.outlineLine = lnumMap->len()
       if s->has_key('children') && !s.children->empty()
-	s:addSymbolText(s.children, prefix, text, lnumMap, true)
+	s:addSymbolText(bnr, s.children, prefix, text, lnumMap, true)
       endif
     endfor
   endfor
@@ -743,7 +748,7 @@ def lsp#updateOutlineWindow(fname: string,
   # First two lines in the buffer display comment information
   var lnumMap: list<dict<any>> = [{}, {}]
   var text: list<string> = []
-  s:addSymbolText(symbolTypeTable, '', text, lnumMap, false)
+  s:addSymbolText(fname->bufnr(), symbolTypeTable, '', text, lnumMap, false)
   append('$', text)
   w:lspSymbols = {filename: fname, lnumTable: lnumMap,
 				symbolsByLine: symbolLineTable}
@@ -1112,7 +1117,8 @@ def s:jumpToWorkspaceSymbol(popupID: number, result: number): void
     else
       winList[0]->win_gotoid()
     endif
-    cursor(symTbl[result - 1].lnum, symTbl[result - 1].col)
+    setcursorcharpos(symTbl[result - 1].pos.line + 1,
+			symTbl[result - 1].pos.character + 1)
   catch
     # ignore exceptions
   endtry

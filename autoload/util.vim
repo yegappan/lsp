@@ -89,4 +89,30 @@ export def LspFileToUri(fname: string): string
   return uri
 enddef
 
+# Returns the byte number of the specified LSP position in buffer 'bnr'.
+# LSP's line and characters are 0-indexed.
+# Vim's line and columns are 1-indexed.
+# Returns a zero-indexed column.
+export def GetLineByteFromPos(bnr: number, pos: dict<number>): number
+  var col: number = pos.character
+  # When on the first character, we can ignore the difference between byte and
+  # character
+  if col > 0
+    # Need a loaded buffer to read the line and compute the offset
+    if !bnr->bufloaded()
+      bnr->bufload()
+    endif
+
+    var ltext: list<string> = bnr->getbufline(pos.line + 1)
+    if !ltext->empty()
+      var bidx = ltext[0]->byteidx(col)
+      if bidx != -1
+	return bidx
+      endif
+    endif
+  endif
+
+  return col
+enddef
+
 # vim: shiftwidth=2 softtabstop=2

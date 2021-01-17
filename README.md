@@ -1,5 +1,5 @@
 
-Language Server Protocol (LSP) plugin for Vim9. You need Vim version 8.2.2241 or above to use this plugin.
+Language Server Protocol (LSP) plugin for Vim9. You need Vim version 8.2.2342 or above to use this plugin.
 
 ## Installation
 

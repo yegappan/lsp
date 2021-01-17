@@ -1,8 +1,8 @@
 *lsp.txt*	Language Server Protocol (LSP) Plugin for Vim9
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
-For Vim version 8.2.2082 and above
-Last change: Jan 10, 2021
+For Vim version 8.2.2342 and above
+Last change: Jan 17, 2021
 
 ==============================================================================
 						*lsp-license*
@@ -35,7 +35,7 @@ Refer to the following pages for more information about LSP:
     https://microsoft.github.io/language-server-protocol/
     https://langserver.org/
 
-This plugin needs Vim version 8.2.2082 and after. You will need a language
+This plugin needs Vim version 8.2.2342 and after. You will need a language
 specific server in your system to use this plugin. Refer to the above pages
 for a list of available language servers for the various programming
 languages.

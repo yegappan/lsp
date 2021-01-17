@@ -4,8 +4,16 @@ vim9script
 # Refer to https://microsoft.github.io/language-server-protocol/specification
 # for the Language Server Protocol (LSP) specificaiton.
 
-import {ProcessReply, ProcessNotif, ProcessRequest, ProcessMessages} from './handlers.vim'
-import {WarnMsg, ErrMsg, ClearTraceLogs, TraceLog, LspUriToFile, LspFileToUri} from './util.vim'
+import {ProcessReply,
+	ProcessNotif,
+	ProcessRequest,
+	ProcessMessages} from './handlers.vim'
+import {WarnMsg,
+	ErrMsg,
+	ClearTraceLogs,
+	TraceLog,
+	LspUriToFile,
+	LspFileToUri} from './util.vim'
 
 # LSP server standard output handler
 def s:output_cb(lspserver: dict<any>, chan: channel, msg: string): void
@@ -84,9 +92,9 @@ def s:initServer(lspserver: dict<any>)
     textDocument: {
       foldingRange: {lineFoldingOnly: v:true},
       completion: {
-	snippetSupport: v:true,
 	completionItem: {
 	  documentationFormat: ['plaintext', 'markdown'],
+	  snippetSupport: v:false
 	},
 	completionItemKind: {valueSet: range(1, 25)}
       },
@@ -326,8 +334,7 @@ enddef
 # line and not the byte index in the line.
 def s:getLspPosition(): dict<number>
   var lnum: number = line('.') - 1
-  #var col: number = strchars(getline('.')[: col('.') - 1]) - 1
-  var col: number = col('.') - 1
+  var col: number = charcol('.') - 1
   return {line: lnum, character: col}
 enddef
 
@@ -652,8 +659,8 @@ def s:codeAction(lspserver: dict<any>, fname_arg: string)
   var bnr: number = bufnr(fname_arg)
   req.params->extend({textDocument: {uri: LspFileToUri(fname)}})
   var r: dict<dict<number>> = {
-		  start: {line: line('.') - 1, character: col('.') - 1},
-		  end: {line: line('.') - 1, character: col('.') - 1}}
+		  start: {line: line('.') - 1, character: charcol('.') - 1},
+		  end: {line: line('.') - 1, character: charcol('.') - 1}}
   req.params->extend({range: r})
   var diag: list<dict<any>> = []
   var lnum = line('.')
