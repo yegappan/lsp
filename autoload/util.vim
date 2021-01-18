@@ -89,6 +89,11 @@ export def LspFileToUri(fname: string): string
   return uri
 enddef
 
+# Convert a Vim buffer number to an LSP URI (file://<absolute_path>)
+export def LspBufnrToUri(bnr: number): string
+  return LspFileToUri(bnr->bufname())
+enddef
+
 # Returns the byte number of the specified LSP position in buffer 'bnr'.
 # LSP's line and characters are 0-indexed.
 # Vim's line and columns are 1-indexed.

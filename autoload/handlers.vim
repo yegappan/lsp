@@ -67,7 +67,7 @@ def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>
   var file = LspUriToFile(result.uri)
   var wid = file->bufwinid()
   if wid != -1
-    win_gotoid(wid)
+    wid->win_gotoid()
   else
     exe 'split ' .. file
   endif
@@ -103,10 +103,10 @@ def s:processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dic
       startcol = text->stridx(label)
     endif
   endif
-  var popupID = popup_atcursor(text, {})
-  prop_type_add('signature', {bufnr: winbufnr(popupID), highlight: 'Title'})
+  var popupID = text->popup_atcursor({})
+  prop_type_add('signature', {bufnr: popupID->winbufnr(), highlight: 'Title'})
   if hllen > 0
-    prop_add(1, startcol + 1, {bufnr: winbufnr(popupID), length: hllen, type: 'signature'})
+    prop_add(1, startcol + 1, {bufnr: popupID->winbufnr(), length: hllen, type: 'signature'})
   endif
 enddef
 
@@ -153,7 +153,7 @@ def s:processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
   endif
 
   var items: list<dict<any>>
-  if type(reply.result) == v:t_list
+  if reply.result->type() == v:t_list
     items = reply.result
   else
     items = reply.result.items
@@ -200,7 +200,7 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
 
   var hoverText: list<string>
 
-  if type(reply.result.contents) == v:t_dict
+  if reply.result.contents->type() == v:t_dict
     if reply.result.contents->has_key('kind')
       # MarkupContent
       if reply.result.contents.kind == 'plaintext'
@@ -218,16 +218,16 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
       ErrMsg('Error: Unsupported hover contents (' .. reply.result.contents .. ')')
       return
     endif
-  elseif type(reply.result.contents) == v:t_list
+  elseif reply.result.contents->type() == v:t_list
     # interface MarkedString[]
     for e in reply.result.contents
-      if type(e) == v:t_string
+      if e->type() == v:t_string
 	hoverText->extend(e->split("\n"))
       else
 	hoverText->extend(e.value->split("\n"))
       endif
     endfor
-  elseif type(reply.result.contents) == v:t_string
+  elseif reply.result.contents->type() == v:t_string
     if reply.result.contents->empty()
       return
     endif
@@ -269,7 +269,7 @@ def s:processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
   setqflist([], ' ', {title: 'Language Server', items: qflist})
   var save_winid = win_getid()
   copen
-  win_gotoid(save_winid)
+  save_winid->win_gotoid()
 enddef
 
 # process the 'textDocument/documentHighlight' reply from the LSP server
@@ -280,7 +280,7 @@ def s:processDocHighlightReply(lspserver: dict<any>, req: dict<any>, reply: dict
   endif
 
   var fname: string = LspUriToFile(req.params.textDocument.uri)
-  var bnr = bufnr(fname)
+  var bnr = fname->bufnr()
 
   for docHL in reply.result
     var kind: number = docHL->get('kind', 1)
@@ -448,9 +448,9 @@ def s:set_lines(lines: list<string>, A: list<number>, B: list<number>,
   var i_n = [B[0], numlines - 1]->min()
 
   if i_0 < 0 || i_0 >= numlines || i_n < 0 || i_n >= numlines
-    WarnMsg("set_lines: Invalid range, A = " .. string(A)
-		.. ", B = " ..  string(B) .. ", numlines = " .. numlines
-		.. ", new lines = " .. string(new_lines))
+    WarnMsg("set_lines: Invalid range, A = " .. A->string()
+		.. ", B = " ..  B->string() .. ", numlines = " .. numlines
+		.. ", new lines = " .. new_lines->string())
     return lines
   endif
 
@@ -613,9 +613,9 @@ def s:applyWorkspaceEdit(workspaceEdit: dict<any>)
   endif
 
   var save_cursor: list<number> = getcurpos()
-  for [uri, changes] in items(workspaceEdit.changes)
+  for [uri, changes] in workspaceEdit.changes->items()
     var fname: string = LspUriToFile(uri)
-    var bnr: number = bufnr(fname)
+    var bnr: number = fname->bufnr()
     if bnr == -1
       # file is already removed
       continue
@@ -639,7 +639,7 @@ def s:processFormatReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   # result: TextEdit[]
 
   var fname: string = LspUriToFile(req.params.textDocument.uri)
-  var bnr: number = bufnr(fname)
+  var bnr: number = fname->bufnr()
   if bnr == -1
     # file is already removed
     return
@@ -859,7 +859,7 @@ export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
   if lsp_reply_handlers->has_key(req.method)
     lsp_reply_handlers[req.method](lspserver, req, reply)
   else
-    ErrMsg("Error: Unsupported reply received from LSP server: " .. string(reply))
+    ErrMsg("Error: Unsupported reply received from LSP server: " .. reply->string())
   endif
 enddef
 
@@ -868,7 +868,7 @@ enddef
 # Param: PublishDiagnosticsParams
 def s:processDiagNotif(lspserver: dict<any>, reply: dict<any>): void
   var fname: string = LspUriToFile(reply.params.uri)
-  var bnr: number = bufnr(fname)
+  var bnr: number = fname->bufnr()
   if bnr == -1
     # Is this condition possible?
     return
@@ -928,7 +928,7 @@ enddef
 
 # process unsupported notification messages
 def s:processUnsupportedNotif(lspserver: dict<any>, reply: dict<any>)
-  ErrMsg('Error: Unsupported notification message received from the LSP server (' .. lspserver.path .. '), message = ' .. string(reply))
+  ErrMsg('Error: Unsupported notification message received from the LSP server (' .. lspserver.path .. '), message = ' .. reply->string())
 enddef
 
 # process notification messages from the LSP server
@@ -945,7 +945,7 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
   if lsp_notif_handlers->has_key(reply.method)
     lsp_notif_handlers[reply.method](lspserver, reply)
   else
-    ErrMsg('Error: Unsupported notification received from LSP server ' .. string(reply))
+    ErrMsg('Error: Unsupported notification received from LSP server ' .. reply->string())
   endif
 enddef
 
@@ -967,7 +967,7 @@ def s:processApplyEditReq(lspserver: dict<any>, request: dict<any>)
 enddef
 
 def s:processUnsupportedReq(lspserver: dict<any>, request: dict<any>)
-  ErrMsg('Error: Unsupported request message received from the LSP server (' .. lspserver.path .. '), message = ' .. string(request))
+  ErrMsg('Error: Unsupported request message received from the LSP server (' .. lspserver.path .. '), message = ' .. request->string())
 enddef
 
 # process a request message from the server
@@ -988,7 +988,7 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
     lspRequestHandlers[request.method](lspserver, request)
   else
     ErrMsg('Error: Unsupported request received from LSP server ' ..
-							string(request))
+							request->string())
   endif
 enddef
 
@@ -1026,9 +1026,9 @@ export def ProcessMessages(lspserver: dict<any>): void
 
     if msg->has_key('result') || msg->has_key('error')
       # response message from the server
-      var req = lspserver.requests->get(string(msg.id))
+      var req = lspserver.requests->get(msg.id->string())
       # Remove the corresponding stored request message
-      lspserver.requests->remove(string(msg.id))
+      lspserver.requests->remove(msg.id->string())
 
       if msg->has_key('result')
 	lspserver.processReply(req, msg)
@@ -1037,7 +1037,7 @@ export def ProcessMessages(lspserver: dict<any>): void
 	var emsg: string = msg.error.message
 	emsg ..= ', code = ' .. msg.error.code
 	if msg.error->has_key('data')
-	  emsg = emsg .. ', data = ' .. string(msg.error.data)
+	  emsg = emsg .. ', data = ' .. msg.error.data->string()
 	endif
 	ErrMsg("Error: request " .. req.method .. " failed (" .. emsg .. ")")
       endif

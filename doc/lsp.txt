@@ -111,30 +111,52 @@ The following commands are provided:
 ==============================================================================
 4. Configuration				*lsp-configuration*
 
-To register a LSP server, add the following lines to your .vimrc file:
->
+To register one or more LSP servers, use the lsp#addServer() function with a
+list of LSP server details in the .vimrc file.
+
+For example, to add the LSP servers for the Javascript, Typescript and Python
+file types, add the following commands to the .vimrc file: >
+
    let lspServers = [
-		\     {
-		\       'filetype': ['c', 'cpp'],
-		\       'path': '/usr/local/bin/clangd',
-		\       'args': ['--background-index']
-		\     },
 		\     {
 		\	'filetype': ['javascript', 'typescript'],
 		\	'path': '/usr/local/bin/typescript-language-server',
 		\	'args': ['--stdio']
 		\     }
 		\     {
-		\	'filetype': 'sh',
-		\	'path': '/usr/local/bin/bash-language-server',
-		\	'args': ['start']
-		\     },
+		\	'filetype': 'python',
+		\	'path': '/usr/local/bin/pyls',
+		\	'args': ['--check-parent-process', '-v']
+		\     }
 		\   ]
    call lsp#addServer(lspServers)
 <
-The above lines add the LSP servers for C, C++, Javascript, Typescript and
-Shell script file types.
+Depending on the location of the typescript and python pyls language servers
+installed in your system, update the 'path' in the above snippet
+appripriately.
 
+Another example, for adding the LSP servers for the C, C++, Shell script and
+Vim file types: >
+
+   let lspServers = [
+		\     #{
+		\        filetype: ['c', 'cpp'],
+		\        path: '/usr/local/bin/clangd',
+		\        args: ['--background-index']
+		\     },
+		\     #{
+		\	 filetype: 'sh',
+		\	 path: '/usr/local/bin/bash-language-server',
+		\	 args: ['start']
+		\     },
+		\     #{
+		\	 filetype: ['vim'],
+		\	 path: '/usr/local/bin/vim-language-server',
+		\	 args: ['--stdio']
+		\     }
+		\   ]
+   call lsp#addServer(lspServers)
+<
 To add a LSP server, the following information is needed:
 
 	filetype	One or more file types supported by the LSP server.

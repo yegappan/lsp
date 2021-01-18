@@ -6,6 +6,7 @@ import NewLspServer from './lspserver.vim'
 import {WarnMsg,
 	ErrMsg,
 	lsp_server_trace,
+	ClearTraceLogs,
 	GetLineByteFromPos} from './util.vim'
 
 # Needs Vim 8.2.2342 and higher
@@ -54,12 +55,13 @@ def s:lspAddServer(ftype: string, lspserver: dict<any>)
 enddef
 
 def lsp#enableServerTrace()
+  ClearTraceLogs()
   lsp_server_trace = v:true
 enddef
 
 # Show information about all the LSP servers
 def lsp#showServers()
-  for [ftype, lspserver] in items(ftypeServerMap)
+  for [ftype, lspserver] in ftypeServerMap->items()
     var msg = ftype .. "    "
     if lspserver.running
       msg ..= 'running'
@@ -284,7 +286,7 @@ def lsp#removeFile(bnr: number): void
     return
   endif
 
-  var fname: string = bufname(bnr)
+  var fname: string = bnr->bufname()
   var ftype: string = bnr->getbufvar('&filetype')
   if fname == '' || ftype == ''
     return
@@ -297,7 +299,7 @@ def lsp#removeFile(bnr: number): void
   if lspserver.diagsMap->has_key(bnr)
     lspserver.diagsMap->remove(bnr)
   endif
-  remove(bufnrToServer, bnr)
+  bufnrToServer->remove(bnr)
 enddef
 
 # Stop all the LSP servers
@@ -317,26 +319,26 @@ def lsp#addServer(serverList: list<dict<any>>)
       continue
     endif
 
-    if !file_readable(server.path)
+    if !server.path->filereadable()
       ErrMsg('Error: LSP server ' .. server.path .. ' is not found')
       return
     endif
-    if type(server.args) != v:t_list
+    if server.args->type() != v:t_list
       ErrMsg('Error: Arguments for LSP server ' .. server.path .. ' is not a List')
       return
     endif
 
     var lspserver: dict<any> = NewLspServer(server.path, server.args)
 
-    if type(server.filetype) == v:t_string
+    if server.filetype->type() == v:t_string
       s:lspAddServer(server.filetype, lspserver)
-    elseif type(server.filetype) == v:t_list
+    elseif server.filetype->type() == v:t_list
       for ftype in server.filetype
 	s:lspAddServer(ftype, lspserver)
       endfor
     else
       ErrMsg('Error: Unsupported file type information "' ..
-		string(server.filetype) .. '" in LSP server registration')
+		server.filetype->string() .. '" in LSP server registration')
       continue
     endif
   endfor
@@ -411,7 +413,7 @@ def lsp#showDiagnostics(): void
   var qflist: list<dict<any>> = []
   var text: string
 
-  for [lnum, diag] in items(lspserver.diagsMap[bnr])
+  for [lnum, diag] in lspserver.diagsMap[bnr]->items()
     text = diag.message->substitute("\n\\+", "\n", 'g')
     qflist->add({'filename': fname,
 		    'lnum': diag.range.start.line + 1,
@@ -452,11 +454,13 @@ enddef
 
 # sort the diaganostics messages for a buffer by line number
 def s:getSortedDiagLines(lspserver: dict<any>, bnr: number): list<number>
+  # create a list of line numbers from the diag map keys
   var lnums: list<number> =
-		lspserver.diagsMap[bnr]->keys()->mapnew((_, v) => str2nr(v))
+		lspserver.diagsMap[bnr]->keys()->mapnew((_, v) => v->str2nr())
   return lnums->sort((a, b) => a - b)
 enddef
 
+# jump to the next/previous/first diagnostic message in the current buffer
 def lsp#jumpToDiag(which: string): void
   var ftype = &filetype
   if ftype == ''
@@ -494,7 +498,7 @@ def lsp#jumpToDiag(which: string): void
 
   # Find the entry just before the current line (binary search)
   var curlnum: number = line('.')
-  for lnum in (which == 'next') ? sortedDiags : reverse(sortedDiags)
+  for lnum in (which == 'next') ? sortedDiags : sortedDiags->reverse()
     if (which == 'next' && lnum > curlnum)
 	  || (which == 'prev' && lnum < curlnum)
       cursor(lnum, 1)
@@ -645,7 +649,7 @@ def s:outlineJumpToSymbol()
 
   # Highlight the selected symbol
   prop_remove({type: 'LspOutlineHighlight'})
-  var col: number = match(getline('.'), '\S') + 1
+  var col: number = getline('.')->match('\S') + 1
   prop_add(line('.'), col, {type: 'LspOutlineHighlight',
 			length: w:lspSymbols.lnumTable[lnum].name->len()})
 
@@ -688,7 +692,7 @@ def s:addSymbolText(bnr: number,
 			lnumMap: list<dict<any>>,
 			children: bool)
   var prefix: string = pfx .. '  '
-  for [symType, symbols] in items(symbolTypeTable)
+  for [symType, symbols] in symbolTypeTable->items()
     if !children
       # Add an empty line for the top level symbol types. For types in the
       # children symbols, don't add the empty line.
@@ -729,11 +733,11 @@ def lsp#updateOutlineWindow(fname: string,
   skipOutlineRefresh = true
 
   var prevWinID: number = win_getid()
-  win_gotoid(wid)
+  wid->win_gotoid()
 
   # if the file displayed in the outline window is same as the new file, then
   # save and restore the cursor position
-  var symbols = getwinvar(wid, 'lspSymbols', {})
+  var symbols = wid->getwinvar('lspSymbols', {})
   var saveCursor: list<number> = []
   if !symbols->empty() && symbols.filename == fname
     saveCursor = getcurpos()
@@ -742,8 +746,8 @@ def lsp#updateOutlineWindow(fname: string,
   :setlocal modifiable
   :silent! :%d _
   setline(1, ['# LSP Outline View',
-		'# ' .. fnamemodify(fname, ':t') .. ' ('
-				.. fnamemodify(fname, ':h') .. ')'])
+		'# ' .. fname->fnamemodify(':t') .. ' ('
+				.. fname->fnamemodify(':h') .. ')'])
 
   # First two lines in the buffer display comment information
   var lnumMap: list<dict<any>> = [{}, {}]
@@ -755,10 +759,10 @@ def lsp#updateOutlineWindow(fname: string,
   :setlocal nomodifiable
 
   if !saveCursor->empty()
-    setpos('.', saveCursor)
+    saveCursor->setpos('.')
   endif
 
-  win_gotoid(prevWinID)
+  prevWinID->win_gotoid()
 
   # Highlight the current symbol
   s:outlineHighlightCurrentSymbol()
@@ -768,7 +772,7 @@ def lsp#updateOutlineWindow(fname: string,
 enddef
 
 def s:outlineHighlightCurrentSymbol()
-  var fname: string = fnamemodify(expand('%'), ':p')
+  var fname: string = expand('%')->fnamemodify(':p')
   if fname == '' || &filetype == ''
     return
   endif
@@ -780,7 +784,7 @@ def s:outlineHighlightCurrentSymbol()
 
   # Check whether the symbols for this file are displayed in the outline
   # window
-  var lspSymbols = getwinvar(wid, 'lspSymbols', {})
+  var lspSymbols = wid->getwinvar('lspSymbols', {})
   if lspSymbols->empty() || lspSymbols.filename != fname
     return
   endif
@@ -890,7 +894,7 @@ def s:openOutlineWindow()
     autocmd CursorHold * call s:outlineHighlightCurrentSymbol()
   augroup END
 
-  win_gotoid(prevWinID)
+  prevWinID->win_gotoid()
 enddef
 
 def s:requestDocSymbols()
@@ -1059,7 +1063,7 @@ def s:filterSymbols(lspserver: dict<any>, popupID: number, key: string): bool
         || key == "\<C-P>"
     # scroll the popup window
     var cmd: string = 'normal! ' .. (key == "\<C-N>" ? 'j' : key == "\<C-P>" ? 'k' : key)
-    cmd->win_execute(popupID)
+    win_execute(popupID, cmd)
     key_handled = true
   elseif key == "\<Up>" || key == "\<Down>"
     # Use native Vim handling for these keys
@@ -1208,7 +1212,7 @@ def lsp#listWorkspaceFolders()
     return
   endif
 
-  echomsg 'Workspace Folders: ' .. string(lspserver.workspaceFolders)
+  echomsg 'Workspace Folders: ' .. lspserver.workspaceFolders->string()
 enddef
 
 # Add a workspace folder. Default is to use the current folder.

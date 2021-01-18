@@ -96,12 +96,55 @@ def Test_lsp_formatting()
   :%bw!
 enddef
 
+# Test for showing all the references of a symbol in a file using LSP
+def Test_lsp_show_references()
+  :silent! edit Xtest.c
+  var lines: list<string> =<< trim END
+    int count;
+    void redFunc()
+    {
+	int count, i;
+	count = 10;
+	i = count;
+    }
+    void blueFunc()
+    {
+	int count, j;
+	count = 20;
+	j = count;
+    }
+  END
+  setline(1, lines)
+  :redraw!
+  cursor(5, 2)
+  var bnr: number = bufnr()
+  :LspShowReferences
+  :sleep 1
+  var qfl: list<dict<any>> = getqflist()
+  assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
+  assert_equal(bnr, qfl[0].bufnr)
+  assert_equal(3, qfl->len())
+  assert_equal([4, 6], [qfl[0].lnum, qfl[0].col])
+  assert_equal([5, 2], [qfl[1].lnum, qfl[1].col])
+  assert_equal([6, 6], [qfl[2].lnum, qfl[2].col])
+  :only
+  cursor(1, 5)
+  :LspShowReferences
+  :sleep 1
+  qfl = getqflist()
+  assert_equal(1, qfl->len())
+  assert_equal([1, 5], [qfl[0].lnum, qfl[0].col])
+
+  :%bw!
+enddef
+
 def LspRunTests()
   # Edit a dummy C file to start the LSP server
   :edit Xtest.c
   :sleep 1
   :%bw!
 
+  # Get the list of test functions in this file and call them
   var fns: list<string> = execute('function /Test_')
 		    ->split("\n")
 		    ->map("v:val->substitute('^def <SNR>\\d\\+_', '', '')")
@@ -116,7 +159,7 @@ def LspRunTests()
     endif
   endfor
 
-  echomsg "Success: All LSP tests have passed"
+  echomsg "Success: All the LSP tests have passed"
 enddef
 
 LspRunTests()

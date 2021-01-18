@@ -10,9 +10,9 @@ import {ProcessReply,
 	ProcessMessages} from './handlers.vim'
 import {WarnMsg,
 	ErrMsg,
-	ClearTraceLogs,
 	TraceLog,
 	LspUriToFile,
+	LspBufnrToUri,
 	LspFileToUri} from './util.vim'
 
 # LSP server standard output handler
@@ -53,7 +53,6 @@ def s:startServer(lspserver: dict<any>): number
 		err_cb: function('s:error_cb', [lspserver]),
 		exit_cb: function('s:exit_cb', [lspserver])}
 
-  ClearTraceLogs()
   lspserver.data = ''
   lspserver.caps = {}
   lspserver.nextID = 1
@@ -115,7 +114,7 @@ def s:initServer(lspserver: dict<any>)
   initparams.processId = getpid()
   initparams.clientInfo = {
 	name: 'Vim',
-	version: string(v:versionlong),
+	version: v:versionlong->string(),
       }
   var curdir: string = getcwd()
   initparams.rootPath = curdir
@@ -196,7 +195,7 @@ def s:createRequest(lspserver: dict<any>, method: string): dict<any>
   req.params = {}
 
   # Save the request, so that the corresponding response can be processed
-  lspserver.requests->extend({[string(req.id)]: req})
+  lspserver.requests->extend({[req.id->string()]: req})
 
   return req
 enddef
@@ -223,7 +222,7 @@ enddef
 # send a response message to the server
 def s:sendResponse(lspserver: dict<any>, request: dict<any>, result: dict<any>, error: dict<any>)
   var resp: dict<any> = lspserver.createResponse(request.id)
-  if type(result) != v:t_none
+  if result->type() != v:t_none
     resp->extend({result: result})
   else
     resp->extend({error: error})
@@ -248,7 +247,7 @@ def s:textdocDidOpen(lspserver: dict<any>, bnr: number, ftype: string): void
   # interface DidOpenTextDocumentParams
   # interface TextDocumentItem
   var tdi = {}
-  tdi.uri = LspFileToUri(bufname(bnr))
+  tdi.uri = LspBufnrToUri(bnr)
   tdi.languageId = ftype
   tdi.version = 1
   tdi.text = getbufline(bnr, 1, '$')->join("\n") .. "\n"
@@ -264,7 +263,7 @@ def s:textdocDidClose(lspserver: dict<any>, bnr: number): void
   # interface DidCloseTextDocumentParams
   #   interface TextDocumentIdentifier
   var tdid = {}
-  tdid.uri = LspFileToUri(bufname(bnr))
+  tdid.uri = LspBufnrToUri(bnr)
   notif.params->extend({textDocument: tdid})
 
   lspserver.sendMessage(notif)
@@ -280,7 +279,7 @@ def s:textdocDidChange(lspserver: dict<any>, bnr: number, start: number,
   # interface DidChangeTextDocumentParams
   #   interface VersionedTextDocumentIdentifier
   var vtdid: dict<any> = {}
-  vtdid.uri = LspFileToUri(bufname(bnr))
+  vtdid.uri = LspBufnrToUri(bnr)
   # Use Vim 'changedtick' as the LSP document version number
   vtdid.version = bnr->getbufvar('changedtick')
   notif.params->extend({textDocument: vtdid})
@@ -492,7 +491,7 @@ def s:didSaveFile(lspserver: dict<any>, bnr: number): void
 
   var notif: dict<any> = lspserver.createNotification('textDocument/didSave')
   # interface: DidSaveTextDocumentParams
-  notif.params->extend({textDocument: {uri: LspFileToUri(bufname(bnr))}})
+  notif.params->extend({textDocument: {uri: LspBufnrToUri(bnr)}})
   lspserver.sendMessage(notif)
 enddef
 
@@ -656,7 +655,7 @@ def s:codeAction(lspserver: dict<any>, fname_arg: string)
 
   # interface CodeActionParams
   var fname: string = fnamemodify(fname_arg, ':p')
-  var bnr: number = bufnr(fname_arg)
+  var bnr: number = fname_arg->bufnr()
   req.params->extend({textDocument: {uri: LspFileToUri(fname)}})
   var r: dict<dict<number>> = {
 		  start: {line: line('.') - 1, character: charcol('.') - 1},
