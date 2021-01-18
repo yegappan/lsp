@@ -42,6 +42,10 @@ def s:processInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
 
   # send a "initialized" notification to server
   lspserver.sendInitializedNotif()
+
+  # if the outline window is opened, then request the symbols for the current
+  # buffer
+  lspserver.getDocSymbols(@%)
 enddef
 
 # process the 'textDocument/definition' / 'textDocument/declaration' /
@@ -379,17 +383,18 @@ enddef
 # Open a symbols window and display the symbols as a tree
 # Result: DocumentSymbol[] | SymbolInformation[] | null
 def s:processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
-  if reply.result->empty()
-    WarnMsg('No symbols are found')
-    return
-  endif
-
   var fname: string
-  var symbolTypeTable: dict<list<dict<any>>>
+  var symbolTypeTable: dict<list<dict<any>>> = {}
   var symbolLineTable: list<dict<any>> = []
 
   if req.params.textDocument.uri != ''
     fname = LspUriToFile(req.params.textDocument.uri)
+  endif
+
+  if reply.result->empty()
+    # No symbols defined for this file. Clear the outline window.
+    lsp#updateOutlineWindow(fname, symbolTypeTable, symbolLineTable)
+    return
   endif
 
   if reply.result[0]->has_key('location')

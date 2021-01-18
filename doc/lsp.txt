@@ -69,20 +69,20 @@ To use this plugin, add the following line to your .vimrc file:
 The following commands are provided:
 
 :LspShowServers		Display the list of registered LSP servers
-:LspGotoDefinition	Go to the definition of the keyword under cursor
-:LspGotoDeclaration	Go to the declaration of the keyword under cursor
-:LspGotoTypeDef		Go to the type definition of the keyword under cursor
-:LspGotoImpl		Go to the implementation of the keyword under cursor
-:LspShowSignature	Display the signature of the keyword under cursor
-:LspDiagShow		Display the diagnostics messages from the LSP server for
-			the current buffer
-:LspDiagFirst		Display the first diagnostic message for the current
-			buffer
-:LspDiagNext		Display the next diagnostic message for the current
-			buffer after the current line
-:LspDiagPrev		Display the previous diagnostic message for the current
-			buffer before the current line
-:LspDiagCurrent		Display the diagnostic message for the current line
+:LspGotoDefinition	Go to the definition of the symbol under cursor
+:LspGotoDeclaration	Go to the declaration of the symbol under cursor
+:LspGotoTypeDef		Go to the type definition of the symbol under cursor
+:LspGotoImpl		Go to the implementation of the symbol under cursor
+:LspShowSignature	Display the signature of the symbol under cursor.
+:LspDiagShow		Display the diagnostics messages from the LSP server
+			for the current buffer in a quickfix list.
+:LspDiagFirst		Jump to the first diagnostic message for the current
+			buffer.
+:LspDiagNext		Jump to the next diagnostic message for the current
+			buffer after the current line.
+:LspDiagPrev		Jump to the previous diagnostic message for the current
+			buffer before the current line.
+:LspDiagCurrent		Display the diagnostic message for the current line.
 :LspShowReferences	Display the list of references to the keyword under
 			cursor in a new quickfix list.
 :LspHighlight		Highlight all the matches for the keyword under cursor
@@ -90,7 +90,7 @@ The following commands are provided:
 :LspOutline		Show the list of symbols defined in the current file
 			in a separate window.
 :LspFormat		Format the current file using the LSP server.
-:{range}LspFormat	Format the specified range of files.
+:{range}LspFormat	Format the specified range of lines.
 :LspCalledBy		Display the list of symbols called by the current
 			symbol. (NOT IMPLEMENTED YET).
 :LspCalling		Display the list of symbols calling the current symbol
@@ -149,5 +149,178 @@ The LSP servers are added using the lsp#addServer() function. This function
 accepts a list of LSP servers with the above information.
 
 ==============================================================================
+5. Commands						*lsp-commands*
 
-vim:tw=78:ts=8:noet:ft=help:
+						|:LspShowServers|
+:LspShowServers		Displays the list of registered LSP servers and their
+			status. The LSP servers are registered using the
+			lsp#addServer() function. The output shows the Vim
+			file type, the corresponding LSP server status and the
+			path to the LSP server executable.
+
+						|:LspGotoDefinition|
+:LspGotoDefinition	Jumps to the definition of the symbol under the
+			cursor. If the file is already present in a window,
+			then jumps to that window. Otherwise, opens the file
+			in a  new window. If the jump is successful, then the
+			current cursor location is pushed onto the tag stack.
+			Also the |``| mark is set to the position before the
+			jump.
+
+						|:LspGotoDefinition|
+:LspGotoDeclaration	Jumps to the declaration of the symbol under the
+			cursor. The behavior of this command is similar to the
+			|:LspGotoDefinition| command.
+
+						|:LspGotoTypeDef|
+:LspGotoTypeDef		Jumps to the type definition of the symbol under the
+			cursor. The behavior of this command is similar to the
+			|:LspGotoDefinition| command. Note that not all the LSP
+			servers support this feature.
+
+						|:LspGotoImpl|
+:LspGotoImpl		Jumps to the implementation of the symbol under the
+			cursor. The behavior of this command is similar to the
+			|:LspGotoDefinition| command. Note that not all the LSP
+			servers support this feature.
+
+						|:LspShowSignature|
+:LspShowSignature	Displays the signature of the symbol (e.g. a function
+			or method) before the cursor in a popup. The popup is
+			also automatically displayed in insert mode after
+			entering a symbol name followed by a separator (e.g. a
+			opening parenthesis).
+
+						|:LspDiagShow|
+:LspDiagShow		Creates a new quickfix list with the diagnostics
+			messages (if any) from the LSP server for the current
+			file and opens the quickfix window. You can use the
+			Vim quickfix commands to browse the list.
+
+						|:LspDiagFirst|
+:LspDiagFirst		Jumps to the location of the first diagnostic message
+			for the current file.
+
+						|:LspDiagNext|
+:LspDiagNext		Jumps to the location of the diagnostic message after
+			the current cursor position.
+
+						|:LspDiagPrev|
+:LspDiagPrev		Jumps to the location of the diagnostic message before
+			the current cursor position.
+
+						|:LspDiagCurrent|
+:LspDiagCurrent		Displays the diagnostic message (if any) for the
+			current line.
+
+						|:LspShowReferences|
+:LspShowReferences	Creates a new quickfix list with the list of locations
+			where the symbol under the cursor is referenced and
+			opens the quickfix window.
+
+						|:LspHighlight|
+:LspHighlight		Highlights all the matches for the symbol under
+			cursor. The text, read and write references to the
+			symbol are highlighted using Search, DiffChange and
+			DiffDelete highlight groups respectively.
+
+						|:LspHighlightClear|
+:LspHighlightClear	Clears all the symbol matches highlighted by the
+			|:LspHighlight| command.
+
+						|:LspOutline|
+:LspOutline		Opens a vertically split window with the list of
+			symbols defined in the current file. The current
+			symbol is highlighted. The symbols are grouped by
+			their type. You can select a symbol and press <Enter>
+			to jump to the position of the symbol. As you move the
+			cursor in a file, the current symbol is automatically
+			highlighted in the outline window. If you open a new
+			file, the outline window is automatically updated with
+			the symbols in the new file.  Folds are created in the
+			outline window for the various group of symbols.
+
+						|:LspFormat|
+:LspFormat		Format the current file using the LSP server.
+
+:{range}LspFormat	Format the specified range of lines in the current
+			file using the LSP server.
+
+						|:LspCalledBy|
+:LspCalledBy		Display the list of symbols called by the current
+			symbol. (NOT IMPLEMENTED YET).
+
+						|:LspCalling|
+:LspCalling		Display the list of symbols calling the current symbol
+			(NOT IMPLEMENTED YET).
+
+						|:LspRename|
+:LspRename		Rename the current symbol. You will be prompted to
+			enter the new name for the symbol. You can press <Esc>
+			or enter an empty string in the prompt to cancel the
+			operation.
+
+						|:LspCodeAction|
+:LspCodeAction		Apply the code action supplied by the LSP server to
+			the diagnostic in the current line. This works only if
+			there is a diagnostic message for the current line.
+			You can use the |:LspDiagCurrent| command to display
+			the diagnostic for the current line. You will be
+			prompted to select one of the actions supplied by the
+			LSP server.
+
+						|:LspSymbolSearch|
+:LspSymbolSearch <sym>	Perform a workspace wide search for the symbol <sym>.
+			A popup window is opened with the list of matching
+			symbols.  You can enter a few characters to narrow
+			down the list of matches. You can close the popup menu
+			by pressing the escape key or by pressing CTRL-C.
+
+			In the popup menu, the following keys can be used:
+
+				CTRL-F     - Scroll one page forward
+				<PageDown> - idem
+				CTRL-B     - Scroll one page backward
+				<PageUp>   - idem
+				CTRL-Home  - Jump to the first entry
+				CTRL-End   - Jump to the last entry
+				<Up>       - Go up one entry
+				<C-P>      - idem
+				<Down>     - Go down one entry
+				<C-N>      - idem
+				<Enter>    - Open the selected file
+				<Esc>      - Close the popup menu
+				<CTRL-C>   - idem
+				<BS>       - Erase one character from the
+					     filter text
+				<C-H>      - idem
+				<C-U>      - Erase the filter text
+
+			Any other alphanumeric key will be used to narrow down
+			the list of names displayed in the popup menu. When
+			you type a filter string, then only the symbols fuzzy
+			matching the string are displayed in the popup menu.
+			You can enter a new search pattern to do a workspace
+			wide symbol search.
+
+						|:LspSelectionRange|
+:LspSelectionRange	Visually select the current symbol range.
+
+						|:LspFold|
+:LspFold		Fold the current file.
+
+						|:LspWorkspaceAddFolder|
+:LspWorkspaceAddFolder {folder}
+			Add a folder to the workspace
+
+						|:LspWorkspaceRemoveFolder|
+:LspWorkspaceRemoveFolder {folder}
+			Remove a folder from the workspace
+
+						|:LspWorkspaceListFolders|
+:LspWorkspaceListFolders
+			Show the list of folders in the workspace.
+
+==============================================================================
+
+vim:tw=78:ts=8:noet:ft=help:norl:

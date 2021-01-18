@@ -907,7 +907,7 @@ def s:requestDocSymbols()
   if lspserver->empty()
     return
   endif
-  if !lspserver.running
+  if !lspserver.running || lspserver.caps->empty()
     return
   endif
 

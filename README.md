@@ -70,7 +70,7 @@ Command|Description
 :LspHighlightClear|Clear all the matches highlighted by :LspHighlight
 :LspOutline|Show the list of symbols defined in the current file in a separate window.
 :LspFormat|Format the current file using the LSP server.
-:{range}LspFormat|Format the specified range of files.
+:{range}LspFormat|Format the specified range of lines.
 :LspCalledBy|Display the list of symbols called by the current symbol. (NOT IMPLEMENTED YET).
 :LspCalling|Display the list of symbols calling the current symbol (NOT IMPLEMENTED YET).
 :LspRename|Rename the current symbol
