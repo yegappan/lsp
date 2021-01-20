@@ -2,7 +2,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 8.2.2342 and above
-Last change: Jan 17, 2021
+Last change: Jan 20, 2021
 
 ==============================================================================
 						*lsp-license*
@@ -75,7 +75,7 @@ The following commands are provided:
 :LspGotoImpl		Go to the implementation of the symbol under cursor
 :LspShowSignature	Display the signature of the symbol under cursor.
 :LspDiagShow		Display the diagnostics messages from the LSP server
-			for the current buffer in a quickfix list.
+			for the current buffer in a location list.
 :LspDiagFirst		Jump to the first diagnostic message for the current
 			buffer.
 :LspDiagNext		Jump to the next diagnostic message for the current
@@ -84,7 +84,7 @@ The following commands are provided:
 			buffer before the current line.
 :LspDiagCurrent		Display the diagnostic message for the current line.
 :LspShowReferences	Display the list of references to the keyword under
-			cursor in a new quickfix list.
+			cursor in a new location list.
 :LspHighlight		Highlight all the matches for the keyword under cursor
 :LspHighlightClear	Clear all the matches highlighted by :LspHighlight
 :LspOutline		Show the list of symbols defined in the current file
@@ -214,10 +214,10 @@ accepts a list of LSP servers with the above information.
 			opening parenthesis).
 
 						|:LspDiagShow|
-:LspDiagShow		Creates a new quickfix list with the diagnostics
+:LspDiagShow		Creates a new location list with the diagnostics
 			messages (if any) from the LSP server for the current
-			file and opens the quickfix window. You can use the
-			Vim quickfix commands to browse the list.
+			file and opens the location list window. You can use
+			the Vim location list commands to browse the list.
 
 						|:LspDiagFirst|
 :LspDiagFirst		Jumps to the location of the first diagnostic message
@@ -236,9 +236,9 @@ accepts a list of LSP servers with the above information.
 			current line.
 
 						|:LspShowReferences|
-:LspShowReferences	Creates a new quickfix list with the list of locations
+:LspShowReferences	Creates a new location list with the list of locations
 			where the symbol under the cursor is referenced and
-			opens the quickfix window.
+			opens the location window.
 
 						|:LspHighlight|
 :LspHighlight		Highlights all the matches for the symbol under

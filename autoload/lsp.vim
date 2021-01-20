@@ -215,7 +215,8 @@ def g:LspDiagExpr(): string
     return ''
   endif
 
-  var diagInfo: dict<any> = lspserver.getDiagByLine(v:beval_bufnr, v:beval_lnum)
+  var diagInfo: dict<any> = lspserver.getDiagByLine(v:beval_bufnr,
+								v:beval_lnum)
   if diagInfo->empty()
     # No diagnostic for the current cursor location
     return ''
@@ -421,8 +422,9 @@ def lsp#showDiagnostics(): void
 		    'text': text,
 		    'type': s:lspDiagSevToQfType(diag.severity)})
   endfor
-  setqflist([], ' ', {'title': 'Language Server Diagnostics', 'items': qflist})
-  :copen
+  setloclist(0, [], ' ', {'title': 'Language Server Diagnostics',
+							'items': qflist})
+  :lopen
 enddef
 
 # Show the diagnostic message for the current line

@@ -60,12 +60,12 @@ Command|Description
 :LspGotoTypeDef|Go to the type definition of the keyword under cursor
 :LspGotoImpl|Go to the implementation of the keyword under cursor
 :LspShowSignature|Display the signature of the keyword under cursor
-:LspDiagShow|Display the diagnostics messages from the LSP server for the current buffer
+:LspDiagShow|Display the diagnostics messages from the LSP server for the current buffer in a new location list.
 :LspDiagFirst|Display the first diagnostic message for the current buffer
 :LspDiagNext|Display the next diagnostic message after the current line
 :LspDiagPrev|Display the previous diagnostic message before the current line
 :LspDiagCurrent|Display the diagnostic message for the current line
-:LspShowReferences|Display the list of references to the keyword under cursor in a new quickfix list.
+:LspShowReferences|Display the list of references to the keyword under cursor in a new location list.
 :LspHighlight|Highlight all the matches for the keyword under cursor
 :LspHighlightClear|Clear all the matches highlighted by :LspHighlight
 :LspOutline|Show the list of symbols defined in the current file in a separate window.

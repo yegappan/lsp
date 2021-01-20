@@ -266,9 +266,9 @@ def s:processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
 			col: GetLineByteFromPos(bnr, loc.range.start) + 1,
 			text: text})
   endfor
-  setqflist([], ' ', {title: 'Language Server', items: qflist})
+  setloclist(0, [], ' ', {title: 'Symbol Reference', items: qflist})
   var save_winid = win_getid()
-  copen
+  :lopen
   save_winid->win_gotoid()
 enddef
 
