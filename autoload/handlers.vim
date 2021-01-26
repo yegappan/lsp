@@ -205,7 +205,7 @@ def s:processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
     while start > 0 && line[start - 1] =~ '\k'
       start -= 1
     endwhile
-    start_col = start
+    start_col = start + 1
   endif
 
   complete(start_col, completeItems)
