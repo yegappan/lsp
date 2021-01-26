@@ -57,7 +57,6 @@ def s:startServer(lspserver: dict<any>): number
   lspserver.caps = {}
   lspserver.nextID = 1
   lspserver.requests = {}
-  lspserver.completePending = v:false
   lspserver.workspaceFolders = [getcwd()]
 
   var job = job_start(cmd, opts)
@@ -790,8 +789,8 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
     nextID: 1,
     caps: {},
     requests: {},
-    completePending: v:false,
     diagsMap: {},
+    completionTriggerChars: [],
     workspaceSymbolPopup: 0,
     workspaceSymbolQuery: ''
   }

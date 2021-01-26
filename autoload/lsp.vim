@@ -255,10 +255,12 @@ def lsp#addFile(bnr: number): void
 
   # add a listener to track changes to this buffer
   listener_add(function('lsp#bufchange_listener'), bnr)
-  setbufvar(bnr, '&completefunc', 'lsp#completeFunc')
   setbufvar(bnr, '&completeopt', 'menuone,popup,noinsert,noselect')
   setbufvar(bnr, '&completepopup', 'border:off')
   setbufvar(bnr, '&balloonexpr', 'LspDiagExpr()')
+  # autocmd for insert mode completion
+  exe 'autocmd SafeState <buffer=' .. bnr
+	.. '> if mode() == "i" | call lsp#complete() | endif'
 
   # map characters that trigger signature help
   if lspserver.caps->has_key('signatureHelpProvider')
@@ -266,14 +268,6 @@ def lsp#addFile(bnr: number): void
     for ch in triggers
       exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch
 				.. "<C-R>=lsp#showSignature()<CR>"
-    endfor
-  endif
-
-  # map characters that trigger insert mode completion
-  if lspserver.caps->has_key('completionProvider')
-    var triggers = lspserver.caps.completionProvider.triggerCharacters
-    for ch in triggers
-      exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch .. "<C-X><C-U>"
     endfor
   endif
 
@@ -512,49 +506,34 @@ def lsp#jumpToDiag(which: string): void
 enddef
 
 # Insert mode completion handler
-def lsp#completeFunc(findstart: number, base: string): any
+def lsp#complete(): string
+  var cur_col: number = col('.')
+  var line: string = getline('.')
+
+  if cur_col == 0 || line->empty()
+    return ''
+  endif
+
   var ftype: string = &filetype
   var lspserver: dict<any> = s:lspGetServer(ftype)
 
-  if findstart
-    if lspserver->empty()
-      ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
-      return -2
-    endif
-    if !lspserver.running
-      ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
-      return -2
-    endif
-
-    # first send all the changes in the current buffer to the LSP server
-    listener_flush()
-
-    lspserver.completePending = v:true
-    lspserver.completeItems = []
-    # initiate a request to LSP server to get list of completions
-    lspserver.getCompletion()
-
-    # locate the start of the word
-    var line = getline('.')
-    var start = charcol('.') - 1
-    while start > 0 && line[start - 1] =~ '\k'
-      start -= 1
-    endwhile
-    return start
-  else
-    var count: number = 0
-    while !complete_check() && lspserver.completePending
-				&& count < 1000
-      sleep 2m
-      count += 1
-    endwhile
-
-    var res: list<dict<any>> = []
-    for item in lspserver.completeItems
-      res->add(item)
-    endfor
-    return res->empty() ? v:none : res
+  if lspserver->empty() || !lspserver.running || lspserver.caps->empty()
+    return ''
   endif
+
+  if line[cur_col - 2] !~ '\k'
+    if lspserver.completionTriggerChars->index(line[cur_col - 2]) == -1
+      return ''
+    endif
+  endif
+
+  # first send all the changes in the current buffer to the LSP server
+  listener_flush()
+
+  # initiate a request to LSP server to get list of completions
+  lspserver.getCompletion()
+
+  return ''
 enddef
 
 # Display the hover message from the LSP server for the current cursor
