@@ -104,7 +104,7 @@ def s:processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dic
     endif
   endif
   var popupID = text->popup_atcursor({})
-  prop_type_add('signature', {bufnr: popupID->winbufnr(), highlight: 'Title'})
+  prop_type_add('signature', {bufnr: popupID->winbufnr(), highlight: 'LineNr'})
   if hllen > 0
     prop_add(1, startcol + 1, {bufnr: popupID->winbufnr(), length: hllen, type: 'signature'})
   endif
