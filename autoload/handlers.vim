@@ -190,7 +190,8 @@ def s:processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
     return
   endif
 
-  # Find the start column for the completion
+  # Find the start column for the completion.  If any of the entries returned
+  # by the LSP server has a starting position, then use that.
   var start_col: number = 0
   for item in items
     if item->has_key('textEdit')
@@ -199,6 +200,8 @@ def s:processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
     endif
   endfor
 
+  # LSP server didn't return a starting position for completion, search
+  # backwards from the current cursor position for a non-keyword character.
   if start_col == 0
     var line: string = getline('.')
     var start = col('.') - 1
@@ -530,7 +533,7 @@ def s:applyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   if !bnr->bufloaded()
     bnr->bufload()
   endif
-  bnr->setbufvar('&buflisted', v:true)
+  bnr->setbufvar('&buflisted', true)
 
   var start_line: number = 4294967295		# 2 ^ 32
   var finish_line: number = -1
@@ -552,7 +555,7 @@ def s:applyTextEdits(bnr: number, text_edits: list<dict<any>>): void
 
     updated_edits->add({A: [start_row, start_col],
 			B: [end_row, end_col],
-			lines: e.newText->split("\n", v:true)})
+			lines: e.newText->split("\n", true)})
   endfor
 
   # Reverse sort the edit operations by descending line and column numbers so
@@ -591,10 +594,10 @@ def s:applyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   # if the buffer is empty, appending lines before the first line adds an
   # extra empty line at the end. Delete the empty line after appending the
   # lines.
-  var dellastline: bool = v:false
+  var dellastline: bool = false
   if start_line == 0 && bnr->getbufinfo()[0].linecount == 1 &&
 						bnr->getbufline(1)[0] == ''
-    dellastline = v:true
+    dellastline = true
   endif
 
   # Append the updated lines
@@ -983,7 +986,7 @@ def s:processApplyEditReq(lspserver: dict<any>, request: dict<any>)
   endif
   s:applyWorkspaceEdit(workspaceEditParams.edit)
   # TODO: Need to return the proper result of the edit operation
-  lspserver.sendResponse(request, {applied: v:true}, v:null)
+  lspserver.sendResponse(request, {applied: true}, v:null)
 enddef
 
 def s:processUnsupportedReq(lspserver: dict<any>, request: dict<any>)

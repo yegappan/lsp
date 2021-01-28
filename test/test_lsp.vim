@@ -120,7 +120,7 @@ def Test_lsp_show_references()
   var bnr: number = bufnr()
   :LspShowReferences
   :sleep 1
-  var qfl: list<dict<any>> = getqflist()
+  var qfl: list<dict<any>> = getloclist(0)
   assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
   assert_equal(bnr, qfl[0].bufnr)
   assert_equal(3, qfl->len())
@@ -131,7 +131,7 @@ def Test_lsp_show_references()
   cursor(1, 5)
   :LspShowReferences
   :sleep 1
-  qfl = getqflist()
+  qfl = getloclist()
   assert_equal(1, qfl->len())
   assert_equal([1, 5], [qfl[0].lnum, qfl[0].col])
 
@@ -150,7 +150,11 @@ def LspRunTests()
 		    ->map("v:val->substitute('^def <SNR>\\d\\+_', '', '')")
   for f in fns
     v:errors = []
-    exe f
+    try
+      exe f
+    catch
+      echomsg "Error: Test " .. f .. " failed with exception " .. v:exception
+    endtry
     if v:errors->len() != 0
       new Lsp-Test-Results
       setline(1, ["Error: Test " .. f .. " failed"]->extend(v:errors))

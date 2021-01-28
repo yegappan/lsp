@@ -16,6 +16,14 @@ export def LspDiagsUpdated(lspserver: dict<any>, bnr: number)
     return
   endif
 
+  var curmode: string = mode()
+  if curmode == 'i' || curmode == 'R' || curmode == 'Rv'
+    # postpone placing signs in insert mode and replace mode. These will be
+    # placed after the user returns to Normal mode.
+    b:LspDiagsUpdatePending = true
+    return
+  endif
+
   # Remove all the existing diagnostic signs
   sign_unplace('LSPDiag', {buffer: bnr})
 

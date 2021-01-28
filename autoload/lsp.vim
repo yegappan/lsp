@@ -8,6 +8,7 @@ import {WarnMsg,
 	lsp_server_trace,
 	ClearTraceLogs,
 	GetLineByteFromPos} from './util.vim'
+import {LspDiagsUpdated} from './buf.vim'
 
 # Needs Vim 8.2.2342 and higher
 if v:version < 802 || !has('patch-8.2.2342')
@@ -56,7 +57,7 @@ enddef
 
 def lsp#enableServerTrace()
   ClearTraceLogs()
-  lsp_server_trace = v:true
+  lsp_server_trace = true
 enddef
 
 # Show information about all the LSP servers
@@ -225,6 +226,25 @@ def g:LspDiagExpr(): string
   return diagInfo.message
 enddef
 
+# Called after leaving insert mode. Used to process diag messages (if any)
+def lsp#leftInsertMode()
+  if !exists('b:LspDiagsUpdatePending')
+    return
+  endif
+  :unlet b:LspDiagsUpdatePending
+
+  var ftype: string = &filetype
+  if ftype == ''
+    return
+  endif
+
+  var lspserver: dict<any> = s:lspGetServer(ftype)
+  if lspserver->empty() || !lspserver.running
+    return
+  endif
+  LspDiagsUpdated(lspserver, bufnr())
+enddef
+
 # A new buffer is opened. If LSP is supported for this buffer, then add it
 def lsp#addFile(bnr: number): void
   if bufnrToServer->has_key(bnr)
@@ -261,6 +281,7 @@ def lsp#addFile(bnr: number): void
   # autocmd for insert mode completion
   exe 'autocmd SafeState <buffer=' .. bnr
 	.. '> if mode() == "i" | call lsp#complete() | endif'
+  exe 'autocmd InsertLeave <buffer=' .. bnr .. '> call lsp#leftInsertMode()'
 
   # map characters that trigger signature help
   if lspserver.caps->has_key('signatureHelpProvider')
@@ -612,9 +633,9 @@ enddef
 
 # clear the symbol reference highlight
 def lsp#docHighlightClear()
-  prop_remove({'type': 'LspTextRef', 'all': v:true}, 1, line('$'))
-  prop_remove({'type': 'LspReadRef', 'all': v:true}, 1, line('$'))
-  prop_remove({'type': 'LspWriteRef', 'all': v:true}, 1, line('$'))
+  prop_remove({'type': 'LspTextRef', 'all': true}, 1, line('$'))
+  prop_remove({'type': 'LspReadRef', 'all': true}, 1, line('$'))
+  prop_remove({'type': 'LspWriteRef', 'all': true}, 1, line('$'))
 enddef
 
 # jump to a symbol selected in the outline window
@@ -938,9 +959,9 @@ def lsp#textDocFormat(range_args: number, line1: number, line2: number)
   endif
 
   if range_args > 0
-    lspserver.textDocFormat(fname, v:true, line1, line2)
+    lspserver.textDocFormat(fname, true, line1, line2)
   else
-    lspserver.textDocFormat(fname, v:false, 0, 0)
+    lspserver.textDocFormat(fname, false, 0, 0)
   endif
 enddef
 
@@ -1069,7 +1090,7 @@ def s:filterSymbols(lspserver: dict<any>, popupID: number, key: string): bool
   lspserver.workspaceSymbolQuery = query
 
   if key_handled
-    return v:true
+    return true
   endif
 
   return popupID->popup_filter_menu(key)

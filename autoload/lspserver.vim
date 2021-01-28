@@ -17,21 +17,21 @@ import {WarnMsg,
 
 # LSP server standard output handler
 def s:output_cb(lspserver: dict<any>, chan: channel, msg: string): void
-  TraceLog(v:false, msg)
+  TraceLog(false, msg)
   lspserver.data = lspserver.data .. msg
   lspserver.processMessages()
 enddef
 
 # LSP server error output handler
 def s:error_cb(lspserver: dict<any>, chan: channel, emsg: string,): void
-  TraceLog(v:true, emsg)
+  TraceLog(true, emsg)
 enddef
 
 # LSP server exit callback
 def s:exit_cb(lspserver: dict<any>, job: job, status: number): void
   WarnMsg("LSP server exited with status " .. status)
   lspserver.job = v:none
-  lspserver.running = v:false
+  lspserver.running = false
   lspserver.requests = {}
 enddef
 
@@ -69,7 +69,7 @@ def s:startServer(lspserver: dict<any>): number
   sleep 10m
 
   lspserver.job = job
-  lspserver.running = v:true
+  lspserver.running = true
 
   lspserver.initServer()
 
@@ -84,15 +84,15 @@ def s:initServer(lspserver: dict<any>)
   # client capabilities (ClientCapabilities)
   var clientCaps: dict<any> = {
     workspace: {
-      workspaceFolders: v:true,
-      applyEdit: v:true,
+      workspaceFolders: true,
+      applyEdit: true,
     },
     textDocument: {
-      foldingRange: {lineFoldingOnly: v:true},
+      foldingRange: {lineFoldingOnly: true},
       completion: {
 	completionItem: {
 	  documentationFormat: ['plaintext', 'markdown'],
-	  snippetSupport: v:false
+	  snippetSupport: false
 	},
 	completionItemKind: {valueSet: range(1, 25)}
       },
@@ -100,7 +100,7 @@ def s:initServer(lspserver: dict<any>)
         contentFormat: ['plaintext', 'markdown']
       },
       documentSymbol: {
-	hierarchicalDocumentSymbolSupport: v:true,
+	hierarchicalDocumentSymbolSupport: true,
 	symbolKind: {valueSet: range(1, 25)}
       },
     },
@@ -166,7 +166,7 @@ def s:stopServer(lspserver: dict<any>): number
 
   lspserver.job->job_stop()
   lspserver.job = v:none
-  lspserver.running = v:false
+  lspserver.running = false
   lspserver.requests = {}
   return 0
 enddef
@@ -525,7 +525,7 @@ def s:showReferences(lspserver: dict<any>): void
   # interface ReferenceParams
   #   interface TextDocumentPositionParams
   req.params->extend(s:getLspTextDocPosition())
-  req.params->extend({context: {includeDeclaration: v:true}})
+  req.params->extend({context: {includeDeclaration: true}})
 
   lspserver.sendMessage(req)
 enddef
@@ -600,7 +600,7 @@ def s:textDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
   # interface FormattingOptions
   var fmtopts: dict<any> = {
     tabSize: tabsz,
-    insertSpaces: &expandtab ? v:true : v:false,
+    insertSpaces: &expandtab ? true : false,
   }
   req.params->extend({options: fmtopts})
   if rangeFormat
@@ -783,7 +783,7 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
   var lspserver: dict<any> = {
     path: path,
     args: args,
-    running: v:false,
+    running: false,
     job: v:none,
     data: '',
     nextID: 1,

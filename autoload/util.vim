@@ -21,10 +21,10 @@ if has('unix')
 else
   lsp_log_dir = $TEMP .. '\\'
 endif
-export var lsp_server_trace: bool = v:false
+export var lsp_server_trace: bool = false
 
-# Log a message from the LSP server. stderr is v:true for logging messages
-# from the standard error and v:false for stdout.
+# Log a message from the LSP server. stderr is true for logging messages
+# from the standard error and false for stdout.
 export def TraceLog(stderr: bool, msg: string)
   if !lsp_server_trace
     return
@@ -67,9 +67,9 @@ enddef
 export def LspFileToUri(fname: string): string
   var uri: string = fnamemodify(fname, ':p')
 
-  var on_windows: bool = v:false
+  var on_windows: bool = false
   if uri =~? '^\a:'
-    on_windows = v:true
+    on_windows = true
   endif
 
   if on_windows
