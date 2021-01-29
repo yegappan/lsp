@@ -32,10 +32,16 @@ def s:processInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
     endfor
   endif
 
+  # map characters that trigger insert mode completion
   if caps->has_key('completionProvider')
+    var triggers = caps.completionProvider.triggerCharacters
+    for ch in triggers
+      exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch .. "<C-X><C-O>"
+    endfor
     lspserver.completionTriggerChars =
 				caps.completionProvider.triggerCharacters
   endif
+
 
   # send a "initialized" notification to server
   lspserver.sendInitializedNotif()
@@ -156,7 +162,6 @@ def s:processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
     items = reply.result.items
   endif
 
-  var completeItems: list<dict<any>> = []
   for item in items
     var d: dict<any> = {}
     if item->has_key('textEdit') && item.textEdit->has_key('newText')
@@ -183,35 +188,10 @@ def s:processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
 	d.info = item.documentation.value
       endif
     endif
-    completeItems->add(d)
+    lspserver.completeItems->add(d)
   endfor
 
-  if completeItems->empty()
-    return
-  endif
-
-  # Find the start column for the completion.  If any of the entries returned
-  # by the LSP server has a starting position, then use that.
-  var start_col: number = 0
-  for item in items
-    if item->has_key('textEdit')
-      start_col = item.textEdit.range.start.character + 1
-      break
-    endif
-  endfor
-
-  # LSP server didn't return a starting position for completion, search
-  # backwards from the current cursor position for a non-keyword character.
-  if start_col == 0
-    var line: string = getline('.')
-    var start = col('.') - 1
-    while start > 0 && line[start - 1] =~ '\k'
-      start -= 1
-    endwhile
-    start_col = start + 1
-  endif
-
-  complete(start_col, completeItems)
+  lspserver.completePending = false
 enddef
 
 # process the 'textDocument/hover' reply from the LSP server
