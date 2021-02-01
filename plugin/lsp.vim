@@ -5,6 +5,12 @@ if v:version < 802 || !has('patch-8.2.2342')
   finish
 endif
 
+" Perform completion in insert mode automatically. Otherwise use
+" omni-complete.
+if !exists('g:LSP_24x7_Complete')
+  let g:LSP_24x7_Complete = v:true
+endif
+
 augroup LSPAutoCmds
   au!
   autocmd BufNewFile,BufReadPost *
@@ -40,8 +46,11 @@ command! -nargs=0 -bar LspCalling call lsp#outgoingCalls()
 command! -nargs=0 -bar LspRename call lsp#rename()
 command! -nargs=0 -bar LspCodeAction call lsp#codeAction()
 command! -nargs=? -bar LspSymbolSearch call lsp#symbolSearch(<q-args>)
+command! -nargs=0 -bar LspHover call lsp#hover()
 command! -nargs=0 -bar LspSelectionRange call lsp#selectionRange()
 command! -nargs=0 -bar LspFold call lsp#foldDocument()
 command! -nargs=0 -bar LspWorkspaceListFolders call lsp#listWorkspaceFolders()
 command! -nargs=1 -bar -complete=dir LspWorkspaceAddFolder call lsp#addWorkspaceFolder(<q-args>)
 command! -nargs=1 -bar -complete=dir LspWorkspaceRemoveFolder call lsp#removeWorkspaceFolder(<q-args>)
+
+" vim: shiftwidth=2 softtabstop=2

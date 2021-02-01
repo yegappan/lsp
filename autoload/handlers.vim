@@ -32,14 +32,9 @@ def s:processInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
     endfor
   endif
 
-  # map characters that trigger insert mode completion
-  if caps->has_key('completionProvider')
+  if g:LSP_24x7_Complete && caps->has_key('completionProvider')
     var triggers = caps.completionProvider.triggerCharacters
-    for ch in triggers
-      exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch .. "<C-X><C-O>"
-    endfor
-    lspserver.completionTriggerChars =
-				caps.completionProvider.triggerCharacters
+    lspserver.completionTriggerChars = triggers
   endif
 
 
@@ -106,7 +101,7 @@ def s:processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dic
       startcol = text->stridx(label)
     endif
   endif
-  var popupID = text->popup_atcursor({})
+  var popupID = text->popup_atcursor({moved: 'any'})
   prop_type_add('signature', {bufnr: popupID->winbufnr(), highlight: 'LineNr'})
   if hllen > 0
     prop_add(1, startcol + 1, {bufnr: popupID->winbufnr(), length: hllen, type: 'signature'})
@@ -162,6 +157,7 @@ def s:processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
     items = reply.result.items
   endif
 
+  var completeItems: list<dict<any>> = []
   for item in items
     var d: dict<any> = {}
     if item->has_key('textEdit') && item.textEdit->has_key('newText')
@@ -188,10 +184,47 @@ def s:processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
 	d.info = item.documentation.value
       endif
     endif
-    lspserver.completeItems->add(d)
+    completeItems->add(d)
   endfor
 
-  lspserver.completePending = false
+  if g:LSP_24x7_Complete
+    if completeItems->empty()
+      # no matches
+      return
+    endif
+
+    if completeItems->len() == 1
+	&& matchstr(getline('.'), completeItems[0].word .. '\>') != ''
+      # only one complete match. No need to show the completion popup
+      return
+    endif
+
+    # Find the start column for the completion.  If any of the entries
+    # returned by the LSP server has a starting position, then use that.
+    var start_col: number = 0
+    for item in items
+      if item->has_key('textEdit')
+	start_col = item.textEdit.range.start.character + 1
+	break
+      endif
+    endfor
+
+    # LSP server didn't return a starting position for completion, search
+    # backwards from the current cursor position for a non-keyword character.
+    if start_col == 0
+      var line: string = getline('.')
+      var start = col('.') - 1
+      while start > 0 && line[start - 1] =~ '\k'
+	start -= 1
+      endwhile
+      start_col = start + 1
+    endif
+
+    complete(start_col, completeItems)
+  else
+    lspserver.completeItems = completeItems
+    lspserver.completePending = false
+  endif
 enddef
 
 # process the 'textDocument/hover' reply from the LSP server

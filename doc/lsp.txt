@@ -2,7 +2,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 8.2.2342 and above
-Last change: Jan 20, 2021
+Last change: Jan 31, 2021
 
 ==============================================================================
 						*lsp-license*
@@ -173,14 +173,14 @@ accepts a list of LSP servers with the above information.
 ==============================================================================
 5. Commands						*lsp-commands*
 
-						|:LspShowServers|
+						*:LspShowServers*
 :LspShowServers		Displays the list of registered LSP servers and their
 			status. The LSP servers are registered using the
 			lsp#addServer() function. The output shows the Vim
 			file type, the corresponding LSP server status and the
 			path to the LSP server executable.
 
-						|:LspGotoDefinition|
+						*:LspGotoDefinition*
 :LspGotoDefinition	Jumps to the definition of the symbol under the
 			cursor. If the file is already present in a window,
 			then jumps to that window. Otherwise, opens the file
@@ -189,68 +189,68 @@ accepts a list of LSP servers with the above information.
 			Also the |``| mark is set to the position before the
 			jump.
 
-						|:LspGotoDefinition|
+						*:LspGotoDefinition*
 :LspGotoDeclaration	Jumps to the declaration of the symbol under the
 			cursor. The behavior of this command is similar to the
 			|:LspGotoDefinition| command.
 
-						|:LspGotoTypeDef|
+						*:LspGotoTypeDef*
 :LspGotoTypeDef		Jumps to the type definition of the symbol under the
 			cursor. The behavior of this command is similar to the
 			|:LspGotoDefinition| command. Note that not all the LSP
 			servers support this feature.
 
-						|:LspGotoImpl|
+						*:LspGotoImpl*
 :LspGotoImpl		Jumps to the implementation of the symbol under the
 			cursor. The behavior of this command is similar to the
 			|:LspGotoDefinition| command. Note that not all the LSP
 			servers support this feature.
 
-						|:LspShowSignature|
+						*:LspShowSignature*
 :LspShowSignature	Displays the signature of the symbol (e.g. a function
 			or method) before the cursor in a popup. The popup is
 			also automatically displayed in insert mode after
 			entering a symbol name followed by a separator (e.g. a
 			opening parenthesis).
 
-						|:LspDiagShow|
+						*:LspDiagShow*
 :LspDiagShow		Creates a new location list with the diagnostics
 			messages (if any) from the LSP server for the current
 			file and opens the location list window. You can use
 			the Vim location list commands to browse the list.
 
-						|:LspDiagFirst|
+						*:LspDiagFirst*
 :LspDiagFirst		Jumps to the location of the first diagnostic message
 			for the current file.
 
-						|:LspDiagNext|
+						*:LspDiagNext*
 :LspDiagNext		Jumps to the location of the diagnostic message after
 			the current cursor position.
 
-						|:LspDiagPrev|
+						*:LspDiagPrev*
 :LspDiagPrev		Jumps to the location of the diagnostic message before
 			the current cursor position.
 
-						|:LspDiagCurrent|
+						*:LspDiagCurrent*
 :LspDiagCurrent		Displays the diagnostic message (if any) for the
 			current line.
 
-						|:LspShowReferences|
+						*:LspShowReferences*
 :LspShowReferences	Creates a new location list with the list of locations
 			where the symbol under the cursor is referenced and
 			opens the location window.
 
-						|:LspHighlight|
+						*:LspHighlight*
 :LspHighlight		Highlights all the matches for the symbol under
 			cursor. The text, read and write references to the
 			symbol are highlighted using Search, DiffChange and
 			DiffDelete highlight groups respectively.
 
-						|:LspHighlightClear|
+						*:LspHighlightClear*
 :LspHighlightClear	Clears all the symbol matches highlighted by the
 			|:LspHighlight| command.
 
-						|:LspOutline|
+						*:LspOutline*
 :LspOutline		Opens a vertically split window with the list of
 			symbols defined in the current file. The current
 			symbol is highlighted. The symbols are grouped by
@@ -262,27 +262,27 @@ accepts a list of LSP servers with the above information.
 			the symbols in the new file.  Folds are created in the
 			outline window for the various group of symbols.
 
-						|:LspFormat|
+						*:LspFormat*
 :LspFormat		Format the current file using the LSP server.
 
 :{range}LspFormat	Format the specified range of lines in the current
 			file using the LSP server.
 
-						|:LspCalledBy|
+						*:LspCalledBy*
 :LspCalledBy		Display the list of symbols called by the current
 			symbol. (NOT IMPLEMENTED YET).
 
-						|:LspCalling|
+						*:LspCalling*
 :LspCalling		Display the list of symbols calling the current symbol
 			(NOT IMPLEMENTED YET).
 
-						|:LspRename|
+						*:LspRename*
 :LspRename		Rename the current symbol. You will be prompted to
 			enter the new name for the symbol. You can press <Esc>
 			or enter an empty string in the prompt to cancel the
 			operation.
 
-						|:LspCodeAction|
+						*:LspCodeAction*
 :LspCodeAction		Apply the code action supplied by the LSP server to
 			the diagnostic in the current line. This works only if
 			there is a diagnostic message for the current line.
@@ -291,7 +291,7 @@ accepts a list of LSP servers with the above information.
 			prompted to select one of the actions supplied by the
 			LSP server.
 
-						|:LspSymbolSearch|
+						*:LspSymbolSearch*
 :LspSymbolSearch <sym>	Perform a workspace wide search for the symbol <sym>.
 			A popup window is opened with the list of matching
 			symbols.  You can enter a few characters to narrow
@@ -325,31 +325,45 @@ accepts a list of LSP servers with the above information.
 			You can enter a new search pattern to do a workspace
 			wide symbol search.
 
-						|:LspSelectionRange|
+						*:LspHover*
+:LspHover		Show the documentation for the symbol under the cursor
+			in a popup window.
+
+						*:LspSelectionRange*
 :LspSelectionRange	Visually select the current symbol range.
 
-						|:LspFold|
+						*:LspFold*
 :LspFold		Fold the current file.
 
-						|:LspWorkspaceAddFolder|
+						*:LspWorkspaceAddFolder*
 :LspWorkspaceAddFolder {folder}
 			Add a folder to the workspace
 
-						|:LspWorkspaceRemoveFolder|
+						*:LspWorkspaceRemoveFolder*
 :LspWorkspaceRemoveFolder {folder}
 			Remove a folder from the workspace
 
-						|:LspWorkspaceListFolders|
+						*:LspWorkspaceListFolders*
 :LspWorkspaceListFolders
 			Show the list of folders in the workspace.
 
 ==============================================================================
 6. Insert mode completion
 
-The LSP plugin sets the 'omnifunc' option for the buffers which have a
-registered LSP server. To complete a symbol in insert mode, you can press
-CTRL-X CTRL-O to invoke completion using the items suggested by the LSP
-server.
+By default, in insert mode, the LSP plugin automatically displays the matches
+for the symbol under the cursor in an insert-completion popup menu. You can
+use the keys described in |popupmenu-keys| with this menu.
+
+To disable the auto-compeltion, you can set the LSP_24x7_Complete variable
+to v:false in your .vimrc file: >
+
+	let g:LSP_24x7_Complete=v:false
+<
+If this variable is set, then the LSP plugin doesn't automatically start
+completion in insert mode and instead supports omni-completion (|compl-omni|).
+It sets the 'omnifunc' option for the buffers which have a registered LSP
+server. To complete a symbol in insert mode manually, you can press CTRL-X
+CTRL-O to invoke completion using the items suggested by the LSP server.
 
 ==============================================================================
 

@@ -268,16 +268,24 @@ def lsp#addFile(bnr: number): void
   endif
   lspserver.textdocDidOpen(bnr, ftype)
 
-  # Display hover information
-  autocmd CursorHold <buffer> call s:LspHover()
   # file saved notification handler
   autocmd BufWritePost <buffer> call s:lspSavedFile()
 
   # add a listener to track changes to this buffer
   listener_add(function('lsp#bufchange_listener'), bnr)
-  setbufvar(bnr, '&completeopt', 'menuone,popup,noinsert,noselect')
-  setbufvar(bnr, '&omnifunc', 'lsp#omniFunc')
-  setbufvar(bnr, '&completepopup', 'border:off')
+
+  # set options for insert mode completion
+  if g:LSP_24x7_Complete
+    setbufvar(bnr, '&completeopt', 'menuone,popup,noinsert,noselect')
+    setbufvar(bnr, '&completepopup', 'border:off')
+    # autocmd for 24x7 insert mode completion
+    autocmd TextChangedI <buffer> call lsp#complete()
+    # <Enter> in insert mode stops completion and inserts a <Enter>
+    inoremap <expr> <buffer> <CR> pumvisible() ? "\<C-Y>\<CR>" : "\<CR>"
+  else
+    setbufvar(bnr, '&omnifunc', 'lsp#omniFunc')
+  endif
+
   setbufvar(bnr, '&balloonexpr', 'LspDiagExpr()')
   exe 'autocmd InsertLeave <buffer=' .. bnr .. '> call lsp#leftInsertMode()'
 
@@ -524,6 +532,39 @@ def lsp#jumpToDiag(which: string): void
   WarnMsg('Error: No more diagnostics found')
 enddef
 
+# Insert mode completion handler. Used when 24x7 completion is enabled
+# (default).
+def lsp#complete()
+  var cur_col: number = col('.')
+  var line: string = getline('.')
+
+  if cur_col == 0 || line->empty()
+    return
+  endif
+
+  var ftype: string = &filetype
+  var lspserver: dict<any> = s:lspGetServer(ftype)
+  if lspserver->empty() || !lspserver.running || lspserver.caps->empty()
+    return
+  endif
+
+  # If the character before the cursor is not a keyword character or is not
+  # one of the LSP completion trigger characters, then do nothing.
+  if line[cur_col - 2] !~ '\k'
+    if lspserver.completionTriggerChars->index(line[cur_col - 2]) == -1
+      return
+    endif
+  endif
+
+  # first send all the changes in the current buffer to the LSP server
+  listener_flush()
+
+  # initiate a request to LSP server to get list of completions
+  lspserver.getCompletion()
+
+  return
+enddef
+
 # omni complete handler
 def lsp#omniFunc(findstart: number, base: string): any
   var ftype: string = &filetype
@@ -572,17 +613,14 @@ enddef
 
 # Display the hover message from the LSP server for the current cursor
 # location
-def LspHover()
+def lsp#hover()
   var ftype = &filetype
   if ftype == ''
     return
   endif
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
-  if lspserver->empty()
-    return
-  endif
-  if !lspserver.running
+  if lspserver->empty() || !lspserver.running
     return
   endif
 
