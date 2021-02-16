@@ -1022,7 +1022,27 @@ enddef
 # Display all the locations where the current symbol is called from.
 # Uses LSP "callHierarchy/incomingCalls" request
 def lsp#incomingCalls()
-  :echomsg 'Error: Not implemented yet'
+  var ftype = &filetype
+  if ftype == ''
+    return
+  endif
+
+  var lspserver: dict<any> = s:lspGetServer(ftype)
+  if lspserver->empty()
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    return
+  endif
+  if !lspserver.running
+    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    return
+  endif
+
+  var fname = @%
+  if fname == ''
+    return
+  endif
+
+  lspserver.incomingCalls(fname)
 enddef
 
 # Display all the symbols used by the current symbol.

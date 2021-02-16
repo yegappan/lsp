@@ -6,12 +6,19 @@ Language Server Protocol (LSP) plugin for Vim9. You need Vim version 8.2.2342 or
 You can install this plugin directly from github using the following steps:
 
 ```
-    $ mkdir -p $HOME/.vim/pack/downloads/lsp
-    $ cd $HOME/.vim/packa/downloads/lsp
+    $ mkdir -p $HOME/.vim/pack/downloads/opt/lsp
+    $ cd $HOME/.vim/pack/downloads/opt/lsp
     $ git clone https://github.com/yegappan/lsp
 ```
 
-or you can use any one of the Vim plugin managers (dein.vim, pathogen, vam, vim-plug, volt, Vundle, etc.) to install and manage this plugin.
+After installing the plugin using the above steps, add the following line to
+your $HOME/.vimrc file:
+
+```
+    packadd lsp
+```
+
+You can also install and manage this plugin using any one of the Vim plugin managers (dein.vim, pathogen, vam, vim-plug, volt, Vundle, etc.).
 
 You will also need to install one or more language servers corresponding to the programming languages that you are using. Refer to the https://langserver.org/ page for the list of available language servers.
 

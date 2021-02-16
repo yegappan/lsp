@@ -33,7 +33,7 @@ export def LspDiagsUpdated(lspserver: dict<any>, bnr: number)
 
   var signs: list<dict<any>> = []
   for [lnum, diag] in lspserver.diagsMap[bnr]->items()
-    signs->add({id: 0, buffer: str2nr(bnr), group: 'LSPDiag',
+    signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
 				lnum: str2nr(lnum),
 				name: s:lspDiagSevToSignName(diag.severity)})
   endfor

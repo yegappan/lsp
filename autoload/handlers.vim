@@ -61,18 +61,38 @@ def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>
     return
   endif
 
-  var result: dict<any> = reply.result[0]
-  var file = LspUriToFile(result.uri)
-  var wid = file->bufwinid()
+  var location: dict<any>
+  if reply.result->type() == v:t_list
+    location = reply.result[0]
+  else
+    location = reply.result
+  endif
+  var fname = LspUriToFile(location.uri)
+  var wid = fname->bufwinid()
   if wid != -1
     wid->win_gotoid()
   else
-    exe 'split ' .. file
+    var bnr: number = fname->bufnr()
+    if bnr != -1
+      if &modified || &buftype != ''
+	exe 'sb ' .. bnr
+      else
+	exe 'buf ' .. bnr
+      endif
+    else
+      if &modified || &buftype != ''
+	# if the current buffer has unsaved changes, then open the file in a
+	# new window
+	exe 'split ' .. fname
+      else
+	exe 'edit  ' .. fname
+      endif
+    endif
   endif
   # Set the previous cursor location mark
   setpos("'`", getcurpos())
-  setcursorcharpos(result.range.start.line + 1,
-			result.range.start.character + 1)
+  setcursorcharpos(location.range.start.line + 1,
+			location.range.start.character + 1)
   redraw!
 enddef
 
@@ -89,7 +109,12 @@ def s:processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dic
     return
   endif
 
-  var sig: dict<any> = result.signatures[result.activeSignature]
+  var sigidx: number = 0
+  if result->has_key('activeSignature')
+    sigidx = result.activeSignature
+  endif
+
+  var sig: dict<any> = result.signatures[sigidx]
   var text = sig.label
   var hllen = 0
   var startcol = 0
@@ -190,6 +215,11 @@ def s:processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
   if g:LSP_24x7_Complete
     if completeItems->empty()
       # no matches
+      return
+    endif
+
+    if mode() != 'i' && mode() != 'R' && mode() != 'Rv'
+      # If not in insert or replace mode, then don't start the completion
       return
     endif
 
@@ -867,6 +897,25 @@ def s:processWorkspaceSymbolReply(lspserver: dict<any>, req: dict<any>, reply: d
 				symbols->copy()->mapnew('v:val.name'))
 enddef
 
+# process the 'textDocument/prepareCallHierarchy' reply from the LSP server
+# Result: CallHierarchyItem[] | null
+def s:processPrepareCallHierarchy(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+  if reply.result->empty()
+    return
+  endif
+
+  var items: list<string> = ['Select a Call Hierarchy Item:']
+  for i in range(reply.result->len())
+    items->add(printf("%d. %s", i + 1, reply.result[i].name))
+  endfor
+  var choice = inputlist(items)
+  if choice < 1 || choice > items->len()
+    return
+  endif
+
+  echomsg reply.result[choice - 1]
+enddef
+
 # Process various reply messages from the LSP server
 export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   var lsp_reply_handlers: dict<func> =
@@ -889,7 +938,8 @@ export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
       'textDocument/selectionRange': function('s:processSelectionRangeReply'),
       'textDocument/foldingRange': function('s:processFoldingRangeReply'),
       'workspace/executeCommand': function('s:processWorkspaceExecuteReply'),
-      'workspace/symbol': function('s:processWorkspaceSymbolReply')
+      'workspace/symbol': function('s:processWorkspaceSymbolReply'),
+      'textDocument/prepareCallHierarchy': function('s:processPrepareCallHierarchy')
     }
 
   if lsp_reply_handlers->has_key(req.method)

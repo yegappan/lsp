@@ -87,7 +87,7 @@ def s:initServer(lspserver: dict<any>)
   var clientCaps: dict<any> = {
     workspace: {
       workspaceFolders: true,
-      applyEdit: true,
+      applyEdit: true
     },
     textDocument: {
       foldingRange: {lineFoldingOnly: true},
@@ -120,10 +120,10 @@ def s:initServer(lspserver: dict<any>)
   var curdir: string = getcwd()
   initparams.rootPath = curdir
   initparams.rootUri = LspFileToUri(curdir)
-  initparams.workspaceFolders = {
+  initparams.workspaceFolders = [{
 	name: fnamemodify(curdir, ':t'),
 	uri: LspFileToUri(curdir)
-      }
+     }]
   initparams.trace = 'off'
   initparams.capabilities = clientCaps
   req.params->extend(initparams)
@@ -283,7 +283,7 @@ def s:textdocDidChange(lspserver: dict<any>, bnr: number, start: number,
   vtdid.uri = LspBufnrToUri(bnr)
   # Use Vim 'changedtick' as the LSP document version number
   vtdid.version = bnr->getbufvar('changedtick')
-  notif.params->extend({textDocument: vtdid})
+
   #   interface TextDocumentContentChangeEvent
   var changeset: list<dict<any>>
 
@@ -322,8 +322,9 @@ def s:textdocDidChange(lspserver: dict<any>, bnr: number, start: number,
   #   var range: dict<dict<number>> = {'start': {'line': start_lnum, 'character': start_col}, 'end': {'line': end_lnum, 'character': end_col}}
   #   changeset->add({'range': range, 'text': lines})
   # endfor
+
   changeset->add({text: getbufline(bnr, 1, '$')->join("\n") .. "\n"})
-  notif.params->extend({contentChanges: changeset})
+  notif.params->extend({textDocument: vtdid, contentChanges: changeset})
 
   lspserver.sendMessage(notif)
 enddef
@@ -615,6 +616,24 @@ def s:textDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
   lspserver.sendMessage(req)
 enddef
 
+# Request: "callHierarchy/incomingCalls"
+# Param: CallHierarchyIncomingCallsParams
+def s:incomingCalls(lspserver: dict<any>, fname: string)
+  # Check whether LSP server supports incoming calls
+  if !lspserver.caps->has_key('callHierarchyProvider')
+			|| !lspserver.caps.callHierarchyProvider
+    ErrMsg("Error: LSP server does not support call hierarchy")
+    return
+  endif
+
+  var req = lspserver.createRequest('textDocument/prepareCallHierarchy')
+
+  # interface CallHierarchyPrepareParams
+  #   interface TextDocumentPositionParams
+  req.params->extend(s:getLspTextDocPosition())
+  lspserver.sendMessage(req)
+enddef
+
 # Request: "textDocument/rename"
 # Param: RenameParams
 def s:renameSymbol(lspserver: dict<any>, newName: string)
@@ -832,6 +851,7 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
     docHighlight: function('s:docHighlight', [lspserver]),
     getDocSymbols: function('s:getDocSymbols', [lspserver]),
     textDocFormat: function('s:textDocFormat', [lspserver]),
+    incomingCalls: function('s:incomingCalls', [lspserver]),
     renameSymbol: function('s:renameSymbol', [lspserver]),
     codeAction: function('s:codeAction', [lspserver]),
     workspaceQuery: function('s:workspaceQuerySymbols', [lspserver]),
