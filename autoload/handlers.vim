@@ -37,7 +37,6 @@ def s:processInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
     lspserver.completionTriggerChars = triggers
   endif
 
-
   # send a "initialized" notification to server
   lspserver.sendInitializedNotif()
 
@@ -209,6 +208,7 @@ def s:processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
 	d.info = item.documentation.value
       endif
     endif
+    d.user_data = item
     completeItems->add(d)
   endfor
 

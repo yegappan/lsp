@@ -548,19 +548,24 @@ def lsp#complete()
     return
   endif
 
+  # Trigger kind is 1 for 24x7 code complete or manual invocation
+  var triggerKind: number = 1
+
   # If the character before the cursor is not a keyword character or is not
   # one of the LSP completion trigger characters, then do nothing.
   if line[cur_col - 2] !~ '\k'
     if lspserver.completionTriggerChars->index(line[cur_col - 2]) == -1
       return
     endif
+    # completion triggered by one of the trigger characters
+    triggerKind = 2
   endif
 
   # first send all the changes in the current buffer to the LSP server
   listener_flush()
 
   # initiate a request to LSP server to get list of completions
-  lspserver.getCompletion()
+  lspserver.getCompletion(triggerKind)
 
   return
 enddef
@@ -586,7 +591,7 @@ def lsp#omniFunc(findstart: number, base: string): any
     lspserver.completePending = v:true
     lspserver.completeItems = []
     # initiate a request to LSP server to get list of completions
-    lspserver.getCompletion()
+    lspserver.getCompletion(1)
 
     # locate the start of the word
     var line = getline('.')

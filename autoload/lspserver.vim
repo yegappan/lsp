@@ -351,7 +351,7 @@ enddef
 # Get a list of completion items.
 # Request: "textDocument/completion"
 # Param: CompletionParams
-def s:getCompletion(lspserver: dict<any>): void
+def s:getCompletion(lspserver: dict<any>, triggerKind_arg: number): void
   # Check whether LSP server supports completion
   if !lspserver.caps->has_key('completionProvider')
     ErrMsg("Error: LSP server does not support completion")
@@ -369,7 +369,7 @@ def s:getCompletion(lspserver: dict<any>): void
   #   interface TextDocumentPositionParams
   req.params->extend(s:getLspTextDocPosition())
   #   interface CompletionContext
-  req.params->extend({context: {triggerKind: 1}})
+  req.params->extend({context: {triggerKind: triggerKind_arg}})
 
   lspserver.sendMessage(req)
 enddef
