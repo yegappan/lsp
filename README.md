@@ -42,11 +42,31 @@ To register a LSP server, add the following lines to your .vimrc file:
 		\	'path': '/usr/local/bin/bash-language-server',
 		\	'args': ['start']
 		\     },
+		\     {
+		\	'filetype': 'vim',
+		\	'path': '/usr/local/bin/vim-language-server',
+		\	'args': ['--stdio']
+		\     },
+		\     {
+		\	'filetype': ['go', 'gomod'],
+		\	'path': '/usr/local/bin/gopls',
+		\	'args': []
+		\     },
+		\     {
+		\	'filetype': ['python'],
+		\	'path': '/usr/local/bin/pyls',
+		\	'args': []
+		\     },
+		\     {
+		\	'filetype': ['fortran'],
+		\	'path': '/usr/local/bin/fortls',
+		\	'args': ['--nthreads=1', '--use_signature_help', '--hover_signature']
+		\     }
 		\   ]
    call lsp#addServer(lspServers)
 ```
 
-The above lines add the LSP servers for C, C++, Javascript, Typescript and Shell script file types.
+The above lines add the LSP servers for C, C++, Javascript, Typescript, Shell script, Vim script, Go and Python file types.
 
 To add a LSP server, the following information is needed:
 
