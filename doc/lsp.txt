@@ -189,7 +189,7 @@ accepts a list of LSP servers with the above information.
 			Also the |``| mark is set to the position before the
 			jump.
 
-						*:LspGotoDefinition*
+						*:LspGotoDeclaration*
 :LspGotoDeclaration	Jumps to the declaration of the symbol under the
 			cursor. The behavior of this command is similar to the
 			|:LspGotoDefinition| command.
