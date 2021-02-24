@@ -36,7 +36,7 @@ To register a LSP server, add the following lines to your .vimrc file:
 		\	'filetype': ['javascript', 'typescript'],
 		\	'path': '/usr/local/bin/typescript-language-server',
 		\	'args': ['--stdio']
-		\     }
+		\     },
 		\     {
 		\	'filetype': 'sh',
 		\	'path': '/usr/local/bin/bash-language-server',

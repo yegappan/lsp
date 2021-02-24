@@ -21,6 +21,9 @@ var lspServers: list<dict<any>> = []
 # filetype to LSP server map
 var ftypeServerMap: dict<dict<any>> = {}
 
+# filetype to omnicompl map
+var omnicomplFtypeMap: dict<bool> = {}
+
 # Buffer number to LSP server map
 var bufnrToServer: dict<dict<any>> = {}
 
@@ -53,6 +56,17 @@ enddef
 # Add a LSP server for a filetype
 def s:lspAddServer(ftype: string, lspserver: dict<any>)
   ftypeServerMap->extend({[ftype]: lspserver})
+enddef
+
+# Return bool of omnicompl for a specific filetype.
+# Return false if not found.
+def s:lspBoolOmnicompl(ftype: string): bool
+  return omnicomplFtypeMap->get(ftype, v:false)
+enddef
+
+# Reg bool of omnicompl for a filetype.
+def s:lspRegOmnicompl(ftype: string, omnicompl: bool)
+  omnicomplFtypeMap->extend({[ftype]: omnicompl})
 enddef
 
 def lsp#enableServerTrace()
@@ -283,7 +297,9 @@ def lsp#addFile(bnr: number): void
     # <Enter> in insert mode stops completion and inserts a <Enter>
     inoremap <expr> <buffer> <CR> pumvisible() ? "\<C-Y>\<CR>" : "\<CR>"
   else
-    setbufvar(bnr, '&omnifunc', 'lsp#omniFunc')
+    if s:lspBoolOmnicompl(ftype)
+      setbufvar(bnr, '&omnifunc', 'lsp#omniFunc')
+    endif
   endif
 
   setbufvar(bnr, '&balloonexpr', 'LspDiagExpr()')
@@ -340,13 +356,21 @@ def lsp#addServer(serverList: list<dict<any>>)
       ErrMsg('Error: LSP server information is missing filetype or path or args')
       continue
     endif
+    if !server->has_key('omnicompl')
+      # Default true if didnot reg
+      server['omnicompl'] = v:true
+    endif
 
     if !server.path->filereadable()
       ErrMsg('Error: LSP server ' .. server.path .. ' is not found')
       return
     endif
     if server.args->type() != v:t_list
-      ErrMsg('Error: Arguments for LSP server ' .. server.path .. ' is not a List')
+      ErrMsg('Error: Arguments for LSP server ' .. server.args .. ' is not a List')
+      return
+    endif
+    if server.omnicompl->type() != v:t_bool
+      ErrMsg('Error: Setting of omnicompl ' .. server.omnicompl .. ' is not a Bool')
       return
     endif
 
@@ -354,9 +378,11 @@ def lsp#addServer(serverList: list<dict<any>>)
 
     if server.filetype->type() == v:t_string
       s:lspAddServer(server.filetype, lspserver)
+      s:lspRegOmnicompl(server.filetype, server.omnicompl)
     elseif server.filetype->type() == v:t_list
       for ftype in server.filetype
-	s:lspAddServer(ftype, lspserver)
+        s:lspAddServer(ftype, lspserver)
+        s:lspRegOmnicompl(server.filetype, server.omnicompl)
       endfor
     else
       ErrMsg('Error: Unsupported file type information "' ..
