@@ -2,7 +2,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 8.2.2342 and above
-Last change: Jan 31, 2021
+Last change: Feb 24, 2021
 
 ==============================================================================
 						*lsp-license*
@@ -166,6 +166,8 @@ To add a LSP server, the following information is needed:
 			any arguments).
 	args		a list of command-line arguments passed to the LSP
 			server. Each argument is a separate List item.
+	omnicompl	a boolean value that enables (true) or disables
+			(false) omni-completion for this file type.
 
 The LSP servers are added using the lsp#addServer() function. This function
 accepts a list of LSP servers with the above information.
@@ -365,15 +367,12 @@ It sets the 'omnifunc' option for the buffers which have a registered LSP
 server. To complete a symbol in insert mode manually, you can press CTRL-X
 CTRL-O to invoke completion using the items suggested by the LSP server.
 
-And also indeed e.g: >
+You can also enable or disable omni-completion based on a file type by setting
+the 'omnicompl' item to 'false' when registering a lsp server for the
+filetype. If this item is not specified, then omni-completion is enabled by
+default. The following example disables omni-completion for python: >
 
 	let lspServers = [
-		\     {
-		\	'filetype': ['javascript', 'typescript'],
-		\	'omnicompl': v:true,
-		\	'path': '/usr/local/bin/typescript-language-server',
-		\	'args': ['--stdio']
-		\     },
 		\     {
 		\	'filetype': 'python',
 		\	'omnicompl': v:false,
@@ -382,8 +381,6 @@ And also indeed e.g: >
 		\     }
 		\   ]
 <
-adding "omnicompl" into configuration to set for specific ft, default is true.
-
 ==============================================================================
 
 vim:tw=78:ts=8:noet:ft=help:norl:

@@ -21,8 +21,8 @@ var lspServers: list<dict<any>> = []
 # filetype to LSP server map
 var ftypeServerMap: dict<dict<any>> = {}
 
-# filetype to omnicompl map
-var omnicomplFtypeMap: dict<bool> = {}
+# per-filetype omni-completion enabled/disabled table
+var ftypeOmniCtrlMap: dict<bool> = {}
 
 # Buffer number to LSP server map
 var bufnrToServer: dict<dict<any>> = {}
@@ -58,15 +58,15 @@ def s:lspAddServer(ftype: string, lspserver: dict<any>)
   ftypeServerMap->extend({[ftype]: lspserver})
 enddef
 
-# Return bool of omnicompl for a specific filetype.
-# Return false if not found.
-def s:lspBoolOmnicompl(ftype: string): bool
-  return omnicomplFtypeMap->get(ftype, v:false)
+# Returns true if omni-completion is enabled for filetype 'ftype'.
+# Otherwise, returns false.
+def s:lspOmniComplEnabled(ftype: string): bool
+  return ftypeOmniCtrlMap->get(ftype, v:false)
 enddef
 
-# Reg bool of omnicompl for a filetype.
-def s:lspRegOmnicompl(ftype: string, omnicompl: bool)
-  omnicomplFtypeMap->extend({[ftype]: omnicompl})
+# Enables or disables omni-completion for filetype 'fype'
+def s:lspOmniComplSet(ftype: string, enabled: bool)
+  ftypeOmniCtrlMap->extend({[ftype]: enabled})
 enddef
 
 def lsp#enableServerTrace()
@@ -297,7 +297,7 @@ def lsp#addFile(bnr: number): void
     # <Enter> in insert mode stops completion and inserts a <Enter>
     inoremap <expr> <buffer> <CR> pumvisible() ? "\<C-Y>\<CR>" : "\<CR>"
   else
-    if s:lspBoolOmnicompl(ftype)
+    if s:lspOmniComplEnabled(ftype)
       setbufvar(bnr, '&omnifunc', 'lsp#omniFunc')
     endif
   endif
@@ -357,7 +357,7 @@ def lsp#addServer(serverList: list<dict<any>>)
       continue
     endif
     if !server->has_key('omnicompl')
-      # Default true if didnot reg
+      # Enable omni-completion by default
       server['omnicompl'] = v:true
     endif
 
@@ -370,7 +370,7 @@ def lsp#addServer(serverList: list<dict<any>>)
       return
     endif
     if server.omnicompl->type() != v:t_bool
-      ErrMsg('Error: Setting of omnicompl ' .. server.omnicompl .. ' is not a Bool')
+      ErrMsg('Error: Setting of omnicompl ' .. server.omnicompl .. ' is not a Boolean')
       return
     endif
 
@@ -378,11 +378,11 @@ def lsp#addServer(serverList: list<dict<any>>)
 
     if server.filetype->type() == v:t_string
       s:lspAddServer(server.filetype, lspserver)
-      s:lspRegOmnicompl(server.filetype, server.omnicompl)
+      s:lspOmniComplSet(server.filetype, server.omnicompl)
     elseif server.filetype->type() == v:t_list
       for ftype in server.filetype
         s:lspAddServer(ftype, lspserver)
-        s:lspRegOmnicompl(server.filetype, server.omnicompl)
+        s:lspOmniComplSet(ftype, server.omnicompl)
       endfor
     else
       ErrMsg('Error: Unsupported file type information "' ..
