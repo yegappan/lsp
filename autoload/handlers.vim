@@ -1017,6 +1017,10 @@ def s:processUnsupportedNotif(lspserver: dict<any>, reply: dict<any>)
   ErrMsg('Error: Unsupported notification message received from the LSP server (' .. lspserver.path .. '), message = ' .. reply->string())
 enddef
 
+# ignore unsupported notification message
+def s:ignoreNotif(lspserver: dict<any>, reply: dict<any>)
+enddef
+
 # process notification messages from the LSP server
 export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
   var lsp_notif_handlers: dict<func> =
@@ -1025,7 +1029,10 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       'window/logMessage': function('s:processLogMsgNotif'),
       'textDocument/publishDiagnostics': function('s:processDiagNotif'),
       '$/progress': function('s:processUnsupportedNotif'),
-      'telemetry/event': function('s:processUnsupportedNotif')
+      'telemetry/event': function('s:processUnsupportedNotif'),
+      # Java language server sends the 'language/status' notification which is
+      # not in the LSP specification
+      'language/status': function('s:ignoreNotif')
     }
 
   if lsp_notif_handlers->has_key(reply.method)
