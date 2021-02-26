@@ -367,9 +367,9 @@ def s:getCompletion(lspserver: dict<any>, triggerKind_arg: number): void
 
   # interface CompletionParams
   #   interface TextDocumentPositionParams
-  req.params->extend(s:getLspTextDocPosition())
+  req.params = s:getLspTextDocPosition()
   #   interface CompletionContext
-  req.params->extend({context: {triggerKind: triggerKind_arg}})
+  req.params.context = {triggerKind: triggerKind_arg}
 
   lspserver.sendMessage(req)
 enddef
@@ -591,7 +591,6 @@ def s:textDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
 
   # interface DocumentFormattingParams
   # interface TextDocumentIdentifier
-  req.params->extend({textDocument: {uri: LspFileToUri(fname)}})
   var tabsz: number
   if &sts > 0
     tabsz = &sts
@@ -605,7 +604,8 @@ def s:textDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
     tabSize: tabsz,
     insertSpaces: &expandtab ? true : false,
   }
-  req.params->extend({options: fmtopts})
+  req.params->extend({textDocument: {uri: LspFileToUri(fname)},
+							options: fmtopts})
   if rangeFormat
     var r: dict<dict<number>> = {
 	start: {line: start_lnum - 1, character: 0},
@@ -647,8 +647,9 @@ def s:renameSymbol(lspserver: dict<any>, newName: string)
   var req = lspserver.createRequest('textDocument/rename')
   # interface RenameParams
   #   interface TextDocumentPositionParams
-  req.params->extend(s:getLspTextDocPosition())
-  req.params->extend({newName: newName})
+  req.params = s:getLspTextDocPosition()
+  req.params.newName = newName
+  #req.params->extend({newName: newName})
   lspserver.sendMessage(req)
 enddef
 
@@ -676,11 +677,10 @@ def s:codeAction(lspserver: dict<any>, fname_arg: string)
   # interface CodeActionParams
   var fname: string = fnamemodify(fname_arg, ':p')
   var bnr: number = fname_arg->bufnr()
-  req.params->extend({textDocument: {uri: LspFileToUri(fname)}})
   var r: dict<dict<number>> = {
 		  start: {line: line('.') - 1, character: charcol('.') - 1},
 		  end: {line: line('.') - 1, character: charcol('.') - 1}}
-  req.params->extend({range: r})
+  req.params->extend({textDocument: {uri: LspFileToUri(fname)}, range: r})
   var diag: list<dict<any>> = []
   var lnum = line('.')
   var diagInfo: dict<any> = lspserver.getDiagByLine(bnr, lnum)
@@ -777,8 +777,8 @@ def s:selectionRange(lspserver: dict<any>, fname: string)
   var req = lspserver.createRequest('textDocument/selectionRange')
   # interface SelectionRangeParams
   # interface TextDocumentIdentifier
-  req.params->extend({textDocument: {uri: LspFileToUri(fname)}})
-  req.params->extend({positions: [s:getLspPosition()]})
+  req.params->extend({textDocument: {uri: LspFileToUri(fname)},
+					positions: [s:getLspPosition()]})
   lspserver.sendMessage(req)
 enddef
 

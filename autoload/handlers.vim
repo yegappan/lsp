@@ -1119,20 +1119,23 @@ export def ProcessMessages(lspserver: dict<any>): void
 
     if msg->has_key('result') || msg->has_key('error')
       # response message from the server
-      var req = lspserver.requests->get(msg.id->string())
-      # Remove the corresponding stored request message
-      lspserver.requests->remove(msg.id->string())
+      var req = lspserver.requests->get(msg.id->string(), {})
+      if !req->empty()
+	# Remove the corresponding stored request message
+	lspserver.requests->remove(msg.id->string())
 
-      if msg->has_key('result')
-	lspserver.processReply(req, msg)
-      else
-	# request failed
-	var emsg: string = msg.error.message
-	emsg ..= ', code = ' .. msg.error.code
-	if msg.error->has_key('data')
-	  emsg = emsg .. ', data = ' .. msg.error.data->string()
+	if msg->has_key('result')
+	  lspserver.processReply(req, msg)
+	else
+	  # request failed
+	  var emsg: string = msg.error.message
+	  emsg ..= ', code = ' .. msg.error.code
+	  if msg.error->has_key('data')
+	    emsg = emsg .. ', data = ' .. msg.error.data->string()
+	  endif
+	  ErrMsg("Error: request " .. req.method .. " failed ("
+							.. emsg .. ")")
 	endif
-	ErrMsg("Error: request " .. req.method .. " failed (" .. emsg .. ")")
       endif
     elseif msg->has_key('id')
       # request message from the server
