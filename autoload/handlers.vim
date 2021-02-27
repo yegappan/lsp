@@ -279,7 +279,7 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
       endif
     elseif reply.result.contents->has_key('value')
       # MarkedString
-      hoverText = reply.result.contents.value
+      hoverText = reply.result.contents.value->split("\n")
     else
       ErrMsg('Error: Unsupported hover contents (' .. reply.result.contents .. ')')
       return
