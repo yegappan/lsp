@@ -306,7 +306,7 @@ def lsp#addFile(bnr: number): void
   exe 'autocmd InsertLeave <buffer=' .. bnr .. '> call lsp#leftInsertMode()'
 
   # map characters that trigger signature help
-  if lspserver.caps->has_key('signatureHelpProvider')
+  if g:LSP_Show_Signature && lspserver.caps->has_key('signatureHelpProvider')
     var triggers = lspserver.caps.signatureHelpProvider.triggerCharacters
     for ch in triggers
       exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch
