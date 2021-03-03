@@ -1232,7 +1232,17 @@ def s:jumpToWorkspaceSymbol(popupID: number, result: number): void
 	exe "confirm edit " .. symTbl[result - 1].file
       endif
     else
-      winList[0]->win_gotoid()
+      var wid = fname->bufwinid()
+      if wid != -1
+        if bufwinid(bufnr()) == wid
+          # do nothing if cur one is
+        else
+          # jump to one in cur tab
+          wid->win_gotoid()
+        endif
+      else
+        winList[0]->win_gotoid()
+      endif
     endif
     setcursorcharpos(symTbl[result - 1].pos.line + 1,
 			symTbl[result - 1].pos.character + 1)

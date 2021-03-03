@@ -69,7 +69,10 @@ def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>
   var fname = LspUriToFile(location.uri)
   var wid = fname->bufwinid()
   if wid != -1
-    wid->win_gotoid()
+    # do not jump if cur one is same buf
+    if bufwinid(bufnr()) != wid
+      wid->win_gotoid()
+    endif
   else
     var bnr: number = fname->bufnr()
     if bnr != -1
