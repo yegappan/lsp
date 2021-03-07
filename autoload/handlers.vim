@@ -859,10 +859,6 @@ enddef
 # process the 'workspace/symbol' reply from the LSP server
 # Result: SymbolInformation[] | null
 def s:processWorkspaceSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
-  if reply.result->empty()
-    return
-  endif
-
   var symbols: list<dict<any>> = []
   var symbolType: string
   var fileName: string

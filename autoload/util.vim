@@ -120,4 +120,15 @@ export def GetLineByteFromPos(bnr: number, pos: dict<number>): number
   return col
 enddef
 
+# push the current location on to the tag stack
+export def PushCursorToTagStack()
+  settagstack(winnr(), {items: [
+			 {
+			   bufnr: bufnr(),
+			   from: getpos('.'),
+			   matchnr: 1,
+			   tagname: expand('<cword>')
+			 }]}, 't')
+enddef
+
 # vim: shiftwidth=2 softtabstop=2

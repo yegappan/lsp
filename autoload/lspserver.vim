@@ -13,7 +13,8 @@ import {WarnMsg,
 	TraceLog,
 	LspUriToFile,
 	LspBufnrToUri,
-	LspFileToUri} from './util.vim'
+	LspFileToUri,
+	PushCursorToTagStack} from './util.vim'
 
 # LSP server standard output handler
 def s:output_cb(lspserver: dict<any>, chan: channel, msg: string): void
@@ -374,17 +375,6 @@ def s:getCompletion(lspserver: dict<any>, triggerKind_arg: number): void
   lspserver.sendMessage(req)
 enddef
 
-# push the current location on to the tag stack
-def s:pushCursorToTagStack()
-  settagstack(winnr(), {items: [
-			 {
-			   bufnr: bufnr(),
-			   from: getpos('.'),
-			   matchnr: 1,
-			   tagname: expand('<cword>')
-			 }]}, 'a')
-enddef
-
 # Request: "textDocument/definition"
 # Param: DefinitionParams
 def s:gotoDefinition(lspserver: dict<any>): void
@@ -395,7 +385,7 @@ def s:gotoDefinition(lspserver: dict<any>): void
     return
   endif
 
-  s:pushCursorToTagStack()
+  PushCursorToTagStack()
   var req = lspserver.createRequest('textDocument/definition')
   # interface DefinitionParams
   #   interface TextDocumentPositionParams
@@ -413,7 +403,7 @@ def s:gotoDeclaration(lspserver: dict<any>): void
     return
   endif
 
-  s:pushCursorToTagStack()
+  PushCursorToTagStack()
   var req = lspserver.createRequest('textDocument/declaration')
 
   # interface DeclarationParams
@@ -433,7 +423,7 @@ def s:gotoTypeDef(lspserver: dict<any>): void
     return
   endif
 
-  s:pushCursorToTagStack()
+  PushCursorToTagStack()
   var req = lspserver.createRequest('textDocument/typeDefinition')
 
   # interface TypeDefinitionParams
@@ -453,7 +443,7 @@ def s:gotoImplementation(lspserver: dict<any>): void
     return
   endif
 
-  s:pushCursorToTagStack()
+  PushCursorToTagStack()
   var req = lspserver.createRequest('textDocument/implementation')
 
   # interface ImplementationParams

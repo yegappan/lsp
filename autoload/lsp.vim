@@ -7,7 +7,8 @@ import {WarnMsg,
 	ErrMsg,
 	lsp_server_trace,
 	ClearTraceLogs,
-	GetLineByteFromPos} from './util.vim'
+	GetLineByteFromPos,
+	PushCursorToTagStack} from './util.vim'
 import {LspDiagsUpdated} from './buf.vim'
 
 # Needs Vim 8.2.2342 and higher
@@ -1184,6 +1185,8 @@ def s:filterSymbols(lspserver: dict<any>, popupID: number, key: string): bool
     popupID->popup_settext('')
     if query != ''
       lspserver.workspaceQuery(query)
+    else
+      []->setwinvar(popupID, 'LspSymbolTable')
     endif
     echo 'Symbol: ' .. query
   endif
@@ -1208,8 +1211,14 @@ def s:jumpToWorkspaceSymbol(popupID: number, result: number): void
     return
   endif
 
-  var symTbl: list<dict<any>> = popupID->getwinvar('LspSymbolTable')
+  var symTbl: list<dict<any>> = popupID->getwinvar('LspSymbolTable', [])
+  if symTbl->empty()
+    return
+  endif
   try
+    # Save the current location in the tag stack
+    PushCursorToTagStack()
+
     # if the selected file is already present in a window, then jump to it
     var fname: string = symTbl[result - 1].file
     var winList: list<number> = fname->bufnr()->win_findbuf()
