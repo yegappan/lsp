@@ -25,7 +25,7 @@ def s:processInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
   # and then setup the below mapping for those buffers.
 
   # map characters that trigger signature help
-  if caps->has_key('signatureHelpProvider')
+  if g:LSP_Show_Signature && caps->has_key('signatureHelpProvider')
     var triggers = caps.signatureHelpProvider.triggerCharacters
     for ch in triggers
       exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch .. "<C-R>=lsp#showSignature()<CR>"

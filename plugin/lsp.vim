@@ -11,6 +11,10 @@ if !exists('g:LSP_24x7_Complete')
   let g:LSP_24x7_Complete = v:true
 endif
 
+if !exists('g:LSP_Show_Signature')
+  let g:LSP_Show_Signature = v:true
+endif
+
 augroup LSPAutoCmds
   au!
   autocmd BufNewFile,BufReadPost *
