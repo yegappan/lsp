@@ -237,6 +237,10 @@ def s:sendMessage(lspserver: dict<any>, content: dict<any>): void
   var payload_js: string = content->json_encode()
   var msg = "Content-Length: " .. payload_js->len() .. "\r\n\r\n"
   var ch = lspserver.job->job_getchannel()
+  if ch_status(ch) != 'open'
+    # LSP server has exited
+    return
+  endif
   ch->ch_sendraw(msg)
   ch->ch_sendraw(payload_js)
 enddef
