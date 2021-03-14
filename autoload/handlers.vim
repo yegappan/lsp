@@ -1081,27 +1081,41 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
   endif
 enddef
 
-# process LSP server messages
+# process one or more LSP server messages
 export def ProcessMessages(lspserver: dict<any>): void
+  var idx: number
+  var len: number
+  var content: string
+  var msg: dict<any>
+  var req: dict<any>
+
   while lspserver.data->len() > 0
-    var idx = stridx(lspserver.data, 'Content-Length: ')
+    idx = stridx(lspserver.data, 'Content-Length: ')
     if idx == -1
       return
     endif
 
-    var len = str2nr(lspserver.data[idx + 16 : ])
+    if stridx(lspserver.data, "\r\n", idx + 16) == -1
+      # not enough data is received. Wait for more data to arrive
+      return
+    endif
+
+    len = str2nr(lspserver.data[idx + 16 : ])
     if len == 0
-      ErrMsg("Error: Content length is zero")
+      ErrMsg("Error(LSP): Invalid content length")
+      # Discard the header
+      lspserver.data = lspserver.data[idx + 16 :]
       return
     endif
 
     # Header and contents are separated by '\r\n\r\n'
-    idx = stridx(lspserver.data, "\r\n\r\n")
+    idx = stridx(lspserver.data, "\r\n\r\n", idx + 16)
     if idx == -1
-      ErrMsg("Error: Content separator is not found")
+      # content separator is not found. Wait for more data to arrive.
       return
     endif
 
+    # skip the separator
     idx = idx + 4
 
     if lspserver.data->len() - idx < len
@@ -1110,12 +1124,18 @@ export def ProcessMessages(lspserver: dict<any>): void
       return
     endif
 
-    var content = lspserver.data[idx : idx + len - 1]
-    var msg = content->json_decode()
+    content = lspserver.data[idx : idx + len - 1]
+    try
+      msg = content->json_decode()
+    catch
+      ErrMsg("Error(LSP): Malformed content (" .. content .. ")")
+      lspserver.data = lspserver.data[idx + len :]
+      continue
+    endtry
 
     if msg->has_key('result') || msg->has_key('error')
       # response message from the server
-      var req = lspserver.requests->get(msg.id->string(), {})
+      req = lspserver.requests->get(msg.id->string(), {})
       if !req->empty()
 	# Remove the corresponding stored request message
 	lspserver.requests->remove(msg.id->string())
@@ -1129,16 +1149,18 @@ export def ProcessMessages(lspserver: dict<any>): void
 	  if msg.error->has_key('data')
 	    emsg = emsg .. ', data = ' .. msg.error.data->string()
 	  endif
-	  ErrMsg("Error: request " .. req.method .. " failed ("
+	  ErrMsg("Error(LSP): request " .. req.method .. " failed ("
 							.. emsg .. ")")
 	endif
       endif
     elseif msg->has_key('id')
       # request message from the server
       lspserver.processRequest(msg)
-    else
+    elseif msg->has_key('method')
       # notification message from the server
       lspserver.processNotif(msg)
+    else
+      ErrMsg("Error(LSP): Unsupported message (" .. msg->string() .. ")")
     endif
 
     lspserver.data = lspserver.data[idx + len :]
