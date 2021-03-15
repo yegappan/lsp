@@ -117,7 +117,7 @@ def s:processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dic
   var text = sig.label
   var hllen = 0
   var startcol = 0
-  if sig->has_key('parameters')
+  if sig->has_key('parameters') && result->has_key('activeParameter')
     var params_len = sig.parameters->len()
     if params_len > 0 && result.activeParameter < params_len
       var label = sig.parameters[result.activeParameter].label
@@ -297,7 +297,7 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
     if reply.result.contents->empty()
       return
     endif
-    hoverText->add(reply.result.contents)
+    hoverText->extend(reply.result.contents->split("\n"))
   else
     ErrMsg('Error: Unsupported hover contents (' .. reply.result.contents .. ')')
     return
@@ -865,6 +865,10 @@ def s:processWorkspaceSymbolReply(lspserver: dict<any>, req: dict<any>, reply: d
   var r: dict<dict<number>>
   var symName: string
 
+  if reply.result->type() != v:t_list
+    return
+  endif
+
   for symbol in reply.result
     if !symbol->has_key('location')
       # ignore entries without location information
@@ -1153,7 +1157,7 @@ export def ProcessMessages(lspserver: dict<any>): void
 							.. emsg .. ")")
 	endif
       endif
-    elseif msg->has_key('id')
+    elseif msg->has_key('id') && msg->has_key('method')
       # request message from the server
       lspserver.processRequest(msg)
     elseif msg->has_key('method')
