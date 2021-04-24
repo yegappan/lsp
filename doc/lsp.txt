@@ -182,6 +182,12 @@ accepts a list of LSP servers with the above information.
 			file type, the corresponding LSP server status and the
 			path to the LSP server executable.
 
+			And check 'lsp#serverStatus(&ft)' as well, it returns
+			LSP server status for current filetype:
+			- Return true if running.
+			- Return false if not found or not running.
+			You can register it into 'stl' as well if needed.
+
 						*:LspGotoDefinition*
 :LspGotoDefinition	Jumps to the definition of the symbol under the
 			cursor. If the file is already present in a window,

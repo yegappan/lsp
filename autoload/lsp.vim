@@ -65,7 +65,7 @@ def s:lspOmniComplEnabled(ftype: string): bool
   return ftypeOmniCtrlMap->get(ftype, v:false)
 enddef
 
-# Enables or disables omni-completion for filetype 'fype'
+# Enables or disables omni-completion for filetype 'ftype'
 def s:lspOmniComplSet(ftype: string, enabled: bool)
   ftypeOmniCtrlMap->extend({[ftype]: enabled})
 enddef
@@ -73,6 +73,17 @@ enddef
 def lsp#enableServerTrace()
   ClearTraceLogs()
   lsp_server_trace = true
+enddef
+
+# Get LSP server status for filetype 'ftype'.
+# Return true if running, otherwise false if not found or not running.
+def lsp#serverStatus(ftype: string): bool
+  for [ft, lspserver] in ftypeServerMap->items()
+    if ftype == ft
+      return lspserver.running
+    endif
+  endfor
+  return v:false
 enddef
 
 # Show information about all the LSP servers
