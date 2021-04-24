@@ -335,6 +335,21 @@ accepts a list of LSP servers with the above information.
 :LspHover		Show the documentation for the symbol under the cursor
 			in a popup window.
 
+			Var 'b:lsphoverpopupid' and 'b:lsphovermarkupkind' as
+			hover popup id and its markup kind ("plaintext" or
+			"markdown" or "") added when hover popup showed.
+
+			And its filetype set as "lsphover".
+
+			You can customize something for hover popup if needed:
+
+			- Develop some syntax setting for "lsphover" as others
+			filetype e.g "markdown" in vim runtime. And adjust some
+			per 'b:lsphovermarkupkind' as well.
+
+			- Or adjust popup option by 'popup_setoptions()' with
+			'b:lsphoverpopupid' if you like.
+
 						*:LspSelectionRange*
 :LspSelectionRange	Visually select the current symbol range.
 

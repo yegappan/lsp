@@ -265,17 +265,21 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
   endif
 
   var hoverText: list<string>
+  var hoverMarkupKind: string = ''
+  var hoverWinid: number = -1
 
   if reply.result.contents->type() == v:t_dict
     if reply.result.contents->has_key('kind')
       # MarkupContent
       if reply.result.contents.kind == 'plaintext'
-	hoverText = reply.result.contents.value->split("\n")
+        hoverText = reply.result.contents.value->split("\n")
+        hoverMarkupKind = 'plaintext'
       elseif reply.result.contents.kind == 'markdown'
-	hoverText = reply.result.contents.value->split("\n")
+        hoverText = reply.result.contents.value->split("\n")
+        hoverMarkupKind = 'markdown'
       else
-	ErrMsg('Error: Unsupported hover contents type (' .. reply.result.contents.kind .. ')')
-	return
+        ErrMsg('Error: Unsupported hover contents type (' .. reply.result.contents.kind .. ')')
+        return
       endif
     elseif reply.result.contents->has_key('value')
       # MarkedString
@@ -288,9 +292,9 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
     # interface MarkedString[]
     for e in reply.result.contents
       if e->type() == v:t_string
-	hoverText->extend(e->split("\n"))
+        hoverText->extend(e->split("\n"))
       else
-	hoverText->extend(e.value->split("\n"))
+        hoverText->extend(e.value->split("\n"))
       endif
     endfor
   elseif reply.result.contents->type() == v:t_string
@@ -302,7 +306,12 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
     ErrMsg('Error: Unsupported hover contents (' .. reply.result.contents .. ')')
     return
   endif
-  hoverText->popup_atcursor({moved: 'word'})
+  hoverWinid = hoverText->popup_atcursor({moved: 'word'})
+  if hoverWinid > 0
+    call setbufvar(winbufnr(hoverWinid), 'lsphoverpopupid', hoverWinid)
+    call setbufvar(winbufnr(hoverWinid), 'lsphovermarkupkind', hoverMarkupKind)
+    call setbufvar(winbufnr(hoverWinid), '&filetype', 'lsphover')
+  endif
 enddef
 
 # process the 'textDocument/references' reply from the LSP server
