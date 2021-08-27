@@ -576,7 +576,7 @@ def s:applyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   if !bnr->bufloaded()
     bnr->bufload()
   endif
-  bnr->setbufvar('&buflisted', true)
+  setbufvar(bnr, '&buflisted', true)
 
   var start_line: number = 4294967295		# 2 ^ 32
   var finish_line: number = -1
