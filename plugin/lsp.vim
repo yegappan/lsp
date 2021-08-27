@@ -57,4 +57,48 @@ command! -nargs=0 -bar LspWorkspaceListFolders call lsp#listWorkspaceFolders()
 command! -nargs=1 -bar -complete=dir LspWorkspaceAddFolder call lsp#addWorkspaceFolder(<q-args>)
 command! -nargs=1 -bar -complete=dir LspWorkspaceRemoveFolder call lsp#removeWorkspaceFolder(<q-args>)
 
+" Add the GUI menu entries
+if has('gui_running')
+  anoremenu <silent> L&sp.Goto.Definition :call lsp#gotoDefinition()<CR>
+  anoremenu <silent> L&sp.Goto.Declaration :call lsp#gotoDeclaration()<CR>
+  anoremenu <silent> L&sp.Goto.Implementation :call lsp#gotoImplementation()<CR>
+  anoremenu <silent> L&sp.Goto.TypeDef :call lsp#gotoTypedef()<CR>
+
+  anoremenu <silent> L&sp.Show\ Signature :call lsp#showSignature()<CR>
+  anoremenu <silent> L&sp.Show\ References :call lsp#showReferences()<CR>
+  anoremenu <silent> L&sp.Show\ Detail :call lsp#hover()<CR>
+  anoremenu <silent> L&sp.Outline :call lsp#outline()<CR>
+
+  anoremenu <silent> L&sp.Symbol\ Search :call lsp#symbolSearch('')<CR>
+  anoremenu <silent> L&sp.CalledBy :call lsp#incomingCalls()<CR>
+  anoremenu <silent> L&sp.Calling :call lsp#outgoingCalls()<CR>
+  anoremenu <silent> L&sp.Rename :call lsp#rename()<CR>
+  anoremenu <silent> L&sp.Code\ Action :call lsp#codeAction()<CR>
+
+  anoremenu <silent> L&sp.Highlight\ Symbol :call lsp#docHighlight()<CR>
+  anoremenu <silent> L&sp.Highlight\ Clear :call lsp#docHighlightClear()<CR>
+
+  " Diagnostics
+  anoremenu <silent> L&sp.Diagnostics.Current :call lsp#showCurrentDiag<CR>
+  anoremenu <silent> L&sp.Diagnostics.Show\ All :call lsp#showDiagnostics()<CR>
+  anoremenu <silent> L&sp.Diagnostics.First :call lsp#jumpToDiag('first')<CR>
+  anoremenu <silent> L&sp.Diagnostics.Next :call lsp#jumpToDiag('next')<CR>
+  anoremenu <silent> L&sp.Diagnostics.Prev :call lsp#jumpToDiag('prev')<CR>
+
+  if &mousemodel =~ 'popup'
+    anoremenu <silent> PopUp.L&sp.Go\ to\ Definition
+	  \ :call lsp#gotoDefinition()<CR>
+    anoremenu <silent> PopUp.L&sp.Go\ to\ Declaration
+	  \ :call lsp#gotoDeclaration()<CR>
+    anoremenu <silent> Popup.L&sp.Find\ All\ References
+	  \ :call lsp#showReferences()<CR>
+    anoremenu <silent> PopUp.L&sp.Show\ Detail
+          \ :call lsp#hover()<CR>
+    anoremenu <silent> PopUp.L&sp.Highlight\ Symbol
+          \ :call lsp#docHighlight()<CR>
+    anoremenu <silent> PopUp.L&sp.Highlight\ Clear
+          \ :call lsp#docHighlightClear()<CR>
+  endif
+endif
+
 " vim: shiftwidth=2 softtabstop=2
