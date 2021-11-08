@@ -15,6 +15,10 @@ if !exists('g:LSP_Show_Signature')
   let g:LSP_Show_Signature = v:true
 endif
 
+if !exists('g:LSP_Echo_Signature')
+  let g:LSP_Echo_Signature = v:false
+endif
+
 augroup LSPAutoCmds
   au!
   autocmd BufNewFile,BufReadPost *

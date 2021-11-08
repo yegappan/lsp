@@ -215,7 +215,9 @@ accepts a list of LSP servers with the above information.
 			The popup is also automatically displayed in insert
 			mode after entering a symbol name followed by a
 			separator (e.g. a opening parenthesis). Unless if: >
-			let g:LSP_Show_Signature = v:false
+			let g:LSP_Show_Signature = v:false. If you set
+			g:LSP_Show_Signature = 1 the signature will be echoed
+			in cmdline rather displayed in a popup.
 <
 			Default is true.
 
