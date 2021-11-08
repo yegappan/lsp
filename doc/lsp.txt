@@ -333,7 +333,9 @@ accepts a list of LSP servers with the above information.
 
 						*:LspHover*
 :LspHover		Show the documentation for the symbol under the cursor
-			in a popup window.
+			in a popup window. If you prefer show documentation in
+			a preview window rather a popup set
+			g:LSP_Hover_Reply_In_Preview = v:true .
 
 						*:LspSelectionRange*
 :LspSelectionRange	Visually select the current symbol range.

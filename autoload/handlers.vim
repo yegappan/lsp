@@ -302,7 +302,21 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
     ErrMsg('Error: Unsupported hover contents (' .. reply.result.contents .. ')')
     return
   endif
-  hoverText->popup_atcursor({moved: 'word'})
+  if g:LSP_Hover_Reply_In_Preview
+      silent! pedit HoverReply
+      wincmd P
+      setlocal buftype=nofile
+      setlocal bufhidden=delete
+      if !reply.result.contents.kind->empty()
+          exe 'setlocal ft=' .. reply.result.contents.kind
+      endif
+      exe 'normal ggdG'
+      append(0, hoverText)
+      exe 'normal gg'
+      wincmd p
+  else
+      hoverText->popup_atcursor({moved: 'word'})
+  endif
 enddef
 
 # process the 'textDocument/references' reply from the LSP server
