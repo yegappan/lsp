@@ -502,6 +502,42 @@ def lsp#showCurrentDiag()
   endif
 enddef
 
+# get the count of error in the current buffer
+def lsp#errorCount():dict<number>
+  var res = {'E': 0, 'W': 0, 'I': 0, 'H': 0}
+  var ftype = &filetype
+  if ftype == ''
+    return res
+  endif
+
+  var lspserver: dict<any> = s:lspGetServer(ftype)
+  if lspserver->empty()
+    return res
+  endif
+  if !lspserver.running
+    return res
+  endif
+
+  var bnr: number = bufnr()
+  if lspserver.diagsMap->has_key(bnr)
+      for item in lspserver.diagsMap[bnr]->values()
+          if item->has_key('severity')
+              if item.severity == 1
+                  res.E = res.E + 1
+              elseif item.severity == 2
+                  res.W = res.W + 1
+              elseif item.severity == 3
+                  res.I = res.I + 1
+              elseif item.severity == 4
+                  res.H = res.H + 1
+              endif
+          endif
+      endfor
+  endif
+
+  return res
+enddef
+
 # sort the diaganostics messages for a buffer by line number
 def s:getSortedDiagLines(lspserver: dict<any>, bnr: number): list<number>
   # create a list of line numbers from the diag map keys
