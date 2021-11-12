@@ -220,8 +220,8 @@ accepts a list of LSP servers with the above information.
 			Default is true.
 
 			You can get the function signature echoed in cmdline
-			rather than displayed in popup if you use
-			> let g:LSP_Echo_Signature = v:true
+			rather than displayed in popup if you use >
+			let g:LSP_Echo_Signature = v:true
 <
 			Default is false
 
