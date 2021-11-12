@@ -504,7 +504,7 @@ enddef
 
 # get the count of error in the current buffer
 def lsp#errorCount():dict<number>
-  var res = {'E': 0, 'W': 0, 'I': 0, 'H': 0}
+  var res = {'Error': 0, 'Warn': 0, 'Info': 0, 'Hint': 0}
   var ftype = &filetype
   if ftype == ''
     return res
@@ -523,13 +523,13 @@ def lsp#errorCount():dict<number>
       for item in lspserver.diagsMap[bnr]->values()
           if item->has_key('severity')
               if item.severity == 1
-                  res.E = res.E + 1
+                  res.Error = res.Error + 1
               elseif item.severity == 2
-                  res.W = res.W + 1
+                  res.Warn = res.Warn + 1
               elseif item.severity == 3
-                  res.I = res.I + 1
+                  res.Info = res.Info + 1
               elseif item.severity == 4
-                  res.H = res.H + 1
+                  res.Hint = res.Hint + 1
               endif
           endif
       endfor
