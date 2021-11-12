@@ -511,10 +511,7 @@ def lsp#errorCount():dict<number>
   endif
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
-  if lspserver->empty()
-    return res
-  endif
-  if !lspserver.running
+  if lspserver->empty() || !lspserver.running
     return res
   endif
 
