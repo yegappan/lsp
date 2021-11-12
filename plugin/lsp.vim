@@ -15,8 +15,8 @@ if !exists('g:LSP_Show_Signature')
   let g:LSP_Show_Signature = v:true
 endif
 
-if !exists('g:LSP_Hover_Reply_In_Preview')
-  let g:LSP_Hover_Reply_In_Preview = v:false
+if !exists('g:LSP_Hover_In_Preview')
+  let g:LSP_Hover_In_Preview = v:false
 endif
 
 augroup LSPAutoCmds

@@ -302,7 +302,7 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
     ErrMsg('Error: Unsupported hover contents (' .. reply.result.contents .. ')')
     return
   endif
-  if g:LSP_Hover_Reply_In_Preview
+  if g:LSP_Hover_In_Preview
       silent! pedit HoverReply
       wincmd P
       setlocal buftype=nofile
