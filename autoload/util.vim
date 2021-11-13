@@ -56,7 +56,8 @@ export def LspUriToFile(uri: string): string
     # MS-Windows URI
     uri_decoded = uri_decoded[8 : ]
     uri_decoded = uri_decoded->substitute('/', '\\', 'g')
-  else
+  # On GNU/Linux (pattern not end with `:`)
+  elseif uri_decoded =~? '^file:///\a'
     uri_decoded = uri_decoded[7 : ]
   endif
 
