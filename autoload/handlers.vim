@@ -120,15 +120,30 @@ def s:processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dic
   if sig->has_key('parameters') && result->has_key('activeParameter')
     var params_len = sig.parameters->len()
     if params_len > 0 && result.activeParameter < params_len
-      var label = sig.parameters[result.activeParameter].label
+      var label = ''
+      if sig.parameters[result.activeParameter]->has_key('documentation')
+        label = sig.parameters[result.activeParameter].documentation
+      else
+        label = sig.parameters[result.activeParameter].label
+      endif
       hllen = label->len()
       startcol = text->stridx(label)
     endif
   endif
-  var popupID = text->popup_atcursor({moved: 'any'})
-  prop_type_add('signature', {bufnr: popupID->winbufnr(), highlight: 'LineNr'})
-  if hllen > 0
-    prop_add(1, startcol + 1, {bufnr: popupID->winbufnr(), length: hllen, type: 'signature'})
+  if g:LSP_Echo_Signature
+    echon "\r\r"
+    echon ''
+    echon strpart(text, 0, startcol)
+    echoh LineNr
+    echon strpart(text, startcol, hllen)
+    echoh None
+    echon strpart(text, startcol + hllen)
+  else
+    var popupID = text->popup_atcursor({moved: 'any'})
+    prop_type_add('signature', {bufnr: popupID->winbufnr(), highlight: 'LineNr'})
+    if hllen > 0
+      prop_add(1, startcol + 1, {bufnr: popupID->winbufnr(), length: hllen, type: 'signature'})
+    endif
   endif
 enddef
 

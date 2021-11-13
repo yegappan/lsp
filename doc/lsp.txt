@@ -215,9 +215,15 @@ accepts a list of LSP servers with the above information.
 			The popup is also automatically displayed in insert
 			mode after entering a symbol name followed by a
 			separator (e.g. a opening parenthesis). Unless if: >
-			let g:LSP_Show_Signature = v:false
+			let g:LSP_Show_Signature = v:false.
 <
 			Default is true.
+
+			You can get the function signature echoed in cmdline
+			rather than displayed in popup if you use >
+			let g:LSP_Echo_Signature = v:true
+<
+			Default is false
 
 						*:LspDiagShow*
 :LspDiagShow		Creates a new location list with the diagnostics
