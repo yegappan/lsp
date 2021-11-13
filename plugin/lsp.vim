@@ -5,20 +5,6 @@ if v:version < 802 || !has('patch-8.2.2342')
   finish
 endif
 
-" Perform completion in insert mode automatically. Otherwise use
-" omni-complete.
-if !exists('g:LSP_24x7_Complete')
-  let g:LSP_24x7_Complete = v:true
-endif
-
-if !exists('g:LSP_Show_Signature')
-  let g:LSP_Show_Signature = v:true
-endif
-
-if !exists('g:LSP_Echo_Signature')
-  let g:LSP_Echo_Signature = v:false
-endif
-
 augroup LSPAutoCmds
   au!
   autocmd BufNewFile,BufReadPost *

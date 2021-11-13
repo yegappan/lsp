@@ -4,6 +4,7 @@ vim9script
 # Refer to https://microsoft.github.io/language-server-protocol/specification
 # for the Language Server Protocol (LSP) specificaiton.
 
+import lspOptions from './lspoptions.vim'
 import {WarnMsg,
 	ErrMsg,
 	TraceLog,
@@ -25,16 +26,25 @@ def s:processInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
   # and then setup the below mapping for those buffers.
 
   # map characters that trigger signature help
-  if g:LSP_Show_Signature && caps->has_key('signatureHelpProvider')
+  if lspOptions.showSignature && caps->has_key('signatureHelpProvider')
     var triggers = caps.signatureHelpProvider.triggerCharacters
     for ch in triggers
       exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch .. "<C-R>=lsp#showSignature()<CR>"
     endfor
   endif
 
-  if g:LSP_24x7_Complete && caps->has_key('completionProvider')
+  if lspOptions.autoComplete && caps->has_key('completionProvider')
     var triggers = caps.completionProvider.triggerCharacters
     lspserver.completionTriggerChars = triggers
+  endif
+
+  if lspOptions.autoHighlight && caps->has_key('documentHighlightProvider')
+			      && caps.documentHighlightProvider
+    # Highlight all the occurrences of the current keyword
+    augroup LSPBufferAutocmds
+      autocmd CursorMoved <buffer> call lsp#docHighlightClear()
+						| call lsp#docHighlight()
+    augroup END
   endif
 
   # send a "initialized" notification to server
@@ -130,7 +140,7 @@ def s:processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dic
       startcol = text->stridx(label)
     endif
   endif
-  if g:LSP_Echo_Signature
+  if lspOptions.showSignature
     echon "\r\r"
     echon ''
     echon strpart(text, 0, startcol)
@@ -227,7 +237,7 @@ def s:processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
     completeItems->add(d)
   endfor
 
-  if g:LSP_24x7_Complete
+  if lspOptions.autoComplete
     if completeItems->empty()
       # no matches
       return

@@ -2,6 +2,7 @@ vim9script
 
 # Vim9 LSP client
 
+import lspOptions from './lspoptions.vim'
 import NewLspServer from './lspserver.vim'
 import {WarnMsg,
 	ErrMsg,
@@ -29,6 +30,13 @@ var ftypeOmniCtrlMap: dict<bool> = {}
 var bufnrToServer: dict<dict<any>> = {}
 
 var lspInitializedOnce = false
+
+# Set user configurable LSP options
+def lsp#setOptions(lspOpts: dict<any>)
+  for key in lspOpts->keys()
+    lspOptions[key] = lspOpts[key]
+  endfor
+enddef
 
 def s:lspInitOnce()
   # Signs used for LSP diagnostics
@@ -238,6 +246,12 @@ def g:LspDiagExpr(): string
     return ''
   endif
 
+  # Display the diagnostic message only if the mouse is over the first two
+  # columns
+  if v:beval_col >= 3
+    return ''
+  endif
+
   return diagInfo.message
 enddef
 
@@ -283,18 +297,13 @@ def lsp#addFile(bnr: number): void
   endif
   lspserver.textdocDidOpen(bnr, ftype)
 
-  # file saved notification handler
-  autocmd BufWritePost <buffer> call s:lspSavedFile()
-
   # add a listener to track changes to this buffer
   listener_add(function('lsp#bufchange_listener'), bnr)
 
   # set options for insert mode completion
-  if g:LSP_24x7_Complete
+  if lspOptions.autoComplete
     setbufvar(bnr, '&completeopt', 'menuone,popup,noinsert,noselect')
     setbufvar(bnr, '&completepopup', 'border:off')
-    # autocmd for 24x7 insert mode completion
-    autocmd TextChangedI <buffer> call lsp#complete()
     # <Enter> in insert mode stops completion and inserts a <Enter>
     inoremap <expr> <buffer> <CR> pumvisible() ? "\<C-Y>\<CR>" : "\<CR>"
   else
@@ -304,16 +313,38 @@ def lsp#addFile(bnr: number): void
   endif
 
   setbufvar(bnr, '&balloonexpr', 'LspDiagExpr()')
-  exe 'autocmd InsertLeave <buffer=' .. bnr .. '> call lsp#leftInsertMode()'
 
   # map characters that trigger signature help
-  if g:LSP_Show_Signature && lspserver.caps->has_key('signatureHelpProvider')
+  if lspOptions.showSignature &&
+			lspserver.caps->has_key('signatureHelpProvider')
     var triggers = lspserver.caps.signatureHelpProvider.triggerCharacters
     for ch in triggers
       exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch
 				.. "<C-R>=lsp#showSignature()<CR>"
     endfor
   endif
+
+  # Set buffer local autocmds
+  augroup LSPBufferAutocmds
+    # file saved notification handler
+    exe 'autocmd BufWritePost <buffer=' .. bnr .. '> call s:lspSavedFile()'
+
+    if lspOptions.autoComplete
+      # Trigger 24x7 insert mode completion when text is changed
+      exe 'autocmd TextChangedI <buffer=' .. bnr .. '> call lsp#complete()'
+    endif
+
+    # Update the diagnostics when insert mode is stopped
+    exe 'autocmd InsertLeave <buffer=' .. bnr .. '> call lsp#leftInsertMode()'
+
+    if lspOptions.autoHighlight &&
+			lspserver.caps->has_key('documentHighlightProvider')
+			&& lspserver.caps.documentHighlightProvider
+      # Highlight all the occurrences of the current keyword
+      exe 'autocmd CursorMoved <buffer=' .. bnr .. '> '
+		  .. 'call lsp#docHighlightClear() | call lsp#docHighlight()'
+    endif
+  augroup END
 
   bufnrToServer[bnr] = lspserver
 enddef
@@ -1139,7 +1170,7 @@ def lsp#rename()
     return
   endif
 
-  var newName: string = input("Enter new name: ", expand('<cword>'))
+  var newName: string = input("Rename symbol: ", expand('<cword>'))
   if newName == ''
     return
   endif
