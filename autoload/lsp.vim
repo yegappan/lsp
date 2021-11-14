@@ -534,7 +534,7 @@ def lsp#showCurrentDiag()
 enddef
 
 # get the count of error in the current buffer
-def lsp#errorCount():dict<number>
+def lsp#errorCount(): dict<number>
   var res = {'Error': 0, 'Warn': 0, 'Info': 0, 'Hint': 0}
   var ftype = &filetype
   if ftype == ''
