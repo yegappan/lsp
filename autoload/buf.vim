@@ -1,5 +1,7 @@
 vim9script
 
+import lspOptions from './lspoptions.vim'
+
 def s:lspDiagSevToSignName(severity: number): string
   var typeMap: list<string> = ['LspDiagError', 'LspDiagWarning',
 						'LspDiagInfo', 'LspDiagHint']
@@ -12,6 +14,10 @@ enddef
 # New LSP diagnostic messages received from the server for a file.
 # Update the signs placed in the buffer for this file
 export def LspDiagsUpdated(lspserver: dict<any>, bnr: number)
+  if !lspOptions.autoHighlightDiags
+    return
+  endif
+
   if bnr == -1 || !lspserver.diagsMap->has_key(bnr)
     return
   endif

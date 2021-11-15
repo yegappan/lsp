@@ -140,7 +140,7 @@ def s:processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dic
       startcol = text->stridx(label)
     endif
   endif
-  if lspOptions.showSignature
+  if lspOptions.echoSignature
     echon "\r\r"
     echon ''
     echon strpart(text, 0, startcol)
