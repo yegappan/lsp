@@ -132,7 +132,10 @@ def s:processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dic
     if params_len > 0 && result.activeParameter < params_len
       var label = ''
       if sig.parameters[result.activeParameter]->has_key('documentation')
-        label = sig.parameters[result.activeParameter].documentation
+	if sig.parameters[result.activeParameter].documentation->type()
+							    == v:t_string
+          label = sig.parameters[result.activeParameter].documentation
+        endif
       else
         label = sig.parameters[result.activeParameter].label
       endif

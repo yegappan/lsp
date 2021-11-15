@@ -243,14 +243,14 @@ diagnostic messages, you can add the following line to your .vimrc file:
 			this, you can set the showSignature option to false in
 			your .vimrc file: >
 
-			    call lsp#setOptions({showSignature: v:false})
+			    call lsp#setOptions({'showSignature': v:false})
 <
 			Default is true.
 
 			You can get the function signature echoed in cmdline
 			rather than displayed in popup if you use >
 
-			    call lsp#setOptions({echoSignature: v:true})
+			    call lsp#setOptions({'echoSignature': v:true})
 <
 			Default is false.
 
