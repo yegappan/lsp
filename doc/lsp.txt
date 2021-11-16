@@ -368,7 +368,13 @@ diagnostic messages, you can add the following line to your .vimrc file:
 
 						*:LspHover*
 :LspHover		Show the documentation for the symbol under the cursor
-			in a popup window.
+			in a popup window. If you want to show the symbol
+			documentation in the preview window instead of in a
+			popup set >
+
+				call lsp#setOptions({'hoverInPreview': v:true})
+<
+			Default is false
 
 						*:LspSelectionRange*
 :LspSelectionRange	Visually select the current symbol range.
