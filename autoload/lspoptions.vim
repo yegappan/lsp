@@ -14,5 +14,7 @@ export var lspOptions: dict<any> = {
   # instead of showing it in a popup
   echoSignature: false,
   # Automatically highlight diagnostics messages from LSP server
-  autoHighlightDiags: true
+  autoHighlightDiags: true,
+  # Show the symbol documentation in the preview window instead of in a popup
+  hoverInPreview: false,
 }

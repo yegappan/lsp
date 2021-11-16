@@ -371,7 +371,8 @@ diagnostic messages, you can add the following line to your .vimrc file:
 			in a popup window. If you want to show the symbol
 			documentation in the preview window instead of in a
 			popup set >
-			let g:LSP_Hover_In_preview variable = v:true
+
+				call lsp#setOptions({'hoverInPreview': v:true})
 <
 			Default is false
 
