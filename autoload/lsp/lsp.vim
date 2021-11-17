@@ -97,6 +97,19 @@ export def EnableServerTrace()
   util.ServerTrace(true)
 enddef
 
+# Get LSP server status for filetype 'ftype'.
+# Return true if running, otherwise false if not found or not running.
+# But lsp init for cur 'buf' maybe not done yet even this func return true,
+# check 'g:LspServerReady()' for that instead.
+def g:LspServerStatus(ftype: string): bool
+  for [ft, lspserver] in ftypeServerMap->items()
+    if ftype ==# ft
+      return lspserver.running
+    endif
+  endfor
+  return v:false
+enddef
+
 # Show information about all the LSP servers
 export def ShowServers()
   for [ftype, lspserver] in ftypeServerMap->items()
