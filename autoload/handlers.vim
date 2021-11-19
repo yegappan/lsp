@@ -340,7 +340,7 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
     # type text by default.
     if reply.result.contents->has_key('kind')
 \        && !reply.result.contents.kind->empty()
-\        && getcompletion('', 'filetype')->index(reply.result.content.kind) > -1
+\        && getcompletion('', 'filetype')->index(reply.result.contents.kind) > -1
       exe 'setlocal ft=' .. reply.result.contents.kind
     else
       set setlocal ft=text
