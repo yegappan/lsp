@@ -335,8 +335,15 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
       wincmd P
       setlocal buftype=nofile
       setlocal bufhidden=delete
-      if !reply.result.contents.kind->empty()
-          exe 'setlocal ft=' .. reply.result.contents.kind
+      # If lsp server provide kind of hover reply and this kind is in syntaxs
+      # syported by vim, use it for file type of preview window. Else use
+      # type text by default.
+      if reply.result.contents->has_key('kind')
+\          && !reply.result.contents.kind->empty()
+\          && getcompletion('', 'filetype')->index(reply.result.content.kind) > -1
+        exe 'setlocal ft=' .. reply.result.contents.kind
+      else
+        set setlocal ft=text
       endif
       deletebufline(bufnr(), 1,  getbufinfo(bufnr())[0].linecount)
       append(0, hoverText)
