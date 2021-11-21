@@ -293,14 +293,17 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
   endif
 
   var hoverText: list<string>
+  var hoverKind: string
 
   if reply.result.contents->type() == v:t_dict
     if reply.result.contents->has_key('kind')
       # MarkupContent
       if reply.result.contents.kind == 'plaintext'
         hoverText = reply.result.contents.value->split("\n")
+        hoverKind = 'text'
       elseif reply.result.contents.kind == 'markdown'
         hoverText = reply.result.contents.value->split("\n")
+        hoverKind = 'markdown'
       else
         ErrMsg('Error: Unsupported hover contents type (' .. reply.result.contents.kind .. ')')
         return
@@ -335,7 +338,7 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
     wincmd P
     setlocal buftype=nofile
     setlocal bufhidden=delete
-    exe 'setlocal ft=' .. reply.result.contents.kind
+    exe 'setlocal ft=' .. hoverKind
     deletebufline(bufnr(), 1, '$')
     append(0, hoverText)
     cursor(1, 1)
