@@ -336,7 +336,7 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
     setlocal buftype=nofile
     setlocal bufhidden=delete
     exe 'setlocal ft=' .. reply.result.contents.kind
-    deletebufline(bufnr(), 1,  getbufinfo(bufnr())[0].linecount)
+    deletebufline(bufnr(), 1, '$')
     append(0, hoverText)
     cursor(1, 1)
     wincmd p
