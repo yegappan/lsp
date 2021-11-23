@@ -293,17 +293,20 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
   endif
 
   var hoverText: list<string>
+  var hoverKind: string
 
   if reply.result.contents->type() == v:t_dict
     if reply.result.contents->has_key('kind')
       # MarkupContent
       if reply.result.contents.kind == 'plaintext'
-	hoverText = reply.result.contents.value->split("\n")
+        hoverText = reply.result.contents.value->split("\n")
+        hoverKind = 'text'
       elseif reply.result.contents.kind == 'markdown'
-	hoverText = reply.result.contents.value->split("\n")
+        hoverText = reply.result.contents.value->split("\n")
+        hoverKind = 'markdown'
       else
-	ErrMsg('Error: Unsupported hover contents type (' .. reply.result.contents.kind .. ')')
-	return
+        ErrMsg('Error: Unsupported hover contents type (' .. reply.result.contents.kind .. ')')
+        return
       endif
     elseif reply.result.contents->has_key('value')
       # MarkedString
@@ -316,9 +319,9 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
     # interface MarkedString[]
     for e in reply.result.contents
       if e->type() == v:t_string
-	hoverText->extend(e->split("\n"))
+        hoverText->extend(e->split("\n"))
       else
-	hoverText->extend(e.value->split("\n"))
+        hoverText->extend(e.value->split("\n"))
       endif
     endfor
   elseif reply.result.contents->type() == v:t_string
@@ -331,19 +334,17 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
     return
   endif
   if lspOptions.hoverInPreview
-      silent! pedit HoverReply
-      wincmd P
-      setlocal buftype=nofile
-      setlocal bufhidden=delete
-      if !reply.result.contents.kind->empty()
-          exe 'setlocal ft=' .. reply.result.contents.kind
-      endif
-      deletebufline(bufnr(), 1,  getbufinfo(bufnr())[0].linecount)
-      append(0, hoverText)
-      cursor(1, 1)
-      wincmd p
+    silent! pedit HoverReply
+    wincmd P
+    setlocal buftype=nofile
+    setlocal bufhidden=delete
+    exe 'setlocal ft=' .. hoverKind
+    deletebufline(bufnr(), 1, '$')
+    append(0, hoverText)
+    cursor(1, 1)
+    wincmd p
   else
-      hoverText->popup_atcursor({moved: 'word'})
+    hoverText->popup_atcursor({moved: 'word'})
   endif
 enddef
 
