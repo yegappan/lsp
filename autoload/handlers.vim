@@ -6,12 +6,12 @@ vim9script
 
 var opt = {}
 var util = {}
-var buf = {}
+var diag = {}
 
 if has('patch-8.2.4019')
   import './lspoptions.vim' as opt_import
   import './util.vim' as util_import
-  import './buf.vim' as buf_import
+  import './diag.vim' as diag_import
 
   opt.lspOptions = opt_import.lspOptions
   util.WarnMsg = util_import.WarnMsg
@@ -19,7 +19,7 @@ if has('patch-8.2.4019')
   util.TraceLog = util_import.TraceLog
   util.LspUriToFile = util_import.LspUriToFile
   util.GetLineByteFromPos = util_import.GetLineByteFromPos
-  buf.LspDiagsUpdated = buf_import.LspDiagsUpdated
+  diag.LspDiagsUpdated = diag_import.LspDiagsUpdated
 else
   import lspOptions from './lspoptions.vim'
   import {WarnMsg,
@@ -27,7 +27,7 @@ else
 	TraceLog,
 	LspUriToFile,
 	GetLineByteFromPos} from './util.vim'
-  import {LspDiagsUpdated} from './buf.vim'
+  import {LspDiagsUpdated} from './diag.vim'
 
   opt.lspOptions = lspOptions
   util.WarnMsg = WarnMsg
@@ -35,7 +35,7 @@ else
   util.TraceLog = TraceLog
   util.LspUriToFile = LspUriToFile
   util.GetLineByteFromPos = GetLineByteFromPos
-  buf.LspDiagsUpdated = LspDiagsUpdated
+  diag.LspDiagsUpdated = LspDiagsUpdated
 endif
 
 # process the 'initialize' method reply from the LSP server
@@ -110,7 +110,7 @@ def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>
     var bnr: number = fname->bufnr()
     if bnr != -1
       if &modified || &buftype != ''
-	exe 'sb ' .. bnr
+	exe 'sbuffer ' .. bnr
       else
 	exe 'buf ' .. bnr
       endif
@@ -1045,7 +1045,7 @@ def s:processDiagNotif(lspserver: dict<any>, reply: dict<any>): void
   endfor
 
   lspserver.diagsMap->extend({['' .. bnr]: diag_by_lnum})
-  buf.LspDiagsUpdated(lspserver, bnr)
+  diag.LspDiagsUpdated(lspserver, bnr)
 enddef
 
 # process a show notification message from the LSP server

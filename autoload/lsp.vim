@@ -5,13 +5,13 @@ vim9script
 var opt = {}
 var lserver = {}
 var util = {}
-var buf = {}
+var diag = {}
 
 if has('patch-8.2.4019')
   import './lspoptions.vim' as opt_import
   import './lspserver.vim' as server_import
   import './util.vim' as util_import
-  import './buf.vim' as buf_import
+  import './diag.vim' as diag_import
 
   opt.LspOptionsSet = opt_import.LspOptionsSet
   opt.lspOptions = opt_import.lspOptions
@@ -22,7 +22,7 @@ if has('patch-8.2.4019')
   util.ClearTraceLogs = util_import.ClearTraceLogs
   util.GetLineByteFromPos = util_import.GetLineByteFromPos
   util.PushCursorToTagStack = util_import.PushCursorToTagStack
-  buf.LspDiagsUpdated = buf_import.LspDiagsUpdated
+  diag.LspDiagsUpdated = diag_import.LspDiagsUpdated
 else
   import {lspOptions, LspOptionsSet} from './lspoptions.vim'
   import NewLspServer from './lspserver.vim'
@@ -32,7 +32,7 @@ else
         ClearTraceLogs,
         GetLineByteFromPos,
         PushCursorToTagStack} from './util.vim'
-  import {LspDiagsUpdated} from './buf.vim'
+  import {LspDiagsUpdated} from './diag.vim'
 
   opt.LspOptionsSet = LspOptionsSet
   opt.lspOptions = lspOptions
@@ -43,7 +43,7 @@ else
   util.ClearTraceLogs = ClearTraceLogs
   util.GetLineByteFromPos = GetLineByteFromPos
   util.PushCursorToTagStack = PushCursorToTagStack
-  buf.LspDiagsUpdated = LspDiagsUpdated
+  diag.LspDiagsUpdated = LspDiagsUpdated
 endif
 
 # Needs Vim 8.2.2342 and higher
@@ -303,7 +303,7 @@ def lsp#leftInsertMode()
   if lspserver->empty() || !lspserver.running
     return
   endif
-  buf.LspDiagsUpdated(lspserver, bufnr())
+  diag.LspDiagsUpdated(lspserver, bufnr())
 enddef
 
 # A new buffer is opened. If LSP is supported for this buffer, then add it
