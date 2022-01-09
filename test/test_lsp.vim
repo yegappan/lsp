@@ -131,7 +131,7 @@ def Test_lsp_show_references()
   cursor(1, 5)
   :LspShowReferences
   :sleep 1
-  qfl = getloclist()
+  qfl = getloclist(0)
   assert_equal(1, qfl->len())
   assert_equal([1, 5], [qfl[0].lnum, qfl[0].col])
 

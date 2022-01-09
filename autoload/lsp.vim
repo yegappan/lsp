@@ -2,15 +2,49 @@ vim9script
 
 # Vim9 LSP client
 
-import lspOptions from './lspoptions.vim'
-import NewLspServer from './lspserver.vim'
-import {WarnMsg,
-	ErrMsg,
-	lsp_server_trace,
-	ClearTraceLogs,
-	GetLineByteFromPos,
-	PushCursorToTagStack} from './util.vim'
-import {LspDiagsUpdated} from './buf.vim'
+var opt = {}
+var lserver = {}
+var util = {}
+var buf = {}
+
+if has('patch-8.2.4019')
+  import './lspoptions.vim' as opt_import
+  import './lspserver.vim' as server_import
+  import './util.vim' as util_import
+  import './buf.vim' as buf_import
+
+  opt.LspOptionsSet = opt_import.LspOptionsSet
+  opt.lspOptions = opt_import.lspOptions
+  lserver.NewLspServer = server_import.NewLspServer
+  util.WarnMsg = util_import.WarnMsg
+  util.ErrMsg = util_import.ErrMsg
+  util.ServerTrace = util_import.ServerTrace
+  util.ClearTraceLogs = util_import.ClearTraceLogs
+  util.GetLineByteFromPos = util_import.GetLineByteFromPos
+  util.PushCursorToTagStack = util_import.PushCursorToTagStack
+  buf.LspDiagsUpdated = buf_import.LspDiagsUpdated
+else
+  import {lspOptions, LspOptionsSet} from './lspoptions.vim'
+  import NewLspServer from './lspserver.vim'
+  import {WarnMsg,
+        ErrMsg,
+        ServerTrace,
+        ClearTraceLogs,
+        GetLineByteFromPos,
+        PushCursorToTagStack} from './util.vim'
+  import {LspDiagsUpdated} from './buf.vim'
+
+  opt.LspOptionsSet = LspOptionsSet
+  opt.lspOptions = lspOptions
+  lserver.NewLspServer = NewLspServer
+  util.WarnMsg = WarnMsg
+  util.ErrMsg = ErrMsg
+  util.ServerTrace = ServerTrace
+  util.ClearTraceLogs = ClearTraceLogs
+  util.GetLineByteFromPos = GetLineByteFromPos
+  util.PushCursorToTagStack = PushCursorToTagStack
+  buf.LspDiagsUpdated = LspDiagsUpdated
+endif
 
 # Needs Vim 8.2.2342 and higher
 if v:version < 802 || !has('patch-8.2.2342')
@@ -33,9 +67,7 @@ var lspInitializedOnce = false
 
 # Set user configurable LSP options
 def lsp#setOptions(lspOpts: dict<any>)
-  for key in lspOpts->keys()
-    lspOptions[key] = lspOpts[key]
-  endfor
+  opt.LspOptionsSet(lspOpts)
 enddef
 
 def s:lspInitOnce()
@@ -63,8 +95,8 @@ def s:lspGetServer(ftype: string): dict<any>
 enddef
 
 # Add a LSP server for a filetype
-def s:lspAddServer(ftype: string, lspserver: dict<any>)
-  ftypeServerMap->extend({[ftype]: lspserver})
+def s:lspAddServer(ftype: string, lspsrv: dict<any>)
+  ftypeServerMap->extend({[ftype]: lspsrv})
 enddef
 
 # Returns true if omni-completion is enabled for filetype 'ftype'.
@@ -79,8 +111,8 @@ def s:lspOmniComplSet(ftype: string, enabled: bool)
 enddef
 
 def lsp#enableServerTrace()
-  ClearTraceLogs()
-  lsp_server_trace = true
+  util.ClearTraceLogs()
+  util.ServerTrace(true)
 enddef
 
 # Show information about all the LSP servers
@@ -106,11 +138,11 @@ def lsp#gotoDefinition()
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
@@ -126,11 +158,11 @@ def lsp#gotoDeclaration()
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
@@ -146,11 +178,11 @@ def lsp#gotoTypedef()
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
@@ -166,11 +198,11 @@ def lsp#gotoImplementation()
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
@@ -187,11 +219,11 @@ def lsp#showSignature(): string
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return ''
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return ''
   endif
 
@@ -271,7 +303,7 @@ def lsp#leftInsertMode()
   if lspserver->empty() || !lspserver.running
     return
   endif
-  LspDiagsUpdated(lspserver, bufnr())
+  buf.LspDiagsUpdated(lspserver, bufnr())
 enddef
 
 # A new buffer is opened. If LSP is supported for this buffer, then add it
@@ -301,7 +333,7 @@ def lsp#addFile(bnr: number): void
   listener_add(function('lsp#bufchange_listener'), bnr)
 
   # set options for insert mode completion
-  if lspOptions.autoComplete
+  if opt.lspOptions.autoComplete
     setbufvar(bnr, '&completeopt', 'menuone,popup,noinsert,noselect')
     setbufvar(bnr, '&completepopup', 'border:off')
     # <Enter> in insert mode stops completion and inserts a <Enter>
@@ -315,7 +347,7 @@ def lsp#addFile(bnr: number): void
   setbufvar(bnr, '&balloonexpr', 'LspDiagExpr()')
 
   # map characters that trigger signature help
-  if lspOptions.showSignature &&
+  if opt.lspOptions.showSignature &&
 			lspserver.caps->has_key('signatureHelpProvider')
     var triggers = lspserver.caps.signatureHelpProvider.triggerCharacters
     for ch in triggers
@@ -329,7 +361,7 @@ def lsp#addFile(bnr: number): void
     # file saved notification handler
     exe 'autocmd BufWritePost <buffer=' .. bnr .. '> call s:lspSavedFile()'
 
-    if lspOptions.autoComplete
+    if opt.lspOptions.autoComplete
       # Trigger 24x7 insert mode completion when text is changed
       exe 'autocmd TextChangedI <buffer=' .. bnr .. '> call lsp#complete()'
     endif
@@ -337,7 +369,7 @@ def lsp#addFile(bnr: number): void
     # Update the diagnostics when insert mode is stopped
     exe 'autocmd InsertLeave <buffer=' .. bnr .. '> call lsp#leftInsertMode()'
 
-    if lspOptions.autoHighlight &&
+    if opt.lspOptions.autoHighlight &&
 			lspserver.caps->has_key('documentHighlightProvider')
 			&& lspserver.caps.documentHighlightProvider
       # Highlight all the occurrences of the current keyword
@@ -385,7 +417,7 @@ enddef
 def lsp#addServer(serverList: list<dict<any>>)
   for server in serverList
     if !server->has_key('filetype') || !server->has_key('path') || !server->has_key('args')
-      ErrMsg('Error: LSP server information is missing filetype or path or args')
+      util.ErrMsg('Error: LSP server information is missing filetype or path or args')
       continue
     endif
     if !server->has_key('omnicompl')
@@ -394,19 +426,19 @@ def lsp#addServer(serverList: list<dict<any>>)
     endif
 
     if !server.path->filereadable()
-      ErrMsg('Error: LSP server ' .. server.path .. ' is not found')
+      util.ErrMsg('Error: LSP server ' .. server.path .. ' is not found')
       return
     endif
     if server.args->type() != v:t_list
-      ErrMsg('Error: Arguments for LSP server ' .. server.args .. ' is not a List')
+      util.ErrMsg('Error: Arguments for LSP server ' .. server.args .. ' is not a List')
       return
     endif
     if server.omnicompl->type() != v:t_bool
-      ErrMsg('Error: Setting of omnicompl ' .. server.omnicompl .. ' is not a Boolean')
+      util.ErrMsg('Error: Setting of omnicompl ' .. server.omnicompl .. ' is not a Boolean')
       return
     endif
 
-    var lspserver: dict<any> = NewLspServer(server.path, server.args)
+    var lspserver: dict<any> = lserver.NewLspServer(server.path, server.args)
 
     if server.filetype->type() == v:t_string
       s:lspAddServer(server.filetype, lspserver)
@@ -417,7 +449,7 @@ def lsp#addServer(serverList: list<dict<any>>)
         s:lspOmniComplSet(ftype, server.omnicompl)
       endfor
     else
-      ErrMsg('Error: Unsupported file type information "' ..
+      util.ErrMsg('Error: Unsupported file type information "' ..
 		server.filetype->string() .. '" in LSP server registration')
       continue
     endif
@@ -428,7 +460,7 @@ enddef
 # Params: SetTraceParams
 def lsp#setTraceServer(traceVal: string)
   if ['off', 'message', 'verbose']->index(traceVal) == -1
-    ErrMsg("Error: Unsupported LSP server trace value " .. traceVal)
+    util.ErrMsg("Error: Unsupported LSP server trace value " .. traceVal)
     return
   endif
 
@@ -439,11 +471,11 @@ def lsp#setTraceServer(traceVal: string)
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
@@ -471,11 +503,11 @@ def lsp#showDiagnostics(): void
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
@@ -486,7 +518,7 @@ def lsp#showDiagnostics(): void
   var bnr: number = bufnr()
 
   if !lspserver.diagsMap->has_key(bnr) || lspserver.diagsMap[bnr]->empty()
-    WarnMsg('No diagnostic messages found for ' .. fname)
+    util.WarnMsg('No diagnostic messages found for ' .. fname)
     return
   endif
 
@@ -497,7 +529,7 @@ def lsp#showDiagnostics(): void
     text = diag.message->substitute("\n\\+", "\n", 'g')
     qflist->add({'filename': fname,
 		    'lnum': diag.range.start.line + 1,
-		    'col': GetLineByteFromPos(bnr, diag.range.start) + 1,
+		    'col': util.GetLineByteFromPos(bnr, diag.range.start) + 1,
 		    'text': text,
 		    'type': s:lspDiagSevToQfType(diag.severity)})
   endfor
@@ -515,11 +547,11 @@ def lsp#showCurrentDiag()
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
@@ -527,7 +559,7 @@ def lsp#showCurrentDiag()
   var lnum: number = line('.')
   var diag: dict<any> = lspserver.getDiagByLine(bnr, lnum)
   if diag->empty()
-    WarnMsg('No diagnostic messages found for current line')
+    util.WarnMsg('No diagnostic messages found for current line')
   else
     echo diag.message
   endif
@@ -567,10 +599,10 @@ def lsp#errorCount(): dict<number>
 enddef
 
 # sort the diaganostics messages for a buffer by line number
-def s:getSortedDiagLines(lspserver: dict<any>, bnr: number): list<number>
+def s:getSortedDiagLines(lspsrv: dict<any>, bnr: number): list<number>
   # create a list of line numbers from the diag map keys
   var lnums: list<number> =
-		lspserver.diagsMap[bnr]->keys()->mapnew((_, v) => v->str2nr())
+		lspsrv.diagsMap[bnr]->keys()->mapnew((_, v) => v->str2nr())
   return lnums->sort((a, b) => a - b)
 enddef
 
@@ -583,11 +615,11 @@ def lsp#jumpToDiag(which: string): void
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
@@ -598,7 +630,7 @@ def lsp#jumpToDiag(which: string): void
   var bnr: number = bufnr()
 
   if !lspserver.diagsMap->has_key(bnr) || lspserver.diagsMap[bnr]->empty()
-    WarnMsg('No diagnostic messages found for ' .. fname)
+    util.WarnMsg('No diagnostic messages found for ' .. fname)
     return
   endif
 
@@ -620,7 +652,7 @@ def lsp#jumpToDiag(which: string): void
     endif
   endfor
 
-  WarnMsg('Error: No more diagnostics found')
+  util.WarnMsg('Error: No more diagnostics found')
 enddef
 
 # Insert mode completion handler. Used when 24x7 completion is enabled
@@ -668,11 +700,11 @@ def lsp#omniFunc(findstart: number, base: string): any
 
   if findstart
     if lspserver->empty()
-      ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+      util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
       return -2
     endif
     if !lspserver.running
-      ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+      util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
       return -2
     endif
 
@@ -737,11 +769,11 @@ def lsp#showReferences()
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
@@ -762,11 +794,11 @@ def lsp#docHighlight()
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
@@ -858,7 +890,7 @@ def s:addSymbolText(bnr: number,
     for s in symbols
       text->add(prefix .. s.name)
       # remember the line number for the symbol
-      var start_col: number = GetLineByteFromPos(bnr, s.range.start) + 1
+      var start_col: number = util.GetLineByteFromPos(bnr, s.range.start) + 1
       lnumMap->add({name: s.name, lnum: s.range.start.line + 1,
 			col: start_col})
       s.outlineLine = lnumMap->len()
@@ -1081,7 +1113,7 @@ enddef
 # Format the entire file
 def lsp#textDocFormat(range_args: number, line1: number, line2: number)
   if !&modifiable
-    ErrMsg('Error: Current file is not a modifiable file')
+    util.ErrMsg('Error: Current file is not a modifiable file')
     return
   endif
 
@@ -1092,11 +1124,11 @@ def lsp#textDocFormat(range_args: number, line1: number, line2: number)
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
@@ -1125,11 +1157,11 @@ def lsp#incomingCalls()
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
@@ -1157,11 +1189,11 @@ def lsp#rename()
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
@@ -1188,11 +1220,11 @@ def lsp#codeAction()
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
@@ -1205,10 +1237,10 @@ def lsp#codeAction()
 enddef
 
 # Handle keys pressed when the workspace symbol popup menu is displayed
-def s:filterSymbols(lspserver: dict<any>, popupID: number, key: string): bool
+def s:filterSymbols(lspsrv: dict<any>, popupID: number, key: string): bool
   var key_handled: bool = false
   var update_popup: bool = false
-  var query: string = lspserver.workspaceSymbolQuery
+  var query: string = lspsrv.workspaceSymbolQuery
 
   if key == "\<BS>" || key == "\<C-H>"
     # Erase one character from the filter text
@@ -1248,7 +1280,7 @@ def s:filterSymbols(lspserver: dict<any>, popupID: number, key: string): bool
     # Update the popup with the new list of symbol names
     popupID->popup_settext('')
     if query != ''
-      lspserver.workspaceQuery(query)
+      lspsrv.workspaceQuery(query)
     else
       []->setwinvar(popupID, 'LspSymbolTable')
     endif
@@ -1256,7 +1288,7 @@ def s:filterSymbols(lspserver: dict<any>, popupID: number, key: string): bool
   endif
 
   # Update the workspace symbol query string
-  lspserver.workspaceSymbolQuery = query
+  lspsrv.workspaceSymbolQuery = query
 
   if key_handled
     return true
@@ -1281,7 +1313,7 @@ def s:jumpToWorkspaceSymbol(popupID: number, result: number): void
   endif
   try
     # Save the current location in the tag stack
-    PushCursorToTagStack()
+    util.PushCursorToTagStack()
 
     # if the selected file is already present in a window, then jump to it
     var fname: string = symTbl[result - 1].file
@@ -1306,7 +1338,7 @@ def s:jumpToWorkspaceSymbol(popupID: number, result: number): void
 enddef
 
 # display a list of symbols from the workspace
-def s:showSymbolMenu(lspserver: dict<any>, query: string)
+def s:showSymbolMenu(lspsrv: dict<any>, query: string)
   # Create the popup menu
   var lnum = &lines - &cmdheight - 2 - 10
   var popupAttr = {
@@ -1322,13 +1354,13 @@ def s:showSymbolMenu(lspserver: dict<any>, query: string)
       mapping: false,
       fixed: 1,
       close: "button",
-      filter: function('s:filterSymbols', [lspserver]),
+      filter: function('s:filterSymbols', [lspsrv]),
       callback: function('s:jumpToWorkspaceSymbol')
   }
-  lspserver.workspaceSymbolPopup = popup_menu([], popupAttr)
-  lspserver.workspaceSymbolQuery = query
+  lspsrv.workspaceSymbolPopup = popup_menu([], popupAttr)
+  lspsrv.workspaceSymbolQuery = query
   prop_type_add('lspworkspacesymbol',
-			{bufnr: lspserver.workspaceSymbolPopup->winbufnr(),
+			{bufnr: lspsrv.workspaceSymbolPopup->winbufnr(),
 			 highlight: 'Title'})
   echo 'Symbol: ' .. query
 enddef
@@ -1343,11 +1375,11 @@ def lsp#symbolSearch(queryArg: string)
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
@@ -1381,11 +1413,11 @@ def lsp#listWorkspaceFolders()
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
@@ -1401,11 +1433,11 @@ def lsp#addWorkspaceFolder(dirArg: string)
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
@@ -1418,7 +1450,7 @@ def lsp#addWorkspaceFolder(dirArg: string)
   endif
   :redraw!
   if !dirName->isdirectory()
-    ErrMsg('Error: ' .. dirName .. ' is not a directory')
+    util.ErrMsg('Error: ' .. dirName .. ' is not a directory')
     return
   endif
 
@@ -1434,11 +1466,11 @@ def lsp#removeWorkspaceFolder(dirArg: string)
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
@@ -1451,7 +1483,7 @@ def lsp#removeWorkspaceFolder(dirArg: string)
   endif
   :redraw!
   if !dirName->isdirectory()
-    ErrMsg('Error: ' .. dirName .. ' is not a directory')
+    util.ErrMsg('Error: ' .. dirName .. ' is not a directory')
     return
   endif
 
@@ -1467,11 +1499,11 @@ def lsp#selectionRange()
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
@@ -1493,11 +1525,11 @@ def lsp#foldDocument()
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty()
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not found')
     return
   endif
   if !lspserver.running
-    ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
+    util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
     return
   endif
 
@@ -1507,7 +1539,7 @@ def lsp#foldDocument()
   endif
 
   if &foldmethod != 'manual'
-    ErrMsg("Error: Only works when 'foldmethod' is 'manual'")
+    util.ErrMsg("Error: Only works when 'foldmethod' is 'manual'")
     return
   endif
 

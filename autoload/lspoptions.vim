@@ -18,3 +18,10 @@ export var lspOptions: dict<any> = {
   # Show the symbol documentation in the preview window instead of in a popup
   hoverInPreview: false,
 }
+
+# set LSP options from user provided options
+export def LspOptionsSet(opts: dict<any>)
+  for key in opts->keys()
+    lspOptions[key] = opts[key]
+  endfor
+enddef

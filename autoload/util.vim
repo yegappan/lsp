@@ -21,7 +21,12 @@ if has('unix')
 else
   lsp_log_dir = $TEMP .. '\\'
 endif
-export var lsp_server_trace: bool = false
+var lsp_server_trace: bool = false
+
+# Enable or disable LSP server trace messages
+export def ServerTrace(trace_enable: bool)
+  lsp_server_trace = trace_enable
+enddef
 
 # Log a message from the LSP server. stderr is true for logging messages
 # from the standard error and false for stdout.

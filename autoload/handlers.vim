@@ -4,13 +4,39 @@ vim9script
 # Refer to https://microsoft.github.io/language-server-protocol/specification
 # for the Language Server Protocol (LSP) specificaiton.
 
-import lspOptions from './lspoptions.vim'
-import {WarnMsg,
+var opt = {}
+var util = {}
+var buf = {}
+
+if has('patch-8.2.4019')
+  import './lspoptions.vim' as opt_import
+  import './util.vim' as util_import
+  import './buf.vim' as buf_import
+
+  opt.lspOptions = opt_import.lspOptions
+  util.WarnMsg = util_import.WarnMsg
+  util.ErrMsg = util_import.ErrMsg
+  util.TraceLog = util_import.TraceLog
+  util.LspUriToFile = util_import.LspUriToFile
+  util.GetLineByteFromPos = util_import.GetLineByteFromPos
+  buf.LspDiagsUpdated = buf_import.LspDiagsUpdated
+else
+  import lspOptions from './lspoptions.vim'
+  import {WarnMsg,
 	ErrMsg,
 	TraceLog,
 	LspUriToFile,
 	GetLineByteFromPos} from './util.vim'
-import {LspDiagsUpdated} from './buf.vim'
+  import {LspDiagsUpdated} from './buf.vim'
+
+  opt.lspOptions = lspOptions
+  util.WarnMsg = WarnMsg
+  util.ErrMsg = ErrMsg
+  util.TraceLog = TraceLog
+  util.LspUriToFile = LspUriToFile
+  util.GetLineByteFromPos = GetLineByteFromPos
+  buf.LspDiagsUpdated = LspDiagsUpdated
+endif
 
 # process the 'initialize' method reply from the LSP server
 # Result: InitializeResult
@@ -26,19 +52,19 @@ def s:processInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
   # and then setup the below mapping for those buffers.
 
   # map characters that trigger signature help
-  if lspOptions.showSignature && caps->has_key('signatureHelpProvider')
+  if opt.lspOptions.showSignature && caps->has_key('signatureHelpProvider')
     var triggers = caps.signatureHelpProvider.triggerCharacters
     for ch in triggers
       exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch .. "<C-R>=lsp#showSignature()<CR>"
     endfor
   endif
 
-  if lspOptions.autoComplete && caps->has_key('completionProvider')
+  if opt.lspOptions.autoComplete && caps->has_key('completionProvider')
     var triggers = caps.completionProvider.triggerCharacters
     lspserver.completionTriggerChars = triggers
   endif
 
-  if lspOptions.autoHighlight && caps->has_key('documentHighlightProvider')
+  if opt.lspOptions.autoHighlight && caps->has_key('documentHighlightProvider')
 			      && caps.documentHighlightProvider
     # Highlight all the occurrences of the current keyword
     augroup LSPBufferAutocmds
@@ -61,7 +87,7 @@ enddef
 # Result: Location | Location[] | LocationLink[] | null
 def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if reply.result->empty()
-    WarnMsg("Error: definition is not found")
+    util.WarnMsg("Error: definition is not found")
     # pop the tag stack
     var tagstack: dict<any> = gettagstack()
     if tagstack.length > 0
@@ -76,7 +102,7 @@ def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>
   else
     location = reply.result
   endif
-  var fname = LspUriToFile(location.uri)
+  var fname = util.LspUriToFile(location.uri)
   var wid = fname->bufwinid()
   if wid != -1
     wid->win_gotoid()
@@ -114,7 +140,7 @@ def s:processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dic
 
   var result: dict<any> = reply.result
   if result.signatures->len() <= 0
-    WarnMsg('No signature help available')
+    util.WarnMsg('No signature help available')
     return
   endif
 
@@ -133,7 +159,7 @@ def s:processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dic
       var label = ''
       if sig.parameters[result.activeParameter]->has_key('documentation')
 	if sig.parameters[result.activeParameter].documentation->type()
-							    == v:t_string
+							== v:t_string
           label = sig.parameters[result.activeParameter].documentation
         endif
       else
@@ -143,7 +169,7 @@ def s:processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dic
       startcol = text->stridx(label)
     endif
   endif
-  if lspOptions.echoSignature
+  if opt.lspOptions.echoSignature
     echon "\r\r"
     echon ''
     echon strpart(text, 0, startcol)
@@ -240,7 +266,7 @@ def s:processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
     completeItems->add(d)
   endfor
 
-  if lspOptions.autoComplete
+  if opt.lspOptions.autoComplete
     if completeItems->empty()
       # no matches
       return
@@ -305,14 +331,14 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
         hoverText = reply.result.contents.value->split("\n")
         hoverKind = 'markdown'
       else
-        ErrMsg('Error: Unsupported hover contents type (' .. reply.result.contents.kind .. ')')
+        util.ErrMsg('Error: Unsupported hover contents type (' .. reply.result.contents.kind .. ')')
         return
       endif
     elseif reply.result.contents->has_key('value')
       # MarkedString
       hoverText = reply.result.contents.value->split("\n")
     else
-      ErrMsg('Error: Unsupported hover contents (' .. reply.result.contents .. ')')
+      util.ErrMsg('Error: Unsupported hover contents (' .. reply.result.contents .. ')')
       return
     endif
   elseif reply.result.contents->type() == v:t_list
@@ -330,10 +356,10 @@ def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
     endif
     hoverText->extend(reply.result.contents->split("\n"))
   else
-    ErrMsg('Error: Unsupported hover contents (' .. reply.result.contents .. ')')
+    util.ErrMsg('Error: Unsupported hover contents (' .. reply.result.contents .. ')')
     return
   endif
-  if lspOptions.hoverInPreview
+  if opt.lspOptions.hoverInPreview
     silent! pedit HoverReply
     wincmd P
     setlocal buftype=nofile
@@ -352,7 +378,7 @@ enddef
 # Result: Location[] | null
 def s:processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if reply.result->empty()
-    WarnMsg('Error: No references found')
+    util.WarnMsg('Error: No references found')
     return
   endif
 
@@ -360,7 +386,7 @@ def s:processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
   var locations: list<dict<any>> = reply.result
   var qflist: list<dict<any>> = []
   for loc in locations
-    var fname: string = LspUriToFile(loc.uri)
+    var fname: string = util.LspUriToFile(loc.uri)
     var bnr: number = fname->bufnr()
     if bnr == -1
       bnr = fname->bufadd()
@@ -372,7 +398,7 @@ def s:processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
 						->trim("\t ", 1)
     qflist->add({filename: fname,
 			lnum: loc.range.start.line + 1,
-			col: GetLineByteFromPos(bnr, loc.range.start) + 1,
+			col: util.GetLineByteFromPos(bnr, loc.range.start) + 1,
 			text: text})
   endfor
   setloclist(0, [], ' ', {title: 'Symbol Reference', items: qflist})
@@ -388,7 +414,7 @@ def s:processDocHighlightReply(lspserver: dict<any>, req: dict<any>, reply: dict
     return
   endif
 
-  var fname: string = LspUriToFile(req.params.textDocument.uri)
+  var fname: string = util.LspUriToFile(req.params.textDocument.uri)
   var bnr = fname->bufnr()
 
   for docHL in reply.result
@@ -405,9 +431,9 @@ def s:processDocHighlightReply(lspserver: dict<any>, req: dict<any>, reply: dict
       propName = 'LspTextRef'
     endif
     prop_add(docHL.range.start.line + 1,
-		GetLineByteFromPos(bnr, docHL.range.start) + 1,
+		util.GetLineByteFromPos(bnr, docHL.range.start) + 1,
 		{end_lnum: docHL.range.end.line + 1,
-		  end_col: GetLineByteFromPos(bnr, docHL.range.end) + 1,
+		  end_col: util.GetLineByteFromPos(bnr, docHL.range.end) + 1,
 		  bufnr: bnr,
 		  type: propName})
   endfor
@@ -437,7 +463,7 @@ def s:processSymbolInfoTable(symbolInfoTable: list<dict<any>>,
   var symInfo: dict<any>
 
   for symbol in symbolInfoTable
-    fname = LspUriToFile(symbol.location.uri)
+    fname = util.LspUriToFile(symbol.location.uri)
     symbolType = LspSymbolKindToName(symbol.kind)
     name = symbol.name
     if symbol->has_key('containerName')
@@ -497,7 +523,7 @@ def s:processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<an
   var symbolLineTable: list<dict<any>> = []
 
   if req.params.textDocument.uri != ''
-    fname = LspUriToFile(req.params.textDocument.uri)
+    fname = util.LspUriToFile(req.params.textDocument.uri)
   endif
 
   if reply.result->empty()
@@ -557,7 +583,7 @@ def s:set_lines(lines: list<string>, A: list<number>, B: list<number>,
   var i_n = [B[0], numlines - 1]->min()
 
   if i_0 < 0 || i_0 >= numlines || i_n < 0 || i_n >= numlines
-    WarnMsg("set_lines: Invalid range, A = " .. A->string()
+    util.WarnMsg("set_lines: Invalid range, A = " .. A->string()
 		.. ", B = " ..  B->string() .. ", numlines = " .. numlines
 		.. ", new lines = " .. new_lines->string())
     return lines
@@ -633,9 +659,9 @@ def s:applyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   for e in text_edits
     # Adjust the start and end columns for multibyte characters
     start_row = e.range.start.line
-    start_col = GetLineByteFromPos(bnr, e.range.start)
+    start_col = util.GetLineByteFromPos(bnr, e.range.start)
     end_row = e.range.end.line
-    end_col = GetLineByteFromPos(bnr, e.range.end)
+    end_col = util.GetLineByteFromPos(bnr, e.range.end)
     start_line = [e.range.start.line, start_line]->min()
     finish_line = [e.range.end.line, finish_line]->max()
 
@@ -696,9 +722,9 @@ enddef
 
 # interface TextDocumentEdit
 def s:applyTextDocumentEdit(textDocEdit: dict<any>)
-  var bnr: number = bufnr(LspUriToFile(textDocEdit.textDocument.uri))
+  var bnr: number = bufnr(util.LspUriToFile(textDocEdit.textDocument.uri))
   if bnr == -1
-    ErrMsg('Error: Text Document edit, buffer ' .. textDocEdit.textDocument.uri .. ' is not found')
+    util.ErrMsg('Error: Text Document edit, buffer ' .. textDocEdit.textDocument.uri .. ' is not found')
     return
   endif
   s:applyTextEdits(bnr, textDocEdit.edits)
@@ -709,7 +735,7 @@ def s:applyWorkspaceEdit(workspaceEdit: dict<any>)
   if workspaceEdit->has_key('documentChanges')
     for change in workspaceEdit.documentChanges
       if change->has_key('kind')
-	ErrMsg('Error: Unsupported change in workspace edit [' .. change.kind .. ']')
+	util.ErrMsg('Error: Unsupported change in workspace edit [' .. change.kind .. ']')
       else
 	s:applyTextDocumentEdit(change)
       endif
@@ -723,7 +749,7 @@ def s:applyWorkspaceEdit(workspaceEdit: dict<any>)
 
   var save_cursor: list<number> = getcurpos()
   for [uri, changes] in workspaceEdit.changes->items()
-    var fname: string = LspUriToFile(uri)
+    var fname: string = util.LspUriToFile(uri)
     var bnr: number = fname->bufnr()
     if bnr == -1
       # file is already removed
@@ -747,7 +773,7 @@ def s:processFormatReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
 
   # result: TextEdit[]
 
-  var fname: string = LspUriToFile(req.params.textDocument.uri)
+  var fname: string = util.LspUriToFile(req.params.textDocument.uri)
   var bnr: number = fname->bufnr()
   if bnr == -1
     # file is already removed
@@ -788,7 +814,7 @@ enddef
 def s:processCodeActionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   if reply.result->empty()
     # no action can be performed
-    WarnMsg('No code action is available')
+    util.WarnMsg('No code action is available')
     return
   endif
 
@@ -834,8 +860,8 @@ def s:processSelectionRangeReply(lspserver: dict<any>, req: dict<any>, reply: di
 
   var r: dict<dict<number>> = reply.result[0].range
   var bnr: number = bufnr()
-  var start_col: number = GetLineByteFromPos(bnr, r.start) + 1
-  var end_col: number = GetLineByteFromPos(bnr, r.end)
+  var start_col: number = util.GetLineByteFromPos(bnr, r.start) + 1
+  var end_col: number = util.GetLineByteFromPos(bnr, r.end)
 
   setcharpos("'<", [0, r.start.line + 1, start_col, 0])
   setcharpos("'>", [0, r.end.line + 1, end_col, 0])
@@ -919,7 +945,7 @@ def s:processWorkspaceSymbolReply(lspserver: dict<any>, req: dict<any>, reply: d
     endif
 
     # interface SymbolInformation
-    fileName = LspUriToFile(symbol.location.uri)
+    fileName = util.LspUriToFile(symbol.location.uri)
     r = symbol.location.range
 
     symName = symbol.name
@@ -988,7 +1014,7 @@ export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
   if lsp_reply_handlers->has_key(req.method)
     lsp_reply_handlers[req.method](lspserver, req, reply)
   else
-    ErrMsg("Error: Unsupported reply received from LSP server: " .. reply->string())
+    util.ErrMsg("Error: Unsupported reply received from LSP server: " .. reply->string())
   endif
 enddef
 
@@ -996,7 +1022,7 @@ enddef
 # Notification: textDocument/publishDiagnostics
 # Param: PublishDiagnosticsParams
 def s:processDiagNotif(lspserver: dict<any>, reply: dict<any>): void
-  var fname: string = LspUriToFile(reply.params.uri)
+  var fname: string = util.LspUriToFile(reply.params.uri)
   var bnr: number = fname->bufnr()
   if bnr == -1
     # Is this condition possible?
@@ -1019,7 +1045,7 @@ def s:processDiagNotif(lspserver: dict<any>, reply: dict<any>): void
   endfor
 
   lspserver.diagsMap->extend({['' .. bnr]: diag_by_lnum})
-  LspDiagsUpdated(lspserver, bnr)
+  buf.LspDiagsUpdated(lspserver, bnr)
 enddef
 
 # process a show notification message from the LSP server
@@ -1052,12 +1078,12 @@ def s:processLogMsgNotif(lspserver: dict<any>, reply: dict<any>)
     mtype = msgType[reply.params.type]
   endif
 
-  TraceLog(false, '[' .. mtype .. ']: ' .. reply.params.message)
+  util.TraceLog(false, '[' .. mtype .. ']: ' .. reply.params.message)
 enddef
 
 # process unsupported notification messages
 def s:processUnsupportedNotif(lspserver: dict<any>, reply: dict<any>)
-  ErrMsg('Error: Unsupported notification message received from the LSP server (' .. lspserver.path .. '), message = ' .. reply->string())
+  util.ErrMsg('Error: Unsupported notification message received from the LSP server (' .. lspserver.path .. '), message = ' .. reply->string())
 enddef
 
 # ignore unsupported notification message
@@ -1081,7 +1107,7 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
   if lsp_notif_handlers->has_key(reply.method)
     lsp_notif_handlers[reply.method](lspserver, reply)
   else
-    ErrMsg('Error: Unsupported notification received from LSP server ' .. reply->string())
+    util.ErrMsg('Error: Unsupported notification received from LSP server ' .. reply->string())
   endif
 enddef
 
@@ -1099,11 +1125,11 @@ def s:processApplyEditReq(lspserver: dict<any>, request: dict<any>)
   endif
   s:applyWorkspaceEdit(workspaceEditParams.edit)
   # TODO: Need to return the proper result of the edit operation
-  lspserver.sendResponse(request, {applied: true}, v:null)
+  lspserver.sendResponse(request, {applied: true}, {})
 enddef
 
 def s:processUnsupportedReq(lspserver: dict<any>, request: dict<any>)
-  ErrMsg('Error: Unsupported request message received from the LSP server (' .. lspserver.path .. '), message = ' .. request->string())
+  util.ErrMsg('Error: Unsupported request message received from the LSP server (' .. lspserver.path .. '), message = ' .. request->string())
 enddef
 
 # process a request message from the server
@@ -1123,7 +1149,7 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
   if lspRequestHandlers->has_key(request.method)
     lspRequestHandlers[request.method](lspserver, request)
   else
-    ErrMsg('Error: Unsupported request received from LSP server ' ..
+    util.ErrMsg('Error: Unsupported request received from LSP server ' ..
 							request->string())
   endif
 enddef
@@ -1149,7 +1175,7 @@ export def ProcessMessages(lspserver: dict<any>): void
 
     len = str2nr(lspserver.data[idx + 16 : ])
     if len == 0
-      ErrMsg("Error(LSP): Invalid content length")
+      util.ErrMsg("Error(LSP): Invalid content length")
       # Discard the header
       lspserver.data = lspserver.data[idx + 16 :]
       return
@@ -1175,7 +1201,7 @@ export def ProcessMessages(lspserver: dict<any>): void
     try
       msg = content->json_decode()
     catch
-      ErrMsg("Error(LSP): Malformed content (" .. content .. ")")
+      util.ErrMsg("Error(LSP): Malformed content (" .. content .. ")")
       lspserver.data = lspserver.data[idx + len :]
       continue
     endtry
@@ -1196,7 +1222,7 @@ export def ProcessMessages(lspserver: dict<any>): void
 	  if msg.error->has_key('data')
 	    emsg = emsg .. ', data = ' .. msg.error.data->string()
 	  endif
-	  ErrMsg("Error(LSP): request " .. req.method .. " failed ("
+	  util.ErrMsg("Error(LSP): request " .. req.method .. " failed ("
 							.. emsg .. ")")
 	endif
       endif
@@ -1207,7 +1233,7 @@ export def ProcessMessages(lspserver: dict<any>): void
       # notification message from the server
       lspserver.processNotif(msg)
     else
-      ErrMsg("Error(LSP): Unsupported message (" .. msg->string() .. ")")
+      util.ErrMsg("Error(LSP): Unsupported message (" .. msg->string() .. ")")
     endif
 
     lspserver.data = lspserver.data[idx + len :]

@@ -4,33 +4,63 @@ vim9script
 # Refer to https://microsoft.github.io/language-server-protocol/specification
 # for the Language Server Protocol (LSP) specificaiton.
 
-import {ProcessReply,
+var handlers = {}
+var util = {}
+
+if has('patch-8.2.4019')
+  import './handlers.vim' as handlers_import
+  import './util.vim' as util_import
+  handlers.ProcessReply = handlers_import.ProcessReply
+  handlers.ProcessNotif = handlers_import.ProcessNotif
+  handlers.ProcessRequest = handlers_import.ProcessRequest
+  handlers.ProcessMessages = handlers_import.ProcessMessages
+  util.WarnMsg = util_import.WarnMsg
+  util.ErrMsg = util_import.ErrMsg
+  util.TraceLog = util_import.TraceLog
+  util.LspUriToFile = util_import.LspUriToFile
+  util.LspBufnrToUri = util_import.LspBufnrToUri
+  util.LspFileToUri = util_import.LspFileToUri
+  util.PushCursorToTagStack = util_import.PushCursorToTagStack
+else
+  import {ProcessReply,
 	ProcessNotif,
 	ProcessRequest,
 	ProcessMessages} from './handlers.vim'
-import {WarnMsg,
+  import {WarnMsg,
 	ErrMsg,
 	TraceLog,
 	LspUriToFile,
 	LspBufnrToUri,
 	LspFileToUri,
 	PushCursorToTagStack} from './util.vim'
+  handlers.ProcessReply = ProcessReply
+  handlers.ProcessNotif = ProcessNotif
+  handlers.ProcessRequest = ProcessRequest
+  handlers.ProcessMessages = ProcessMessages
+  util.WarnMsg = WarnMsg
+  util.ErrMsg = ErrMsg
+  util.TraceLog = TraceLog
+  util.LspUriToFile = LspUriToFile
+  util.LspBufnrToUri = LspBufnrToUri
+  util.LspFileToUri = LspFileToUri
+  util.PushCursorToTagStack = PushCursorToTagStack
+endif
 
 # LSP server standard output handler
 def s:output_cb(lspserver: dict<any>, chan: channel, msg: string): void
-  TraceLog(false, msg)
+  util.TraceLog(false, msg)
   lspserver.data = lspserver.data .. msg
   lspserver.processMessages()
 enddef
 
 # LSP server error output handler
 def s:error_cb(lspserver: dict<any>, chan: channel, emsg: string,): void
-  TraceLog(true, emsg)
+  util.TraceLog(true, emsg)
 enddef
 
 # LSP server exit callback
 def s:exit_cb(lspserver: dict<any>, job: job, status: number): void
-  WarnMsg("LSP server exited with status " .. status)
+  util.WarnMsg("LSP server exited with status " .. status)
   lspserver.job = v:none
   lspserver.running = false
   lspserver.requests = {}
@@ -39,7 +69,7 @@ enddef
 # Start a LSP server
 def s:startServer(lspserver: dict<any>): number
   if lspserver.running
-    WarnMsg("LSP server for is already running")
+    util.WarnMsg("LSP server for is already running")
     return 0
   endif
 
@@ -64,7 +94,7 @@ def s:startServer(lspserver: dict<any>): number
 
   var job = job_start(cmd, opts)
   if job->job_status() == 'fail'
-    ErrMsg("Error: Failed to start LSP server " .. lspserver.path)
+    util.ErrMsg("Error: Failed to start LSP server " .. lspserver.path)
     return 1
   endif
 
@@ -120,10 +150,10 @@ def s:initServer(lspserver: dict<any>)
       }
   var curdir: string = getcwd()
   initparams.rootPath = curdir
-  initparams.rootUri = LspFileToUri(curdir)
+  initparams.rootUri = util.LspFileToUri(curdir)
   initparams.workspaceFolders = [{
 	name: fnamemodify(curdir, ':t'),
-	uri: LspFileToUri(curdir)
+	uri: util.LspFileToUri(curdir)
      }]
   initparams.trace = 'off'
   initparams.capabilities = clientCaps
@@ -156,7 +186,7 @@ enddef
 # Stop a LSP server
 def s:stopServer(lspserver: dict<any>): number
   if !lspserver.running
-    WarnMsg("LSP server is not running")
+    util.WarnMsg("LSP server is not running")
     return 0
   endif
 
@@ -253,7 +283,7 @@ def s:textdocDidOpen(lspserver: dict<any>, bnr: number, ftype: string): void
   # interface DidOpenTextDocumentParams
   # interface TextDocumentItem
   var tdi = {}
-  tdi.uri = LspBufnrToUri(bnr)
+  tdi.uri = util.LspBufnrToUri(bnr)
   tdi.languageId = ftype
   tdi.version = 1
   tdi.text = getbufline(bnr, 1, '$')->join("\n") .. "\n"
@@ -269,7 +299,7 @@ def s:textdocDidClose(lspserver: dict<any>, bnr: number): void
   # interface DidCloseTextDocumentParams
   #   interface TextDocumentIdentifier
   var tdid = {}
-  tdid.uri = LspBufnrToUri(bnr)
+  tdid.uri = util.LspBufnrToUri(bnr)
   notif.params->extend({textDocument: tdid})
 
   lspserver.sendMessage(notif)
@@ -285,7 +315,7 @@ def s:textdocDidChange(lspserver: dict<any>, bnr: number, start: number,
   # interface DidChangeTextDocumentParams
   #   interface VersionedTextDocumentIdentifier
   var vtdid: dict<any> = {}
-  vtdid.uri = LspBufnrToUri(bnr)
+  vtdid.uri = util.LspBufnrToUri(bnr)
   # Use Vim 'changedtick' as the LSP document version number
   vtdid.version = bnr->getbufvar('changedtick')
 
@@ -349,7 +379,7 @@ enddef
 def s:getLspTextDocPosition(): dict<dict<any>>
   # interface TextDocumentIdentifier
   # interface Position
-  return {textDocument: {uri: LspFileToUri(@%)},
+  return {textDocument: {uri: util.LspFileToUri(@%)},
 	  position: s:getLspPosition()}
 enddef
 
@@ -359,7 +389,7 @@ enddef
 def s:getCompletion(lspserver: dict<any>, triggerKind_arg: number): void
   # Check whether LSP server supports completion
   if !lspserver.caps->has_key('completionProvider')
-    ErrMsg("Error: LSP server does not support completion")
+    util.ErrMsg("Error: LSP server does not support completion")
     return
   endif
 
@@ -385,11 +415,11 @@ def s:gotoDefinition(lspserver: dict<any>): void
   # Check whether LSP server supports jumping to a definition
   if !lspserver.caps->has_key('definitionProvider')
 				|| !lspserver.caps.definitionProvider
-    ErrMsg("Error: LSP server does not support jumping to a definition")
+    util.ErrMsg("Error: LSP server does not support jumping to a definition")
     return
   endif
 
-  PushCursorToTagStack()
+  util.PushCursorToTagStack()
   var req = lspserver.createRequest('textDocument/definition')
   # interface DefinitionParams
   #   interface TextDocumentPositionParams
@@ -403,11 +433,11 @@ def s:gotoDeclaration(lspserver: dict<any>): void
   # Check whether LSP server supports jumping to a declaration
   if !lspserver.caps->has_key('declarationProvider')
 			|| !lspserver.caps.declarationProvider
-    ErrMsg("Error: LSP server does not support jumping to a declaration")
+    util.ErrMsg("Error: LSP server does not support jumping to a declaration")
     return
   endif
 
-  PushCursorToTagStack()
+  util.PushCursorToTagStack()
   var req = lspserver.createRequest('textDocument/declaration')
 
   # interface DeclarationParams
@@ -423,11 +453,11 @@ def s:gotoTypeDef(lspserver: dict<any>): void
   # Check whether LSP server supports jumping to a type definition
   if !lspserver.caps->has_key('typeDefinitionProvider')
 			|| !lspserver.caps.typeDefinitionProvider
-    ErrMsg("Error: LSP server does not support jumping to a type definition")
+    util.ErrMsg("Error: LSP server does not support jumping to a type definition")
     return
   endif
 
-  PushCursorToTagStack()
+  util.PushCursorToTagStack()
   var req = lspserver.createRequest('textDocument/typeDefinition')
 
   # interface TypeDefinitionParams
@@ -443,11 +473,11 @@ def s:gotoImplementation(lspserver: dict<any>): void
   # Check whether LSP server supports jumping to a implementation
   if !lspserver.caps->has_key('implementationProvider')
 			|| !lspserver.caps.implementationProvider
-    ErrMsg("Error: LSP server does not support jumping to an implementation")
+    util.ErrMsg("Error: LSP server does not support jumping to an implementation")
     return
   endif
 
-  PushCursorToTagStack()
+  util.PushCursorToTagStack()
   var req = lspserver.createRequest('textDocument/implementation')
 
   # interface ImplementationParams
@@ -463,7 +493,7 @@ enddef
 def s:showSignature(lspserver: dict<any>): void
   # Check whether LSP server supports signature help
   if !lspserver.caps->has_key('signatureHelpProvider')
-    ErrMsg("Error: LSP server does not support signature help")
+    util.ErrMsg("Error: LSP server does not support signature help")
     return
   endif
 
@@ -487,7 +517,7 @@ def s:didSaveFile(lspserver: dict<any>, bnr: number): void
 
   var notif: dict<any> = lspserver.createNotification('textDocument/didSave')
   # interface: DidSaveTextDocumentParams
-  notif.params->extend({textDocument: {uri: LspBufnrToUri(bnr)}})
+  notif.params->extend({textDocument: {uri: util.LspBufnrToUri(bnr)}})
   lspserver.sendMessage(notif)
 enddef
 
@@ -514,7 +544,7 @@ def s:showReferences(lspserver: dict<any>): void
   # Check whether LSP server supports getting reference information
   if !lspserver.caps->has_key('referencesProvider')
 			|| !lspserver.caps.referencesProvider
-    ErrMsg("Error: LSP server does not support showing references")
+    util.ErrMsg("Error: LSP server does not support showing references")
     return
   endif
 
@@ -533,7 +563,7 @@ def s:docHighlight(lspserver: dict<any>): void
   # Check whether LSP server supports getting highlight information
   if !lspserver.caps->has_key('documentHighlightProvider')
 			|| !lspserver.caps.documentHighlightProvider
-    ErrMsg("Error: LSP server does not support document highlight")
+    util.ErrMsg("Error: LSP server does not support document highlight")
     return
   endif
 
@@ -550,14 +580,14 @@ def s:getDocSymbols(lspserver: dict<any>, fname: string): void
   # Check whether LSP server supports getting document symbol information
   if !lspserver.caps->has_key('documentSymbolProvider')
 			|| !lspserver.caps.documentSymbolProvider
-    ErrMsg("Error: LSP server does not support getting list of symbols")
+    util.ErrMsg("Error: LSP server does not support getting list of symbols")
     return
   endif
 
   var req = lspserver.createRequest('textDocument/documentSymbol')
   # interface DocumentSymbolParams
   # interface TextDocumentIdentifier
-  req.params->extend({textDocument: {uri: LspFileToUri(fname)}})
+  req.params->extend({textDocument: {uri: util.LspFileToUri(fname)}})
   lspserver.sendMessage(req)
 enddef
 
@@ -571,7 +601,7 @@ def s:textDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
   # Check whether LSP server supports formatting documents
   if !lspserver.caps->has_key('documentFormattingProvider')
 			|| !lspserver.caps.documentFormattingProvider
-    ErrMsg("Error: LSP server does not support formatting documents")
+    util.ErrMsg("Error: LSP server does not support formatting documents")
     return
   endif
 
@@ -598,7 +628,7 @@ def s:textDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
     tabSize: tabsz,
     insertSpaces: &expandtab ? true : false,
   }
-  req.params->extend({textDocument: {uri: LspFileToUri(fname)},
+  req.params->extend({textDocument: {uri: util.LspFileToUri(fname)},
 							options: fmtopts})
   if rangeFormat
     var r: dict<dict<number>> = {
@@ -616,7 +646,7 @@ def s:incomingCalls(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports incoming calls
   if !lspserver.caps->has_key('callHierarchyProvider')
 			|| !lspserver.caps.callHierarchyProvider
-    ErrMsg("Error: LSP server does not support call hierarchy")
+    util.ErrMsg("Error: LSP server does not support call hierarchy")
     return
   endif
 
@@ -634,7 +664,7 @@ def s:renameSymbol(lspserver: dict<any>, newName: string)
   # Check whether LSP server supports rename operation
   if !lspserver.caps->has_key('renameProvider')
 			|| !lspserver.caps.renameProvider
-    ErrMsg("Error: LSP server does not support rename operation")
+    util.ErrMsg("Error: LSP server does not support rename operation")
     return
   endif
 
@@ -662,7 +692,7 @@ def s:codeAction(lspserver: dict<any>, fname_arg: string)
   # Check whether LSP server supports code action operation
   if !lspserver.caps->has_key('codeActionProvider')
 			|| !lspserver.caps.codeActionProvider
-    ErrMsg("Error: LSP server does not support code action operation")
+    util.ErrMsg("Error: LSP server does not support code action operation")
     return
   endif
 
@@ -674,7 +704,7 @@ def s:codeAction(lspserver: dict<any>, fname_arg: string)
   var r: dict<dict<number>> = {
 		  start: {line: line('.') - 1, character: charcol('.') - 1},
 		  end: {line: line('.') - 1, character: charcol('.') - 1}}
-  req.params->extend({textDocument: {uri: LspFileToUri(fname)}, range: r})
+  req.params->extend({textDocument: {uri: util.LspFileToUri(fname)}, range: r})
   var diag: list<dict<any>> = []
   var lnum = line('.')
   var diagInfo: dict<any> = lspserver.getDiagByLine(bnr, lnum)
@@ -693,7 +723,7 @@ def s:workspaceQuerySymbols(lspserver: dict<any>, query: string): bool
   # Check whether the LSP server supports listing workspace symbols
   if !lspserver.caps->has_key('workspaceSymbolProvider')
 				|| !lspserver.caps.workspaceSymbolProvider
-    ErrMsg("Error: LSP server does not support listing workspace symbols")
+    util.ErrMsg("Error: LSP server does not support listing workspace symbols")
     return false
   endif
 
@@ -712,12 +742,12 @@ def s:addWorkspaceFolder(lspserver: dict<any>, dirName: string): void
 	  || !lspserver.caps.workspace->has_key('workspaceFolders')
 	  || !lspserver.caps.workspace.workspaceFolders->has_key('supported')
 	  || !lspserver.caps.workspace.workspaceFolders.supported
-      ErrMsg('Error: LSP server does not support workspace folders')
+      util.ErrMsg('Error: LSP server does not support workspace folders')
     return
   endif
 
   if lspserver.workspaceFolders->index(dirName) != -1
-    ErrMsg('Error: ' .. dirName .. ' is already part of this workspace')
+    util.ErrMsg('Error: ' .. dirName .. ' is already part of this workspace')
     return
   endif
 
@@ -738,13 +768,13 @@ def s:removeWorkspaceFolder(lspserver: dict<any>, dirName: string): void
 	  || !lspserver.caps.workspace->has_key('workspaceFolders')
 	  || !lspserver.caps.workspace.workspaceFolders->has_key('supported')
 	  || !lspserver.caps.workspace.workspaceFolders.supported
-      ErrMsg('Error: LSP server does not support workspace folders')
+      util.ErrMsg('Error: LSP server does not support workspace folders')
     return
   endif
 
   var idx: number = lspserver.workspaceFolders->index(dirName)
   if idx == -1
-    ErrMsg('Error: ' .. dirName .. ' is not currently part of this workspace')
+    util.ErrMsg('Error: ' .. dirName .. ' is not currently part of this workspace')
     return
   endif
 
@@ -764,14 +794,14 @@ def s:selectionRange(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports selection ranges
   if !lspserver.caps->has_key('selectionRangeProvider')
 			|| !lspserver.caps.selectionRangeProvider
-    ErrMsg("Error: LSP server does not support selection ranges")
+    util.ErrMsg("Error: LSP server does not support selection ranges")
     return
   endif
 
   var req = lspserver.createRequest('textDocument/selectionRange')
   # interface SelectionRangeParams
   # interface TextDocumentIdentifier
-  req.params->extend({textDocument: {uri: LspFileToUri(fname)},
+  req.params->extend({textDocument: {uri: util.LspFileToUri(fname)},
 					positions: [s:getLspPosition()]})
   lspserver.sendMessage(req)
 enddef
@@ -783,14 +813,14 @@ def s:foldRange(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports fold ranges
   if !lspserver.caps->has_key('foldingRangeProvider')
 			|| !lspserver.caps.foldingRangeProvider
-    ErrMsg("Error: LSP server does not support folding")
+    util.ErrMsg("Error: LSP server does not support folding")
     return
   endif
 
   var req = lspserver.createRequest('textDocument/foldingRange')
   # interface FoldingRangeParams
   # interface TextDocumentIdentifier
-  req.params->extend({textDocument: {uri: LspFileToUri(fname)}})
+  req.params->extend({textDocument: {uri: util.LspFileToUri(fname)}})
   lspserver.sendMessage(req)
 enddef
 
@@ -824,10 +854,10 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
     createNotification: function('s:createNotification', [lspserver]),
     sendResponse: function('s:sendResponse', [lspserver]),
     sendMessage: function('s:sendMessage', [lspserver]),
-    processReply: function('ProcessReply', [lspserver]),
-    processNotif: function('ProcessNotif', [lspserver]),
-    processRequest: function('ProcessRequest', [lspserver]),
-    processMessages: function('ProcessMessages', [lspserver]),
+    processReply: function(handlers.ProcessReply, [lspserver]),
+    processNotif: function(handlers.ProcessNotif, [lspserver]),
+    processRequest: function(handlers.ProcessRequest, [lspserver]),
+    processMessages: function(handlers.ProcessMessages, [lspserver]),
     getDiagByLine: function('s:getDiagByLine', [lspserver]),
     textdocDidOpen: function('s:textdocDidOpen', [lspserver]),
     textdocDidClose: function('s:textdocDidClose', [lspserver]),

@@ -1,6 +1,14 @@
 vim9script
 
-import lspOptions from './lspoptions.vim'
+var opt = {}
+
+if has('patch-8.2.4019')
+  import './lspoptions.vim' as opt_import
+  opt.lspOptions = opt_import.lspOptions
+else
+  import lspOptions from './lspoptions.vim'
+  opt.lspOptions = lspOptions
+endif
 
 def s:lspDiagSevToSignName(severity: number): string
   var typeMap: list<string> = ['LspDiagError', 'LspDiagWarning',
@@ -14,7 +22,7 @@ enddef
 # New LSP diagnostic messages received from the server for a file.
 # Update the signs placed in the buffer for this file
 export def LspDiagsUpdated(lspserver: dict<any>, bnr: number)
-  if !lspOptions.autoHighlightDiags
+  if !opt.lspOptions.autoHighlightDiags
     return
   endif
 
