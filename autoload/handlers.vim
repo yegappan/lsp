@@ -19,7 +19,7 @@ if has('patch-8.2.4019')
   util.TraceLog = util_import.TraceLog
   util.LspUriToFile = util_import.LspUriToFile
   util.GetLineByteFromPos = util_import.GetLineByteFromPos
-  diag.LspDiagsUpdated = diag_import.LspDiagsUpdated
+  diag.DiagNotification = diag_import.DiagNotification
 else
   import lspOptions from './lspoptions.vim'
   import {WarnMsg,
@@ -27,7 +27,7 @@ else
 	TraceLog,
 	LspUriToFile,
 	GetLineByteFromPos} from './util.vim'
-  import {LspDiagsUpdated} from './diag.vim'
+  import {DiagNotification} from './diag.vim'
 
   opt.lspOptions = lspOptions
   util.WarnMsg = WarnMsg
@@ -35,7 +35,7 @@ else
   util.TraceLog = TraceLog
   util.LspUriToFile = LspUriToFile
   util.GetLineByteFromPos = GetLineByteFromPos
-  diag.LspDiagsUpdated = LspDiagsUpdated
+  diag.DiagNotification = DiagNotification
 endif
 
 # process the 'initialize' method reply from the LSP server
@@ -583,9 +583,13 @@ def s:set_lines(lines: list<string>, A: list<number>, B: list<number>,
   var i_n = [B[0], numlines - 1]->min()
 
   if i_0 < 0 || i_0 >= numlines || i_n < 0 || i_n >= numlines
-    util.WarnMsg("set_lines: Invalid range, A = " .. A->string()
-		.. ", B = " ..  B->string() .. ", numlines = " .. numlines
-		.. ", new lines = " .. new_lines->string())
+    #util.WarnMsg("set_lines: Invalid range, A = " .. A->string()
+    #		.. ", B = " ..  B->string() .. ", numlines = " .. numlines
+    #		.. ", new lines = " .. new_lines->string())
+    var msg = "set_lines: Invalid range, A = " .. A->string()
+    msg ..= ", B = " ..  B->string() .. ", numlines = " .. numlines
+    msg ..= ", new lines = " .. new_lines->string()
+    util.WarnMsg(msg)
     return lines
   endif
 
@@ -1022,30 +1026,7 @@ enddef
 # Notification: textDocument/publishDiagnostics
 # Param: PublishDiagnosticsParams
 def s:processDiagNotif(lspserver: dict<any>, reply: dict<any>): void
-  var fname: string = util.LspUriToFile(reply.params.uri)
-  var bnr: number = fname->bufnr()
-  if bnr == -1
-    # Is this condition possible?
-    return
-  endif
-
-  # TODO: Is the buffer (bnr) always a loaded buffer? Should we load it here?
-  var lastlnum: number = bnr->getbufinfo()[0].linecount
-  var lnum: number
-
-  # store the diagnostic for each line separately
-  var diag_by_lnum: dict<dict<any>> = {}
-  for diag in reply.params.diagnostics
-    lnum = diag.range.start.line + 1
-    if lnum > lastlnum
-      # Make sure the line number is a valid buffer line number
-      lnum = lastlnum
-    endif
-    diag_by_lnum[lnum] = diag
-  endfor
-
-  lspserver.diagsMap->extend({['' .. bnr]: diag_by_lnum})
-  diag.LspDiagsUpdated(lspserver, bnr)
+  diag.DiagNotification(lspserver, reply.params.uri, reply.params.diagnostics)
 enddef
 
 # process a show notification message from the LSP server

@@ -5,11 +5,13 @@ vim9script
 # for the Language Server Protocol (LSP) specificaiton.
 
 var handlers = {}
+var diag = {}
 var util = {}
 
 if has('patch-8.2.4019')
   import './handlers.vim' as handlers_import
   import './util.vim' as util_import
+  import './diag.vim' as diag_import
   handlers.ProcessReply = handlers_import.ProcessReply
   handlers.ProcessNotif = handlers_import.ProcessNotif
   handlers.ProcessRequest = handlers_import.ProcessRequest
@@ -17,19 +19,19 @@ if has('patch-8.2.4019')
   util.WarnMsg = util_import.WarnMsg
   util.ErrMsg = util_import.ErrMsg
   util.TraceLog = util_import.TraceLog
-  util.LspUriToFile = util_import.LspUriToFile
   util.LspBufnrToUri = util_import.LspBufnrToUri
   util.LspFileToUri = util_import.LspFileToUri
   util.PushCursorToTagStack = util_import.PushCursorToTagStack
+  diag.GetDiagByLine = diag_import.GetDiagByLine
 else
   import {ProcessReply,
 	ProcessNotif,
 	ProcessRequest,
 	ProcessMessages} from './handlers.vim'
+  import {GetDiagByLine} from './diag.vim'
   import {WarnMsg,
 	ErrMsg,
 	TraceLog,
-	LspUriToFile,
 	LspBufnrToUri,
 	LspFileToUri,
 	PushCursorToTagStack} from './util.vim'
@@ -40,10 +42,10 @@ else
   util.WarnMsg = WarnMsg
   util.ErrMsg = ErrMsg
   util.TraceLog = TraceLog
-  util.LspUriToFile = LspUriToFile
   util.LspBufnrToUri = LspBufnrToUri
   util.LspFileToUri = LspFileToUri
   util.PushCursorToTagStack = PushCursorToTagStack
+  diag.GetDiagByLine = GetDiagByLine
 endif
 
 # LSP server standard output handler
@@ -628,8 +630,9 @@ def s:textDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
     tabSize: tabsz,
     insertSpaces: &expandtab ? true : false,
   }
-  req.params->extend({textDocument: {uri: util.LspFileToUri(fname)},
-							options: fmtopts})
+  #req.params->extend({textDocument: {uri: util.LspFileToUri(fname)},
+  #							options: fmtopts})
+  req.params->extend({textDocument: {uri: util.LspFileToUri(fname)}, options: fmtopts})
   if rangeFormat
     var r: dict<dict<number>> = {
 	start: {line: start_lnum - 1, character: 0},
@@ -677,15 +680,6 @@ def s:renameSymbol(lspserver: dict<any>, newName: string)
   lspserver.sendMessage(req)
 enddef
 
-# Get the diagnostic from the LSP server for a particular line in a file
-def s:getDiagByLine(lspserver: dict<any>, bnr: number, lnum: number): dict<any>
-  if lspserver.diagsMap->has_key(bnr) &&
-				lspserver.diagsMap[bnr]->has_key(lnum)
-    return lspserver.diagsMap[bnr][lnum]
-  endif
-  return {}
-enddef
-
 # Request: "textDocument/codeAction"
 # Param: CodeActionParams
 def s:codeAction(lspserver: dict<any>, fname_arg: string)
@@ -705,13 +699,13 @@ def s:codeAction(lspserver: dict<any>, fname_arg: string)
 		  start: {line: line('.') - 1, character: charcol('.') - 1},
 		  end: {line: line('.') - 1, character: charcol('.') - 1}}
   req.params->extend({textDocument: {uri: util.LspFileToUri(fname)}, range: r})
-  var diag: list<dict<any>> = []
+  var d: list<dict<any>> = []
   var lnum = line('.')
-  var diagInfo: dict<any> = lspserver.getDiagByLine(bnr, lnum)
+  var diagInfo: dict<any> = diag.GetDiagByLine(lspserver, bnr, lnum)
   if !diagInfo->empty()
-    diag->add(diagInfo)
+    d->add(diagInfo)
   endif
-  req.params->extend({context: {diagnostics: diag}})
+  req.params->extend({context: {diagnostics: d}})
 
   lspserver.sendMessage(req)
 enddef
@@ -858,7 +852,7 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
     processNotif: function(handlers.ProcessNotif, [lspserver]),
     processRequest: function(handlers.ProcessRequest, [lspserver]),
     processMessages: function(handlers.ProcessMessages, [lspserver]),
-    getDiagByLine: function('s:getDiagByLine', [lspserver]),
+    getDiagByLine: function(diag.GetDiagByLine, [lspserver]),
     textdocDidOpen: function('s:textdocDidOpen', [lspserver]),
     textdocDidClose: function('s:textdocDidClose', [lspserver]),
     textdocDidChange: function('s:textdocDidChange', [lspserver]),

@@ -138,6 +138,58 @@ def Test_lsp_show_references()
   :%bw!
 enddef
 
+def Test_lsp_diags()
+  :silent! edit Xtest.c
+  var lines: list<string> =<< trim END
+    void blueFunc()
+    {
+	int count, j:
+	count = 20;
+	j <= count;
+	j = 10;
+	MyFunc();
+    }
+  END
+  setline(1, lines)
+  :sleep 1
+  var bnr: number = bufnr()
+  :redraw!
+  :LspDiagShow
+  var qfl: list<dict<any>> = getloclist(0)
+  assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
+  assert_equal(bnr, qfl[0].bufnr)
+  assert_equal(3, qfl->len())
+  assert_equal([3, 14, 'E'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
+  assert_equal([5, 2, 'W'], [qfl[1].lnum, qfl[1].col, qfl[1].type])
+  assert_equal([7, 2, 'W'], [qfl[2].lnum, qfl[2].col, qfl[2].type])
+  close
+  normal gg
+  var output = execute('LspDiagCurrent')->split("\n")
+  assert_equal('No diagnostic messages found for current line', output[0])
+  :LspDiagFirst
+  assert_equal([3, 1], [line('.'), col('.')])
+  output = execute('LspDiagCurrent')->split("\n")
+  assert_equal("Expected ';' at end of declaration (fix available)", output[0])
+  :LspDiagNext
+  assert_equal([5, 1], [line('.'), col('.')])
+  :LspDiagNext
+  assert_equal([7, 1], [line('.'), col('.')])
+  output = execute('LspDiagNext')->split("\n")
+  assert_equal('Error: No more diagnostics found', output[0])
+  :LspDiagPrev
+  :LspDiagPrev
+  :LspDiagPrev
+  output = execute('LspDiagPrev')->split("\n")
+  assert_equal('Error: No more diagnostics found', output[0])
+  :%d
+  setline(1, ['void blueFunc()', '{', '}'])
+  sleep 1
+  output = execute('LspDiagShow')->split("\n")
+  assert_match('No diagnostic messages found for', output[0])
+
+  :%bw!
+enddef
+
 def LspRunTests()
   # Edit a dummy C file to start the LSP server
   :edit Xtest.c
@@ -150,11 +202,15 @@ def LspRunTests()
 		    ->map("v:val->substitute('^def <SNR>\\d\\+_', '', '')")
   for f in fns
     v:errors = []
+    v:errmsg = ''
     try
       exe f
     catch
-      echomsg "Error: Test " .. f .. " failed with exception " .. v:exception
+      call add(v:errors, "Error: Test " .. f .. " failed with exception " .. v:exception)
     endtry
+    if v:errmsg != ''
+      call add(v:errors, "Error: Test " .. f .. " generated error " .. v:errmsg)
+    endif
     if v:errors->len() != 0
       new Lsp-Test-Results
       setline(1, ["Error: Test " .. f .. " failed"]->extend(v:errors))

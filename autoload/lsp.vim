@@ -22,7 +22,12 @@ if has('patch-8.2.4019')
   util.ClearTraceLogs = util_import.ClearTraceLogs
   util.GetLineByteFromPos = util_import.GetLineByteFromPos
   util.PushCursorToTagStack = util_import.PushCursorToTagStack
-  diag.LspDiagsUpdated = diag_import.LspDiagsUpdated
+  diag.UpdateDiags = diag_import.UpdateDiags
+  diag.DiagsGetErrorCount = diag_import.DiagsGetErrorCount
+  diag.ShowAllDiags = diag_import.ShowAllDiags
+  diag.ShowCurrentDiag = diag_import.ShowCurrentDiag
+  diag.LspDiagsJump = diag_import.LspDiagsJump
+  diag.DiagRemoveFile = diag_import.DiagRemoveFile
 else
   import {lspOptions, LspOptionsSet} from './lspoptions.vim'
   import NewLspServer from './lspserver.vim'
@@ -32,7 +37,12 @@ else
         ClearTraceLogs,
         GetLineByteFromPos,
         PushCursorToTagStack} from './util.vim'
-  import {LspDiagsUpdated} from './diag.vim'
+  import {DiagRemoveFile,
+	UpdateDiags,
+	DiagsGetErrorCount,
+	ShowAllDiags,
+	ShowCurrentDiag,
+	LspDiagsJump} from './diag.vim'
 
   opt.LspOptionsSet = LspOptionsSet
   opt.lspOptions = lspOptions
@@ -43,7 +53,12 @@ else
   util.ClearTraceLogs = ClearTraceLogs
   util.GetLineByteFromPos = GetLineByteFromPos
   util.PushCursorToTagStack = PushCursorToTagStack
-  diag.LspDiagsUpdated = LspDiagsUpdated
+  diag.DiagRemoveFile = DiagRemoveFile
+  diag.UpdateDiags = UpdateDiags
+  diag.DiagsGetErrorCount = DiagsGetErrorCount
+  diag.ShowAllDiags = ShowAllDiags
+  diag.ShowCurrentDiag = ShowCurrentDiag
+  diag.LspDiagsJump = LspDiagsJump
 endif
 
 # Needs Vim 8.2.2342 and higher
@@ -303,7 +318,7 @@ def lsp#leftInsertMode()
   if lspserver->empty() || !lspserver.running
     return
   endif
-  diag.LspDiagsUpdated(lspserver, bufnr())
+  diag.UpdateDiags(lspserver, bufnr())
 enddef
 
 # A new buffer is opened. If LSP is supported for this buffer, then add it
@@ -398,9 +413,7 @@ def lsp#removeFile(bnr: number): void
     return
   endif
   lspserver.textdocDidClose(bnr)
-  if lspserver.diagsMap->has_key(bnr)
-    lspserver.diagsMap->remove(bnr)
-  endif
+  diag.DiagRemoveFile(lspserver, bnr)
   bufnrToServer->remove(bnr)
 enddef
 
@@ -482,22 +495,11 @@ def lsp#setTraceServer(traceVal: string)
   lspserver.setTrace(traceVal)
 enddef
 
-# Map the LSP DiagnosticSeverity to a quickfix type character
-def s:lspDiagSevToQfType(severity: number): string
-  var typeMap: list<string> = ['E', 'W', 'I', 'N']
-
-  if severity > 4
-    return ''
-  endif
-
-  return typeMap[severity - 1]
-enddef
-
 # Display the diagnostic messages from the LSP server for the current buffer
 # in a quickfix list
 def lsp#showDiagnostics(): void
   var ftype = &filetype
-  if ftype == ''
+  if ftype == '' || @% == ''
     return
   endif
 
@@ -511,37 +513,13 @@ def lsp#showDiagnostics(): void
     return
   endif
 
-  var fname: string = expand('%:p')
-  if fname == ''
-    return
-  endif
-  var bnr: number = bufnr()
-
-  if !lspserver.diagsMap->has_key(bnr) || lspserver.diagsMap[bnr]->empty()
-    util.WarnMsg('No diagnostic messages found for ' .. fname)
-    return
-  endif
-
-  var qflist: list<dict<any>> = []
-  var text: string
-
-  for [lnum, diag] in lspserver.diagsMap[bnr]->items()
-    text = diag.message->substitute("\n\\+", "\n", 'g')
-    qflist->add({'filename': fname,
-		    'lnum': diag.range.start.line + 1,
-		    'col': util.GetLineByteFromPos(bnr, diag.range.start) + 1,
-		    'text': text,
-		    'type': s:lspDiagSevToQfType(diag.severity)})
-  endfor
-  setloclist(0, [], ' ', {'title': 'Language Server Diagnostics',
-							'items': qflist})
-  :lopen
+  diag.ShowAllDiags(lspserver)
 enddef
 
 # Show the diagnostic message for the current line
 def lsp#showCurrentDiag()
   var ftype = &filetype
-  if ftype == ''
+  if ftype == '' || @% == ''
     return
   endif
 
@@ -555,14 +533,7 @@ def lsp#showCurrentDiag()
     return
   endif
 
-  var bnr: number = bufnr()
-  var lnum: number = line('.')
-  var diag: dict<any> = lspserver.getDiagByLine(bnr, lnum)
-  if diag->empty()
-    util.WarnMsg('No diagnostic messages found for current line')
-  else
-    echo diag.message
-  endif
+  diag.ShowCurrentDiag(lspserver)
 enddef
 
 # get the count of error in the current buffer
@@ -578,38 +549,13 @@ def lsp#errorCount(): dict<number>
     return res
   endif
 
-  var bnr: number = bufnr()
-  if lspserver.diagsMap->has_key(bnr)
-      for item in lspserver.diagsMap[bnr]->values()
-          if item->has_key('severity')
-              if item.severity == 1
-                  res.Error = res.Error + 1
-              elseif item.severity == 2
-                  res.Warn = res.Warn + 1
-              elseif item.severity == 3
-                  res.Info = res.Info + 1
-              elseif item.severity == 4
-                  res.Hint = res.Hint + 1
-              endif
-          endif
-      endfor
-  endif
-
-  return res
-enddef
-
-# sort the diaganostics messages for a buffer by line number
-def s:getSortedDiagLines(lspsrv: dict<any>, bnr: number): list<number>
-  # create a list of line numbers from the diag map keys
-  var lnums: list<number> =
-		lspsrv.diagsMap[bnr]->keys()->mapnew((_, v) => v->str2nr())
-  return lnums->sort((a, b) => a - b)
+  return diag.DiagsGetErrorCount(lspserver)
 enddef
 
 # jump to the next/previous/first diagnostic message in the current buffer
 def lsp#jumpToDiag(which: string): void
   var ftype = &filetype
-  if ftype == ''
+  if ftype == '' || @% == ''
     return
   endif
 
@@ -623,36 +569,7 @@ def lsp#jumpToDiag(which: string): void
     return
   endif
 
-  var fname: string = expand('%:p')
-  if fname == ''
-    return
-  endif
-  var bnr: number = bufnr()
-
-  if !lspserver.diagsMap->has_key(bnr) || lspserver.diagsMap[bnr]->empty()
-    util.WarnMsg('No diagnostic messages found for ' .. fname)
-    return
-  endif
-
-  # sort the diagnostics by line number
-  var sortedDiags: list<number> = s:getSortedDiagLines(lspserver, bnr)
-
-  if which == 'first'
-    cursor(sortedDiags[0], 1)
-    return
-  endif
-
-  # Find the entry just before the current line (binary search)
-  var curlnum: number = line('.')
-  for lnum in (which == 'next') ? sortedDiags : sortedDiags->reverse()
-    if (which == 'next' && lnum > curlnum)
-	  || (which == 'prev' && lnum < curlnum)
-      cursor(lnum, 1)
-      return
-    endif
-  endfor
-
-  util.WarnMsg('Error: No more diagnostics found')
+  diag.LspDiagsJump(lspserver, which)
 enddef
 
 # Insert mode completion handler. Used when 24x7 completion is enabled

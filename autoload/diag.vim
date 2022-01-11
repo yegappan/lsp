@@ -1,14 +1,33 @@
 vim9script
 
 var opt = {}
+var util = {}
 
 if has('patch-8.2.4019')
   import './lspoptions.vim' as opt_import
+  import './util.vim' as util_import
+
   opt.lspOptions = opt_import.lspOptions
+  util.WarnMsg = util_import.WarnMsg
+  util.GetLineByteFromPos = util_import.GetLineByteFromPos
 else
   import lspOptions from './lspoptions.vim'
+  import {WarnMsg,
+	LspUriToFile,
+	GetLineByteFromPos} from './util.vim'
+
   opt.lspOptions = lspOptions
+  util.WarnMsg = WarnMsg
+  util.LspUriToFile = LspUriToFile
+  util.GetLineByteFromPos = GetLineByteFromPos
 endif
+
+# Remove the diagnostics stored for buffer 'bnr'
+export def DiagRemoveFile(lspserver: dict<any>, bnr: number)
+  if lspserver.diagsMap->has_key(bnr)
+    lspserver.diagsMap->remove(bnr)
+  endif
+enddef
 
 def s:lspDiagSevToSignName(severity: number): string
   var typeMap: list<string> = ['LspDiagError', 'LspDiagWarning',
@@ -21,7 +40,7 @@ enddef
 
 # New LSP diagnostic messages received from the server for a file.
 # Update the signs placed in the buffer for this file
-export def LspDiagsUpdated(lspserver: dict<any>, bnr: number)
+export def UpdateDiags(lspserver: dict<any>, bnr: number)
   if !opt.lspOptions.autoHighlightDiags
     return
   endif
@@ -53,6 +72,164 @@ export def LspDiagsUpdated(lspserver: dict<any>, bnr: number)
   endfor
 
   signs->sign_placelist()
+enddef
+
+# process a diagnostic notification message from the LSP server
+# Notification: textDocument/publishDiagnostics
+# Param: PublishDiagnosticsParams
+export def DiagNotification(lspserver: dict<any>, uri: string, diags: list<dict<any>>): void
+  var fname: string = util.LspUriToFile(uri)
+  var bnr: number = fname->bufnr()
+  if bnr == -1
+    # Is this condition possible?
+    return
+  endif
+
+  # TODO: Is the buffer (bnr) always a loaded buffer? Should we load it here?
+  var lastlnum: number = bnr->getbufinfo()[0].linecount
+  var lnum: number
+
+  # store the diagnostic for each line separately
+  var diag_by_lnum: dict<dict<any>> = {}
+  for d in diags
+    lnum = d.range.start.line + 1
+    if lnum > lastlnum
+      # Make sure the line number is a valid buffer line number
+      lnum = lastlnum
+    endif
+    diag_by_lnum[lnum] = d
+  endfor
+
+  lspserver.diagsMap->extend({['' .. bnr]: diag_by_lnum})
+  UpdateDiags(lspserver, bnr)
+enddef
+
+# get the count of error in the current buffer
+export def DiagsGetErrorCount(lspserver: dict<any>): dict<number>
+  var res = {'Error': 0, 'Warn': 0, 'Info': 0, 'Hint': 0}
+
+  var bnr: number = bufnr()
+  if lspserver.diagsMap->has_key(bnr)
+      for item in lspserver.diagsMap[bnr]->values()
+          if item->has_key('severity')
+              if item.severity == 1
+                  res.Error = res.Error + 1
+              elseif item.severity == 2
+                  res.Warn = res.Warn + 1
+              elseif item.severity == 3
+                  res.Info = res.Info + 1
+              elseif item.severity == 4
+                  res.Hint = res.Hint + 1
+              endif
+          endif
+      endfor
+  endif
+
+  return res
+enddef
+
+# Map the LSP DiagnosticSeverity to a quickfix type character
+def s:lspDiagSevToQfType(severity: number): string
+  var typeMap: list<string> = ['E', 'W', 'I', 'N']
+
+  if severity > 4
+    return ''
+  endif
+
+  return typeMap[severity - 1]
+enddef
+
+# Display the diagnostic messages from the LSP server for the current buffer
+# in a location list
+export def ShowAllDiags(lspserver: dict<any>): void
+  var fname: string = expand('%:p')
+  if fname == ''
+    return
+  endif
+  var bnr: number = bufnr()
+
+  if !lspserver.diagsMap->has_key(bnr) || lspserver.diagsMap[bnr]->empty()
+    util.WarnMsg('No diagnostic messages found for ' .. fname)
+    return
+  endif
+
+  var qflist: list<dict<any>> = []
+  var text: string
+
+  for [lnum, diag] in lspserver.diagsMap[bnr]->items()
+    text = diag.message->substitute("\n\\+", "\n", 'g')
+    qflist->add({'filename': fname,
+		    'lnum': diag.range.start.line + 1,
+		    'col': util.GetLineByteFromPos(bnr, diag.range.start) + 1,
+		    'text': text,
+		    'type': s:lspDiagSevToQfType(diag.severity)})
+  endfor
+  setloclist(0, [], ' ', {'title': 'Language Server Diagnostics',
+							'items': qflist})
+  :lopen
+enddef
+
+# Show the diagnostic message for the current line
+export def ShowCurrentDiag(lspserver: dict<any>)
+  var bnr: number = bufnr()
+  var lnum: number = line('.')
+  var diag: dict<any> = lspserver.getDiagByLine(bnr, lnum)
+  if diag->empty()
+    util.WarnMsg('No diagnostic messages found for current line')
+  else
+    echo diag.message
+  endif
+enddef
+
+# Get the diagnostic from the LSP server for a particular line in a file
+export def GetDiagByLine(lspserver: dict<any>, bnr: number, lnum: number): dict<any>
+  if lspserver.diagsMap->has_key(bnr) &&
+				lspserver.diagsMap[bnr]->has_key(lnum)
+    return lspserver.diagsMap[bnr][lnum]
+  endif
+  return {}
+enddef
+
+# sort the diaganostics messages for a buffer by line number
+def s:getSortedDiagLines(lspsrv: dict<any>, bnr: number): list<number>
+  # create a list of line numbers from the diag map keys
+  var lnums: list<number> =
+		lspsrv.diagsMap[bnr]->keys()->mapnew((_, v) => v->str2nr())
+  return lnums->sort((a, b) => a - b)
+enddef
+
+# jump to the next/previous/first diagnostic message in the current buffer
+export def LspDiagsJump(lspserver: dict<any>, which: string): void
+  var fname: string = expand('%:p')
+  if fname == ''
+    return
+  endif
+  var bnr: number = bufnr()
+
+  if !lspserver.diagsMap->has_key(bnr) || lspserver.diagsMap[bnr]->empty()
+    util.WarnMsg('No diagnostic messages found for ' .. fname)
+    return
+  endif
+
+  # sort the diagnostics by line number
+  var sortedDiags: list<number> = s:getSortedDiagLines(lspserver, bnr)
+
+  if which == 'first'
+    cursor(sortedDiags[0], 1)
+    return
+  endif
+
+  # Find the entry just before the current line (binary search)
+  var curlnum: number = line('.')
+  for lnum in (which == 'next') ? sortedDiags : sortedDiags->reverse()
+    if (which == 'next' && lnum > curlnum)
+	  || (which == 'prev' && lnum < curlnum)
+      cursor(lnum, 1)
+      return
+    endif
+  endfor
+
+  util.WarnMsg('Error: No more diagnostics found')
 enddef
 
 # vim: shiftwidth=2 softtabstop=2

@@ -69,7 +69,7 @@ export def LspUriToFile(uri: string): string
   return uri_decoded
 enddef
 
-# Convert a Vim filenmae to an LSP URI (file://<absolute_path>)
+# Convert a Vim filename to an LSP URI (file://<absolute_path>)
 export def LspFileToUri(fname: string): string
   var uri: string = fnamemodify(fname, ':p')
 
