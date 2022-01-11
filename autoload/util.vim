@@ -70,7 +70,7 @@ export def LspUriToFile(uri: string): string
 enddef
 
 # Convert a Vim filename to an LSP URI (file://<absolute_path>)
-export def LspFileToUri(fname: string): string
+def ConvertFilenameToUri(fname: string): string
   var uri: string = fnamemodify(fname, ':p')
 
   var on_windows: bool = false
@@ -95,9 +95,17 @@ export def LspFileToUri(fname: string): string
   return uri
 enddef
 
+# FIXME: Remove this function once the Vim bug (calling one exported function
+# from another exported function in an autoload script is not working) is
+# fixed. Replace the calls to this function directly with calls to
+# ConvertFilenameToUri().
+export def LspFileToUri(fname: string): string
+  return ConvertFilenameToUri(fname)
+enddef
+
 # Convert a Vim buffer number to an LSP URI (file://<absolute_path>)
 export def LspBufnrToUri(bnr: number): string
-  return LspFileToUri(bnr->bufname())
+  return ConvertFilenameToUri(bnr->bufname())
 enddef
 
 # Returns the byte number of the specified LSP position in buffer 'bnr'.

@@ -10,6 +10,7 @@ if has('patch-8.2.4019')
   opt.lspOptions = opt_import.lspOptions
   util.WarnMsg = util_import.WarnMsg
   util.GetLineByteFromPos = util_import.GetLineByteFromPos
+  util.LspUriToFile = util_import.LspUriToFile
 else
   import lspOptions from './lspoptions.vim'
   import {WarnMsg,
@@ -40,7 +41,7 @@ enddef
 
 # New LSP diagnostic messages received from the server for a file.
 # Update the signs placed in the buffer for this file
-export def UpdateDiags(lspserver: dict<any>, bnr: number)
+def ProcessNewDiags(lspserver: dict<any>, bnr: number)
   if !opt.lspOptions.autoHighlightDiags
     return
   endif
@@ -74,6 +75,14 @@ export def UpdateDiags(lspserver: dict<any>, bnr: number)
   signs->sign_placelist()
 enddef
 
+# FIXME: Remove this function once the Vim bug (calling one exported function
+# from another exported function in an autoload script is not working) is
+# fixed. Replace the calls to this function directly with calls to
+# ProcessNewDiags().
+export def UpdateDiags(lspserver: dict<any>, bnr: number)
+  ProcessNewDiags(lspserver, bnr)
+enddef
+
 # process a diagnostic notification message from the LSP server
 # Notification: textDocument/publishDiagnostics
 # Param: PublishDiagnosticsParams
@@ -101,7 +110,7 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags: list<dict<
   endfor
 
   lspserver.diagsMap->extend({['' .. bnr]: diag_by_lnum})
-  UpdateDiags(lspserver, bnr)
+  ProcessNewDiags(lspserver, bnr)
 enddef
 
 # get the count of error in the current buffer
