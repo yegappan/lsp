@@ -2,16 +2,23 @@ vim9script
 
 # Vim9 LSP client
 
+# Needs Vim 8.2.2342 and higher
+if v:version < 802 || !has('patch-8.2.2342')
+  finish
+endif
+
 var opt = {}
 var lserver = {}
 var util = {}
 var diag = {}
+var symbol = {}
 
 if has('patch-8.2.4019')
   import './lspoptions.vim' as opt_import
   import './lspserver.vim' as server_import
   import './util.vim' as util_import
   import './diag.vim' as diag_import
+  import './symbolsearch.vim' as symbolsearch_import
 
   opt.LspOptionsSet = opt_import.LspOptionsSet
   opt.lspOptions = opt_import.lspOptions
@@ -28,6 +35,7 @@ if has('patch-8.2.4019')
   diag.ShowCurrentDiag = diag_import.ShowCurrentDiag
   diag.LspDiagsJump = diag_import.LspDiagsJump
   diag.DiagRemoveFile = diag_import.DiagRemoveFile
+  symbol.ShowSymbolMenu = symbolsearch_import.ShowSymbolMenu
 else
   import {lspOptions, LspOptionsSet} from './lspoptions.vim'
   import NewLspServer from './lspserver.vim'
@@ -43,6 +51,7 @@ else
 	ShowAllDiags,
 	ShowCurrentDiag,
 	LspDiagsJump} from './diag.vim'
+  import {ShowSymbolMenu} from './symbolsearch.vim'
 
   opt.LspOptionsSet = LspOptionsSet
   opt.lspOptions = lspOptions
@@ -59,11 +68,7 @@ else
   diag.ShowAllDiags = ShowAllDiags
   diag.ShowCurrentDiag = ShowCurrentDiag
   diag.LspDiagsJump = LspDiagsJump
-endif
-
-# Needs Vim 8.2.2342 and higher
-if v:version < 802 || !has('patch-8.2.2342')
-  finish
+  symbol.ShowSymbolMenu = ShowSymbolMenu
 endif
 
 # LSP server information
@@ -1153,135 +1158,6 @@ def lsp#codeAction()
   lspserver.codeAction(fname)
 enddef
 
-# Handle keys pressed when the workspace symbol popup menu is displayed
-def s:filterSymbols(lspsrv: dict<any>, popupID: number, key: string): bool
-  var key_handled: bool = false
-  var update_popup: bool = false
-  var query: string = lspsrv.workspaceSymbolQuery
-
-  if key == "\<BS>" || key == "\<C-H>"
-    # Erase one character from the filter text
-    if query->len() >= 1
-      query = query[: -2]
-      update_popup = true
-    endif
-    key_handled = true
-  elseif key == "\<C-U>"
-    # clear the filter text
-    query = ''
-    update_popup = true
-    key_handled = true
-  elseif key == "\<C-F>"
-        || key == "\<C-B>"
-        || key == "\<PageUp>"
-        || key == "\<PageDown>"
-        || key == "\<C-Home>"
-        || key == "\<C-End>"
-        || key == "\<C-N>"
-        || key == "\<C-P>"
-    # scroll the popup window
-    var cmd: string = 'normal! ' .. (key == "\<C-N>" ? 'j' : key == "\<C-P>" ? 'k' : key)
-    win_execute(popupID, cmd)
-    key_handled = true
-  elseif key == "\<Up>" || key == "\<Down>"
-    # Use native Vim handling for these keys
-    key_handled = false
-  elseif key =~ '^\f$' || key == "\<Space>"
-    # Filter the names based on the typed key and keys typed before
-    query ..= key
-    update_popup = true
-    key_handled = true
-  endif
-
-  if update_popup
-    # Update the popup with the new list of symbol names
-    popupID->popup_settext('')
-    if query != ''
-      lspsrv.workspaceQuery(query)
-    else
-      []->setwinvar(popupID, 'LspSymbolTable')
-    endif
-    echo 'Symbol: ' .. query
-  endif
-
-  # Update the workspace symbol query string
-  lspsrv.workspaceSymbolQuery = query
-
-  if key_handled
-    return true
-  endif
-
-  return popupID->popup_filter_menu(key)
-enddef
-
-# Jump to the location of a symbol selected in the popup menu
-def s:jumpToWorkspaceSymbol(popupID: number, result: number): void
-  # clear the message displayed at the command-line
-  echo ''
-
-  if result <= 0
-    # popup is canceled
-    return
-  endif
-
-  var symTbl: list<dict<any>> = popupID->getwinvar('LspSymbolTable', [])
-  if symTbl->empty()
-    return
-  endif
-  try
-    # Save the current location in the tag stack
-    util.PushCursorToTagStack()
-
-    # if the selected file is already present in a window, then jump to it
-    var fname: string = symTbl[result - 1].file
-    var winList: list<number> = fname->bufnr()->win_findbuf()
-    if winList->len() == 0
-      # Not present in any window
-      if &modified || &buftype != ''
-	# the current buffer is modified or is not a normal buffer, then open
-	# the file in a new window
-	exe "split " .. symTbl[result - 1].file
-      else
-	exe "confirm edit " .. symTbl[result - 1].file
-      endif
-    else
-      winList[0]->win_gotoid()
-    endif
-    setcursorcharpos(symTbl[result - 1].pos.line + 1,
-			symTbl[result - 1].pos.character + 1)
-  catch
-    # ignore exceptions
-  endtry
-enddef
-
-# display a list of symbols from the workspace
-def s:showSymbolMenu(lspsrv: dict<any>, query: string)
-  # Create the popup menu
-  var lnum = &lines - &cmdheight - 2 - 10
-  var popupAttr = {
-      title: 'Workspace Symbol Search',
-      wrap: 0,
-      pos: 'topleft',
-      line: lnum,
-      col: 2,
-      minwidth: 60,
-      minheight: 10,
-      maxheight: 10,
-      maxwidth: 60,
-      mapping: false,
-      fixed: 1,
-      close: "button",
-      filter: function('s:filterSymbols', [lspsrv]),
-      callback: function('s:jumpToWorkspaceSymbol')
-  }
-  lspsrv.workspaceSymbolPopup = popup_menu([], popupAttr)
-  lspsrv.workspaceSymbolQuery = query
-  prop_type_add('lspworkspacesymbol',
-			{bufnr: lspsrv.workspaceSymbolPopup->winbufnr(),
-			 highlight: 'Title'})
-  echo 'Symbol: ' .. query
-enddef
-
 # Perform a workspace wide symbol lookup
 # Uses LSP "workspace/symbol" request
 def lsp#symbolSearch(queryArg: string)
@@ -1314,7 +1190,7 @@ def lsp#symbolSearch(queryArg: string)
   endif
   redraw!
 
-  s:showSymbolMenu(lspserver, query)
+  symbol.ShowSymbolMenu(lspserver, query)
 
   if !lspserver.workspaceQuery(query)
     lspserver.workspaceSymbolPopup->popup_close()
