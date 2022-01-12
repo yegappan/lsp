@@ -7,11 +7,13 @@ vim9script
 var opt = {}
 var util = {}
 var diag = {}
+var outline = {}
 
 if has('patch-8.2.4019')
   import './lspoptions.vim' as opt_import
   import './util.vim' as util_import
   import './diag.vim' as diag_import
+  import './outline.vim' as outline_import
 
   opt.lspOptions = opt_import.lspOptions
   util.WarnMsg = util_import.WarnMsg
@@ -20,6 +22,7 @@ if has('patch-8.2.4019')
   util.LspUriToFile = util_import.LspUriToFile
   util.GetLineByteFromPos = util_import.GetLineByteFromPos
   diag.DiagNotification = diag_import.DiagNotification
+  outline.UpdateOutlineWindow = outline_import.UpdateOutlineWindow
 else
   import lspOptions from './lspoptions.vim'
   import {WarnMsg,
@@ -27,7 +30,8 @@ else
 	TraceLog,
 	LspUriToFile,
 	GetLineByteFromPos} from './util.vim'
-  import {DiagNotification} from './diag.vim'
+  import DiagNotification from './diag.vim'
+  import UpdateOutlineWindow from './outline.vim'
 
   opt.lspOptions = lspOptions
   util.WarnMsg = WarnMsg
@@ -36,6 +40,7 @@ else
   util.LspUriToFile = LspUriToFile
   util.GetLineByteFromPos = GetLineByteFromPos
   diag.DiagNotification = DiagNotification
+  outline.UpdateOutlineWindow = UpdateOutlineWindow
 endif
 
 # process the 'initialize' method reply from the LSP server
@@ -528,7 +533,7 @@ def s:processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<an
 
   if reply.result->empty()
     # No symbols defined for this file. Clear the outline window.
-    lsp#updateOutlineWindow(fname, symbolTypeTable, symbolLineTable)
+    outline.UpdateOutlineWindow(fname, symbolTypeTable, symbolLineTable)
     return
   endif
 
@@ -542,7 +547,7 @@ def s:processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<an
 
   # sort the symbols by line number
   symbolLineTable->sort((a, b) => a.range.start.line - b.range.start.line)
-  lsp#updateOutlineWindow(fname, symbolTypeTable, symbolLineTable)
+  outline.UpdateOutlineWindow(fname, symbolTypeTable, symbolLineTable)
 enddef
 
 # sort the list of edit operations in the descending order of line and column
