@@ -138,6 +138,7 @@ def Test_lsp_show_references()
   :%bw!
 enddef
 
+# Test for LSP diagnostics
 def Test_lsp_diags()
   :silent! edit Xtest.c
   var lines: list<string> =<< trim END
@@ -187,6 +188,40 @@ def Test_lsp_diags()
   output = execute('LspDiagShow')->split("\n")
   assert_match('No diagnostic messages found for', output[0])
 
+  :%bw!
+enddef
+
+# Test for LSP code action to apply fixes
+def Test_lsp_codeaction()
+  var lines: list<string> =<< trim END
+    void testFunc()
+    {
+	int count;
+	count == 20;
+    }
+  END
+  writefile(lines, 'Xtest.c')
+  var args: list<any> = v:argv
+  args->add('Xtest.c')
+  var buf = term_start(args, {term_finish: 'close'})
+  buf->term_wait()
+  sleep 100m
+  buf->term_sendkeys('4G')
+  buf->term_wait()
+  buf->term_sendkeys(":LspCodeAction\<CR>")
+  buf->term_wait()
+  sleep 100m
+  buf->term_sendkeys("1")
+  sleep 100m
+  buf->term_sendkeys("\<CR>")
+  buf->term_wait()
+  sleep 100m
+  buf->term_sendkeys(":wq\<CR>")
+  buf->term_wait()
+  sleep 100m
+  var l = readfile('Xtest.c')
+  assert_equal("\tcount = 20;", l[3])
+  delete('Xtest.c')
   :%bw!
 enddef
 

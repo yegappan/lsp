@@ -334,10 +334,13 @@ diagnostic messages, you can add the following line to your .vimrc file:
 
 						*:LspSymbolSearch*
 :LspSymbolSearch <sym>	Perform a workspace wide search for the symbol <sym>.
-			A popup window is opened with the list of matching
-			symbols.  You can enter a few characters to narrow
-			down the list of matches. You can close the popup menu
-			by pressing the escape key or by pressing CTRL-C.
+			If <sym> is not supplied, then you will be prompted to
+			enter the symbol name (the keyword under the cursor is
+			used as the default).  A popup window is opened with
+			the list of matching symbols.  You can enter a few
+			characters to narrow down the list of matches. You can
+			close the popup menu by pressing the escape key or by
+			pressing CTRL-C.
 
 			In the popup menu, the following keys can be used:
 

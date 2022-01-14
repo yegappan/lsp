@@ -142,3 +142,4 @@ export def ShowSymbolMenu(lspserver: dict<any>, query: string)
   echo 'Symbol: ' .. query
 enddef
 
+# vim: shiftwidth=2 softtabstop=2

@@ -818,6 +818,15 @@ def s:foldRange(lspserver: dict<any>, fname: string)
   lspserver.sendMessage(req)
 enddef
 
+# Request the LSP server to execute a command
+# Request: workspace/executeCommand
+# Params: ExecuteCommandParams
+def s:executeCommand(lspserver: dict<any>, cmd: dict<any>)
+  var req = lspserver.createRequest('workspace/executeCommand')
+  req.params->extend(cmd)
+  lspserver.sendMessage(req)
+enddef
+
 export def NewLspServer(path: string, args: list<string>): dict<any>
   var lspserver: dict<any> = {
     path: path,
@@ -876,7 +885,8 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
     addWorkspaceFolder: function('s:addWorkspaceFolder', [lspserver]),
     removeWorkspaceFolder: function('s:removeWorkspaceFolder', [lspserver]),
     selectionRange: function('s:selectionRange', [lspserver]),
-    foldRange: function('s:foldRange', [lspserver])
+    foldRange: function('s:foldRange', [lspserver]),
+    executeCommand: function('s:executeCommand', [lspserver])
   })
 
   return lspserver

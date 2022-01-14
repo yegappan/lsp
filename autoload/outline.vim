@@ -276,3 +276,4 @@ export def OpenOutlineWindow()
   prevWinID->win_gotoid()
 enddef
 
+# vim: shiftwidth=2 softtabstop=2

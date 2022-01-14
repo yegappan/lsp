@@ -25,3 +25,5 @@ export def LspOptionsSet(opts: dict<any>)
     lspOptions[key] = opts[key]
   endfor
 enddef
+
+# vim: shiftwidth=2 softtabstop=2
