@@ -201,21 +201,21 @@ def Test_lsp_codeaction()
     }
   END
   writefile(lines, 'Xtest.c')
-  var args: list<any> = v:argv
+  var args: list<any> = v:argv->deepcopy()
   args->add('Xtest.c')
   var buf = term_start(args, {term_finish: 'close'})
   buf->term_wait()
-  sleep 100m
+  sleep 500m
   buf->term_sendkeys('4G')
   buf->term_wait()
   buf->term_sendkeys(":LspCodeAction\<CR>")
   buf->term_wait()
-  sleep 100m
+  sleep 500m
   buf->term_sendkeys("1")
-  sleep 100m
+  sleep 50m
   buf->term_sendkeys("\<CR>")
   buf->term_wait()
-  sleep 100m
+  sleep 50m
   buf->term_sendkeys(":wq\<CR>")
   buf->term_wait()
   sleep 100m
