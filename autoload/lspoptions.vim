@@ -17,6 +17,8 @@ export var lspOptions: dict<any> = {
   autoHighlightDiags: true,
   # Show the symbol documentation in the preview window instead of in a popup
   hoverInPreview: false,
+  # Focus on the location list window after LspShowReferences
+  keepFocusInReferences: false,
 }
 
 # set LSP options from user provided options
