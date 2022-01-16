@@ -676,7 +676,6 @@ def s:renameSymbol(lspserver: dict<any>, newName: string)
   #   interface TextDocumentPositionParams
   req.params = s:getLspTextDocPosition()
   req.params.newName = newName
-  #req.params->extend({newName: newName})
   lspserver.sendMessage(req)
 enddef
 
@@ -795,8 +794,7 @@ def s:selectionRange(lspserver: dict<any>, fname: string)
   var req = lspserver.createRequest('textDocument/selectionRange')
   # interface SelectionRangeParams
   # interface TextDocumentIdentifier
-  req.params->extend({textDocument: {uri: util.LspFileToUri(fname)},
-					positions: [s:getLspPosition()]})
+  req.params->extend({textDocument: {uri: util.LspFileToUri(fname)}, positions: [s:getLspPosition()]})
   lspserver.sendMessage(req)
 enddef
 

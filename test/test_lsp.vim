@@ -2,20 +2,22 @@ vim9script
 # Tests for Vim Language Server Protocol (LSP) client
 # To run the tests, just source this file
 
+g:LSPTest = true
+
 # Test for formatting a file using LSP
 def Test_lsp_formatting()
   :silent! edit Xtest.c
   setline(1, ['  int i;', '  int j;'])
   :redraw!
   :LspFormat
-  :sleep 1
+  :sleep 500m
   assert_equal(['int i;', 'int j;'], getline(1, '$'))
 
   deletebufline('', 1, '$')
   setline(1, ['int f1(int i)', '{', 'int j = 10; return j;', '}'])
   :redraw!
   :LspFormat
-  :sleep 1
+  :sleep 500m
   assert_equal(['int f1(int i) {', '  int j = 10;', '  return j;', '}'],
 							getline(1, '$'))
 
@@ -23,35 +25,35 @@ def Test_lsp_formatting()
   setline(1, ['', 'int     i;'])
   :redraw!
   :LspFormat
-  :sleep 1
+  :sleep 500m
   assert_equal(['', 'int i;'], getline(1, '$'))
 
   deletebufline('', 1, '$')
   setline(1, [' int i;'])
   :redraw!
   :LspFormat
-  :sleep 1
+  :sleep 500m
   assert_equal(['int i;'], getline(1, '$'))
 
   deletebufline('', 1, '$')
   setline(1, ['  int  i; '])
   :redraw!
   :LspFormat
-  :sleep 1
+  :sleep 500m
   assert_equal(['int i;'], getline(1, '$'))
 
   deletebufline('', 1, '$')
   setline(1, ['int  i;', '', '', ''])
   :redraw!
   :LspFormat
-  :sleep 1
+  :sleep 500m
   assert_equal(['int i;'], getline(1, '$'))
 
   deletebufline('', 1, '$')
   setline(1, ['int f1(){int x;int y;x=1;y=2;return x+y;}'])
   :redraw!
   :LspFormat
-  :sleep 1
+  :sleep 500m
   var expected: list<string> =<< trim END
     int f1() {
       int x;
@@ -67,7 +69,7 @@ def Test_lsp_formatting()
   setline(1, ['', '', '', ''])
   :redraw!
   :LspFormat
-  :sleep 1
+  :sleep 500m
   assert_equal([''], getline(1, '$'))
 
   deletebufline('', 1, '$')
@@ -81,7 +83,7 @@ def Test_lsp_formatting()
   setline(1, lines)
   :redraw!
   :4LspFormat
-  :sleep 1
+  :sleep 500m
   expected =<< trim END
     int f1() {
       int i, j;
@@ -119,7 +121,7 @@ def Test_lsp_show_references()
   cursor(5, 2)
   var bnr: number = bufnr()
   :LspShowReferences
-  :sleep 1
+  :sleep 500m
   var qfl: list<dict<any>> = getloclist(0)
   assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
   assert_equal(bnr, qfl[0].bufnr)
@@ -130,7 +132,7 @@ def Test_lsp_show_references()
   :only
   cursor(1, 5)
   :LspShowReferences
-  :sleep 1
+  :sleep 500m
   qfl = getloclist(0)
   assert_equal(1, qfl->len())
   assert_equal([1, 5], [qfl[0].lnum, qfl[0].col])
@@ -152,7 +154,7 @@ def Test_lsp_diags()
     }
   END
   setline(1, lines)
-  :sleep 1
+  :sleep 500m
   var bnr: number = bufnr()
   :redraw!
   :LspDiagShow
@@ -184,15 +186,17 @@ def Test_lsp_diags()
   assert_equal('Error: No more diagnostics found', output[0])
   :%d
   setline(1, ['void blueFunc()', '{', '}'])
-  sleep 1
+  sleep 500m
   output = execute('LspDiagShow')->split("\n")
   assert_match('No diagnostic messages found for', output[0])
 
   :%bw!
 enddef
 
-# Test for LSP code action to apply fixes
+# Test for LSP code action
 def Test_lsp_codeaction()
+  silent! edit Xtest.c
+  sleep 500m
   var lines: list<string> =<< trim END
     void testFunc()
     {
@@ -200,35 +204,125 @@ def Test_lsp_codeaction()
 	count == 20;
     }
   END
-  writefile(lines, 'Xtest.c')
-  var args: list<any> = v:argv->deepcopy()
-  args->add('Xtest.c')
-  var buf = term_start(args, {term_finish: 'close'})
-  buf->term_wait()
+  setline(1, lines)
   sleep 500m
-  buf->term_sendkeys('4G')
-  buf->term_wait()
-  buf->term_sendkeys(":LspCodeAction\<CR>")
-  buf->term_wait()
+  cursor(4, 1)
+  redraw!
+  g:LSPTest_CodeActionChoice = 1
+  :LspCodeAction
   sleep 500m
-  buf->term_sendkeys("1")
-  sleep 50m
-  buf->term_sendkeys("\<CR>")
-  buf->term_wait()
-  sleep 50m
-  buf->term_sendkeys(":wq\<CR>")
-  buf->term_wait()
-  sleep 100m
-  var l = readfile('Xtest.c')
-  assert_equal("\tcount = 20;", l[3])
-  delete('Xtest.c')
+  assert_equal("\tcount = 20;", getline(4))
+
+  setline(4, "\tcount = 20:")
+  cursor(4, 1)
+  sleep 500m
+  g:LSPTest_CodeActionChoice = 0
+  :LspCodeAction
+  sleep 500m
+  assert_equal("\tcount = 20:", getline(4))
+
+  g:LSPTest_CodeActionChoice = 2
+  cursor(4, 1)
+  :LspCodeAction
+  sleep 500m
+  assert_equal("\tcount = 20:", getline(4))
+
+  g:LSPTest_CodeActionChoice = 1
+  cursor(4, 1)
+  :LspCodeAction
+  sleep 500m
+  assert_equal("\tcount = 20;", getline(4))
+
+  :%bw!
+enddef
+
+# Test for LSP symbol rename
+def Test_lsp_rename()
+  silent! edit Xtest.c
+  sleep 500m
+  var lines: list<string> =<< trim END
+    void F1(int count)
+    {
+	count = 20;
+
+	++count;
+    }
+
+    void F2(int count)
+    {
+	count = 5;
+    }
+  END
+  setline(1, lines)
+  sleep 500m
+  cursor(1, 1)
+  search('count')
+  redraw!
+  feedkeys(":LspRename\<CR>er\<CR>", "xt")
+  sleep 500m
+  redraw!
+  var expected: list<string> =<< trim END
+    void F1(int counter)
+    {
+	counter = 20;
+
+	++counter;
+    }
+
+    void F2(int count)
+    {
+	count = 5;
+    }
+  END
+  assert_equal(expected, getline(1, '$'))
+  :%bw!
+enddef
+
+# Test for LSP selection range
+def Test_lsp_selection()
+  silent! edit Xtest.c
+  sleep 500m
+  var lines: list<string> =<< trim END
+    void F1(int count)
+    {
+        int i;
+        for (i = 0; i < 10; i++) {
+           count++;
+        }
+        count = 20;
+    }
+  END
+  setline(1, lines)
+  sleep 500m
+  # start a block-wise visual mode, LspSelectionRange should change this to
+  # a characterwise visual mode.
+  exe "normal! 1G\<C-V>G\"_y"
+  cursor(2, 1)
+  redraw!
+  :LspSelectionRange
+  sleep 500m
+  redraw!
+  normal! y
+  assert_equal('v', visualmode())
+  assert_equal([2, 8], [line("'<"), line("'>")])
+  # start a linewise visual mode, LspSelectionRange should change this to
+  # a characterwise visual mode.
+  exe "normal! 3GViB\"_y"
+  cursor(4, 29)
+  redraw!
+  :LspSelectionRange
+  sleep 500m
+  redraw!
+  normal! y
+  assert_equal('v', visualmode())
+  assert_equal([4, 5, 6, 5], [line("'<"), col("'<"), line("'>"), col("'>")])
   :%bw!
 enddef
 
 def LspRunTests()
   # Edit a dummy C file to start the LSP server
   :edit Xtest.c
-  :sleep 1
+  :sleep 500m
   :%bw!
 
   # Get the list of test functions in this file and call them

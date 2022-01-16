@@ -617,9 +617,10 @@ def s:processSelectionRangeReply(lspserver: dict<any>, req: dict<any>, reply: di
   var start_col: number = util.GetLineByteFromPos(bnr, r.start) + 1
   var end_col: number = util.GetLineByteFromPos(bnr, r.end)
 
+  :normal! v"_y
   setcharpos("'<", [0, r.start.line + 1, start_col, 0])
   setcharpos("'>", [0, r.end.line + 1, end_col, 0])
-  :normal gv
+  :normal! gv
 enddef
 
 # Reply: 'textDocument/foldingRange'

@@ -32,11 +32,20 @@ export def ApplyCodeAction(lspserver: dict<any>, actions: list<dict<any>>): void
     t = t->substitute('\n', '\\n', 'g')
     prompt->add(printf("%d. %s", i + 1, t))
   endfor
-  var choice = inputlist(prompt)
-  if choice < 1 || choice > prompt->len()
-    return
+
+  var choice: number
+
+  if exists('g:LSPTest') && g:LSPTest && exists('g:LSPTest_CodeActionChoice')
+    # Running the LSP unit-tests. Instead of prompting the user, use the
+    # choice set in LSPTest_CodeActionChoice.
+    choice = g:LSPTest_CodeActionChoice
+  else
+    choice = inputlist(prompt)
   endif
 
+  if choice < 1 || choice >= prompt->len()
+    return
+  endif
   var selAction = actions[choice - 1]
 
   # textDocument/codeAction can return either Command[] or CodeAction[].
