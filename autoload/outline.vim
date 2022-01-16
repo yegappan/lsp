@@ -1,12 +1,17 @@
 vim9script
 
 var util = {}
+var opt = {}
 if has('patch-8.2.4019')
   import './util.vim' as util_import
+  import './lspoptions.vim' as opt_import
   util.GetLineByteFromPos = util_import.GetLineByteFromPos
+  opt.lspOptions = opt_import.lspOptions
 else
   import GetLineByteFromPos from './util.vim'
+  import lspOptions from './lspoptions.vim'
   util.GetLineByteFromPos = GetLineByteFromPos
+  opt.lspOptions = lspOptions
 endif
 
 # jump to a symbol selected in the outline window
@@ -234,7 +239,11 @@ export def OpenOutlineWindow()
 
   var prevWinID: number = win_getid()
 
-  :topleft :20vnew LSP-Outline
+  if opt.lspOptions.outlineOnRight
+    execute ':botright :' .. opt.lspOptions.outlineWinSize .. 'vnew LSP-Outline'
+  else
+    execute ':topleft :' .. opt.lspOptions.outlineWinSize .. 'vnew LSP-Outline'
+  endif
   :setlocal modifiable
   :setlocal noreadonly
   :silent! :%d _

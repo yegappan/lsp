@@ -35,6 +35,7 @@ if has('patch-8.2.4019')
   diag.DiagsGetErrorCount = diag_import.DiagsGetErrorCount
   diag.ShowAllDiags = diag_import.ShowAllDiags
   diag.ShowCurrentDiag = diag_import.ShowCurrentDiag
+  diag.ShowCurrentDiagInStatusLine = diag_import.ShowCurrentDiagInStatusLine
   diag.LspDiagsJump = diag_import.LspDiagsJump
   diag.DiagRemoveFile = diag_import.DiagRemoveFile
   symbol.ShowSymbolMenu = symbolsearch_import.ShowSymbolMenu
@@ -54,6 +55,7 @@ else
 	DiagsGetErrorCount,
 	ShowAllDiags,
 	ShowCurrentDiag,
+	ShowCurrentDiagInStatusLine,
 	LspDiagsJump} from './diag.vim'
   import ShowSymbolMenu from './symbolsearch.vim'
   import {OpenOutlineWindow, SkipOutlineRefresh} from './outline.vim'
@@ -72,6 +74,7 @@ else
   diag.DiagsGetErrorCount = DiagsGetErrorCount
   diag.ShowAllDiags = ShowAllDiags
   diag.ShowCurrentDiag = ShowCurrentDiag
+  diag.ShowCurrentDiagInStatusLine = ShowCurrentDiagInStatusLine
   diag.LspDiagsJump = LspDiagsJump
   symbol.ShowSymbolMenu = ShowSymbolMenu
   outline.OpenOutlineWindow = OpenOutlineWindow
@@ -307,8 +310,10 @@ def g:LspDiagExpr(): string
 
   # Display the diagnostic message only if the mouse is over the first two
   # columns
-  if v:beval_col >= 3
-    return ''
+  if opt.lspOptions.noDiagHoverOnLine
+    if v:beval_col >= 3
+      return ''
+    endif
   endif
 
   return diagInfo.message
@@ -364,7 +369,9 @@ def lsp#addFile(bnr: number): void
     setbufvar(bnr, '&completeopt', 'menuone,popup,noinsert,noselect')
     setbufvar(bnr, '&completepopup', 'border:off')
     # <Enter> in insert mode stops completion and inserts a <Enter>
-    inoremap <expr> <buffer> <CR> pumvisible() ? "\<C-Y>\<CR>" : "\<CR>"
+    if !opt.lspOptions.noNewlineInCompletion
+      inoremap <expr> <buffer> <CR> pumvisible() ? "\<C-Y>\<CR>" : "\<CR>"
+    endif
   else
     if s:lspOmniComplEnabled(ftype)
       setbufvar(bnr, '&omnifunc', 'lsp#omniFunc')
@@ -546,6 +553,20 @@ def lsp#showCurrentDiag()
   endif
 
   diag.ShowCurrentDiag(lspserver)
+enddef
+
+def lsp#showCurrentDiagInStatusLine()
+  var ftype = &filetype
+  if ftype == '' || @% == ''
+    return
+  endif
+
+  var lspserver: dict<any> = s:lspGetServer(ftype)
+  if lspserver->empty() || !lspserver.running
+    return
+  endif
+
+  diag.ShowCurrentDiagInStatusLine(lspserver)
 enddef
 
 # get the count of error in the current buffer

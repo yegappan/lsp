@@ -19,6 +19,16 @@ export var lspOptions: dict<any> = {
   hoverInPreview: false,
   # Focus on the location list window after LspShowReferences
   keepFocusInReferences: false,
+  # Suppress adding a new line on completion selection with <CR>
+  noNewlineInCompletion: false,
+  # Outline window size
+  outlineWinSize: 20,
+  # Open outline window on right side
+  outlineOnRight: false,
+  # Suppress diagnostic hover from appearing when the mouse is over the line instead of the signature
+  noDiagHoverOnLine: true,
+  # Show a diagnostic message on a status line
+  showDiagOnStatusLine: false,
 }
 
 # set LSP options from user provided options

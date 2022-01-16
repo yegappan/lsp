@@ -188,21 +188,32 @@ Some of the LSP plugin features can be enabled or disabled by using the
 lsp#setOptions() function. This function accepts a dictionary argument with the
 following optional items:
 
-    autoComplete	In insert mode, automatically complete the current
+autoComplete		In insert mode, automatically complete the current
 			symbol. Otherwise use omni-completion. By default this
 			is set to true.
-    autoHighlight	In normal mode, automatically highlight all the
+autoHighlight		In normal mode, automatically highlight all the
 			occurrences of the symbol under the cursor. By default
 			this is set to false.
-    showSignature	In insert mode, automatically show the current symbol
+showSignature		In insert mode, automatically show the current symbol
 			signature in a popup. By default this is set to true.
-    echoSignature	In insert mode, echo the current symbol signature
+echoSignature		In insert mode, echo the current symbol signature
 			instead of showing it in a popup. By default this is
 			set to false.
-    autoHighlightDiags	Automatically place signs on the lines with a
+autoHighlightDiags	Automatically place signs on the lines with a
 			diagnostic message from the LSP server. By default
 			this is set to true.
-    keepFocusInReferences	Focus on the location list window after LspShowReferences
+keepFocusInReferences	Focus on the location list window after LspShowReferences.
+			By default this is set to false.
+noNewlineInCompletion	Suppress adding a new line on completion selection with <CR>.
+			By default this is set to false.
+outlineWinSize		Outline window size, by default this is 20.
+outlineOnRight		Open the outline window on the right side, by default
+			this is false.
+noDiagHoverOnLine	Suppress diagnostic hover from appearing when
+			the mouse is over the line instead of the signature.
+			By default this is set to true
+showDiagOnStatusLine	Show a diagnostic message on a status line.
+			By default this is set to false
 
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file:
