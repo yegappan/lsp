@@ -424,7 +424,7 @@ def s:gotoDefinition(lspserver: dict<any>, peek: bool): void
   if !peek
     util.PushCursorToTagStack()
   endif
-  lspserver.peekDefDeclRef = peek
+  lspserver.peekSymbol = peek
   var req = lspserver.createRequest('textDocument/definition')
   # interface DefinitionParams
   #   interface TextDocumentPositionParams
@@ -445,7 +445,7 @@ def s:gotoDeclaration(lspserver: dict<any>, peek: bool): void
   if !peek
     util.PushCursorToTagStack()
   endif
-  lspserver.peekDefDeclRef = peek
+  lspserver.peekSymbol = peek
   var req = lspserver.createRequest('textDocument/declaration')
 
   # interface DeclarationParams
@@ -468,7 +468,7 @@ def s:gotoTypeDef(lspserver: dict<any>, peek: bool): void
   if !peek
     util.PushCursorToTagStack()
   endif
-  lspserver.peekDefDeclRef = peek
+  lspserver.peekSymbol = peek
   var req = lspserver.createRequest('textDocument/typeDefinition')
 
   # interface TypeDefinitionParams
@@ -491,7 +491,7 @@ def s:gotoImplementation(lspserver: dict<any>, peek: bool): void
   if !peek
     util.PushCursorToTagStack()
   endif
-  lspserver.peekDefDeclRef = peek
+  lspserver.peekSymbol = peek
   var req = lspserver.createRequest('textDocument/implementation')
 
   # interface ImplementationParams
@@ -568,7 +568,7 @@ def s:showReferences(lspserver: dict<any>, peek: bool): void
   req.params->extend(s:getLspTextDocPosition())
   req.params->extend({context: {includeDeclaration: true}})
 
-  lspserver.peekDefDeclRef = peek
+  lspserver.peekSymbol = peek
   lspserver.sendMessage(req)
 enddef
 
@@ -853,7 +853,7 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
     diagsMap: {},
     workspaceSymbolPopup: 0,
     workspaceSymbolQuery: '',
-    peekDefDeclRef: false
+    peekSymbol: false
   }
   # Add the LSP server functions
   lspserver->extend({

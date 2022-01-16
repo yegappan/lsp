@@ -105,14 +105,14 @@ enddef
 def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if reply.result->empty()
     util.WarnMsg("Error: definition is not found")
-    if !lspserver.peekDefDeclRef
+    if !lspserver.peekSymbol
       # pop the tag stack
       var tagstack: dict<any> = gettagstack()
       if tagstack.length > 0
         settagstack(winnr(), {curidx: tagstack.length}, 't')
       endif
     endif
-    lspserver.peekDefDeclRef = false
+    lspserver.peekSymbol = false
     return
   endif
 
@@ -123,7 +123,7 @@ def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>
     location = reply.result
   endif
   var fname = util.LspUriToFile(location.uri)
-  if lspserver.peekDefDeclRef
+  if lspserver.peekSymbol
     # open the definition/declaration in the preview window and highlight the
     # matching symbol
     exe 'pedit ' .. fname
@@ -171,7 +171,7 @@ def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>
 			location.range.start.character + 1)
   endif
   redraw!
-  lspserver.peekDefDeclRef = false
+  lspserver.peekSymbol = false
 enddef
 
 # process the 'textDocument/signatureHelp' reply from the LSP server
@@ -422,7 +422,7 @@ enddef
 def s:processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if reply.result->empty()
     util.WarnMsg('Error: No references found')
-    lspserver.peekDefDeclRef = false
+    lspserver.peekSymbol = false
     return
   endif
 
@@ -447,15 +447,21 @@ def s:processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
   endfor
 
   var save_winid = win_getid()
-  if lspserver.peekDefDeclRef
+  if lspserver.peekSymbol
     silent! pedit
     wincmd P
   endif
   setloclist(0, [], ' ', {title: 'Symbol Reference', items: qflist})
-  :belowright vert lopen
-  :30wincmd |
+  var mods: string = ''
+  if lspserver.peekSymbol
+    # When peeking the references, open the location list in a vertically
+    # split window to the right and make the location list window 30% of the
+    # source window width
+    mods = 'belowright vert :' .. (winwidth(0) * 30) / 100
+  endif
+  exe mods .. 'lopen'
   save_winid->win_gotoid()
-  lspserver.peekDefDeclRef = false
+  lspserver.peekSymbol = false
 enddef
 
 # process the 'textDocument/documentHighlight' reply from the LSP server
