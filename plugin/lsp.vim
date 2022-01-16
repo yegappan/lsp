@@ -1,9 +1,10 @@
-if v:version < 802 || !has('patch-8.2.2342')
+vim9script
+
+# LSP plugin for vim9
+
+if !has('patch-8.2.2342')
   finish
 endif
-
-vim9script
-# LSP plugin for vim9
 
 var opt = {}
 if has('patch-8.2.4019')
