@@ -450,7 +450,7 @@ def lsp#addServer(serverList: list<dict<any>>)
       server['omnicompl'] = v:true
     endif
 
-    if !server.path->filereadable()
+    if !executable(server.path)
       util.ErrMsg('Error: LSP server ' .. server.path .. ' is not found')
       return
     endif
