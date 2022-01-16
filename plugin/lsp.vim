@@ -1,23 +1,33 @@
-" LSP plugin for vim9
-
-" Needs Vim 8.2.2342 and higher
 if v:version < 802 || !has('patch-8.2.2342')
   finish
 endif
 
+vim9script
+# LSP plugin for vim9
+
+var opt = {}
+if has('patch-8.2.4019')
+  import '../autoload/lspoptions.vim' as opt_import
+  opt.lspOptions = opt_import.lspOptions
+else
+  import lspOptions from '../autoload/lspoptions.vim'
+  opt.lspOptions = lspOptions
+endif
+
 augroup LSPAutoCmds
   au!
-  autocmd BufNewFile,BufReadPost *
-			  \ call lsp#addFile(expand('<abuf>') + 0)
-  autocmd BufWipeOut *
-			  \ call lsp#removeFile(expand('<abuf>') + 0)
+  autocmd BufNewFile,BufReadPost * lsp#addFile(bufnr('%'))
+  autocmd BufWipeOut * lsp#removeFile(bufnr('%'))
+  if opt.lspOptions.showDiagOnStatusLine
+    autocmd CursorMoved * lsp#showCurrentDiagInStatusLine()
+  endif
 augroup END
 
-" TODO: Is it needed to shutdown all the LSP servers when exiting Vim?
-" This takes some time.
-" autocmd VimLeavePre * call lsp#stopAllServers()
+# TODO: Is it needed to shutdown all the LSP servers when exiting Vim?
+# This takes some time.
+# autocmd VimLeavePre * call lsp#stopAllServers()
 
-" LSP commands
+# LSP commands
 command! -nargs=0 -bar LspShowServers call lsp#showServers()
 command! -nargs=1 -bar LspSetTrace call lsp#setTraceServer(<q-args>)
 command! -nargs=0 -bar LspGotoDefinition call lsp#gotoDefinition(v:false)
@@ -52,7 +62,7 @@ command! -nargs=0 -bar LspWorkspaceListFolders call lsp#listWorkspaceFolders()
 command! -nargs=1 -bar -complete=dir LspWorkspaceAddFolder call lsp#addWorkspaceFolder(<q-args>)
 command! -nargs=1 -bar -complete=dir LspWorkspaceRemoveFolder call lsp#removeWorkspaceFolder(<q-args>)
 
-" Add the GUI menu entries
+# Add the GUI menu entries
 if has('gui_running')
   anoremenu <silent> L&sp.Goto.Definition :call lsp#gotoDefinition(v:false)<CR>
   anoremenu <silent> L&sp.Goto.Declaration :call lsp#gotoDeclaration(v:false)<CR>
@@ -73,7 +83,7 @@ if has('gui_running')
   anoremenu <silent> L&sp.Highlight\ Symbol :call lsp#docHighlight()<CR>
   anoremenu <silent> L&sp.Highlight\ Clear :call lsp#docHighlightClear()<CR>
 
-  " Diagnostics
+  # Diagnostics
   anoremenu <silent> L&sp.Diagnostics.Current :call lsp#showCurrentDiag<CR>
   anoremenu <silent> L&sp.Diagnostics.Show\ All :call lsp#showDiagnostics()<CR>
   anoremenu <silent> L&sp.Diagnostics.First :call lsp#jumpToDiag('first')<CR>
@@ -96,4 +106,4 @@ if has('gui_running')
   endif
 endif
 
-" vim: shiftwidth=2 softtabstop=2
+# vim: shiftwidth=2 softtabstop=2

@@ -190,6 +190,25 @@ export def ShowCurrentDiag(lspserver: dict<any>)
   endif
 enddef
 
+# Show the diagnostic message for the current line without linebreak
+export def ShowCurrentDiagInStatusLine(lspserver: dict<any>)
+  var bnr: number = bufnr()
+  var lnum: number = line('.')
+  var diag: dict<any> = lspserver.getDiagByLine(bnr, lnum)
+  if !diag->empty()
+    # 15 is a enough length not to cause line break
+    var max_width = &columns - 15
+    var code = ""
+    if has_key(diag, 'code')
+      code = "[" .. diag.code .. "] "
+    endif
+    var msgNoLineBreak = code .. substitute(substitute(diag.message, "\n", " ", ""), "\\n", " ", "")
+    echo msgNoLineBreak[ : max_width]
+  else
+    echo ""
+  endif
+enddef
+
 # Get the diagnostic from the LSP server for a particular line in a file
 export def GetDiagByLine(lspserver: dict<any>, bnr: number, lnum: number): dict<any>
   if lspserver.diagsMap->has_key(bnr) &&
