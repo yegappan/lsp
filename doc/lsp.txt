@@ -202,6 +202,7 @@ following optional items:
     autoHighlightDiags	Automatically place signs on the lines with a
 			diagnostic message from the LSP server. By default
 			this is set to true.
+    keepFocusInReferences	Focus on the location list window after LspShowReferences
 
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file:

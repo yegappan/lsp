@@ -460,7 +460,9 @@ def s:processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
     mods = 'belowright vert :' .. (winwidth(0) * 30) / 100
   endif
   exe mods .. 'lopen'
-  save_winid->win_gotoid()
+  if !opt.lspOptions.keepFocusInReferences
+    save_winid->win_gotoid()
+  endif
   lspserver.peekSymbol = false
 enddef
 
