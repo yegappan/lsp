@@ -9,6 +9,7 @@ var util = {}
 var diag = {}
 var outline = {}
 var textedit = {}
+var symbol = {}
 var codeaction = {}
 
 if has('patch-8.2.4019')
@@ -17,6 +18,7 @@ if has('patch-8.2.4019')
   import './diag.vim' as diag_import
   import './outline.vim' as outline_import
   import './textedit.vim' as textedit_import
+  import './symbol.vim' as symbol_import
   import './codeaction.vim' as codeaction_import
 
   opt.lspOptions = opt_import.lspOptions
@@ -29,6 +31,8 @@ if has('patch-8.2.4019')
   outline.UpdateOutlineWindow = outline_import.UpdateOutlineWindow
   textedit.ApplyTextEdits = textedit_import.ApplyTextEdits
   textedit.ApplyWorkspaceEdit = textedit_import.ApplyWorkspaceEdit
+  symbol.ShowReferences = symbol_import.ShowReferences
+  symbol.GotoSymbol = symbol_import.GotoSymbol
   codeaction.ApplyCodeAction = codeaction_import.ApplyCodeAction
 else
   import lspOptions from './lspoptions.vim'
@@ -40,6 +44,7 @@ else
   import DiagNotification from './diag.vim'
   import UpdateOutlineWindow from './outline.vim'
   import {ApplyTextEdits, ApplyWorkspaceEdit} from './textedit.vim'
+  import {ShowReferences, GotoSymbol} from './symbol.vim'
   import ApplyCodeAction from './codeaction.vim'
 
   opt.lspOptions = lspOptions
@@ -52,6 +57,8 @@ else
   outline.UpdateOutlineWindow = UpdateOutlineWindow
   textedit.ApplyTextEdits = ApplyTextEdits
   textedit.ApplyWorkspaceEdit = ApplyWorkspaceEdit
+  symbol.ShowReferences = ShowReferences
+  symbol.GotoSymbol = GotoSymbol
   codeaction.ApplyCodeAction = ApplyCodeAction
 endif
 
@@ -103,75 +110,18 @@ enddef
 # the LSP server
 # Result: Location | Location[] | LocationLink[] | null
 def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
-  if reply.result->empty()
-    util.WarnMsg("Error: definition is not found")
-    if !lspserver.peekSymbol
-      # pop the tag stack
-      var tagstack: dict<any> = gettagstack()
-      if tagstack.length > 0
-        settagstack(winnr(), {curidx: tagstack.length}, 't')
-      endif
-    endif
-    lspserver.peekSymbol = false
-    return
-  endif
-
   var location: dict<any>
   if reply.result->type() == v:t_list
-    location = reply.result[0]
+    if !reply.result->empty()
+      location = reply.result[0]
+    else
+      location = {}
+    endif
   else
     location = reply.result
   endif
-  var fname = util.LspUriToFile(location.uri)
-  if lspserver.peekSymbol
-    # open the definition/declaration in the preview window and highlight the
-    # matching symbol
-    exe 'pedit ' .. fname
-    var cur_wid = win_getid()
-    wincmd P
-    var pvwbuf = bufnr()
-    setcursorcharpos(location.range.start.line + 1,
-			location.range.start.character + 1)
-    silent! matchdelete(101)
-    var pos: list<number> = []
-    var start_col: number
-    var end_col: number
-    start_col = util.GetLineByteFromPos(pvwbuf, location.range.start) + 1
-    end_col = util.GetLineByteFromPos(pvwbuf, location.range.end) + 1
-    pos->add(location.range.start.line + 1)
-    pos->extend([start_col, end_col - start_col])
-    matchaddpos('Search', [pos], 10, 101)
-    win_gotoid(cur_wid)
-  else
-    # jump to the file and line containing the symbol
-    var wid = fname->bufwinid()
-    if wid != -1
-      wid->win_gotoid()
-    else
-      var bnr: number = fname->bufnr()
-      if bnr != -1
-        if &modified || &buftype != ''
-          exe 'sbuffer ' .. bnr
-        else
-          exe 'buf ' .. bnr
-        endif
-      else
-        if &modified || &buftype != ''
-          # if the current buffer has unsaved changes, then open the file in a
-          # new window
-          exe 'split ' .. fname
-        else
-          exe 'edit  ' .. fname
-        endif
-      endif
-    endif
-    # Set the previous cursor location mark
-    setpos("'`", getcurpos())
-    setcursorcharpos(location.range.start.line + 1,
-			location.range.start.character + 1)
-  endif
-  redraw!
-  lspserver.peekSymbol = false
+
+  symbol.GotoSymbol(lspserver, location)
 enddef
 
 # process the 'textDocument/signatureHelp' reply from the LSP server
@@ -420,50 +370,7 @@ enddef
 # process the 'textDocument/references' reply from the LSP server
 # Result: Location[] | null
 def s:processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
-  if reply.result->empty()
-    util.WarnMsg('Error: No references found')
-    lspserver.peekSymbol = false
-    return
-  endif
-
-  # create a quickfix list with the location of the references
-  var locations: list<dict<any>> = reply.result
-  var qflist: list<dict<any>> = []
-  for loc in locations
-    var fname: string = util.LspUriToFile(loc.uri)
-    var bnr: number = fname->bufnr()
-    if bnr == -1
-      bnr = fname->bufadd()
-    endif
-    if !bnr->bufloaded()
-      bnr->bufload()
-    endif
-    var text: string = bnr->getbufline(loc.range.start.line + 1)[0]
-						->trim("\t ", 1)
-    qflist->add({filename: fname,
-			lnum: loc.range.start.line + 1,
-			col: util.GetLineByteFromPos(bnr, loc.range.start) + 1,
-			text: text})
-  endfor
-
-  var save_winid = win_getid()
-  if lspserver.peekSymbol
-    silent! pedit
-    wincmd P
-  endif
-  setloclist(0, [], ' ', {title: 'Symbol Reference', items: qflist})
-  var mods: string = ''
-  if lspserver.peekSymbol
-    # When peeking the references, open the location list in a vertically
-    # split window to the right and make the location list window 30% of the
-    # source window width
-    mods = 'belowright vert :' .. (winwidth(0) * 30) / 100
-  endif
-  exe mods .. 'lopen'
-  if !opt.lspOptions.keepFocusInReferences
-    save_winid->win_gotoid()
-  endif
-  lspserver.peekSymbol = false
+  symbol.ShowReferences(lspserver, reply.result)
 enddef
 
 # process the 'textDocument/documentHighlight' reply from the LSP server

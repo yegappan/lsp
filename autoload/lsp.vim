@@ -19,7 +19,7 @@ if has('patch-8.2.4019')
   import './lspserver.vim' as server_import
   import './util.vim' as util_import
   import './diag.vim' as diag_import
-  import './symbolsearch.vim' as symbolsearch_import
+  import './symbol.vim' as symbol_import
   import './outline.vim' as outline_import
 
   opt.LspOptionsSet = opt_import.LspOptionsSet
@@ -37,7 +37,7 @@ if has('patch-8.2.4019')
   diag.ShowCurrentDiag = diag_import.ShowCurrentDiag
   diag.LspDiagsJump = diag_import.LspDiagsJump
   diag.DiagRemoveFile = diag_import.DiagRemoveFile
-  symbol.ShowSymbolMenu = symbolsearch_import.ShowSymbolMenu
+  symbol.ShowSymbolMenu = symbol_import.ShowSymbolMenu
   outline.OpenOutlineWindow = outline_import.OpenOutlineWindow
   outline.SkipOutlineRefresh = outline_import.SkipOutlineRefresh
 else
@@ -55,7 +55,7 @@ else
 	ShowAllDiags,
 	ShowCurrentDiag,
 	LspDiagsJump} from './diag.vim'
-  import ShowSymbolMenu from './symbolsearch.vim'
+  import ShowSymbolMenu from './symbol.vim'
   import {OpenOutlineWindow, SkipOutlineRefresh} from './outline.vim'
 
   opt.LspOptionsSet = LspOptionsSet
