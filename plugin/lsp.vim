@@ -34,7 +34,8 @@ command! -nargs=0 -bar LspDiagCurrent call lsp#showCurrentDiag()
 command! -nargs=0 -bar LspDiagFirst call lsp#jumpToDiag('first')
 command! -nargs=0 -bar LspDiagNext call lsp#jumpToDiag('next')
 command! -nargs=0 -bar LspDiagPrev call lsp#jumpToDiag('prev')
-command! -nargs=0 -bar LspShowReferences call lsp#showReferences()
+command! -nargs=0 -bar LspShowReferences call lsp#showReferences(v:false)
+command! -nargs=0 -bar LspPeekReferences call lsp#showReferences(v:true)
 command! -nargs=0 -bar LspHighlight call lsp#docHighlight()
 command! -nargs=0 -bar LspHighlightClear call lsp#docHighlightClear()
 command! -nargs=0 -bar LspOutline call lsp#outline()
@@ -59,7 +60,7 @@ if has('gui_running')
   anoremenu <silent> L&sp.Goto.TypeDef :call lsp#gotoTypedef(v:false)<CR>
 
   anoremenu <silent> L&sp.Show\ Signature :call lsp#showSignature()<CR>
-  anoremenu <silent> L&sp.Show\ References :call lsp#showReferences()<CR>
+  anoremenu <silent> L&sp.Show\ References :call lsp#showReferences(v:false)<CR>
   anoremenu <silent> L&sp.Show\ Detail :call lsp#hover()<CR>
   anoremenu <silent> L&sp.Outline :call lsp#outline()<CR>
 
@@ -85,7 +86,7 @@ if has('gui_running')
     anoremenu <silent> PopUp.L&sp.Go\ to\ Declaration
 	  \ :call lsp#gotoDeclaration(v:false)<CR>
     anoremenu <silent> Popup.L&sp.Find\ All\ References
-	  \ :call lsp#showReferences()<CR>
+	  \ :call lsp#showReferences(v:false)<CR>
     anoremenu <silent> PopUp.L&sp.Show\ Detail
           \ :call lsp#hover()<CR>
     anoremenu <silent> PopUp.L&sp.Highlight\ Symbol

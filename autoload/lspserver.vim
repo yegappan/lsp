@@ -424,7 +424,7 @@ def s:gotoDefinition(lspserver: dict<any>, peek: bool): void
   if !peek
     util.PushCursorToTagStack()
   endif
-  lspserver.peekDefDecl = peek
+  lspserver.peekDefDeclRef = peek
   var req = lspserver.createRequest('textDocument/definition')
   # interface DefinitionParams
   #   interface TextDocumentPositionParams
@@ -445,7 +445,7 @@ def s:gotoDeclaration(lspserver: dict<any>, peek: bool): void
   if !peek
     util.PushCursorToTagStack()
   endif
-  lspserver.peekDefDecl = peek
+  lspserver.peekDefDeclRef = peek
   var req = lspserver.createRequest('textDocument/declaration')
 
   # interface DeclarationParams
@@ -468,7 +468,7 @@ def s:gotoTypeDef(lspserver: dict<any>, peek: bool): void
   if !peek
     util.PushCursorToTagStack()
   endif
-  lspserver.peekDefDecl = peek
+  lspserver.peekDefDeclRef = peek
   var req = lspserver.createRequest('textDocument/typeDefinition')
 
   # interface TypeDefinitionParams
@@ -491,7 +491,7 @@ def s:gotoImplementation(lspserver: dict<any>, peek: bool): void
   if !peek
     util.PushCursorToTagStack()
   endif
-  lspserver.peekDefDecl = peek
+  lspserver.peekDefDeclRef = peek
   var req = lspserver.createRequest('textDocument/implementation')
 
   # interface ImplementationParams
@@ -554,7 +554,7 @@ enddef
 
 # Request: "textDocument/references"
 # Param: ReferenceParams
-def s:showReferences(lspserver: dict<any>): void
+def s:showReferences(lspserver: dict<any>, peek: bool): void
   # Check whether LSP server supports getting reference information
   if !lspserver.caps->has_key('referencesProvider')
 			|| !lspserver.caps.referencesProvider
@@ -568,6 +568,7 @@ def s:showReferences(lspserver: dict<any>): void
   req.params->extend(s:getLspTextDocPosition())
   req.params->extend({context: {includeDeclaration: true}})
 
+  lspserver.peekDefDeclRef = peek
   lspserver.sendMessage(req)
 enddef
 
@@ -852,7 +853,7 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
     diagsMap: {},
     workspaceSymbolPopup: 0,
     workspaceSymbolQuery: '',
-    peekDefDecl: false
+    peekDefDeclRef: false
   }
   # Add the LSP server functions
   lspserver->extend({

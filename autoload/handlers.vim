@@ -105,14 +105,14 @@ enddef
 def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if reply.result->empty()
     util.WarnMsg("Error: definition is not found")
-    if !lspserver.peekDefDecl
+    if !lspserver.peekDefDeclRef
       # pop the tag stack
       var tagstack: dict<any> = gettagstack()
       if tagstack.length > 0
         settagstack(winnr(), {curidx: tagstack.length}, 't')
       endif
     endif
-    lspserver.peekDefDecl = false
+    lspserver.peekDefDeclRef = false
     return
   endif
 
@@ -123,7 +123,7 @@ def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>
     location = reply.result
   endif
   var fname = util.LspUriToFile(location.uri)
-  if lspserver.peekDefDecl
+  if lspserver.peekDefDeclRef
     # open the definition/declaration in the preview window and highlight the
     # matching symbol
     exe 'pedit ' .. fname
@@ -171,7 +171,7 @@ def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>
 			location.range.start.character + 1)
   endif
   redraw!
-  lspserver.peekDefDecl = false
+  lspserver.peekDefDeclRef = false
 enddef
 
 # process the 'textDocument/signatureHelp' reply from the LSP server
@@ -422,6 +422,7 @@ enddef
 def s:processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if reply.result->empty()
     util.WarnMsg('Error: No references found')
+    lspserver.peekDefDeclRef = false
     return
   endif
 
@@ -444,10 +445,17 @@ def s:processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
 			col: util.GetLineByteFromPos(bnr, loc.range.start) + 1,
 			text: text})
   endfor
-  setloclist(0, [], ' ', {title: 'Symbol Reference', items: qflist})
+
   var save_winid = win_getid()
-  :lopen
+  if lspserver.peekDefDeclRef
+    silent! pedit
+    wincmd P
+  endif
+  setloclist(0, [], ' ', {title: 'Symbol Reference', items: qflist})
+  :belowright vert lopen
+  :30wincmd |
   save_winid->win_gotoid()
+  lspserver.peekDefDeclRef = false
 enddef
 
 # process the 'textDocument/documentHighlight' reply from the LSP server

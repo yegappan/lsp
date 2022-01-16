@@ -690,7 +690,7 @@ def lsp#hover()
 enddef
 
 # show symbol references
-def lsp#showReferences()
+def lsp#showReferences(peek: bool)
   var ftype = &filetype
   if ftype == ''
     return
@@ -711,7 +711,7 @@ def lsp#showReferences()
     return
   endif
 
-  lspserver.showReferences()
+  lspserver.showReferences(peek)
 enddef
 
 # highlight all the places where a symbol is referenced

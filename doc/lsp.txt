@@ -93,6 +93,9 @@ The following commands are provided:
 :LspDiagCurrent		Display the diagnostic message for the current line.
 :LspShowReferences	Display the list of references to the keyword under
 			cursor in a new location list.
+:LspPeekReferences	Display the list of references to the keyword under
+			cursor in a location list associated with the preview
+			window.
 :LspHighlight		Highlight all the matches for the keyword under cursor
 :LspHighlightClear	Clear all the matches highlighted by :LspHighlight
 :LspOutline		Show the list of symbols defined in the current file
@@ -313,6 +316,11 @@ diagnostic messages, you can add the following line to your .vimrc file:
 :LspShowReferences	Creates a new location list with the list of locations
 			where the symbol under the cursor is referenced and
 			opens the location window.
+
+						*:LspPeekReferences*
+:LspPeekReferences	Opens the preview window and creates a new location
+			list with the list of locations where the symbol under
+			the cursor is referenced and opens the location window.
 
 						*:LspHighlight*
 :LspHighlight		Highlights all the matches for the symbol under
