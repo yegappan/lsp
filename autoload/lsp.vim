@@ -157,7 +157,7 @@ def lsp#showServers()
 enddef
 
 # Go to a definition using "textDocument/definition" LSP request
-def lsp#gotoDefinition()
+def lsp#gotoDefinition(peek: bool)
   var ftype: string = &filetype
   if ftype == '' || @% == ''
     return
@@ -173,11 +173,11 @@ def lsp#gotoDefinition()
     return
   endif
 
-  lspserver.gotoDefinition()
+  lspserver.gotoDefinition(peek)
 enddef
 
 # Go to a declaration using "textDocument/declaration" LSP request
-def lsp#gotoDeclaration()
+def lsp#gotoDeclaration(peek: bool)
   var ftype: string = &filetype
   if ftype == ''
     return
@@ -193,11 +193,11 @@ def lsp#gotoDeclaration()
     return
   endif
 
-  lspserver.gotoDeclaration()
+  lspserver.gotoDeclaration(peek)
 enddef
 
 # Go to a type definition using "textDocument/typeDefinition" LSP request
-def lsp#gotoTypedef()
+def lsp#gotoTypedef(peek: bool)
   var ftype: string = &filetype
   if ftype == ''
     return
@@ -213,11 +213,11 @@ def lsp#gotoTypedef()
     return
   endif
 
-  lspserver.gotoTypeDef()
+  lspserver.gotoTypeDef(peek)
 enddef
 
 # Go to a implementation using "textDocument/implementation" LSP request
-def lsp#gotoImplementation()
+def lsp#gotoImplementation(peek: bool)
   var ftype: string = &filetype
   if ftype == ''
     return
@@ -233,7 +233,7 @@ def lsp#gotoImplementation()
     return
   endif
 
-  lspserver.gotoImplementation()
+  lspserver.gotoImplementation(peek)
 enddef
 
 # Show the signature using "textDocument/signatureHelp" LSP method

@@ -73,6 +73,14 @@ The following commands are provided:
 :LspGotoDeclaration	Go to the declaration of the symbol under cursor
 :LspGotoTypeDef		Go to the type definition of the symbol under cursor
 :LspGotoImpl		Go to the implementation of the symbol under cursor
+:LspPeekDefinition	Open the definition of the symbol under cursor in the
+			preview window.
+:LspPeekDeclaration	Open the declaration of the symbol under cursor in the
+			preview window.
+:LspPeekTypeDef		Open the type definition of the symbol under cursor in
+			the preview window.
+:LspPeekImpl		Open the implementation of the symbol under cursor in
+			the preview window.
 :LspShowSignature	Display the signature of the symbol under cursor.
 :LspDiagShow		Display the diagnostics messages from the LSP server
 			for the current buffer in a location list.
@@ -232,6 +240,31 @@ diagnostic messages, you can add the following line to your .vimrc file:
 			cursor. The behavior of this command is similar to the
 			|:LspGotoDefinition| command. Note that not all the LSP
 			servers support this feature.
+
+						*:LspPeekDefinition*
+:LspPeekDefinition	Displays the line where the symbol under the cursor is
+			defined in the |preview-window|. The symbol is
+			highlighted in the preview window.
+
+						*:LspPeekDeclaration*
+:LspPeekDeclaration	Displays the line where the symbol under the
+			cursor is declared in the |preview-window|. The
+			behavior of this command is similar to the
+			|:LspPeekDefinition| command.
+
+						*:LspPeekTypeDef*
+:LspPeekTypeDef		Displays the line where the type of the symbol under
+			the cursor is defined in the |preview-window|. The
+			behavior of this command is similar to the
+			|:LspPeekDefinition| command. Note that not all the
+			LSP servers support this feature.
+
+						*:LspPeekImpl*
+:LspPeekImpl		Displays the implementation of the symbol under the
+			cursor in the |preview-window|. The behavior of this
+			command is similar to the |:LspPeekDefinition|
+			command. Note that not all the LSP servers support
+			this feature.
 
 						*:LspShowSignature*
 :LspShowSignature	Displays the signature of the symbol (e.g. a function

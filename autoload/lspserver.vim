@@ -413,7 +413,7 @@ enddef
 
 # Request: "textDocument/definition"
 # Param: DefinitionParams
-def s:gotoDefinition(lspserver: dict<any>): void
+def s:gotoDefinition(lspserver: dict<any>, peek: bool): void
   # Check whether LSP server supports jumping to a definition
   if !lspserver.caps->has_key('definitionProvider')
 				|| !lspserver.caps.definitionProvider
@@ -421,7 +421,10 @@ def s:gotoDefinition(lspserver: dict<any>): void
     return
   endif
 
-  util.PushCursorToTagStack()
+  if !peek
+    util.PushCursorToTagStack()
+  endif
+  lspserver.peekDefDecl = peek
   var req = lspserver.createRequest('textDocument/definition')
   # interface DefinitionParams
   #   interface TextDocumentPositionParams
@@ -431,7 +434,7 @@ enddef
 
 # Request: "textDocument/declaration"
 # Param: DeclarationParams
-def s:gotoDeclaration(lspserver: dict<any>): void
+def s:gotoDeclaration(lspserver: dict<any>, peek: bool): void
   # Check whether LSP server supports jumping to a declaration
   if !lspserver.caps->has_key('declarationProvider')
 			|| !lspserver.caps.declarationProvider
@@ -439,7 +442,10 @@ def s:gotoDeclaration(lspserver: dict<any>): void
     return
   endif
 
-  util.PushCursorToTagStack()
+  if !peek
+    util.PushCursorToTagStack()
+  endif
+  lspserver.peekDefDecl = peek
   var req = lspserver.createRequest('textDocument/declaration')
 
   # interface DeclarationParams
@@ -451,7 +457,7 @@ enddef
 
 # Request: "textDocument/typeDefinition"
 # Param: TypeDefinitionParams
-def s:gotoTypeDef(lspserver: dict<any>): void
+def s:gotoTypeDef(lspserver: dict<any>, peek: bool): void
   # Check whether LSP server supports jumping to a type definition
   if !lspserver.caps->has_key('typeDefinitionProvider')
 			|| !lspserver.caps.typeDefinitionProvider
@@ -459,7 +465,10 @@ def s:gotoTypeDef(lspserver: dict<any>): void
     return
   endif
 
-  util.PushCursorToTagStack()
+  if !peek
+    util.PushCursorToTagStack()
+  endif
+  lspserver.peekDefDecl = peek
   var req = lspserver.createRequest('textDocument/typeDefinition')
 
   # interface TypeDefinitionParams
@@ -471,7 +480,7 @@ enddef
 
 # Request: "textDocument/implementation"
 # Param: ImplementationParams
-def s:gotoImplementation(lspserver: dict<any>): void
+def s:gotoImplementation(lspserver: dict<any>, peek: bool): void
   # Check whether LSP server supports jumping to a implementation
   if !lspserver.caps->has_key('implementationProvider')
 			|| !lspserver.caps.implementationProvider
@@ -479,7 +488,10 @@ def s:gotoImplementation(lspserver: dict<any>): void
     return
   endif
 
-  util.PushCursorToTagStack()
+  if !peek
+    util.PushCursorToTagStack()
+  endif
+  lspserver.peekDefDecl = peek
   var req = lspserver.createRequest('textDocument/implementation')
 
   # interface ImplementationParams
@@ -839,7 +851,8 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
     completionTriggerChars: [],
     diagsMap: {},
     workspaceSymbolPopup: 0,
-    workspaceSymbolQuery: ''
+    workspaceSymbolQuery: '',
+    peekDefDecl: false
   }
   # Add the LSP server functions
   lspserver->extend({

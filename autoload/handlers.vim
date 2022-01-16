@@ -105,11 +105,14 @@ enddef
 def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if reply.result->empty()
     util.WarnMsg("Error: definition is not found")
-    # pop the tag stack
-    var tagstack: dict<any> = gettagstack()
-    if tagstack.length > 0
-      settagstack(winnr(), {curidx: tagstack.length}, 't')
+    if !lspserver.peekDefDecl
+      # pop the tag stack
+      var tagstack: dict<any> = gettagstack()
+      if tagstack.length > 0
+        settagstack(winnr(), {curidx: tagstack.length}, 't')
+      endif
     endif
+    lspserver.peekDefDecl = false
     return
   endif
 
@@ -120,32 +123,55 @@ def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>
     location = reply.result
   endif
   var fname = util.LspUriToFile(location.uri)
-  var wid = fname->bufwinid()
-  if wid != -1
-    wid->win_gotoid()
+  if lspserver.peekDefDecl
+    # open the definition/declaration in the preview window and highlight the
+    # matching symbol
+    exe 'pedit ' .. fname
+    var cur_wid = win_getid()
+    wincmd P
+    var pvwbuf = bufnr()
+    setcursorcharpos(location.range.start.line + 1,
+			location.range.start.character + 1)
+    silent! matchdelete(101)
+    var pos: list<number> = []
+    var start_col: number
+    var end_col: number
+    start_col = util.GetLineByteFromPos(pvwbuf, location.range.start) + 1
+    end_col = util.GetLineByteFromPos(pvwbuf, location.range.end) + 1
+    pos->add(location.range.start.line + 1)
+    pos->extend([start_col, end_col - start_col])
+    matchaddpos('Search', [pos], 10, 101)
+    win_gotoid(cur_wid)
   else
-    var bnr: number = fname->bufnr()
-    if bnr != -1
-      if &modified || &buftype != ''
-	exe 'sbuffer ' .. bnr
-      else
-	exe 'buf ' .. bnr
-      endif
+    # jump to the file and line containing the symbol
+    var wid = fname->bufwinid()
+    if wid != -1
+      wid->win_gotoid()
     else
-      if &modified || &buftype != ''
-	# if the current buffer has unsaved changes, then open the file in a
-	# new window
-	exe 'split ' .. fname
+      var bnr: number = fname->bufnr()
+      if bnr != -1
+        if &modified || &buftype != ''
+          exe 'sbuffer ' .. bnr
+        else
+          exe 'buf ' .. bnr
+        endif
       else
-	exe 'edit  ' .. fname
+        if &modified || &buftype != ''
+          # if the current buffer has unsaved changes, then open the file in a
+          # new window
+          exe 'split ' .. fname
+        else
+          exe 'edit  ' .. fname
+        endif
       endif
     endif
-  endif
-  # Set the previous cursor location mark
-  setpos("'`", getcurpos())
-  setcursorcharpos(location.range.start.line + 1,
+    # Set the previous cursor location mark
+    setpos("'`", getcurpos())
+    setcursorcharpos(location.range.start.line + 1,
 			location.range.start.character + 1)
+  endif
   redraw!
+  lspserver.peekDefDecl = false
 enddef
 
 # process the 'textDocument/signatureHelp' reply from the LSP server

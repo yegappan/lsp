@@ -20,10 +20,14 @@ augroup END
 " LSP commands
 command! -nargs=0 -bar LspShowServers call lsp#showServers()
 command! -nargs=1 -bar LspSetTrace call lsp#setTraceServer(<q-args>)
-command! -nargs=0 -bar LspGotoDefinition call lsp#gotoDefinition()
-command! -nargs=0 -bar LspGotoDeclaration call lsp#gotoDeclaration()
-command! -nargs=0 -bar LspGotoTypeDef call lsp#gotoTypedef()
-command! -nargs=0 -bar LspGotoImpl call lsp#gotoImplementation()
+command! -nargs=0 -bar LspGotoDefinition call lsp#gotoDefinition(v:false)
+command! -nargs=0 -bar LspGotoDeclaration call lsp#gotoDeclaration(v:false)
+command! -nargs=0 -bar LspGotoTypeDef call lsp#gotoTypedef(v:false)
+command! -nargs=0 -bar LspGotoImpl call lsp#gotoImplementation(v:false)
+command! -nargs=0 -bar LspPeekDefinition call lsp#gotoDefinition(v:true)
+command! -nargs=0 -bar LspPeekDeclaration call lsp#gotoDeclaration(v:true)
+command! -nargs=0 -bar LspPeekTypeDef call lsp#gotoTypedef(v:true)
+command! -nargs=0 -bar LspPeekImpl call lsp#gotoImplementation(v:true)
 command! -nargs=0 -bar LspShowSignature call lsp#showSignature()
 command! -nargs=0 -bar LspDiagShow call lsp#showDiagnostics()
 command! -nargs=0 -bar LspDiagCurrent call lsp#showCurrentDiag()
@@ -49,10 +53,10 @@ command! -nargs=1 -bar -complete=dir LspWorkspaceRemoveFolder call lsp#removeWor
 
 " Add the GUI menu entries
 if has('gui_running')
-  anoremenu <silent> L&sp.Goto.Definition :call lsp#gotoDefinition()<CR>
-  anoremenu <silent> L&sp.Goto.Declaration :call lsp#gotoDeclaration()<CR>
-  anoremenu <silent> L&sp.Goto.Implementation :call lsp#gotoImplementation()<CR>
-  anoremenu <silent> L&sp.Goto.TypeDef :call lsp#gotoTypedef()<CR>
+  anoremenu <silent> L&sp.Goto.Definition :call lsp#gotoDefinition(v:false)<CR>
+  anoremenu <silent> L&sp.Goto.Declaration :call lsp#gotoDeclaration(v:false)<CR>
+  anoremenu <silent> L&sp.Goto.Implementation :call lsp#gotoImplementation(v:false)<CR>
+  anoremenu <silent> L&sp.Goto.TypeDef :call lsp#gotoTypedef(v:false)<CR>
 
   anoremenu <silent> L&sp.Show\ Signature :call lsp#showSignature()<CR>
   anoremenu <silent> L&sp.Show\ References :call lsp#showReferences()<CR>
@@ -77,9 +81,9 @@ if has('gui_running')
 
   if &mousemodel =~ 'popup'
     anoremenu <silent> PopUp.L&sp.Go\ to\ Definition
-	  \ :call lsp#gotoDefinition()<CR>
+	  \ :call lsp#gotoDefinition(v:false)<CR>
     anoremenu <silent> PopUp.L&sp.Go\ to\ Declaration
-	  \ :call lsp#gotoDeclaration()<CR>
+	  \ :call lsp#gotoDeclaration(v:false)<CR>
     anoremenu <silent> Popup.L&sp.Find\ All\ References
 	  \ :call lsp#showReferences()<CR>
     anoremenu <silent> PopUp.L&sp.Show\ Detail
