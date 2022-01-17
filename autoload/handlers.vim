@@ -103,7 +103,9 @@ def s:processInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
 
   # if the outline window is opened, then request the symbols for the current
   # buffer
-  lspserver.getDocSymbols(@%)
+  if bufwinid('LSP-Outline') != -1
+    lspserver.getDocSymbols(@%)
+  endif
 enddef
 
 # process the 'textDocument/definition' / 'textDocument/declaration' /
