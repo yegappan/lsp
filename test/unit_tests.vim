@@ -396,7 +396,7 @@ def LspRunTests()
 
   # Edit a dummy C file to start the LSP server
   :edit Xtest.c
-  :sleep 500m
+  :sleep 2
   :%bw!
 
   # Get the list of test functions in this file and call them
