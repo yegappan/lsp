@@ -1,0 +1,24 @@
+name: unit-tests
+on: [push, pull_request]
+jobs:
+  linux:
+    name: linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install packages
+        run: |
+          sudo apt update && sudo apt install -y clangd-13
+      - name: Checkout Code
+        uses: actions/checkout@v2
+      - name: Setup Vim
+        uses: rhysd/action-setup-vim@v1
+        id: vim
+        with:
+          version: nightly
+      - name: Run Tests
+        run: |
+          uname -a
+          export VIMPRG=${{ steps.vim.outputs.executable }}
+          $VIMPRG --version
+          cd test
+          ./run_tests.sh
