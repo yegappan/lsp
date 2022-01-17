@@ -481,9 +481,10 @@ def LspRunTests()
     v:errors = []
     v:errmsg = ''
     try
+      :%bw!
       exe f
     catch
-      call add(v:errors, "Error: Test " .. f .. " failed with exception " .. v:exception)
+      call add(v:errors, "Error: Test " .. f .. " failed with exception " .. v:exception .. " at " .. v:throwpoint)
     endtry
     if v:errmsg != ''
       call add(v:errors, "Error: Test " .. f .. " generated error " .. v:errmsg)
