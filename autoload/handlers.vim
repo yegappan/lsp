@@ -99,6 +99,7 @@ def s:processInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
 
   # send a "initialized" notification to server
   lspserver.sendInitializedNotif()
+  lspserver.ready = true
 
   # if the outline window is opened, then request the symbols for the current
   # buffer

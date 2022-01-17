@@ -488,6 +488,21 @@ def lsp#addServer(serverList: list<dict<any>>)
   endfor
 enddef
 
+# The LSP server is considered ready when the server capabilities are
+# received ('initialize' LSP reply message)
+def lsp#serverReady(): bool
+  var ftype = &filetype
+  if ftype == '' || @% == ''
+    return false
+  endif
+
+  var lspserver: dict<any> = s:lspGetServer(ftype)
+  if lspserver->empty()
+    return false
+  endif
+  return lspserver.ready
+enddef
+
 # set the LSP server trace level for the current buffer
 # Params: SetTraceParams
 def lsp#setTraceServer(traceVal: string)

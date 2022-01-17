@@ -10,7 +10,7 @@ set rtp+=../
 source ../plugin/lsp.vim
 var lspServers = [{
       filetype: ['c', 'cpp'],
-      path: '/usr/bin/clangd-12',
+      path: '/usr/bin/clangd',
       args: ['--background-index', '--clang-tidy']
   }]
 lsp#addServer(lspServers)
@@ -396,7 +396,12 @@ def LspRunTests()
 
   # Edit a dummy C file to start the LSP server
   :edit Xtest.c
-  :sleep 2
+  # Wait for the LSP server to become ready (max 10 seconds)
+  var maxcount = 100
+  while maxcount > 0 && !lsp#serverReady()
+    :sleep 100m
+    maxcount -= 1
+  endwhile
   :%bw!
 
   # Get the list of test functions in this file and call them

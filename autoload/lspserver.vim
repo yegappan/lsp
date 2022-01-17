@@ -65,6 +65,7 @@ def s:exit_cb(lspserver: dict<any>, job: job, status: number): void
   util.WarnMsg("LSP server exited with status " .. status)
   lspserver.job = v:none
   lspserver.running = false
+  lspserver.ready = false
   lspserver.requests = {}
 enddef
 
@@ -202,6 +203,7 @@ def s:stopServer(lspserver: dict<any>): number
   lspserver.job->job_stop()
   lspserver.job = v:none
   lspserver.running = false
+  lspserver.ready = false
   lspserver.requests = {}
   return 0
 enddef
@@ -843,6 +845,7 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
     path: path,
     args: args,
     running: false,
+    ready: false,
     job: v:none,
     data: '',
     nextID: 1,
