@@ -442,17 +442,17 @@ def Test_lsp_goto_definition()
   :messages clear
   cursor(14, 5)
   :LspGotoDeclaration
-  sleep 1
+  sleep 2
   var m = execute('messages')->split("\n")
   assert_equal('Error: declaration is not found', m[1])
   :messages clear
   :LspGotoDefinition
-  sleep 1
+  sleep 2
   m = execute('messages')->split("\n")
   assert_equal('Error: definition is not found', m[1])
   :messages clear
   :LspGotoImpl
-  sleep 1
+  sleep 2
   m = execute('messages')->split("\n")
   assert_equal('Error: implementation is not found', m[1])
   :%bw!
