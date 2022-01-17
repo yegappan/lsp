@@ -211,9 +211,20 @@ enddef
 # Jump to the definition, declaration or implementation of a symbol.
 # Also, used to peek at the definition, declaration or implementation of a
 # symbol.
-export def GotoSymbol(lspserver: dict<any>, location: dict<any>)
+export def GotoSymbol(lspserver: dict<any>, location: dict<any>, type: string)
   if location->empty()
-    util.WarnMsg("Error: definition is not found")
+    var msg: string
+    if type ==# 'textDocument/declaration'
+      msg = 'Error: declaration is not found'
+    elseif type ==# 'textDocument/typeDefinition'
+      msg = 'Error: type definition is not found'
+    elseif type ==# 'textDocument/implementation'
+      msg = 'Error: implementation is not found'
+    else
+      msg = 'Error: definition is not found'
+    endif
+
+    util.WarnMsg(msg)
     if !lspserver.peekSymbol
       # pop the tag stack
       var tagstack: dict<any> = gettagstack()

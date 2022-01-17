@@ -389,6 +389,75 @@ def Test_lsp_selection()
   :%bw!
 enddef
 
+# Test for LSP goto symobl definition, declaration and implementation
+def Test_lsp_goto_definition()
+  silent! edit Xtest.cpp
+  var lines: list<string> =<< trim END
+    #include <iostream>
+    using namespace std;
+
+    class base {
+	public:
+	    virtual void print();
+    };
+
+    void base::print()
+    {
+    }
+
+    class derived : public base {
+	public:
+	    void print() {}
+    };
+
+    void f1(void)
+    {
+	base *bp;
+	derived d;
+	bp = &d;
+
+	bp->print();
+    }
+  END
+  setline(1, lines)
+  :sleep 500m
+  cursor(24, 6)
+  :LspGotoDeclaration
+  :sleep 500m
+  assert_equal([6, 19], [line('.'), col('.')])
+  exe "normal! \<C-t>"
+  assert_equal([24, 6], [line('.'), col('.')])
+  :LspGotoDefinition
+  :sleep 500m
+  assert_equal([9, 12], [line('.'), col('.')])
+  exe "normal! \<C-t>"
+  assert_equal([24, 6], [line('.'), col('.')])
+  :LspGotoImpl
+  :sleep 500m
+  assert_equal([15, 11], [line('.'), col('.')])
+  exe "normal! \<C-t>"
+  assert_equal([24, 6], [line('.'), col('.')])
+
+  # Error cases
+  :messages clear
+  cursor(14, 5)
+  :LspGotoDeclaration
+  sleep 500m
+  var m = execute('messages')->split("\n")
+  assert_equal('Error: declaration is not found', m[1])
+  :messages clear
+  :LspGotoDefinition
+  sleep 500m
+  m = execute('messages')->split("\n")
+  assert_equal('Error: definition is not found', m[1])
+  :messages clear
+  :LspGotoImpl
+  sleep 500m
+  m = execute('messages')->split("\n")
+  assert_equal('Error: implementation is not found', m[1])
+  :%bw!
+enddef
+
 def LspRunTests()
   :set nomore
   :set debug=beep

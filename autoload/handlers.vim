@@ -124,7 +124,7 @@ def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>
     location = reply.result
   endif
 
-  symbol.GotoSymbol(lspserver, location)
+  symbol.GotoSymbol(lspserver, location, req.method)
 enddef
 
 # process the 'textDocument/signatureHelp' reply from the LSP server
