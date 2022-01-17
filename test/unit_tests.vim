@@ -17,6 +17,63 @@ lsp#addServer(lspServers)
 
 g:LSPTest = true
 
+# The WaitFor*() functions are reused from the Vim test suite.
+#
+# Wait for up to five seconds for "assert" to return zero.  "assert" must be a
+# (lambda) function containing one assert function.  Example:
+#	call WaitForAssert({-> assert_equal("dead", job_status(job)})
+#
+# A second argument can be used to specify a different timeout in msec.
+#
+# Return zero for success, one for failure (like the assert function).
+func WaitForAssert(assert, ...)
+  let timeout = get(a:000, 0, 5000)
+  if s:WaitForCommon(v:null, a:assert, timeout) < 0
+    return 1
+  endif
+  return 0
+endfunc
+
+# Either "expr" or "assert" is not v:null
+# Return the waiting time for success, -1 for failure.
+func s:WaitForCommon(expr, assert, timeout)
+  " using reltime() is more accurate, but not always available
+  let slept = 0
+  if exists('*reltimefloat')
+    let start = reltime()
+  endif
+
+  while 1
+    if type(a:expr) == v:t_func
+      let success = a:expr()
+    elseif type(a:assert) == v:t_func
+      let success = a:assert() == 0
+    else
+      let success = eval(a:expr)
+    endif
+    if success
+      return slept
+    endif
+
+    if slept >= a:timeout
+      break
+    endif
+    if type(a:assert) == v:t_func
+      " Remove the error added by the assert function.
+      call remove(v:errors, -1)
+    endif
+
+    sleep 10m
+    if exists('*reltimefloat')
+      let slept = float2nr(reltimefloat(reltime(start)) * 1000)
+    else
+      let slept += 10
+    endif
+  endwhile
+
+  return -1  " timed out
+endfunc
+
 # Test for formatting a file using LSP
 def Test_lsp_formatting()
   :silent! edit Xtest.c
@@ -135,8 +192,8 @@ def Test_lsp_show_references()
   var bnr: number = bufnr()
   :LspShowReferences
   :sleep 1
+  WaitForAssert(() => assert_equal('quickfix', getwinvar(winnr('$'), '&buftype')))
   var qfl: list<dict<any>> = getloclist(0)
-  assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
   assert_equal(bnr, qfl[0].bufnr)
   assert_equal(3, qfl->len())
   assert_equal([4, 6], [qfl[0].lnum, qfl[0].col])
@@ -146,8 +203,8 @@ def Test_lsp_show_references()
   cursor(1, 5)
   :LspShowReferences
   :sleep 500m
+  WaitForAssert(() => assert_equal(1, getloclist(0)->len()))
   qfl = getloclist(0)
-  assert_equal(1, qfl->len())
   assert_equal([1, 5], [qfl[0].lnum, qfl[0].col])
 
   :%bw!
@@ -224,7 +281,7 @@ def Test_lsp_codeaction()
   g:LSPTest_CodeActionChoice = 1
   :LspCodeAction
   sleep 500m
-  assert_equal("\tcount = 20;", getline(4))
+  WaitForAssert(() => assert_equal("\tcount = 20;", getline(4)))
 
   setline(4, "\tcount = 20:")
   cursor(4, 1)
@@ -232,19 +289,19 @@ def Test_lsp_codeaction()
   g:LSPTest_CodeActionChoice = 0
   :LspCodeAction
   sleep 500m
-  assert_equal("\tcount = 20:", getline(4))
+  WaitForAssert(() => assert_equal("\tcount = 20:", getline(4)))
 
   g:LSPTest_CodeActionChoice = 2
   cursor(4, 1)
   :LspCodeAction
   sleep 500m
-  assert_equal("\tcount = 20:", getline(4))
+  WaitForAssert(() => assert_equal("\tcount = 20:", getline(4)))
 
   g:LSPTest_CodeActionChoice = 1
   cursor(4, 1)
   :LspCodeAction
   sleep 500m
-  assert_equal("\tcount = 20;", getline(4))
+  WaitForAssert(() => assert_equal("\tcount = 20;", getline(4)))
 
   :%bw!
 enddef
@@ -287,7 +344,7 @@ def Test_lsp_rename()
 	count = 5;
     }
   END
-  assert_equal(expected, getline(1, '$'))
+  WaitForAssert(() => assert_equal(expected, getline(1, '$')))
   :%bw!
 enddef
 
