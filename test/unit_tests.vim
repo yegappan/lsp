@@ -423,17 +423,14 @@ def Test_lsp_goto_definition()
   :sleep 1
   cursor(24, 6)
   :LspGotoDeclaration
-  :sleep 1
   assert_equal([6, 19], [line('.'), col('.')])
   exe "normal! \<C-t>"
   assert_equal([24, 6], [line('.'), col('.')])
   :LspGotoDefinition
-  :sleep 1
   assert_equal([9, 12], [line('.'), col('.')])
   exe "normal! \<C-t>"
   assert_equal([24, 6], [line('.'), col('.')])
   :LspGotoImpl
-  :sleep 1
   assert_equal([15, 11], [line('.'), col('.')])
   exe "normal! \<C-t>"
   assert_equal([24, 6], [line('.'), col('.')])

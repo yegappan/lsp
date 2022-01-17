@@ -279,6 +279,18 @@ def s:sendMessage(lspserver: dict<any>, content: dict<any>): void
   ch->ch_sendraw(payload_js)
 enddef
 
+# Wait for a response message from the LSP server for the request "req"
+# Waits for a maximum of 5 seconds
+def s:waitForReponse(lspserver: dict<any>, req: dict<any>)
+  var maxCount: number = 500
+  var key: string = req.id->string()
+
+  while lspserver.requests->has_key(key) && maxCount > 0
+    sleep 10m
+    maxCount -= 1
+  endwhile
+enddef
+
 # Send a LSP "textDocument/didOpen" notification
 # Params: DidOpenTextDocumentParams
 def s:textdocDidOpen(lspserver: dict<any>, bnr: number, ftype: string): void
@@ -415,7 +427,7 @@ enddef
 
 # Request: "textDocument/definition"
 # Param: DefinitionParams
-def s:gotoDefinition(lspserver: dict<any>, peek: bool): void
+def s:gotoDefinition(lspserver: dict<any>, peek: bool)
   # Check whether LSP server supports jumping to a definition
   if !lspserver.caps->has_key('definitionProvider')
 				|| !lspserver.caps.definitionProvider
@@ -432,6 +444,8 @@ def s:gotoDefinition(lspserver: dict<any>, peek: bool): void
   #   interface TextDocumentPositionParams
   req.params->extend(s:getLspTextDocPosition())
   lspserver.sendMessage(req)
+
+  s:waitForReponse(lspserver, req)
 enddef
 
 # Request: "textDocument/declaration"
@@ -455,6 +469,8 @@ def s:gotoDeclaration(lspserver: dict<any>, peek: bool): void
   req.params->extend(s:getLspTextDocPosition())
 
   lspserver.sendMessage(req)
+
+  s:waitForReponse(lspserver, req)
 enddef
 
 # Request: "textDocument/typeDefinition"
@@ -478,6 +494,8 @@ def s:gotoTypeDef(lspserver: dict<any>, peek: bool): void
   req.params->extend(s:getLspTextDocPosition())
 
   lspserver.sendMessage(req)
+
+  s:waitForReponse(lspserver, req)
 enddef
 
 # Request: "textDocument/implementation"
@@ -501,6 +519,8 @@ def s:gotoImplementation(lspserver: dict<any>, peek: bool): void
   req.params->extend(s:getLspTextDocPosition())
 
   lspserver.sendMessage(req)
+
+  s:waitForReponse(lspserver, req)
 enddef
 
 # get symbol signature help.
