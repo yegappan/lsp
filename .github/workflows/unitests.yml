@@ -7,7 +7,7 @@ jobs:
     steps:
       - name: Install packages
         run: |
-          sudo apt update && sudo apt install -y clangd
+          sudo apt update && sudo apt install -y clangd-12
       - name: Checkout Code
         uses: actions/checkout@v2
       - name: Setup Vim
