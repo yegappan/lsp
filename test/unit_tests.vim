@@ -431,6 +431,7 @@ def Test_lsp_goto_definition()
   exe "normal! \<C-t>"
   assert_equal([24, 6], [line('.'), col('.')])
   :LspGotoImpl
+  :sleep 1
   assert_equal([15, 11], [line('.'), col('.')])
   exe "normal! \<C-t>"
   assert_equal([24, 6], [line('.'), col('.')])
