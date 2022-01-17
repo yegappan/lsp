@@ -10,7 +10,7 @@ set rtp+=../
 source ../plugin/lsp.vim
 var lspServers = [{
       filetype: ['c', 'cpp'],
-      path: '/usr/bin/clangd',
+      path: '/usr/bin/clangd-12',
       args: ['--background-index', '--clang-tidy']
   }]
 lsp#addServer(lspServers)
