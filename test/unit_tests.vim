@@ -23,7 +23,7 @@ def Test_lsp_formatting()
   setline(1, ['  int i;', '  int j;'])
   :redraw!
   :LspFormat
-  :sleep 500m
+  :sleep 1
   assert_equal(['int i;', 'int j;'], getline(1, '$'))
 
   deletebufline('', 1, '$')
@@ -134,7 +134,7 @@ def Test_lsp_show_references()
   cursor(5, 2)
   var bnr: number = bufnr()
   :LspShowReferences
-  :sleep 500m
+  :sleep 1
   var qfl: list<dict<any>> = getloclist(0)
   assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
   assert_equal(bnr, qfl[0].bufnr)
@@ -167,7 +167,7 @@ def Test_lsp_diags()
     }
   END
   setline(1, lines)
-  :sleep 500m
+  :sleep 1
   var bnr: number = bufnr()
   :redraw!
   :LspDiagShow
@@ -252,7 +252,7 @@ enddef
 # Test for LSP symbol rename
 def Test_lsp_rename()
   silent! edit Xtest.c
-  sleep 500m
+  sleep 1
   var lines: list<string> =<< trim END
     void F1(int count)
     {
@@ -267,12 +267,12 @@ def Test_lsp_rename()
     }
   END
   setline(1, lines)
-  sleep 500m
+  sleep 1
   cursor(1, 1)
   search('count')
   redraw!
   feedkeys(":LspRename\<CR>er\<CR>", "xt")
-  sleep 500m
+  sleep 1
   redraw!
   var expected: list<string> =<< trim END
     void F1(int counter)
@@ -306,14 +306,14 @@ def Test_lsp_selection()
     }
   END
   setline(1, lines)
-  sleep 500m
+  sleep 1
   # start a block-wise visual mode, LspSelectionRange should change this to
   # a characterwise visual mode.
   exe "normal! 1G\<C-V>G\"_y"
   cursor(2, 1)
   redraw!
   :LspSelectionRange
-  sleep 500m
+  sleep 1
   redraw!
   normal! y
   assert_equal('v', visualmode())
@@ -324,7 +324,7 @@ def Test_lsp_selection()
   cursor(4, 29)
   redraw!
   :LspSelectionRange
-  sleep 500m
+  sleep 1
   redraw!
   normal! y
   assert_equal('v', visualmode())

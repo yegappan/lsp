@@ -8,8 +8,6 @@ jobs:
       - name: Install packages
         run: |
           sudo apt update && sudo apt install -y clangd
-          which clangd
-          ls -ltr /usr/bin/clangd
       - name: Checkout Code
         uses: actions/checkout@v2
       - name: Setup Vim
