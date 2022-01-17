@@ -1,6 +1,19 @@
 vim9script
-# Tests for Vim Language Server Protocol (LSP) client
-# To run the tests, just source this file
+# Unit tests for Vim Language Server Protocol (LSP) client
+
+syntax on
+filetype on
+filetype plugin on
+filetype indent on
+
+set rtp+=../
+source ../plugin/lsp.vim
+var lspServers = [{
+      filetype: ['c', 'cpp'],
+      path: '/usr/bin/clangd',
+      args: ['--background-index', '--clang-tidy']
+  }]
+lsp#addServer(lspServers)
 
 g:LSPTest = true
 
@@ -320,6 +333,10 @@ def Test_lsp_selection()
 enddef
 
 def LspRunTests()
+  :set nomore
+  :set debug=beep
+  delete('results.txt')
+
   # Edit a dummy C file to start the LSP server
   :edit Xtest.c
   :sleep 500m
@@ -340,17 +357,16 @@ def LspRunTests()
     if v:errmsg != ''
       call add(v:errors, "Error: Test " .. f .. " generated error " .. v:errmsg)
     endif
-    if v:errors->len() != 0
-      new Lsp-Test-Results
-      setline(1, ["Error: Test " .. f .. " failed"]->extend(v:errors))
-      setbufvar('', '&modified', 0)
-      return
+    if !v:errors->empty()
+      writefile(v:errors, 'results.txt', 'a')
+      writefile([f .. ': FAIL'], 'results.txt', 'a')
+    else
+      writefile([f .. ': pass'], 'results.txt', 'a')
     endif
   endfor
-
-  echomsg "Success: All the LSP tests have passed"
 enddef
 
 LspRunTests()
+qall!
 
 # vim: shiftwidth=2 softtabstop=2 noexpandtab
