@@ -17,8 +17,10 @@ endif
 
 augroup LSPAutoCmds
   au!
-  autocmd BufNewFile,BufReadPost * lsp#addFile(bufnr('%'))
-  autocmd BufWipeOut * lsp#removeFile(bufnr('%'))
+  autocmd BufNewFile,BufReadPost * lsp#addFile(expand('<abuf>')->str2nr())
+  # Note that when BufWipeOut is invoked, the current buffer may be different
+  # from the buffer getting wiped out.
+  autocmd BufWipeOut * lsp#removeFile(expand('<abuf>')->str2nr())
   if opt.lspOptions.showDiagOnStatusLine
     autocmd CursorMoved * lsp#showCurrentDiagInStatusLine()
   endif
