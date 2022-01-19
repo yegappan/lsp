@@ -282,11 +282,11 @@ enddef
 # Wait for a response message from the LSP server for the request "req"
 # Waits for a maximum of 5 seconds
 def s:waitForReponse(lspserver: dict<any>, req: dict<any>)
-  var maxCount: number = 500
+  var maxCount: number = 2500
   var key: string = req.id->string()
 
   while lspserver.requests->has_key(key) && maxCount > 0
-    sleep 10m
+    sleep 2m
     maxCount -= 1
   endwhile
 enddef

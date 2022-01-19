@@ -4,7 +4,7 @@ REM Script to run the unit-tests for the LSP Vim plugin on MS-Windows
 
 SETLOCAL
 SET VIMPRG="vim.exe"
-SET VIM_CMD=%VIMPRG% -u NONE -U NONE -i NONE --noplugin -N
+SET VIM_CMD=%VIMPRG% -u NONE -U NONE -i NONE --noplugin -N --not-a-term
 
 %VIM_CMD% -S unit_tests.vim
 
