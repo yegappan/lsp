@@ -180,12 +180,14 @@ export def ShowReferences(lspserver: dict<any>, refs: list<dict<any>>)
     if !bnr->bufloaded()
       bnr->bufload()
     endif
-    var text: string = bnr->getbufline(loc.range.start.line + 1)[0]
-						->trim("\t ", 1)
-    qflist->add({filename: fname,
-			lnum: loc.range.start.line + 1,
-			col: util.GetLineByteFromPos(bnr, loc.range.start) + 1,
-			text: text})
+    var buf_line = bnr->getbufline(loc.range.start.line + 1)
+    if len(buf_line) > 0
+      var text: string = buf_line[0]->trim("\t ", 1)
+      qflist->add({filename: fname,
+  			lnum: loc.range.start.line + 1,
+  			col: util.GetLineByteFromPos(bnr, loc.range.start) + 1,
+  			text: text})
+    endif
   endfor
 
   var save_winid = win_getid()
