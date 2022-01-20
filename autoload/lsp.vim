@@ -31,6 +31,7 @@ if has('patch-8.2.4019')
   util.ClearTraceLogs = util_import.ClearTraceLogs
   util.GetLineByteFromPos = util_import.GetLineByteFromPos
   util.PushCursorToTagStack = util_import.PushCursorToTagStack
+  util.LspUriRemote = util_import.LspUriRemote
   diag.UpdateDiags = diag_import.UpdateDiags
   diag.DiagsGetErrorCount = diag_import.DiagsGetErrorCount
   diag.ShowAllDiags = diag_import.ShowAllDiags
@@ -49,7 +50,8 @@ else
         ServerTrace,
         ClearTraceLogs,
         GetLineByteFromPos,
-        PushCursorToTagStack} from './util.vim'
+        PushCursorToTagStack,
+	LspUriRemote} from './util.vim'
   import {DiagRemoveFile,
 	UpdateDiags,
 	DiagsGetErrorCount,
@@ -69,6 +71,7 @@ else
   util.ClearTraceLogs = ClearTraceLogs
   util.GetLineByteFromPos = GetLineByteFromPos
   util.PushCursorToTagStack = PushCursorToTagStack
+  util.LspUriRemote = LspUriRemote
   diag.DiagRemoveFile = DiagRemoveFile
   diag.UpdateDiags = UpdateDiags
   diag.DiagsGetErrorCount = DiagsGetErrorCount
@@ -162,7 +165,7 @@ enddef
 # Go to a definition using "textDocument/definition" LSP request
 def lsp#gotoDefinition(peek: bool)
   var ftype: string = &filetype
-  if ftype == '' || @% == ''
+  if ftype == '' || @% == '' || !bufnrToServer->has_key(bufnr())
     return
   endif
 
@@ -182,7 +185,7 @@ enddef
 # Go to a declaration using "textDocument/declaration" LSP request
 def lsp#gotoDeclaration(peek: bool)
   var ftype: string = &filetype
-  if ftype == ''
+  if ftype == '' || @% == '' || !bufnrToServer->has_key(bufnr())
     return
   endif
 
@@ -202,7 +205,7 @@ enddef
 # Go to a type definition using "textDocument/typeDefinition" LSP request
 def lsp#gotoTypedef(peek: bool)
   var ftype: string = &filetype
-  if ftype == ''
+  if ftype == '' || @% == '' || !bufnrToServer->has_key(bufnr())
     return
   endif
 
@@ -222,7 +225,7 @@ enddef
 # Go to a implementation using "textDocument/implementation" LSP request
 def lsp#gotoImplementation(peek: bool)
   var ftype: string = &filetype
-  if ftype == ''
+  if ftype == '' || @% == '' || !bufnrToServer->has_key(bufnr())
     return
   endif
 
@@ -243,7 +246,7 @@ enddef
 # Invoked from an insert-mode mapping, so return an empty string.
 def lsp#showSignature(): string
   var ftype: string = &filetype
-  if ftype == ''
+  if ftype == '' || @% == '' || !bufnrToServer->has_key(bufnr())
     return ''
   endif
 
@@ -257,11 +260,6 @@ def lsp#showSignature(): string
     return ''
   endif
 
-  var fname: string = @%
-  if fname == ''
-    return ''
-  endif
-
   # first send all the changes in the current buffer to the LSP server
   listener_flush()
   lspserver.showSignature()
@@ -270,6 +268,10 @@ enddef
 
 # buffer change notification listener
 def lsp#bufchange_listener(bnr: number, start: number, end: number, added: number, changes: list<dict<number>>)
+  if !bufnrToServer->has_key(bnr)
+    return
+  endif
+
   var ftype = bnr->getbufvar('&filetype')
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty() || !lspserver.running
@@ -327,7 +329,7 @@ def lsp#leftInsertMode()
   :unlet b:LspDiagsUpdatePending
 
   var ftype: string = &filetype
-  if ftype == ''
+  if ftype == '' || @% == '' || !bufnrToServer->has_key(bufnr())
     return
   endif
 
@@ -342,6 +344,11 @@ enddef
 def lsp#addFile(bnr: number): void
   if bufnrToServer->has_key(bnr)
     # LSP server for this buffer is already initialized and running
+    return
+  endif
+
+  # Skip remote files
+  if util.LspUriRemote(bnr->bufname()->fnamemodify(":p"))
     return
   endif
 
@@ -533,7 +540,7 @@ enddef
 # in a quickfix list
 def lsp#showDiagnostics(): void
   var ftype = &filetype
-  if ftype == '' || @% == ''
+  if ftype == '' || @% == '' || !bufnrToServer->has_key(bufnr())
     return
   endif
 
@@ -553,7 +560,7 @@ enddef
 # Show the diagnostic message for the current line
 def lsp#showCurrentDiag()
   var ftype = &filetype
-  if ftype == '' || @% == ''
+  if ftype == '' || @% == '' || !bufnrToServer->has_key(bufnr())
     return
   endif
 
@@ -572,7 +579,7 @@ enddef
 
 def lsp#showCurrentDiagInStatusLine()
   var ftype = &filetype
-  if ftype == '' || @% == ''
+  if ftype == '' || @% == '' || !bufnrToServer->has_key(bufnr())
     return
   endif
 
@@ -623,6 +630,10 @@ enddef
 # Insert mode completion handler. Used when 24x7 completion is enabled
 # (default).
 def lsp#complete()
+  if !bufnrToServer->has_key(bufnr())
+    return
+  endif
+
   var cur_col: number = col('.')
   var line: string = getline('.')
 
@@ -660,6 +671,10 @@ enddef
 
 # omni complete handler
 def lsp#omniFunc(findstart: number, base: string): any
+  if !bufnrToServer->has_key(bufnr())
+    return
+  endif
+
   var ftype: string = &filetype
   var lspserver: dict<any> = s:lspGetServer(ftype)
 
@@ -708,17 +723,12 @@ enddef
 # location
 def lsp#hover()
   var ftype = &filetype
-  if ftype == ''
+  if ftype == '' || @% == '' || !bufnrToServer->has_key(bufnr())
     return
   endif
 
   var lspserver: dict<any> = s:lspGetServer(ftype)
   if lspserver->empty() || !lspserver.running
-    return
-  endif
-
-  var fname = @%
-  if fname == ''
     return
   endif
 
@@ -728,7 +738,7 @@ enddef
 # show symbol references
 def lsp#showReferences(peek: bool)
   var ftype = &filetype
-  if ftype == ''
+  if ftype == '' || @% == '' || !bufnrToServer->has_key(bufnr())
     return
   endif
 
@@ -739,11 +749,6 @@ def lsp#showReferences(peek: bool)
   endif
   if !lspserver.running
     util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
-    return
-  endif
-
-  var fname = @%
-  if fname == ''
     return
   endif
 
@@ -753,7 +758,7 @@ enddef
 # highlight all the places where a symbol is referenced
 def lsp#docHighlight()
   var ftype = &filetype
-  if ftype == ''
+  if ftype == '' || @% == '' || !bufnrToServer->has_key(bufnr())
     return
   endif
 
@@ -764,11 +769,6 @@ def lsp#docHighlight()
   endif
   if !lspserver.running
     util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
-    return
-  endif
-
-  var fname = @%
-  if fname == ''
     return
   endif
 
@@ -788,7 +788,8 @@ def lsp#requestDocSymbols()
   endif
 
   var ftype = &filetype
-  if ftype == ''
+  var fname = @%
+  if ftype == '' || fname == '' || !bufnrToServer->has_key(bufnr())
     return
   endif
 
@@ -797,11 +798,6 @@ def lsp#requestDocSymbols()
     return
   endif
   if !lspserver.running || lspserver.caps->empty()
-    return
-  endif
-
-  var fname = @%
-  if fname == ''
     return
   endif
 
@@ -822,7 +818,8 @@ def lsp#textDocFormat(range_args: number, line1: number, line2: number)
   endif
 
   var ftype = &filetype
-  if ftype == ''
+  var fname = @%
+  if ftype == '' || fname == '' || !bufnrToServer->has_key(bufnr())
     return
   endif
 
@@ -833,11 +830,6 @@ def lsp#textDocFormat(range_args: number, line1: number, line2: number)
   endif
   if !lspserver.running
     util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
-    return
-  endif
-
-  var fname = @%
-  if fname == ''
     return
   endif
 
@@ -855,7 +847,8 @@ enddef
 # Uses LSP "callHierarchy/incomingCalls" request
 def lsp#incomingCalls()
   var ftype = &filetype
-  if ftype == ''
+  var fname = @%
+  if ftype == '' || fname == '' || !bufnrToServer->has_key(bufnr())
     return
   endif
 
@@ -866,11 +859,6 @@ def lsp#incomingCalls()
   endif
   if !lspserver.running
     util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
-    return
-  endif
-
-  var fname = @%
-  if fname == ''
     return
   endif
 
@@ -887,7 +875,7 @@ enddef
 # Uses LSP "textDocument/rename" request
 def lsp#rename()
   var ftype = &filetype
-  if ftype == ''
+  if ftype == '' || @% == '' || !bufnrToServer->has_key(bufnr())
     return
   endif
 
@@ -898,11 +886,6 @@ def lsp#rename()
   endif
   if !lspserver.running
     util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
-    return
-  endif
-
-  var fname = @%
-  if fname == ''
     return
   endif
 
@@ -918,7 +901,8 @@ enddef
 # Uses LSP "textDocument/codeAction" request
 def lsp#codeAction()
   var ftype = &filetype
-  if ftype == ''
+  var fname = @%
+  if ftype == '' || fname == '' || !bufnrToServer->has_key(bufnr())
     return
   endif
 
@@ -929,11 +913,6 @@ def lsp#codeAction()
   endif
   if !lspserver.running
     util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
-    return
-  endif
-
-  var fname = @%
-  if fname == ''
     return
   endif
 
@@ -944,7 +923,7 @@ enddef
 # Uses LSP "workspace/symbol" request
 def lsp#symbolSearch(queryArg: string)
   var ftype = &filetype
-  if ftype == ''
+  if ftype == '' || @% == '' || !bufnrToServer->has_key(bufnr())
     return
   endif
 
@@ -955,11 +934,6 @@ def lsp#symbolSearch(queryArg: string)
   endif
   if !lspserver.running
     util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
-    return
-  endif
-
-  var fname = @%
-  if fname == ''
     return
   endif
 
@@ -1068,7 +1042,8 @@ enddef
 # visually select a range of positions around the current cursor.
 def lsp#selectionRange()
   var ftype = &filetype
-  if ftype == ''
+  var fname = @%
+  if ftype == '' || fname == '' || !bufnrToServer->has_key(bufnr())
     return
   endif
 
@@ -1079,11 +1054,6 @@ def lsp#selectionRange()
   endif
   if !lspserver.running
     util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
-    return
-  endif
-
-  var fname = @%
-  if fname == ''
     return
   endif
 
@@ -1094,7 +1064,8 @@ enddef
 # fold the entire document
 def lsp#foldDocument()
   var ftype = &filetype
-  if ftype == ''
+  var fname = @%
+  if ftype == '' || fname == '' || !bufnrToServer->has_key(bufnr())
     return
   endif
 
@@ -1105,11 +1076,6 @@ def lsp#foldDocument()
   endif
   if !lspserver.running
     util.ErrMsg('Error: LSP server for "' .. ftype .. '" filetype is not running')
-    return
-  endif
-
-  var fname = @%
-  if fname == ''
     return
   endif
 

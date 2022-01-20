@@ -69,6 +69,12 @@ export def LspUriToFile(uri: string): string
   return uri_decoded
 enddef
 
+# Returns if the URI refers to a remote file (e.g. ssh://)
+# Credit: vim-lsp plugin
+export def LspUriRemote(uri: string): bool
+  return uri =~# '^\w\+::' || uri =~# '^[a-z][a-z0-9+.-]*://'
+enddef
+
 # Convert a Vim filename to an LSP URI (file://<absolute_path>)
 def ConvertFilenameToUri(fname: string): string
   var uri: string = fnamemodify(fname, ':p')
