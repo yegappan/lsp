@@ -672,7 +672,7 @@ enddef
 # omni complete handler
 def lsp#omniFunc(findstart: number, base: string): any
   if !bufnrToServer->has_key(bufnr())
-    return
+    return -2
   endif
 
   var ftype: string = &filetype
