@@ -860,6 +860,15 @@ def s:executeCommand(lspserver: dict<any>, cmd: dict<any>)
   lspserver.sendMessage(req)
 enddef
 
+# Display the LSP server capabilities (received during the initialization
+# stage).
+def s:showCapabilities(lspserver: dict<any>)
+  echo "Capabilities of '" .. lspserver.path .. "' LSP server:"
+  for k in lspserver.caps->keys()->sort()
+    echo k .. ": " .. lspserver.caps[k]->string()
+  endfor
+enddef
+
 export def NewLspServer(path: string, args: list<string>): dict<any>
   var lspserver: dict<any> = {
     path: path,
@@ -921,7 +930,8 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
     removeWorkspaceFolder: function('s:removeWorkspaceFolder', [lspserver]),
     selectionRange: function('s:selectionRange', [lspserver]),
     foldRange: function('s:foldRange', [lspserver]),
-    executeCommand: function('s:executeCommand', [lspserver])
+    executeCommand: function('s:executeCommand', [lspserver]),
+    showCapabilities: function('s:showCapabilities', [lspserver])
   })
 
   return lspserver

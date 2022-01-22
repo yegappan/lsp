@@ -164,6 +164,15 @@ def Test_lsp_formatting()
     }
   END
   assert_equal(expected, getline(1, '$'))
+  bw!
+
+  # empty file
+  assert_equal('', execute('LspFormat'))
+
+  # file without an LSP server
+  edit a.b
+  assert_equal(['Error: LSP server for "a.b" is not found'],
+	       execute('LspFormat')->split("\n"))
 
   :%bw!
 enddef
@@ -206,6 +215,15 @@ def Test_lsp_show_references()
   WaitForAssert(() => assert_equal(1, getloclist(0)->len()))
   qfl = getloclist(0)
   assert_equal([1, 5], [qfl[0].lnum, qfl[0].col])
+  bw!
+
+  # empty file
+  assert_equal('', execute('LspShowReferences'))
+
+  # file without an LSP server
+  edit a.b
+  assert_equal(['Error: LSP server for "a.b" is not found'],
+	       execute('LspShowReferences')->split("\n"))
 
   :%bw!
 enddef
@@ -302,6 +320,15 @@ def Test_lsp_codeaction()
   :LspCodeAction
   sleep 500m
   WaitForAssert(() => assert_equal("\tcount = 20;", getline(4)))
+  bw!
+
+  # empty file
+  assert_equal('', execute('LspCodeAction'))
+
+  # file without an LSP server
+  edit a.b
+  assert_equal(['Error: LSP server for "a.b" is not found'],
+	       execute('LspCodeAction')->split("\n"))
 
   :%bw!
 enddef
@@ -345,6 +372,16 @@ def Test_lsp_rename()
     }
   END
   WaitForAssert(() => assert_equal(expected, getline(1, '$')))
+  bw!
+
+  # empty file
+  assert_equal('', execute('LspRename'))
+
+  # file without an LSP server
+  edit a.b
+  assert_equal(['Error: LSP server for "a.b" is not found'],
+	       execute('LspRename')->split("\n"))
+
   :%bw!
 enddef
 
@@ -386,6 +423,16 @@ def Test_lsp_selection()
   normal! y
   assert_equal('v', visualmode())
   assert_equal([4, 5, 6, 5], [line("'<"), col("'<"), line("'>"), col("'>")])
+  bw!
+
+  # empty file
+  assert_equal('', execute('LspSelectionRange'))
+
+  # file without an LSP server
+  edit a.b
+  assert_equal(['Error: LSP server for "a.b" is not found'],
+	       execute('LspSelectionRange')->split("\n"))
+
   :%bw!
 enddef
 
@@ -456,6 +503,22 @@ def Test_lsp_goto_definition()
   m = execute('messages')->split("\n")
   assert_equal('Error: implementation is not found', m[1])
   endif
+  bw!
+
+  # empty file
+  assert_equal('', execute('LspGotoDefinition'))
+  assert_equal('', execute('LspGotoDeclaration'))
+  assert_equal('', execute('LspGotoImpl'))
+
+  # file without an LSP server
+  edit a.b
+  assert_equal(['Error: LSP server for "a.b" is not found'],
+	       execute('LspGotoDefinition')->split("\n"))
+  assert_equal(['Error: LSP server for "a.b" is not found'],
+	       execute('LspGotoDeclaration')->split("\n"))
+  assert_equal(['Error: LSP server for "a.b" is not found'],
+	       execute('LspGotoImpl')->split("\n"))
+
   :%bw!
 enddef
 

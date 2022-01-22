@@ -32,6 +32,7 @@ augroup END
 
 # LSP commands
 command! -nargs=0 -bar LspShowServers call lsp#showServers()
+command! -nargs=0 -bar LspShowServerCapabilities call lsp#showServerCapabilities()
 command! -nargs=1 -bar LspSetTrace call lsp#setTraceServer(<q-args>)
 command! -nargs=0 -bar LspGotoDefinition call lsp#gotoDefinition(v:false)
 command! -nargs=0 -bar LspGotoDeclaration call lsp#gotoDeclaration(v:false)

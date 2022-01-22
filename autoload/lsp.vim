@@ -886,4 +886,14 @@ def lsp#diagHighlightDisable()
   diag.DiagsHighlightDisable()
 enddef
 
+# Display the LSP server capabilities
+def lsp#showServerCapabilities()
+  var lspserver: dict<any> = s:curbufGetServerChecked()
+  if lspserver->empty()
+    return
+  endif
+
+  lspserver.showCapabilities()
+enddef
+
 # vim: shiftwidth=2 softtabstop=2

@@ -123,6 +123,8 @@ The following commands are provided:
 			Remove a folder from the workspace
 :LspWorkspaceListFolders
 			Show the list of folders in the workspace
+:LspShowServerCapabilities
+			Display the list of capabilities of a LSP server.
 
 ==============================================================================
 4. Configuration				*lsp-configuration*
@@ -466,6 +468,13 @@ diagnostic messages, you can add the following line to your .vimrc file:
 						*:LspWorkspaceListFolders*
 :LspWorkspaceListFolders
 			Show the list of folders in the workspace.
+
+						*:LspShowServerCapabilities*
+:LspShowServerCapabilities
+			Display the list of capabilities of a LSP server.
+			The server capabilities are described in the LSP
+			protocol specification under the "ServerCapabilities"
+			interface.
 
 ==============================================================================
 6. Insert mode completion
