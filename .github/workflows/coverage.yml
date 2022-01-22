@@ -5,9 +5,14 @@ jobs:
     name: linux
     runs-on: ubuntu-18.04
     steps:
+      - name: Install packages
+        run: |
+          sudo apt update && sudo apt install -y clangd-12
       - name: Setup Vim
         id: vim
         uses: rhysd/action-setup-vim@v1
+        with:
+          version: nightly
       - name: Checkout LSP Code
         uses: actions/checkout@v2
       - name: Run Tests
