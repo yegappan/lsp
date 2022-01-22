@@ -293,8 +293,8 @@ def Test_lsp_diags()
   :%bw!
 enddef
 
-# Test for LSP code action
-def Test_lsp_codeaction()
+# Test for :LspCodeAction
+def Test_LspCodeAction()
   silent! edit Xtest.c
   sleep 500m
   var lines: list<string> =<< trim END
@@ -531,6 +531,32 @@ def Test_lsp_goto_definition()
   assert_equal(['Error: LSP server for "a.b" is not found'],
 	       execute('LspGotoImpl')->split("\n"))
 
+  :%bw!
+enddef
+
+# Test for :LspHighlight
+def Test_LspHighlight()
+  silent! edit Xtest.c
+  var lines: list<string> =<< trim END
+    void f1(int arg)
+    {
+      int i = arg;
+      arg = 2;
+    }
+  END
+  setline(1, lines)
+  :sleep 1
+  cursor(1, 13)
+  :LspHighlight
+  :sleep 1
+  assert_equal([{'id': 0, 'col': 13, 'end': 1, 'type': 'LspTextRef', 'length': 3, 'start': 1}], prop_list(1))
+  assert_equal([{'id': 0, 'col': 11, 'end': 1, 'type': 'LspReadRef', 'length': 3, 'start': 1}], prop_list(3))
+  assert_equal([{'id': 0, 'col': 3, 'end': 1, 'type': 'LspWriteRef', 'length': 3, 'start': 1}], prop_list(4))
+  :LspHighlightClear
+  :sleep 1
+  assert_equal([], prop_list(1))
+  assert_equal([], prop_list(3))
+  assert_equal([], prop_list(4))
   :%bw!
 enddef
 
