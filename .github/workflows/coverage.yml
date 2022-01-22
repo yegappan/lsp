@@ -5,13 +5,17 @@ jobs:
     name: linux
     runs-on: ubuntu-18.04
     steps:
-      - name: Checkout Code
+      - name: Setup Vim
+        id: vim
+        uses: rhysd/action-setup-vim@v1
+      - name: Checkout LSP Code
         uses: actions/checkout@v2
       - name: Run Tests
+        env:
+          LSP_PROFILE: 1
+          VIMPRG: ${{ steps.vim.outputs.executable }}
         run: |
           uname -a
-          export LSP_PROFILE=1
-          export VIMPRG=vim
           $VIMPRG --version
           cd ./test
           ./run_tests.sh
