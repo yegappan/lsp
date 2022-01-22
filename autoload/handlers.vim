@@ -833,8 +833,7 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
   if lspRequestHandlers->has_key(request.method)
     lspRequestHandlers[request.method](lspserver, request)
   else
-    util.ErrMsg('Error: Unsupported request received from LSP server ' ..
-							request->string())
+    util.ErrMsg('Error: Unsupported request message received from the LSP server (' .. lspserver.path .. '), message = ' .. request->string())
   endif
 enddef
 

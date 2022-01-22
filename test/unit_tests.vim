@@ -6,6 +6,18 @@ filetype on
 filetype plugin on
 filetype indent on
 
+# Set the $LSP_PROFILE environment variable to profile the LSP plugin
+var do_profile: bool = false
+if exists('$LSP_PROFILE')
+  do_profile = true
+endif
+
+if do_profile
+  # profile the LSP plugin
+  profile start lsp_profile.txt
+  profile! file */lsp/*
+endif
+
 set rtp+=../
 source ../plugin/lsp.vim
 var lspServers = [{
