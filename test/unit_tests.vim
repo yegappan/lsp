@@ -86,8 +86,8 @@ func s:WaitForCommon(expr, assert, timeout)
   return -1  " timed out
 endfunc
 
-# Test for formatting a file using LSP
-def Test_lsp_formatting()
+# Test for formatting a file using LspFormat
+def Test_LspFormat()
   :silent! edit Xtest.c
   setline(1, ['  int i;', '  int j;'])
   :redraw!
@@ -189,8 +189,9 @@ def Test_lsp_formatting()
   :%bw!
 enddef
 
-# Test for showing all the references of a symbol in a file using LSP
-def Test_lsp_show_references()
+# Test for :LspShowReferences - showing all the references to a symbol in a
+# file using LSP
+def Test_LspShowReferences()
   :silent! edit Xtest.c
   var lines: list<string> =<< trim END
     int count;
@@ -241,7 +242,7 @@ def Test_lsp_show_references()
 enddef
 
 # Test for LSP diagnostics
-def Test_lsp_diags()
+def Test_LspDiag()
   :silent! edit Xtest.c
   var lines: list<string> =<< trim END
     void blueFunc()
@@ -345,8 +346,8 @@ def Test_LspCodeAction()
   :%bw!
 enddef
 
-# Test for LSP symbol rename
-def Test_lsp_rename()
+# Test for :LspRename
+def Test_LspRename()
   silent! edit Xtest.c
   sleep 1
   var lines: list<string> =<< trim END
@@ -397,8 +398,8 @@ def Test_lsp_rename()
   :%bw!
 enddef
 
-# Test for LSP selection range
-def Test_lsp_selection()
+# Test for :LspSelectionRange
+def Test_LspSelectionRange()
   silent! edit Xtest.c
   sleep 500m
   var lines: list<string> =<< trim END
@@ -448,8 +449,8 @@ def Test_lsp_selection()
   :%bw!
 enddef
 
-# Test for LSP goto symobl definition, declaration and implementation
-def Test_lsp_goto_definition()
+# Test for :LspGotoDefinition, :LspGotoDeclaration and :LspGotoImpl
+def Test_LspGotoDefinition()
   silent! edit Xtest.cpp
   var lines: list<string> =<< trim END
     #include <iostream>
