@@ -62,8 +62,7 @@ else
 	ShowCurrentDiagInStatusLine,
 	LspDiagsJump,
 	DiagsHighlightEnable,
-	DiagsHighlightDisable
-	} from './diag.vim'
+	DiagsHighlightDisable} from './diag.vim'
   import ShowSymbolMenu from './symbol.vim'
   import {OpenOutlineWindow, SkipOutlineRefresh} from './outline.vim'
 
