@@ -591,6 +591,45 @@ def Test_LspHover()
   :%bw!
 enddef
 
+# Test for :LspShowSignature
+def Test_LspShowSignature()
+  silent! edit Xtest.c
+  var lines: list<string> =<< trim END
+    int MyFunc(int a, int b)
+    {
+      return 0;
+    }
+
+    void f2(void)
+    {
+      MyFunc( 
+    }
+  END
+  setline(1, lines)
+  :sleep 1
+  cursor(8, 10)
+  :LspShowSignature
+  :sleep 1
+  var p: list<number> = popup_list()
+  var bnr: number = winbufnr(p[0])
+  assert_equal(1, p->len())
+  assert_equal(['MyFunc(int a, int b) -> int'], getbufline(bnr, 1, '$'))
+  assert_equal([{'id': 0, 'col': 8, 'type_bufnr': 11, 'end': 1, 'type': 'signature', 'length': 5, 'start': 1}], prop_list(1, {bufnr: bnr}))
+  popup_close(p[0])
+
+  setline(line('.'), '  MyFunc(10, ')
+  cursor(8, 13)
+  :LspShowSignature
+  :sleep 1
+  p = popup_list()
+  bnr = winbufnr(p[0])
+  assert_equal(1, p->len())
+  assert_equal(['MyFunc(int a, int b) -> int'], getbufline(bnr, 1, '$'))
+  assert_equal([{'id': 0, 'col': 15, 'type_bufnr': 11, 'end': 1, 'type': 'signature', 'length': 5, 'start': 1}], prop_list(1, {bufnr: bnr}))
+  popup_close(p[0])
+  :%bw!
+enddef
+
 def LspRunTests()
   :set nomore
   :set debug=beep
