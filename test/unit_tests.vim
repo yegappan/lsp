@@ -549,9 +549,9 @@ def Test_LspHighlight()
   cursor(1, 13)
   :LspHighlight
   :sleep 1
-  assert_equal([{'id': 0, 'col': 13, 'end': 1, 'type': 'LspTextRef', 'length': 3, 'start': 1}], prop_list(1))
-  assert_equal([{'id': 0, 'col': 11, 'end': 1, 'type': 'LspReadRef', 'length': 3, 'start': 1}], prop_list(3))
-  assert_equal([{'id': 0, 'col': 3, 'end': 1, 'type': 'LspWriteRef', 'length': 3, 'start': 1}], prop_list(4))
+  assert_equal([{'id': 0, 'col': 13, 'type_bufnr': 0, 'end': 1, 'type': 'LspTextRef', 'length': 3, 'start': 1}], prop_list(1))
+  assert_equal([{'id': 0, 'col': 11, 'type_bufnr': 0, 'end': 1, 'type': 'LspReadRef', 'length': 3, 'start': 1}], prop_list(3))
+  assert_equal([{'id': 0, 'col': 3, 'type_bufnr': 0, 'end': 1, 'type': 'LspWriteRef', 'length': 3, 'start': 1}], prop_list(4))
   :LspHighlightClear
   :sleep 1
   assert_equal([], prop_list(1))
