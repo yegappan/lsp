@@ -260,4 +260,17 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
   util.WarnMsg('Error: No more diagnostics found')
 enddef
 
+# Disable the LSP diagnostics highlighting in all the buffers
+export def DiagsHighlightDisable()
+  # Remove all the existing diagnostic signs in all the buffers
+  sign_unplace('LSPDiag')
+  opt.lspOptions.autoHighlightDiags = false
+enddef
+
+# Enable the LSP diagnostics highlighting
+export def DiagsHighlightEnable()
+  # Remove all the existing diagnostic signs in all the buffers
+  opt.lspOptions.autoHighlightDiags = true
+enddef
+
 # vim: shiftwidth=2 softtabstop=2

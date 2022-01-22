@@ -2,7 +2,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 8.2.2342 and above
-Last change: Nov 14, 2021
+Last change: Jan 21, 2022
 
 ==============================================================================
 						*lsp-license*
@@ -91,6 +91,11 @@ The following commands are provided:
 :LspDiagPrev		Jump to the previous diagnostic message for the current
 			buffer before the current line.
 :LspDiagCurrent		Display the diagnostic message for the current line.
+:LspDiagHighlightEnable	Enable highlighting lines with a diagnostic message
+			for the current Vim session.
+:LspDiagHighlightDisable
+			Disable highlighting lines with a diagnostic message
+			for the current Vim session.
 :LspShowReferences	Display the list of references to the keyword under
 			cursor in a new location list.
 :LspPeekReferences	Display the list of references to the keyword under
@@ -202,9 +207,10 @@ echoSignature		In insert mode, echo the current symbol signature
 autoHighlightDiags	Automatically place signs on the lines with a
 			diagnostic message from the LSP server. By default
 			this is set to true.
-keepFocusInReferences	Focus on the location list window after LspShowReferences.
-			By default this is set to false.
-noNewlineInCompletion	Suppress adding a new line on completion selection with <CR>.
+keepFocusInReferences	Focus on the location list window after
+			LspShowReferences.  By default this is set to false.
+noNewlineInCompletion	Suppress adding a new line on completion selection
+			with <CR>.
 			By default this is set to false.
 outlineWinSize		Outline window size, by default this is 20.
 outlineOnRight		Open the outline window on the right side, by default
@@ -323,6 +329,17 @@ diagnostic messages, you can add the following line to your .vimrc file:
 						*:LspDiagCurrent*
 :LspDiagCurrent		Displays the diagnostic message (if any) for the
 			current line.
+
+						*:LspDiagHighlightEnable*
+:LspDiagHighlightEnable	Enable highlighting lines with a diagnostic message
+			for the current Vim session.  Note that highlighting
+			lines with a diagnostic message is enabled by default.
+
+:LspDiagHighlightDisable			*:LspDiagHighlightDisable*
+			Disable highlighting lines with a diagnostic message
+			for the current Vim session.
+			To always disable the highlighting, set the
+			autoHighlightDiags option to false.
 
 						*:LspShowReferences*
 :LspShowReferences	Creates a new location list with the list of locations
