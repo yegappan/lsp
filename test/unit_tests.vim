@@ -561,6 +561,36 @@ def Test_LspHighlight()
   :%bw!
 enddef
 
+# Test for :LspHover
+def Test_LspHover()
+  silent! edit Xtest.c
+  var lines: list<string> =<< trim END
+    int f1(int a)
+    {
+      return 0;
+    }
+
+    void f2(void)
+    {
+      f1(5);
+    }
+  END
+  setline(1, lines)
+  :sleep 1
+  cursor(8, 4)
+  :LspHover
+  :sleep 1
+  var p: list<number> = popup_list()
+  assert_equal(1, p->len())
+  assert_equal(['function f1', '', '→ int', 'Parameters:', '- int a', '', 'int f1(int a)'], getbufline(winbufnr(p[0]), 1, '$'))
+  popup_close(p[0])
+  cursor(7, 1)
+  :LspHover
+  :sleep 1
+  assert_equal([], popup_list())
+  :%bw!
+enddef
+
 def LspRunTests()
   :set nomore
   :set debug=beep
