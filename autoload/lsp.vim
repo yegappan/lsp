@@ -428,8 +428,8 @@ enddef
 # Register a LSP server for one or more file types
 def lsp#addServer(serverList: list<dict<any>>)
   for server in serverList
-    if !server->has_key('filetype') || !server->has_key('path') || !server->has_key('args')
-      util.ErrMsg('Error: LSP server information is missing filetype or path or args')
+    if !server->has_key('filetype') || !server->has_key('path')
+      util.ErrMsg('Error: LSP server information is missing filetype or path')
       continue
     endif
     if !server->has_key('omnicompl')
@@ -441,16 +441,22 @@ def lsp#addServer(serverList: list<dict<any>>)
       util.ErrMsg('Error: LSP server ' .. server.path .. ' is not found')
       return
     endif
-    if server.args->type() != v:t_list
-      util.ErrMsg('Error: Arguments for LSP server ' .. server.args .. ' is not a List')
-      return
+    var args = []
+    if server->has_key('args')
+      if server.args->type() != v:t_list
+        util.ErrMsg('Error: Arguments for LSP server ' .. server.args .. ' is not a List')
+        return
+      endif
+      args = server.args
+    else
+
     endif
     if server.omnicompl->type() != v:t_bool
       util.ErrMsg('Error: Setting of omnicompl ' .. server.omnicompl .. ' is not a Boolean')
       return
     endif
 
-    var lspserver: dict<any> = lserver.NewLspServer(server.path, server.args)
+    var lspserver: dict<any> = lserver.NewLspServer(server.path, args)
 
     if server.filetype->type() == v:t_string
       s:lspAddServer(server.filetype, lspserver)
