@@ -443,7 +443,7 @@ def lsp#addServer(serverList: list<dict<any>>)
       endif
       return
     endif
-    var args = []
+    var args: list<string> = []
     if server->has_key('args')
       if server.args->type() != v:t_list
         util.ErrMsg('Error: Arguments for LSP server ' .. server.args .. ' is not a List')
