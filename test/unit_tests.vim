@@ -630,32 +630,6 @@ def Test_LspShowSignature()
   :%bw!
 enddef
 
-# Test for LSP omni completion
-def Test_omnicomplete()
-  lsp#setOptions({'autoComplete': v:false})
-  silent! edit Xtest.c
-  var lines: list<string> =<< trim END
-    void MyFunc1(void)
-    {
-    }
-
-    void MyFunc2(void)
-    {
-    }
-
-    void f1(void)
-    {
-    }
-  END
-  setline(1, lines)
-  :sleep 1
-  cursor(10, 1)
-  feedkeys("oMy\<C-X>\<C-O>\<C-N>();", "xt")
-  assert_equal("\tMyFunc2();", getline('.'))
-  :%bw!
-  lsp#setOptions({'autoComplete': v:true})
-enddef
-
 def LspRunTests()
   :set nomore
   :set debug=beep

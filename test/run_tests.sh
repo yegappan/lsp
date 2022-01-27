@@ -2,9 +2,7 @@
 
 # Script to run the unit-tests for the LSP Vim plugin
 
-#VIMPRG=${VIMPRG:=/usr/bin/vim}
-export VIMRUNTIME=/home/yega/Documents/vim/opfunc/vim/runtime
-VIMPRG=/home/yega/Documents/vim/opfunc/vim/src/vim
+VIMPRG=${VIMPRG:=/usr/bin/vim}
 VIM_CMD="$VIMPRG -u NONE -U NONE -i NONE --noplugin -N --not-a-term"
 
 $VIM_CMD -S unit_tests.vim
