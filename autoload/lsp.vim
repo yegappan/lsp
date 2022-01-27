@@ -622,9 +622,12 @@ def lsp#omniFunc(findstart: number, base: string): any
     endwhile
     return start
   else
+    # Wait for the list of matches from the LSP server
     var count: number = 0
-    while !complete_check() && lspserver.completePending
-				&& count < 1000
+    while lspserver.completePending && count < 1000
+      if complete_check()
+	return v:none
+      endif
       sleep 2m
       count += 1
     endwhile

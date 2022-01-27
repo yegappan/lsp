@@ -261,7 +261,6 @@ export def GotoSymbol(lspserver: dict<any>, location: dict<any>, type: string)
     var wid = fname->bufwinid()
     if wid != -1
       wid->win_gotoid()
-      normal! m`
     else
       var bnr: number = fname->bufnr()
       if bnr != -1
@@ -279,9 +278,10 @@ export def GotoSymbol(lspserver: dict<any>, location: dict<any>, type: string)
           exe 'edit  ' .. fname
         endif
       endif
-      setpos("'`", getcurpos())
     endif
-    # Set the previous cursor location mark
+    # Set the previous cursor location mark. Instead of using setpos(), m' is
+    # used so that the current location is added to the jump list.
+    normal m'
     setcursorcharpos(location.range.start.line + 1,
 			location.range.start.character + 1)
   endif
