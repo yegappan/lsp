@@ -222,6 +222,8 @@ noDiagHoverOnLine	Suppress diagnostic hover from appearing when
 			By default this is set to true
 showDiagOnStatusLine	Show a diagnostic message on a status line.
 			By default this is set to false
+ignoreMissingServer	Do not print a missing language server executable.
+			By default this is set to false
 
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file:

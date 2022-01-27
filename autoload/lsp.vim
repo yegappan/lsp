@@ -438,7 +438,9 @@ def lsp#addServer(serverList: list<dict<any>>)
     endif
 
     if !executable(server.path)
-      util.ErrMsg('Error: LSP server ' .. server.path .. ' is not found')
+      if !opt.lspOptions.ignoreMissingServer
+        util.ErrMsg('Error: LSP server ' .. server.path .. ' is not found')
+      endif
       return
     endif
     var args = []
