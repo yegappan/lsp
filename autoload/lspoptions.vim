@@ -1,7 +1,7 @@
 vim9script
 
 # LSP plugin options
-# User can override these by calling the lsp#setOptions() function.
+# User can override these by calling the LspOptionsSet() function.
 export var lspOptions: dict<any> = {
   # In insert mode, complete the current symbol automatically
   # Otherwise, use omni-completion

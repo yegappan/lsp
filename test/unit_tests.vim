@@ -18,14 +18,14 @@ if do_profile
   profile! file */lsp/*
 endif
 
-set rtp+=../
-source ../plugin/lsp.vim
+set packpath+=../../../../../
+packadd lsp
 var lspServers = [{
       filetype: ['c', 'cpp'],
       path: '/usr/bin/clangd-12',
       args: ['--background-index', '--clang-tidy']
   }]
-lsp#addServer(lspServers)
+call LspAddServer(lspServers)
 
 g:LSPTest = true
 
@@ -550,9 +550,22 @@ def Test_LspHighlight()
   cursor(1, 13)
   :LspHighlight
   :sleep 1
-  assert_equal([{'id': 0, 'col': 13, 'type_bufnr': 0, 'end': 1, 'type': 'LspTextRef', 'length': 3, 'start': 1}], prop_list(1))
-  assert_equal([{'id': 0, 'col': 11, 'type_bufnr': 0, 'end': 1, 'type': 'LspReadRef', 'length': 3, 'start': 1}], prop_list(3))
-  assert_equal([{'id': 0, 'col': 3, 'type_bufnr': 0, 'end': 1, 'type': 'LspWriteRef', 'length': 3, 'start': 1}], prop_list(4))
+  var expected: dict<any>
+  expected = {id: 0, col: 13, end: 1, type: 'LspTextRef', length: 3, start: 1}
+  if has('patch-8.2.3233')
+    expected.type_bufnr = 0
+  endif
+  assert_equal([expected], prop_list(1))
+  expected = {id: 0, col: 11, end: 1, type: 'LspReadRef', length: 3, start: 1}
+  if has('patch-8.2.3233')
+    expected.type_bufnr = 0
+  endif
+  assert_equal([expected], prop_list(3))
+  expected = {id: 0, col: 3, end: 1, type: 'LspWriteRef', length: 3, start: 1}
+  if has('patch-8.2.3233')
+    expected.type_bufnr = 0
+  endif
+  assert_equal([expected], prop_list(4))
   :LspHighlightClear
   :sleep 1
   assert_equal([], prop_list(1))
@@ -614,7 +627,12 @@ def Test_LspShowSignature()
   var bnr: number = winbufnr(p[0])
   assert_equal(1, p->len())
   assert_equal(['MyFunc(int a, int b) -> int'], getbufline(bnr, 1, '$'))
-  assert_equal([{'id': 0, 'col': 8, 'type_bufnr': 11, 'end': 1, 'type': 'signature', 'length': 5, 'start': 1}], prop_list(1, {bufnr: bnr}))
+  var expected: dict<any>
+  expected = {id: 0, col: 8, end: 1, type: 'signature', length: 5, start: 1}
+  if has('patch-8.2.3233')
+    expected.type_bufnr = 11
+  endif
+  assert_equal([expected], prop_list(1, {bufnr: bnr}))
   popup_close(p[0])
 
   setline(line('.'), '  MyFunc(10, ')
@@ -625,7 +643,11 @@ def Test_LspShowSignature()
   bnr = winbufnr(p[0])
   assert_equal(1, p->len())
   assert_equal(['MyFunc(int a, int b) -> int'], getbufline(bnr, 1, '$'))
-  assert_equal([{'id': 0, 'col': 15, 'type_bufnr': 11, 'end': 1, 'type': 'signature', 'length': 5, 'start': 1}], prop_list(1, {bufnr: bnr}))
+  expected = {id: 0, col: 15, end: 1, type: 'signature', length: 5, start: 1}
+  if has('patch-8.2.3233')
+    expected.type_bufnr = 11
+  endif
+  assert_equal([expected], prop_list(1, {bufnr: bnr}))
   popup_close(p[0])
   :%bw!
 enddef
@@ -639,7 +661,7 @@ def LspRunTests()
   :edit Xtest.c
   # Wait for the LSP server to become ready (max 10 seconds)
   var maxcount = 100
-  while maxcount > 0 && !lsp#serverReady()
+  while maxcount > 0 && !g:LspServerReady()
     :sleep 100m
     maxcount -= 1
   endwhile

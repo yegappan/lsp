@@ -10,6 +10,7 @@ if has('patch-8.2.4019')
 else
   import GetLineByteFromPos from './util.vim'
   import lspOptions from './lspoptions.vim'
+
   util.GetLineByteFromPos = GetLineByteFromPos
   opt.lspOptions = lspOptions
 endif
@@ -276,7 +277,7 @@ export def OpenOutlineWindow()
 
   augroup LSPOutline
     au!
-    autocmd BufEnter * call lsp#requestDocSymbols()
+    autocmd BufEnter * call g:LspRequestDocSymbols()
     # when the outline window is closed, do the cleanup
     autocmd BufUnload LSP-Outline call s:outlineCleanup()
     autocmd CursorHold * call s:outlineHighlightCurrentSymbol()

@@ -64,7 +64,7 @@ To register a LSP server, add the following lines to your .vimrc file:
 		\	'args': ['--nthreads=1', '--use_signature_help', '--hover_signature']
 		\     }
 		\   ]
-   call lsp#addServer(lspServers)
+   call LspAddServer(lspServers)
 ```
 
 The above lines add the LSP servers for C, C++, Javascript, Typescript, Shell script, Vim script, Go and Python file types.
@@ -77,7 +77,7 @@ filetype|One or more file types supported by the LSP server.  This can be a Stri
 path|complete path to the LSP server executable (without any arguments).
 args|a list of command-line arguments passed to the LSP server. Each argument is a separate List item.
 
-The LSP servers are added using the lsp#addServer() function. This function accepts a list of LSP servers with the above information.
+The LSP servers are added using the LspAddServer() function. This function accepts a list of LSP servers with the above information.
 
 ## Supported Commands
 Command|Description

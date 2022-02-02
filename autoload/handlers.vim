@@ -79,7 +79,7 @@ def s:processInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
   if opt.lspOptions.showSignature && caps->has_key('signatureHelpProvider')
     var triggers = caps.signatureHelpProvider.triggerCharacters
     for ch in triggers
-      exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch .. "<C-R>=lsp#showSignature()<CR>"
+      exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch .. "<C-R>=LspShowSignature()<CR>"
     endfor
   endif
 
@@ -92,8 +92,8 @@ def s:processInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
 			      && caps.documentHighlightProvider
     # Highlight all the occurrences of the current keyword
     augroup LSPBufferAutocmds
-      autocmd CursorMoved <buffer> call lsp#docHighlightClear()
-						| call lsp#docHighlight()
+      autocmd CursorMoved <buffer> call g:LspDocHighlightClear()
+						| call g:LspDocHighlight()
     augroup END
   endif
 

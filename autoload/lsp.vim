@@ -22,7 +22,6 @@ if has('patch-8.2.4019')
   import './symbol.vim' as symbol_import
   import './outline.vim' as outline_import
 
-  opt.LspOptionsSet = opt_import.LspOptionsSet
   opt.lspOptions = opt_import.lspOptions
   lserver.NewLspServer = server_import.NewLspServer
   util.WarnMsg = util_import.WarnMsg
@@ -45,7 +44,7 @@ if has('patch-8.2.4019')
   outline.OpenOutlineWindow = outline_import.OpenOutlineWindow
   outline.SkipOutlineRefresh = outline_import.SkipOutlineRefresh
 else
-  import {lspOptions, LspOptionsSet} from './lspoptions.vim'
+  import {lspOptions} from './lspoptions.vim'
   import NewLspServer from './lspserver.vim'
   import {WarnMsg,
         ErrMsg,
@@ -66,7 +65,6 @@ else
   import ShowSymbolMenu from './symbol.vim'
   import {OpenOutlineWindow, SkipOutlineRefresh} from './outline.vim'
 
-  opt.LspOptionsSet = LspOptionsSet
   opt.lspOptions = lspOptions
   lserver.NewLspServer = NewLspServer
   util.WarnMsg = WarnMsg
@@ -103,11 +101,6 @@ var ftypeOmniCtrlMap: dict<bool> = {}
 var bufnrToServer: dict<dict<any>> = {}
 
 var lspInitializedOnce = false
-
-# Set user configurable LSP options
-def lsp#setOptions(lspOpts: dict<any>)
-  opt.LspOptionsSet(lspOpts)
-enddef
 
 def s:lspInitOnce()
   # Signs used for LSP diagnostics
@@ -186,13 +179,13 @@ def s:lspOmniComplSet(ftype: string, enabled: bool)
   ftypeOmniCtrlMap->extend({[ftype]: enabled})
 enddef
 
-def lsp#enableServerTrace()
+export def EnableServerTrace()
   util.ClearTraceLogs()
   util.ServerTrace(true)
 enddef
 
 # Show information about all the LSP servers
-def lsp#showServers()
+export def ShowServers()
   for [ftype, lspserver] in ftypeServerMap->items()
     var msg = ftype .. "    "
     if lspserver.running
@@ -206,7 +199,7 @@ def lsp#showServers()
 enddef
 
 # Go to a definition using "textDocument/definition" LSP request
-def lsp#gotoDefinition(peek: bool)
+export def GotoDefinition(peek: bool)
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return
@@ -216,7 +209,7 @@ def lsp#gotoDefinition(peek: bool)
 enddef
 
 # Go to a declaration using "textDocument/declaration" LSP request
-def lsp#gotoDeclaration(peek: bool)
+export def GotoDeclaration(peek: bool)
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return
@@ -226,7 +219,7 @@ def lsp#gotoDeclaration(peek: bool)
 enddef
 
 # Go to a type definition using "textDocument/typeDefinition" LSP request
-def lsp#gotoTypedef(peek: bool)
+export def GotoTypedef(peek: bool)
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return
@@ -236,7 +229,7 @@ def lsp#gotoTypedef(peek: bool)
 enddef
 
 # Go to a implementation using "textDocument/implementation" LSP request
-def lsp#gotoImplementation(peek: bool)
+export def GotoImplementation(peek: bool)
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return
@@ -247,7 +240,7 @@ enddef
 
 # Show the signature using "textDocument/signatureHelp" LSP method
 # Invoked from an insert-mode mapping, so return an empty string.
-def lsp#showSignature(): string
+def g:LspShowSignature(): string
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return ''
@@ -260,7 +253,7 @@ def lsp#showSignature(): string
 enddef
 
 # buffer change notification listener
-def lsp#bufchange_listener(bnr: number, start: number, end: number, added: number, changes: list<dict<number>>)
+def s:bufchange_listener(bnr: number, start: number, end: number, added: number, changes: list<dict<number>>)
   var lspserver: dict<any> = s:curbufGetServer()
   if lspserver->empty() || !lspserver.running
     return
@@ -309,7 +302,7 @@ def g:LspDiagExpr(): string
 enddef
 
 # Called after leaving insert mode. Used to process diag messages (if any)
-def lsp#leftInsertMode()
+def g:LspLeftInsertMode()
   if !exists('b:LspDiagsUpdatePending')
     return
   endif
@@ -324,7 +317,7 @@ def lsp#leftInsertMode()
 enddef
 
 # A new buffer is opened. If LSP is supported for this buffer, then add it
-def lsp#addFile(bnr: number): void
+export def AddFile(bnr: number): void
   if bufnrToServer->has_key(bnr)
     # LSP server for this buffer is already initialized and running
     return
@@ -352,7 +345,7 @@ def lsp#addFile(bnr: number): void
   lspserver.textdocDidOpen(bnr, ftype)
 
   # add a listener to track changes to this buffer
-  listener_add(function('lsp#bufchange_listener'), bnr)
+  listener_add(function('s:bufchange_listener'), bnr)
 
   # set options for insert mode completion
   if opt.lspOptions.autoComplete
@@ -364,11 +357,11 @@ def lsp#addFile(bnr: number): void
     endif
   else
     if s:lspOmniComplEnabled(ftype)
-      setbufvar(bnr, '&omnifunc', 'lsp#omniFunc')
+      setbufvar(bnr, '&omnifunc', 'LspOmniFunc')
     endif
   endif
 
-  setbufvar(bnr, '&balloonexpr', 'LspDiagExpr()')
+  setbufvar(bnr, '&balloonexpr', 'g:LspDiagExpr()')
 
   # map characters that trigger signature help
   if opt.lspOptions.showSignature &&
@@ -376,7 +369,7 @@ def lsp#addFile(bnr: number): void
     var triggers = lspserver.caps.signatureHelpProvider.triggerCharacters
     for ch in triggers
       exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch
-				.. "<C-R>=lsp#showSignature()<CR>"
+				.. "<C-R>=LspShowSignature()<CR>"
     endfor
   endif
 
@@ -387,18 +380,18 @@ def lsp#addFile(bnr: number): void
 
     if opt.lspOptions.autoComplete
       # Trigger 24x7 insert mode completion when text is changed
-      exe 'autocmd TextChangedI <buffer=' .. bnr .. '> call lsp#complete()'
+      exe 'autocmd TextChangedI <buffer=' .. bnr .. '> call LspComplete()'
     endif
 
     # Update the diagnostics when insert mode is stopped
-    exe 'autocmd InsertLeave <buffer=' .. bnr .. '> call lsp#leftInsertMode()'
+    exe 'autocmd InsertLeave <buffer=' .. bnr .. '> call LspLeftInsertMode()'
 
     if opt.lspOptions.autoHighlight &&
 			lspserver.caps->has_key('documentHighlightProvider')
 			&& lspserver.caps.documentHighlightProvider
       # Highlight all the occurrences of the current keyword
       exe 'autocmd CursorMoved <buffer=' .. bnr .. '> '
-		  .. 'call lsp#docHighlightClear() | call lsp#docHighlight()'
+		  .. 'call LspDocHighlightClear() | call LspDocHighlight()'
     endif
   augroup END
 
@@ -406,7 +399,7 @@ def lsp#addFile(bnr: number): void
 enddef
 
 # Notify LSP server to remove a file
-def lsp#removeFile(bnr: number): void
+export def RemoveFile(bnr: number): void
   var lspserver: dict<any> = s:bufGetServer(bnr)
   if lspserver->empty() || !lspserver.running
     return
@@ -417,7 +410,7 @@ def lsp#removeFile(bnr: number): void
 enddef
 
 # Stop all the LSP servers
-def lsp#stopAllServers()
+export def StopAllServers()
   for lspserver in lspServers
     if lspserver.running
       lspserver.stopServer()
@@ -426,7 +419,7 @@ def lsp#stopAllServers()
 enddef
 
 # Register a LSP server for one or more file types
-def lsp#addServer(serverList: list<dict<any>>)
+export def AddServer(serverList: list<dict<any>>)
   for server in serverList
     if !server->has_key('filetype') || !server->has_key('path')
       util.ErrMsg('Error: LSP server information is missing filetype or path')
@@ -478,7 +471,7 @@ enddef
 
 # The LSP server is considered ready when the server capabilities are
 # received ('initialize' LSP reply message)
-def lsp#serverReady(): bool
+export def ServerReady(): bool
   var fname: string = @%
   if fname == ''
     return false
@@ -493,7 +486,7 @@ enddef
 
 # set the LSP server trace level for the current buffer
 # Params: SetTraceParams
-def lsp#setTraceServer(traceVal: string)
+export def SetTraceServer(traceVal: string)
   if ['off', 'message', 'verbose']->index(traceVal) == -1
     util.ErrMsg("Error: Unsupported LSP server trace value " .. traceVal)
     return
@@ -509,7 +502,7 @@ enddef
 
 # Display the diagnostic messages from the LSP server for the current buffer
 # in a quickfix list
-def lsp#showDiagnostics(): void
+export def ShowDiagnostics(): void
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return
@@ -519,7 +512,7 @@ def lsp#showDiagnostics(): void
 enddef
 
 # Show the diagnostic message for the current line
-def lsp#showCurrentDiag()
+export def LspShowCurrentDiag()
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return
@@ -529,7 +522,7 @@ def lsp#showCurrentDiag()
 enddef
 
 # Display the diagnostics for the current line in the status line.
-def lsp#showCurrentDiagInStatusLine()
+export def LspShowCurrentDiagInStatusLine()
   var fname: string = @%
   if fname == ''
     return
@@ -544,7 +537,7 @@ def lsp#showCurrentDiagInStatusLine()
 enddef
 
 # get the count of diagnostics in the current buffer
-def lsp#errorCount(): dict<number>
+export def ErrorCount(): dict<number>
   var res = {'Error': 0, 'Warn': 0, 'Info': 0, 'Hint': 0}
   var fname: string = @%
   if fname == ''
@@ -560,7 +553,7 @@ def lsp#errorCount(): dict<number>
 enddef
 
 # jump to the next/previous/first diagnostic message in the current buffer
-def lsp#jumpToDiag(which: string): void
+export def JumpToDiag(which: string): void
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return
@@ -571,7 +564,7 @@ enddef
 
 # Insert mode completion handler. Used when 24x7 completion is enabled
 # (default).
-def lsp#complete()
+def g:LspComplete()
   var lspserver: dict<any> = s:curbufGetServer()
   if lspserver->empty() || !lspserver.running || !lspserver.ready
     return
@@ -607,7 +600,7 @@ def lsp#complete()
 enddef
 
 # omni complete handler
-def lsp#omniFunc(findstart: number, base: string): any
+def g:LspOmniFunc(findstart: number, base: string): any
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return -2
@@ -650,7 +643,7 @@ enddef
 
 # Display the hover message from the LSP server for the current cursor
 # location
-def lsp#hover()
+export def Hover()
   var lspserver: dict<any> = s:curbufGetServer()
   if lspserver->empty() || !lspserver.running || !lspserver.ready
     return
@@ -660,7 +653,7 @@ def lsp#hover()
 enddef
 
 # show symbol references
-def lsp#showReferences(peek: bool)
+export def ShowReferences(peek: bool)
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return
@@ -670,7 +663,7 @@ def lsp#showReferences(peek: bool)
 enddef
 
 # highlight all the places where a symbol is referenced
-def lsp#docHighlight()
+def g:LspDocHighlight()
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return
@@ -680,13 +673,13 @@ def lsp#docHighlight()
 enddef
 
 # clear the symbol reference highlight
-def lsp#docHighlightClear()
+def g:LspDocHighlightClear()
   prop_remove({'type': 'LspTextRef', 'all': true}, 1, line('$'))
   prop_remove({'type': 'LspReadRef', 'all': true}, 1, line('$'))
   prop_remove({'type': 'LspWriteRef', 'all': true}, 1, line('$'))
 enddef
 
-def lsp#requestDocSymbols()
+def g:LspRequestDocSymbols()
   if outline.SkipOutlineRefresh()
     return
   endif
@@ -705,13 +698,13 @@ def lsp#requestDocSymbols()
 enddef
 
 # open a window and display all the symbols in a file (outline)
-def lsp#outline()
+export def Outline()
   outline.OpenOutlineWindow()
-  lsp#requestDocSymbols()
+  g:LspRequestDocSymbols()
 enddef
 
 # Format the entire file
-def lsp#textDocFormat(range_args: number, line1: number, line2: number)
+export def TextDocFormat(range_args: number, line1: number, line2: number)
   if !&modifiable
     util.ErrMsg('Error: Current file is not a modifiable file')
     return
@@ -735,7 +728,7 @@ enddef
 
 # Display all the locations where the current symbol is called from.
 # Uses LSP "callHierarchy/incomingCalls" request
-def lsp#incomingCalls()
+export def IncomingCalls()
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return
@@ -747,13 +740,13 @@ enddef
 
 # Display all the symbols used by the current symbol.
 # Uses LSP "callHierarchy/outgoingCalls" request
-def lsp#outgoingCalls()
+export def OutgoingCalls()
   :echomsg 'Error: Not implemented yet'
 enddef
 
 # Rename a symbol
 # Uses LSP "textDocument/rename" request
-def lsp#rename()
+export def Rename()
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return
@@ -769,7 +762,7 @@ enddef
 
 # Perform a code action
 # Uses LSP "textDocument/codeAction" request
-def lsp#codeAction()
+export def CodeAction()
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return
@@ -781,7 +774,7 @@ enddef
 
 # Perform a workspace wide symbol lookup
 # Uses LSP "workspace/symbol" request
-def lsp#symbolSearch(queryArg: string)
+export def SymbolSearch(queryArg: string)
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return
@@ -804,7 +797,7 @@ def lsp#symbolSearch(queryArg: string)
 enddef
 
 # Display the list of workspace folders
-def lsp#listWorkspaceFolders()
+export def ListWorkspaceFolders()
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return
@@ -814,7 +807,7 @@ def lsp#listWorkspaceFolders()
 enddef
 
 # Add a workspace folder. Default is to use the current folder.
-def lsp#addWorkspaceFolder(dirArg: string)
+export def AddWorkspaceFolder(dirArg: string)
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return
@@ -837,7 +830,7 @@ def lsp#addWorkspaceFolder(dirArg: string)
 enddef
 
 # Remove a workspace folder. Default is to use the current folder.
-def lsp#removeWorkspaceFolder(dirArg: string)
+export def RemoveWorkspaceFolder(dirArg: string)
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return
@@ -860,7 +853,7 @@ def lsp#removeWorkspaceFolder(dirArg: string)
 enddef
 
 # visually select a range of positions around the current cursor.
-def lsp#selectionRange()
+export def SelectionRange()
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return
@@ -872,7 +865,7 @@ def lsp#selectionRange()
 enddef
 
 # fold the entire document
-def lsp#foldDocument()
+export def FoldDocument()
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return
@@ -888,17 +881,17 @@ def lsp#foldDocument()
 enddef
 
 # Enable diagnostic highlighting for all the buffers
-def lsp#diagHighlightEnable()
+export def DiagHighlightEnable()
   diag.DiagsHighlightEnable()
 enddef
 
 # Disable diagnostic highlighting for all the buffers
-def lsp#diagHighlightDisable()
+export def DiagHighlightDisable()
   diag.DiagsHighlightDisable()
 enddef
 
 # Display the LSP server capabilities
-def lsp#showServerCapabilities()
+export def ShowServerCapabilities()
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return
