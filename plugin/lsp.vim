@@ -10,7 +10,7 @@ var opt = {}
 var lspf = {}
 if has('patch-8.2.4257')
   import '../autoload/lspoptions.vim' as lspoptions
-  import autoload 'lsp.vim'
+  import '../autoload/lsp.vim'
 
   opt.LspOptionsSet = lspoptions.LspOptionsSet
   opt.lspOptions = lspoptions.lspOptions

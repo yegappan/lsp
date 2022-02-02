@@ -18,8 +18,7 @@ if do_profile
   profile! file */lsp/*
 endif
 
-set packpath+=../../../../../
-packadd lsp
+source ../plugin/lsp.vim
 var lspServers = [{
       filetype: ['c', 'cpp'],
       path: '/usr/bin/clangd-12',
