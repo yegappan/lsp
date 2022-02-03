@@ -678,10 +678,10 @@ def s:textDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
   lspserver.sendMessage(req)
 enddef
 
-# Request: "callHierarchy/incomingCalls"
-# Param: CallHierarchyIncomingCallsParams
-def s:incomingCalls(lspserver: dict<any>, fname: string)
-  # Check whether LSP server supports incoming calls
+# Request: "textDocument/prepareCallHierarchy"
+# Param: CallHierarchyPrepareParams
+def s:prepareCallHierarchy(lspserver: dict<any>, fname: string)
+  # Check whether LSP server supports call hierarchy
   if !lspserver.caps->has_key('callHierarchyProvider')
 			|| !lspserver.caps.callHierarchyProvider
     util.ErrMsg("Error: LSP server does not support call hierarchy")
@@ -693,6 +693,42 @@ def s:incomingCalls(lspserver: dict<any>, fname: string)
   # interface CallHierarchyPrepareParams
   #   interface TextDocumentPositionParams
   req.params->extend(s:getLspTextDocPosition())
+  lspserver.sendMessage(req)
+enddef
+
+# Request: "callHierarchy/incomingCalls"
+# Param: CallHierarchyItem
+def s:incomingCalls(lspserver: dict<any>, hierItem: dict<any>)
+  # Check whether LSP server supports call hierarchy
+  if !lspserver.caps->has_key('callHierarchyProvider')
+			|| !lspserver.caps.callHierarchyProvider
+    util.ErrMsg("Error: LSP server does not support call hierarchy")
+    return
+  endif
+
+  var req = lspserver.createRequest('callHierarchy/incomingCalls')
+
+  # interface CallHierarchyIncomingCallsParams
+  #   interface CallHierarchyItem
+  req.params->extend({item: hierItem})
+  lspserver.sendMessage(req)
+enddef
+
+# Request: "callHierarchy/outgoingCalls"
+# Param: CallHierarchyItem
+def s:outgoingCalls(lspserver: dict<any>, hierItem: dict<any>)
+  # Check whether LSP server supports call hierarchy
+  if !lspserver.caps->has_key('callHierarchyProvider')
+			|| !lspserver.caps.callHierarchyProvider
+    util.ErrMsg("Error: LSP server does not support call hierarchy")
+    return
+  endif
+
+  var req = lspserver.createRequest('callHierarchy/outgoingCalls')
+
+  # interface CallHierarchyOutgoingCallsParams
+  #   interface CallHierarchyItem
+  req.params->extend({item: hierItem})
   lspserver.sendMessage(req)
 enddef
 
@@ -885,7 +921,8 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
     diagsMap: {},
     workspaceSymbolPopup: 0,
     workspaceSymbolQuery: '',
-    peekSymbol: false
+    peekSymbol: false,
+    callHierarchyType: ''
   }
   # Add the LSP server functions
   lspserver->extend({
@@ -922,7 +959,9 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
     docHighlight: function('s:docHighlight', [lspserver]),
     getDocSymbols: function('s:getDocSymbols', [lspserver]),
     textDocFormat: function('s:textDocFormat', [lspserver]),
+    prepareCallHierarchy: function('s:prepareCallHierarchy', [lspserver]),
     incomingCalls: function('s:incomingCalls', [lspserver]),
+    outgoingCalls: function('s:outgoingCalls', [lspserver]),
     renameSymbol: function('s:renameSymbol', [lspserver]),
     codeAction: function('s:codeAction', [lspserver]),
     workspaceQuery: function('s:workspaceQuerySymbols', [lspserver]),

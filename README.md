@@ -99,8 +99,8 @@ Command|Description
 :LspOutline|Show the list of symbols defined in the current file in a separate window.
 :LspFormat|Format the current file using the LSP server.
 :{range}LspFormat|Format the specified range of lines.
-:LspCalledBy|Display the list of symbols called by the current symbol. (NOT IMPLEMENTED YET).
-:LspCalling|Display the list of symbols calling the current symbol (NOT IMPLEMENTED YET).
+:LspCalledBy|Display the list of symbols called by the current symbol.
+:LspCalling|Display the list of symbols calling the current symbol.
 :LspRename|Rename the current symbol
 :LspCodeAction|Apply the code action supplied by the LSP server to the diagnostic in the current line.
 :LspSymbolSearch|Perform a workspace wide search for a symbol

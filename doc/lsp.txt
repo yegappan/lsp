@@ -2,7 +2,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 8.2.2342 and above
-Last change: Jan 21, 2022
+Last change: Feb 2, 2022
 
 ==============================================================================
 						*lsp-license*
@@ -108,9 +108,9 @@ The following commands are provided:
 :LspFormat		Format the current file using the LSP server.
 :{range}LspFormat	Format the specified range of lines.
 :LspCalledBy		Display the list of symbols called by the current
-			symbol. (NOT IMPLEMENTED YET).
+			symbol in a new location list.
 :LspCalling		Display the list of symbols calling the current symbol
-			(NOT IMPLEMENTED YET).
+			in a new location list.
 :LspRename		Rename the current symbol
 :LspCodeAction		Apply the code action supplied by the LSP server to
 			the diagnostic in the current line.
@@ -384,12 +384,12 @@ diagnostic messages, you can add the following line to your .vimrc file:
 			file using the LSP server.
 
 						*:LspCalledBy*
-:LspCalledBy		Display the list of symbols called by the current
-			symbol. (NOT IMPLEMENTED YET).
+:LspCalledBy		Creates a new location list with the location of
+			the list of symbols called by the current symbol.
 
 						*:LspCalling*
-:LspCalling		Display the list of symbols calling the current symbol
-			(NOT IMPLEMENTED YET).
+:LspCalling		Creates a new location list with the location of the
+			list of symbols calling the current symbol.
 
 						*:LspRename*
 :LspRename		Rename the current symbol. You will be prompted to

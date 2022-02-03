@@ -25,7 +25,8 @@ export var lspOptions: dict<any> = {
   outlineWinSize: 20,
   # Open outline window on right side
   outlineOnRight: false,
-  # Suppress diagnostic hover from appearing when the mouse is over the line instead of the signature
+  # Suppress diagnostic hover from appearing when the mouse is over the line
+  # instead of the signature
   noDiagHoverOnLine: true,
   # Show a diagnostic message on a status line
   showDiagOnStatusLine: false,

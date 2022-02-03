@@ -11,6 +11,7 @@ var outline = {}
 var textedit = {}
 var symbol = {}
 var codeaction = {}
+var callhier = {}
 
 if has('patch-8.2.4019')
   import './lspoptions.vim' as opt_import
@@ -20,6 +21,7 @@ if has('patch-8.2.4019')
   import './textedit.vim' as textedit_import
   import './symbol.vim' as symbol_import
   import './codeaction.vim' as codeaction_import
+  import './callhierarchy.vim' as callhierarchy_import
 
   opt.lspOptions = opt_import.lspOptions
   util.WarnMsg = util_import.WarnMsg
@@ -34,6 +36,8 @@ if has('patch-8.2.4019')
   symbol.ShowReferences = symbol_import.ShowReferences
   symbol.GotoSymbol = symbol_import.GotoSymbol
   codeaction.ApplyCodeAction = codeaction_import.ApplyCodeAction
+  callhier.IncomingCalls = callhierarchy_import.IncomingCalls
+  callhier.OutgoingCalls = callhierarchy_import.OutgoingCalls
 else
   import lspOptions from './lspoptions.vim'
   import {WarnMsg,
@@ -46,6 +50,7 @@ else
   import {ApplyTextEdits, ApplyWorkspaceEdit} from './textedit.vim'
   import {ShowReferences, GotoSymbol} from './symbol.vim'
   import ApplyCodeAction from './codeaction.vim'
+  import {IncomingCalls, OutgoingCalls} from './callhierarchy.vim'
 
   opt.lspOptions = lspOptions
   util.WarnMsg = WarnMsg
@@ -60,6 +65,8 @@ else
   symbol.ShowReferences = ShowReferences
   symbol.GotoSymbol = GotoSymbol
   codeaction.ApplyCodeAction = ApplyCodeAction
+  callhier.IncomingCalls = IncomingCalls
+  callhier.OutgoingCalls = OutgoingCalls
 endif
 
 # process the 'initialize' method reply from the LSP server
@@ -677,19 +684,43 @@ enddef
 # Result: CallHierarchyItem[] | null
 def s:processPrepareCallHierarchy(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   if reply.result->empty()
+    if lspserver.callHierarchyType == 'incoming'
+      util.WarnMsg('No incoming calls')
+    else
+      util.WarnMsg('No outgoing calls')
+    endif
     return
   endif
 
-  var items: list<string> = ['Select a Call Hierarchy Item:']
-  for i in range(reply.result->len())
-    items->add(printf("%d. %s", i + 1, reply.result[i].name))
-  endfor
-  var choice = inputlist(items)
-  if choice < 1 || choice > items->len()
-    return
+  var choice: number = 1
+  if reply.result->len() > 1
+    var items: list<string> = ['Select a Call Hierarchy Item:']
+    for i in range(reply.result->len())
+      items->add(printf("%d. %s", i + 1, reply.result[i].name))
+    endfor
+    choice = inputlist(items)
+    if choice < 1 || choice > items->len()
+      return
+    endif
   endif
 
-  echomsg reply.result[choice - 1]
+  if lspserver.callHierarchyType == 'incoming'
+    LspGetIncomingCalls(reply.result[choice - 1])
+  else
+    LspGetOutgoingCalls(reply.result[choice - 1])
+  endif
+enddef
+
+# process the 'callHierarchy/incomingCalls' reply from the LSP server
+# Result: CallHierarchyIncomingCall[] | null
+def s:processIncomingCalls(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+  callhier.IncomingCalls(reply.result)
+enddef
+
+# process the 'callHierarchy/outgoingCalls' reply from the LSP server
+# Result: CallHierarchyOutgoingCall[] | null
+def s:processOutgoingCalls(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+  callhier.OutgoingCalls(reply.result)
 enddef
 
 # Process various reply messages from the LSP server
@@ -715,7 +746,9 @@ export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
       'textDocument/foldingRange': function('s:processFoldingRangeReply'),
       'workspace/executeCommand': function('s:processWorkspaceExecuteReply'),
       'workspace/symbol': function('s:processWorkspaceSymbolReply'),
-      'textDocument/prepareCallHierarchy': function('s:processPrepareCallHierarchy')
+      'textDocument/prepareCallHierarchy': function('s:processPrepareCallHierarchy'),
+      'callHierarchy/incomingCalls': function('s:processIncomingCalls'),
+      'callHierarchy/outgoingCalls': function('s:processOutgoingCalls')
     }
 
   if lsp_reply_handlers->has_key(req.method)
