@@ -1,7 +1,7 @@
 vim9script
 
 # LSP plugin options
-# User can override these by calling the LspOptionsSet() function.
+# User can override these by calling the OptionsSet() function.
 export var lspOptions: dict<any> = {
   # In insert mode, complete the current symbol automatically
   # Otherwise, use omni-completion
@@ -35,7 +35,7 @@ export var lspOptions: dict<any> = {
 }
 
 # set LSP options from user provided options
-export def LspOptionsSet(opts: dict<any>)
+export def OptionsSet(opts: dict<any>)
   for key in opts->keys()
     lspOptions[key] = opts[key]
   endfor

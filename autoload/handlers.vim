@@ -705,9 +705,9 @@ def s:processPrepareCallHierarchy(lspserver: dict<any>, req: dict<any>, reply: d
   endif
 
   if lspserver.callHierarchyType == 'incoming'
-    LspGetIncomingCalls(reply.result[choice - 1])
+    g:LspGetIncomingCalls(reply.result[choice - 1])
   else
-    LspGetOutgoingCalls(reply.result[choice - 1])
+    g:LspGetOutgoingCalls(reply.result[choice - 1])
   endif
 enddef
 

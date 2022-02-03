@@ -12,7 +12,7 @@ if has('patch-8.2.4257')
   import '../autoload/lspoptions.vim' as lspoptions
   import '../autoload/lsp.vim'
 
-  opt.LspOptionsSet = lspoptions.LspOptionsSet
+  opt.LspOptionsSet = lspoptions.OptionsSet
   opt.lspOptions = lspoptions.lspOptions
   lspf.enableServerTrace = lsp.EnableServerTrace
   lspf.addServer = lsp.AddServer
@@ -57,7 +57,7 @@ elseif has('patch-8.2.4019')
   import '../autoload/lspoptions.vim' as opt_import
   import '../autoload/lsp.vim' as lsp_import
 
-  opt.LspOptionsSet = opt_import.LspOptionsSet
+  opt.LspOptionsSet = opt_import.OptionsSet
   opt.lspOptions = opt_import.lspOptions
   lspf.enableServerTrace = lsp_import.EnableServerTrace
   lspf.addServer = lsp_import.AddServer
@@ -99,7 +99,7 @@ elseif has('patch-8.2.4019')
   lspf.addWorkspaceFolder = lsp_import.AddWorkspaceFolder
   lspf.removeWorkspaceFolder = lsp_import.RemoveWorkspaceFolder
 else
-  import {lspOptions, LspOptionsSet} from '../autoload/lspoptions.vim'
+  import {lspOptions, OptionsSet} from '../autoload/lspoptions.vim'
   import {EnableServerTrace,
 	  AddServer,
 	  ServerReady,
@@ -133,7 +133,7 @@ else
 	  AddWorkspaceFolder,
 	  RemoveWorkspaceFolder} from '../autoload/lsp.vim'
 
-  opt.LspOptionsSet = LspOptionsSet
+  opt.LspOptionsSet = OptionsSet
   opt.lspOptions = lspOptions
   lspf.enableServerTrace = EnableServerTrace
   lspf.addServer = AddServer
@@ -176,8 +176,13 @@ else
   lspf.removeWorkspaceFolder = RemoveWorkspaceFolder
 endif
 
-g:LspOptionsSet = s:opt.LspOptionsSet
-g:LspServerTraceEnable = s:lspf.enableServerTrace
+def g:LspOptionsSet(opts: dict<any>)
+  opt.LspOptionsSet(opts)
+enddef
+
+def g:LspServerTraceEnable()
+  lspf.enableServerTrace()
+enddef
 
 def g:LspAddServer(serverList: list<dict<any>>)
   lspf.addServer(serverList)
@@ -258,8 +263,8 @@ command! -nargs=0 -bar LspHighlight call LspDocHighlight()
 command! -nargs=0 -bar LspHighlightClear call LspDocHighlightClear()
 command! -nargs=0 -bar LspOutline call Toutline()
 command! -nargs=0 -bar -range=% LspFormat call TtextDocFormat(<range>, <line1>, <line2>)
-command! -nargs=0 -bar LspCalledBy call TincomingCalls()
-command! -nargs=0 -bar LspCalling call ToutgoingCalls()
+command! -nargs=0 -bar LspOutgoingCalls call ToutgoingCalls()
+command! -nargs=0 -bar LspIncomingCalls call TincomingCalls()
 command! -nargs=0 -bar LspRename call Trename()
 command! -nargs=0 -bar LspCodeAction call TcodeAction()
 command! -nargs=? -bar LspSymbolSearch call TsymbolSearch(<q-args>)
@@ -283,8 +288,8 @@ if has('gui_running')
   anoremenu <silent> L&sp.Outline :LspOutline<CR>
 
   anoremenu <silent> L&sp.Symbol\ Search :LspSymbolSearch<CR>
-  anoremenu <silent> L&sp.CalledBy :LspCalledBy<CR>
-  anoremenu <silent> L&sp.Calling :LspCalling<CR>
+  anoremenu <silent> L&sp.Outgoing\ Calls :LspOutgoingCalls<CR>
+  anoremenu <silent> L&sp.Incoming\ Calls :LspIncomingCalls<CR>
   anoremenu <silent> L&sp.Rename :LspRename<CR>
   anoremenu <silent> L&sp.Code\ Action :LspCodeAction<CR>
 
