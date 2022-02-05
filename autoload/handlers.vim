@@ -43,6 +43,7 @@ if has('patch-8.2.4019')
   callhier.IncomingCalls = callhierarchy_import.IncomingCalls
   callhier.OutgoingCalls = callhierarchy_import.OutgoingCalls
   selection.SelectionStart = selection_import.SelectionStart
+  signature.SignatureInit = signature_import.SignatureInit
   signature.SignatureDisplay = signature_import.SignatureDisplay
 else
   import lspOptions from './lspoptions.vim'
@@ -58,7 +59,7 @@ else
   import ApplyCodeAction from './codeaction.vim'
   import {IncomingCalls, OutgoingCalls} from './callhierarchy.vim'
   import {SelectionStart} from './selection.vim'
-  import {SignatureDisplay} from './signature.vim'
+  import {SignatureInit, SignatureDisplay} from './signature.vim'
 
   opt.lspOptions = lspOptions
   util.WarnMsg = WarnMsg
@@ -76,6 +77,7 @@ else
   callhier.IncomingCalls = IncomingCalls
   callhier.OutgoingCalls = OutgoingCalls
   selection.SelectionStart = SelectionStart
+  signature.SignatureInit = SignatureInit
   signature.SignatureDisplay = SignatureDisplay
 endif
 
@@ -92,13 +94,8 @@ def s:processInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
   # TODO: Check all the buffers with filetype corresponding to this LSP server
   # and then setup the below mapping for those buffers.
 
-  # map characters that trigger signature help
-  if opt.lspOptions.showSignature && caps->has_key('signatureHelpProvider')
-    var triggers = caps.signatureHelpProvider.triggerCharacters
-    for ch in triggers
-      exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch .. "<C-R>=LspShowSignature()<CR>"
-    endfor
-  endif
+  # initialize signature help
+  signature.SignatureInit(lspserver)
 
   if opt.lspOptions.autoComplete && caps->has_key('completionProvider')
     var triggers = caps.completionProvider.triggerCharacters
