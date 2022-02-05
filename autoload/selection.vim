@@ -63,14 +63,10 @@ def s:selectionFromLSP(range: dict<any>, startpos: list<number>, endpos: list<nu
 			&& endpos[2] == range.end.character
 enddef
 
-g:Logs = []
-
 # Expand or Shrink the current selection or start a new one.
 export def SelectionModify(lspserver: dict<any>, expand: bool)
   var fname: string = @%
   var bnr: number = bufnr()
-
-  add(g:Logs, 'SelectionModify: expand = ' .. expand->string())
 
   if mode() == 'v' && !lspserver.selection->empty()
 					&& lspserver.selection.bnr == bnr

@@ -13,6 +13,7 @@ var symbol = {}
 var codeaction = {}
 var callhier = {}
 var selection = {}
+var signature = {}
 
 if has('patch-8.2.4019')
   import './lspoptions.vim' as opt_import
@@ -24,6 +25,7 @@ if has('patch-8.2.4019')
   import './codeaction.vim' as codeaction_import
   import './callhierarchy.vim' as callhierarchy_import
   import './selection.vim' as selection_import
+  import './signature.vim' as signature_import
 
   opt.lspOptions = opt_import.lspOptions
   util.WarnMsg = util_import.WarnMsg
@@ -41,6 +43,7 @@ if has('patch-8.2.4019')
   callhier.IncomingCalls = callhierarchy_import.IncomingCalls
   callhier.OutgoingCalls = callhierarchy_import.OutgoingCalls
   selection.SelectionStart = selection_import.SelectionStart
+  signature.SignatureDisplay = signature_import.SignatureDisplay
 else
   import lspOptions from './lspoptions.vim'
   import {WarnMsg,
@@ -55,6 +58,7 @@ else
   import ApplyCodeAction from './codeaction.vim'
   import {IncomingCalls, OutgoingCalls} from './callhierarchy.vim'
   import {SelectionStart} from './selection.vim'
+  import {SignatureDisplay} from './signature.vim'
 
   opt.lspOptions = lspOptions
   util.WarnMsg = WarnMsg
@@ -72,6 +76,7 @@ else
   callhier.IncomingCalls = IncomingCalls
   callhier.OutgoingCalls = OutgoingCalls
   selection.SelectionStart = SelectionStart
+  signature.SignatureDisplay = SignatureDisplay
 endif
 
 # process the 'initialize' method reply from the LSP server
@@ -142,56 +147,7 @@ enddef
 # process the 'textDocument/signatureHelp' reply from the LSP server
 # Result: SignatureHelp | null
 def s:processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
-  if reply.result->empty()
-    return
-  endif
-
-  var result: dict<any> = reply.result
-  if result.signatures->len() <= 0
-    util.WarnMsg('No signature help available')
-    return
-  endif
-
-  var sigidx: number = 0
-  if result->has_key('activeSignature')
-    sigidx = result.activeSignature
-  endif
-
-  var sig: dict<any> = result.signatures[sigidx]
-  var text = sig.label
-  var hllen = 0
-  var startcol = 0
-  if sig->has_key('parameters') && result->has_key('activeParameter')
-    var params_len = sig.parameters->len()
-    if params_len > 0 && result.activeParameter < params_len
-      var label = ''
-      if sig.parameters[result.activeParameter]->has_key('documentation')
-	if sig.parameters[result.activeParameter].documentation->type()
-							== v:t_string
-          label = sig.parameters[result.activeParameter].documentation
-        endif
-      else
-        label = sig.parameters[result.activeParameter].label
-      endif
-      hllen = label->len()
-      startcol = text->stridx(label)
-    endif
-  endif
-  if opt.lspOptions.echoSignature
-    echon "\r\r"
-    echon ''
-    echon strpart(text, 0, startcol)
-    echoh LineNr
-    echon strpart(text, startcol, hllen)
-    echoh None
-    echon strpart(text, startcol + hllen)
-  else
-    var popupID = text->popup_atcursor({moved: 'any'})
-    prop_type_add('signature', {bufnr: popupID->winbufnr(), highlight: 'LineNr'})
-    if hllen > 0
-      prop_add(1, startcol + 1, {bufnr: popupID->winbufnr(), length: hllen, type: 'signature'})
-    endif
-  endif
+  signature.SignatureDisplay(lspserver, reply.result)
 enddef
 
 # Map LSP complete item kind to a character
