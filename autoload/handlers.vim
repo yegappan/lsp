@@ -12,6 +12,7 @@ var textedit = {}
 var symbol = {}
 var codeaction = {}
 var callhier = {}
+var selection = {}
 
 if has('patch-8.2.4019')
   import './lspoptions.vim' as opt_import
@@ -22,6 +23,7 @@ if has('patch-8.2.4019')
   import './symbol.vim' as symbol_import
   import './codeaction.vim' as codeaction_import
   import './callhierarchy.vim' as callhierarchy_import
+  import './selection.vim' as selection_import
 
   opt.lspOptions = opt_import.lspOptions
   util.WarnMsg = util_import.WarnMsg
@@ -38,6 +40,7 @@ if has('patch-8.2.4019')
   codeaction.ApplyCodeAction = codeaction_import.ApplyCodeAction
   callhier.IncomingCalls = callhierarchy_import.IncomingCalls
   callhier.OutgoingCalls = callhierarchy_import.OutgoingCalls
+  selection.SelectionStart = selection_import.SelectionStart
 else
   import lspOptions from './lspoptions.vim'
   import {WarnMsg,
@@ -51,6 +54,7 @@ else
   import {ShowReferences, GotoSymbol} from './symbol.vim'
   import ApplyCodeAction from './codeaction.vim'
   import {IncomingCalls, OutgoingCalls} from './callhierarchy.vim'
+  import {SelectionStart} from './selection.vim'
 
   opt.lspOptions = lspOptions
   util.WarnMsg = WarnMsg
@@ -67,6 +71,7 @@ else
   codeaction.ApplyCodeAction = ApplyCodeAction
   callhier.IncomingCalls = IncomingCalls
   callhier.OutgoingCalls = OutgoingCalls
+  selection.SelectionStart = SelectionStart
 endif
 
 # process the 'initialize' method reply from the LSP server
@@ -567,19 +572,7 @@ enddef
 # Reply: 'textDocument/selectionRange'
 # Result: SelectionRange[] | null
 def s:processSelectionRangeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
-  if reply.result->empty()
-    return
-  endif
-
-  var r: dict<dict<number>> = reply.result[0].range
-  var bnr: number = bufnr()
-  var start_col: number = util.GetLineByteFromPos(bnr, r.start) + 1
-  var end_col: number = util.GetLineByteFromPos(bnr, r.end)
-
-  :normal! v"_y
-  setcharpos("'<", [0, r.start.line + 1, start_col, 0])
-  setcharpos("'>", [0, r.end.line + 1, end_col, 0])
-  :normal! gv
+  selection.SelectionStart(lspserver, reply.result)
 enddef
 
 # Reply: 'textDocument/foldingRange'

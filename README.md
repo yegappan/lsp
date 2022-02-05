@@ -87,6 +87,10 @@ Command|Description
 :LspGotoDeclaration|Go to the declaration of the keyword under cursor
 :LspGotoTypeDef|Go to the type definition of the keyword under cursor
 :LspGotoImpl|Go to the implementation of the keyword under cursor
+:LspPeekDefinition|Open the definition of the symbol under cursor in the preview window.
+:LspPeekDeclaration|Open the declaration of the symbol under cursor in the preview window.
+:LspPeekTypeDef|Open the type definition of the symbol under cursor in the preview window.
+:LspPeekImpl|Open the implementation of the symbol under cursor in the preview window.
 :LspShowSignature|Display the signature of the keyword under cursor
 :LspDiagShow|Display the diagnostics messages from the LSP server for the current buffer in a new location list.
 :LspDiagFirst|Display the first diagnostic message for the current buffer
@@ -94,6 +98,7 @@ Command|Description
 :LspDiagPrev|Display the previous diagnostic message before the current line
 :LspDiagCurrent|Display the diagnostic message for the current line
 :LspShowReferences|Display the list of references to the keyword under cursor in a new location list.
+:LspPeekReferences|Display the list of references to the keyword under cursor in a location list associated with the preview window.
 :LspHighlight|Highlight all the matches for the keyword under cursor
 :LspHighlightClear|Clear all the matches highlighted by :LspHighlight
 :LspOutline|Show the list of symbols defined in the current file in a separate window.
@@ -104,7 +109,8 @@ Command|Description
 :LspRename|Rename the current symbol
 :LspCodeAction|Apply the code action supplied by the LSP server to the diagnostic in the current line.
 :LspSymbolSearch|Perform a workspace wide search for a symbol
-:LspSelectionRange|Visually select the current symbol range
+:LspSelectionExpand|Expand the current symbol range visual selection
+:LspSelectionShrink|Shrink the current symbol range visual selection
 :LspFold|Fold the current file
 :LspWorkspaceAddFolder `{folder}`| Add a folder to the workspace
 :LspWorkspaceRemoveFolder `{folder}`|Remove a folder from the workspace

@@ -1,5 +1,7 @@
 vim9script
 
+# Functions related to handling LSP diagnostics.
+
 var opt = {}
 var util = {}
 

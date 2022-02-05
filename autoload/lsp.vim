@@ -879,16 +879,24 @@ export def RemoveWorkspaceFolder(dirArg: string)
   lspserver.removeWorkspaceFolder(dirName)
 enddef
 
-# visually select a range of positions around the current cursor.
-export def SelectionRange()
+# expand the previous selection or start a new selection
+export def SelectionExpand()
   var lspserver: dict<any> = s:curbufGetServerChecked()
   if lspserver->empty()
     return
   endif
 
-  var fname: string = @%
-  # TODO: Also support passing a range
-  lspserver.selectionRange(fname)
+  lspserver.selectionExpand()
+enddef
+
+# shrink the previous selection or start a new selection
+export def SelectionShrink()
+  var lspserver: dict<any> = s:curbufGetServerChecked()
+  if lspserver->empty()
+    return
+  endif
+
+  lspserver.selectionShrink()
 enddef
 
 # fold the entire document

@@ -2,7 +2,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 8.2.2342 and above
-Last change: Feb 2, 2022
+Last change: Feb 4, 2022
 
 ==============================================================================
 						*lsp-license*
@@ -115,7 +115,8 @@ The following commands are provided:
 :LspCodeAction		Apply the code action supplied by the LSP server to
 			the diagnostic in the current line.
 :LspSymbolSearch	Perform a workspace wide search for a symbol
-:LspSelectionRange	Visually select the current symbol range
+:LspSelectionExpand	Expand the current symbol range visual selection
+:LspSelectionShrink	Shrink the current symbol range visual selection
 :LspFold		Fold the current file
 :LspWorkspaceAddFolder {folder}
 			Add a folder to the workspace
@@ -453,8 +454,25 @@ diagnostic messages, you can add the following line to your .vimrc file:
 <
 			Default is false
 
-						*:LspSelectionRange*
-:LspSelectionRange	Visually select the current symbol range.
+						*:LspSelectionExpand*
+:LspSelectionExpand	Expand the current symbol range visual selection. It
+			is useful to create a visual map to use this command.
+			Example: >
+
+			    xnoremap <silent> le <Cmd>LspSelectionExpand<CR>
+<
+			With the above map, you can press "le" in visual mode
+			successively to expand the current visual region.
+
+						*:LspSelectionShrink*
+:LspSelectionShrink	Shrink the current symbol range visual selection. It
+			is useful to create a visual map to use this command.
+			Example: >
+
+			    xnoremap <silent> ls <Cmd>LspSelectionShrink<CR>
+<
+			With the above map, you can press "ls" in visual mode
+			successively to shrink the current visual region.
 
 						*:LspFold*
 :LspFold		Fold the current file.

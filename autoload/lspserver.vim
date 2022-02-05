@@ -7,11 +7,14 @@ vim9script
 var handlers = {}
 var diag = {}
 var util = {}
+var selection = {}
 
 if has('patch-8.2.4019')
   import './handlers.vim' as handlers_import
   import './util.vim' as util_import
   import './diag.vim' as diag_import
+  import './selection.vim' as selection_import
+
   handlers.ProcessReply = handlers_import.ProcessReply
   handlers.ProcessNotif = handlers_import.ProcessNotif
   handlers.ProcessRequest = handlers_import.ProcessRequest
@@ -23,6 +26,7 @@ if has('patch-8.2.4019')
   util.LspFileToUri = util_import.LspFileToUri
   util.PushCursorToTagStack = util_import.PushCursorToTagStack
   diag.GetDiagByLine = diag_import.GetDiagByLine
+  selection.SelectionModify = selection_import.SelectionModify
 else
   import {ProcessReply,
 	ProcessNotif,
@@ -35,6 +39,8 @@ else
 	LspBufnrToUri,
 	LspFileToUri,
 	PushCursorToTagStack} from './util.vim'
+  import {SelectionModify} from './selection.vim'
+
   handlers.ProcessReply = ProcessReply
   handlers.ProcessNotif = ProcessNotif
   handlers.ProcessRequest = ProcessRequest
@@ -46,6 +52,7 @@ else
   util.LspFileToUri = LspFileToUri
   util.PushCursorToTagStack = PushCursorToTagStack
   diag.GetDiagByLine = GetDiagByLine
+  selection.SelectionModify = SelectionModify
 endif
 
 # LSP server standard output handler
@@ -63,7 +70,7 @@ enddef
 # LSP server exit callback
 def s:exit_cb(lspserver: dict<any>, job: job, status: number): void
   util.WarnMsg("LSP server exited with status " .. status)
-  lspserver.job = v:none
+  lspserver.job = v:null
   lspserver.running = false
   lspserver.ready = false
   lspserver.requests = {}
@@ -201,7 +208,7 @@ def s:stopServer(lspserver: dict<any>): number
   lspserver.exitServer()
 
   lspserver.job->job_stop()
-  lspserver.job = v:none
+  lspserver.job = v:null
   lspserver.running = false
   lspserver.ready = false
   lspserver.requests = {}
@@ -862,11 +869,40 @@ def s:selectionRange(lspserver: dict<any>, fname: string)
     return
   endif
 
+  # clear the previous selection reply
+  lspserver.selection = {}
+
   var req = lspserver.createRequest('textDocument/selectionRange')
   # interface SelectionRangeParams
   # interface TextDocumentIdentifier
   req.params->extend({textDocument: {uri: util.LspFileToUri(fname)}, positions: [s:getLspPosition()]})
   lspserver.sendMessage(req)
+
+  s:waitForReponse(lspserver, req)
+enddef
+
+# Expand the previous selection or start a new one
+def s:selectionExpand(lspserver: dict<any>)
+  # Check whether LSP server supports selection ranges
+  if !lspserver.caps->has_key('selectionRangeProvider')
+			|| !lspserver.caps.selectionRangeProvider
+    util.ErrMsg("Error: LSP server does not support selection ranges")
+    return
+  endif
+
+  selection.SelectionModify(lspserver, true)
+enddef
+
+# Shrink the previous selection or start a new one
+def s:selectionShrink(lspserver: dict<any>)
+  # Check whether LSP server supports selection ranges
+  if !lspserver.caps->has_key('selectionRangeProvider')
+			|| !lspserver.caps.selectionRangeProvider
+    util.ErrMsg("Error: LSP server does not support selection ranges")
+    return
+  endif
+
+  selection.SelectionModify(lspserver, false)
 enddef
 
 # fold the entire document
@@ -922,7 +958,8 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
     workspaceSymbolPopup: 0,
     workspaceSymbolQuery: '',
     peekSymbol: false,
-    callHierarchyType: ''
+    callHierarchyType: '',
+    selection: {}
   }
   # Add the LSP server functions
   lspserver->extend({
@@ -968,6 +1005,8 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
     addWorkspaceFolder: function('s:addWorkspaceFolder', [lspserver]),
     removeWorkspaceFolder: function('s:removeWorkspaceFolder', [lspserver]),
     selectionRange: function('s:selectionRange', [lspserver]),
+    selectionExpand: function('s:selectionExpand', [lspserver]),
+    selectionShrink: function('s:selectionShrink', [lspserver]),
     foldRange: function('s:foldRange', [lspserver]),
     executeCommand: function('s:executeCommand', [lspserver]),
     showCapabilities: function('s:showCapabilities', [lspserver])

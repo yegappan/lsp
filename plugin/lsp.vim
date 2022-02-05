@@ -48,7 +48,8 @@ if has('patch-8.2.4257')
   lspf.codeAction = lsp.CodeAction
   lspf.symbolSearch = lsp.SymbolSearch
   lspf.hover = lsp.Hover
-  lspf.selectionRange = lsp.SelectionRange
+  lspf.selectionExpand = lsp.SelectionExpand
+  lspf.selectionShrink = lsp.SelectionShrink
   lspf.foldDocument = lsp.FoldDocument
   lspf.listWorkspaceFolders = lsp.ListWorkspaceFolders
   lspf.addWorkspaceFolder = lsp.AddWorkspaceFolder
@@ -93,7 +94,8 @@ elseif has('patch-8.2.4019')
   lspf.codeAction = lsp_import.CodeAction
   lspf.symbolSearch = lsp_import.SymbolSearch
   lspf.hover = lsp_import.Hover
-  lspf.selectionRange = lsp_import.SelectionRange
+  lspf.selectionExpand = lsp_import.SelectionExpand
+  lspf.selectionShrink = lsp_import.SelectionShrink
   lspf.foldDocument = lsp_import.FoldDocument
   lspf.listWorkspaceFolders = lsp_import.ListWorkspaceFolders
   lspf.addWorkspaceFolder = lsp_import.AddWorkspaceFolder
@@ -127,7 +129,8 @@ else
 	  CodeAction,
 	  SymbolSearch,
 	  Hover,
-	  SelectionRange,
+	  SelectionExpand,
+	  SelectionShrink,
 	  FoldDocument,
 	  ListWorkspaceFolders,
 	  AddWorkspaceFolder,
@@ -169,7 +172,8 @@ else
   lspf.codeAction = CodeAction
   lspf.symbolSearch = SymbolSearch
   lspf.hover = Hover
-  lspf.selectionRange = SelectionRange
+  lspf.selectionExpand = SelectionExpand
+  lspf.selectionShrink = SelectionShrink
   lspf.foldDocument = FoldDocument
   lspf.listWorkspaceFolders = ListWorkspaceFolders
   lspf.addWorkspaceFolder = AddWorkspaceFolder
@@ -216,7 +220,8 @@ var Trename = s:lspf.rename
 var TcodeAction = s:lspf.codeAction
 var TsymbolSearch = s:lspf.symbolSearch
 var Thover = s:lspf.hover
-var TselectionRange = s:lspf.selectionRange
+var TselectionExpand = s:lspf.selectionExpand
+var TselectionShrink = s:lspf.selectionShrink
 var TfoldDocument = s:lspf.foldDocument
 var TlistWorkspaceFolders = s:lspf.listWorkspaceFolders
 var TaddWorkspaceFolder = s:lspf.addWorkspaceFolder
@@ -269,7 +274,8 @@ command! -nargs=0 -bar LspRename call Trename()
 command! -nargs=0 -bar LspCodeAction call TcodeAction()
 command! -nargs=? -bar LspSymbolSearch call TsymbolSearch(<q-args>)
 command! -nargs=0 -bar LspHover call Thover()
-command! -nargs=0 -bar LspSelectionRange call TselectionRange()
+command! -nargs=0 -bar LspSelectionExpand call TselectionExpand()
+command! -nargs=0 -bar LspSelectionShrink call TselectionShrink()
 command! -nargs=0 -bar LspFold call TfoldDocument()
 command! -nargs=0 -bar LspWorkspaceListFolders call TlistWorkspaceFolders()
 command! -nargs=1 -bar -complete=dir LspWorkspaceAddFolder call TaddWorkspaceFolder(<q-args>)

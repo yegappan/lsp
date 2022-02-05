@@ -397,8 +397,8 @@ def Test_LspRename()
   :%bw!
 enddef
 
-# Test for :LspSelectionRange
-def Test_LspSelectionRange()
+# Test for :LspSelectionExpand and :LspSelectionShrink
+def Test_LspSelection()
   silent! edit Xtest.c
   sleep 500m
   var lines: list<string> =<< trim END
@@ -413,37 +413,86 @@ def Test_LspSelectionRange()
   END
   setline(1, lines)
   sleep 1
-  # start a block-wise visual mode, LspSelectionRange should change this to
+  # start a block-wise visual mode, LspSelectionExpand should change this to
   # a characterwise visual mode.
   exe "normal! 1G\<C-V>G\"_y"
   cursor(2, 1)
   redraw!
-  :LspSelectionRange
-  sleep 1
+  :LspSelectionExpand
   redraw!
   normal! y
   assert_equal('v', visualmode())
   assert_equal([2, 8], [line("'<"), line("'>")])
-  # start a linewise visual mode, LspSelectionRange should change this to
+  # start a linewise visual mode, LspSelectionExpand should change this to
   # a characterwise visual mode.
   exe "normal! 3GViB\"_y"
   cursor(4, 29)
   redraw!
-  :LspSelectionRange
-  sleep 1
+  :LspSelectionExpand
   redraw!
   normal! y
   assert_equal('v', visualmode())
   assert_equal([4, 5, 6, 5], [line("'<"), col("'<"), line("'>"), col("'>")])
+
+  # Expand the visual selection
+  xnoremap <silent> le <Cmd>LspSelectionExpand<CR>
+  xnoremap <silent> ls <Cmd>LspSelectionShrink<CR>
+  cursor(5, 8)
+  normal vley
+  assert_equal([5, 8, 5, 12], [line("'<"), col("'<"), line("'>"), col("'>")])
+  cursor(5, 8)
+  normal vleley
+  assert_equal([5, 8, 5, 14], [line("'<"), col("'<"), line("'>"), col("'>")])
+  cursor(5, 8)
+  normal vleleley
+  assert_equal([4, 30, 6, 5], [line("'<"), col("'<"), line("'>"), col("'>")])
+  cursor(5, 8)
+  normal vleleleley
+  assert_equal([4, 5, 6, 5], [line("'<"), col("'<"), line("'>"), col("'>")])
+  cursor(5, 8)
+  normal vleleleleley
+  assert_equal([2, 1, 8, 1], [line("'<"), col("'<"), line("'>"), col("'>")])
+  cursor(5, 8)
+  normal vleleleleleley
+  assert_equal([1, 1, 8, 1], [line("'<"), col("'<"), line("'>"), col("'>")])
+  cursor(5, 8)
+  normal vleleleleleleley
+  assert_equal([1, 1, 8, 1], [line("'<"), col("'<"), line("'>"), col("'>")])
+
+  # Shrink the visual selection
+  cursor(5, 8)
+  normal vlsy
+  assert_equal([5, 8, 5, 12], [line("'<"), col("'<"), line("'>"), col("'>")])
+  cursor(5, 8)
+  normal vlelsy
+  assert_equal([5, 8, 5, 12], [line("'<"), col("'<"), line("'>"), col("'>")])
+  cursor(5, 8)
+  normal vlelelsy
+  assert_equal([5, 8, 5, 12], [line("'<"), col("'<"), line("'>"), col("'>")])
+  cursor(5, 8)
+  normal vlelelelsy
+  assert_equal([5, 8, 5, 14], [line("'<"), col("'<"), line("'>"), col("'>")])
+  cursor(5, 8)
+  normal vlelelelelsy
+  assert_equal([4, 30, 6, 5], [line("'<"), col("'<"), line("'>"), col("'>")])
+  cursor(5, 8)
+  normal vlelelelelelsy
+  assert_equal([4, 5, 6, 5], [line("'<"), col("'<"), line("'>"), col("'>")])
+  cursor(5, 8)
+  normal vlelelelelelelsy
+  assert_equal([2, 1, 8, 1], [line("'<"), col("'<"), line("'>"), col("'>")])
+
+  xunmap le
+  xunmap ls
   bw!
 
   # empty file
-  assert_equal('', execute('LspSelectionRange'))
+  assert_equal('', execute('LspSelectionExpand'))
 
   # file without an LSP server
   edit a.b
   assert_equal(['Error: LSP server for "a.b" is not found'],
-	       execute('LspSelectionRange')->split("\n"))
+	       execute('LspSelectionExpand')->split("\n"))
 
   :%bw!
 enddef

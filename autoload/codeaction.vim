@@ -1,5 +1,7 @@
 vim9script
 
+# Functions related to handling LSP code actions to fix diagnostics.
+
 var util = {}
 var textedit = {}
 
