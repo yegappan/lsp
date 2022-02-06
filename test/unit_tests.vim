@@ -88,17 +88,16 @@ endfunc
 # Test for formatting a file using LspFormat
 def Test_LspFormat()
   :silent! edit Xtest.c
+  sleep 200m
   setline(1, ['  int i;', '  int j;'])
   :redraw!
   :LspFormat
-  :sleep 1
   assert_equal(['int i;', 'int j;'], getline(1, '$'))
 
   deletebufline('', 1, '$')
   setline(1, ['int f1(int i)', '{', 'int j = 10; return j;', '}'])
   :redraw!
   :LspFormat
-  :sleep 500m
   assert_equal(['int f1(int i) {', '  int j = 10;', '  return j;', '}'],
 							getline(1, '$'))
 
@@ -106,35 +105,30 @@ def Test_LspFormat()
   setline(1, ['', 'int     i;'])
   :redraw!
   :LspFormat
-  :sleep 500m
   assert_equal(['', 'int i;'], getline(1, '$'))
 
   deletebufline('', 1, '$')
   setline(1, [' int i;'])
   :redraw!
   :LspFormat
-  :sleep 500m
   assert_equal(['int i;'], getline(1, '$'))
 
   deletebufline('', 1, '$')
   setline(1, ['  int  i; '])
   :redraw!
   :LspFormat
-  :sleep 500m
   assert_equal(['int i;'], getline(1, '$'))
 
   deletebufline('', 1, '$')
   setline(1, ['int  i;', '', '', ''])
   :redraw!
   :LspFormat
-  :sleep 500m
   assert_equal(['int i;'], getline(1, '$'))
 
   deletebufline('', 1, '$')
   setline(1, ['int f1(){int x;int y;x=1;y=2;return x+y;}'])
   :redraw!
   :LspFormat
-  :sleep 500m
   var expected: list<string> =<< trim END
     int f1() {
       int x;
@@ -150,7 +144,6 @@ def Test_LspFormat()
   setline(1, ['', '', '', ''])
   :redraw!
   :LspFormat
-  :sleep 500m
   assert_equal([''], getline(1, '$'))
 
   deletebufline('', 1, '$')
@@ -164,7 +157,6 @@ def Test_LspFormat()
   setline(1, lines)
   :redraw!
   :4LspFormat
-  :sleep 500m
   expected =<< trim END
     int f1() {
       int i, j;
@@ -192,6 +184,7 @@ enddef
 # file using LSP
 def Test_LspShowReferences()
   :silent! edit Xtest.c
+  sleep 200m
   var lines: list<string> =<< trim END
     int count;
     void redFunc()
@@ -212,8 +205,7 @@ def Test_LspShowReferences()
   cursor(5, 2)
   var bnr: number = bufnr()
   :LspShowReferences
-  :sleep 1
-  WaitForAssert(() => assert_equal('quickfix', getwinvar(winnr('$'), '&buftype')))
+  assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
   var qfl: list<dict<any>> = getloclist(0)
   assert_equal(bnr, qfl[0].bufnr)
   assert_equal(3, qfl->len())
@@ -223,8 +215,7 @@ def Test_LspShowReferences()
   :only
   cursor(1, 5)
   :LspShowReferences
-  :sleep 500m
-  WaitForAssert(() => assert_equal(1, getloclist(0)->len()))
+  assert_equal(1, getloclist(0)->len())
   qfl = getloclist(0)
   assert_equal([1, 5], [qfl[0].lnum, qfl[0].col])
   bw!
@@ -243,6 +234,7 @@ enddef
 # Test for LSP diagnostics
 def Test_LspDiag()
   :silent! edit Xtest.c
+  sleep 200m
   var lines: list<string> =<< trim END
     void blueFunc()
     {
@@ -296,7 +288,7 @@ enddef
 # Test for :LspCodeAction
 def Test_LspCodeAction()
   silent! edit Xtest.c
-  sleep 500m
+  sleep 200m
   var lines: list<string> =<< trim END
     void testFunc()
     {
@@ -305,33 +297,29 @@ def Test_LspCodeAction()
     }
   END
   setline(1, lines)
-  sleep 500m
+  sleep 1
   cursor(4, 1)
   redraw!
   g:LSPTest_CodeActionChoice = 1
   :LspCodeAction
-  sleep 500m
-  WaitForAssert(() => assert_equal("\tcount = 20;", getline(4)))
+  assert_equal("\tcount = 20;", getline(4))
 
   setline(4, "\tcount = 20:")
   cursor(4, 1)
   sleep 500m
   g:LSPTest_CodeActionChoice = 0
   :LspCodeAction
-  sleep 500m
-  WaitForAssert(() => assert_equal("\tcount = 20:", getline(4)))
+  assert_equal("\tcount = 20:", getline(4))
 
   g:LSPTest_CodeActionChoice = 2
   cursor(4, 1)
   :LspCodeAction
-  sleep 500m
-  WaitForAssert(() => assert_equal("\tcount = 20:", getline(4)))
+  assert_equal("\tcount = 20:", getline(4))
 
   g:LSPTest_CodeActionChoice = 1
   cursor(4, 1)
   :LspCodeAction
-  sleep 500m
-  WaitForAssert(() => assert_equal("\tcount = 20;", getline(4)))
+  assert_equal("\tcount = 20;", getline(4))
   bw!
 
   # empty file
@@ -348,7 +336,7 @@ enddef
 # Test for :LspRename
 def Test_LspRename()
   silent! edit Xtest.c
-  sleep 1
+  sleep 200m
   var lines: list<string> =<< trim END
     void F1(int count)
     {
@@ -368,7 +356,6 @@ def Test_LspRename()
   search('count')
   redraw!
   feedkeys(":LspRename\<CR>er\<CR>", "xt")
-  sleep 1
   redraw!
   var expected: list<string> =<< trim END
     void F1(int counter)
@@ -383,7 +370,7 @@ def Test_LspRename()
 	count = 5;
     }
   END
-  WaitForAssert(() => assert_equal(expected, getline(1, '$')))
+  assert_equal(expected, getline(1, '$'))
   bw!
 
   # empty file
@@ -400,7 +387,7 @@ enddef
 # Test for :LspSelectionExpand and :LspSelectionShrink
 def Test_LspSelection()
   silent! edit Xtest.c
-  sleep 500m
+  sleep 200m
   var lines: list<string> =<< trim END
     void F1(int count)
     {
@@ -500,6 +487,7 @@ enddef
 # Test for :LspGotoDefinition, :LspGotoDeclaration and :LspGotoImpl
 def Test_LspGotoDefinition()
   silent! edit Xtest.cpp
+  sleep 200m
   var lines: list<string> =<< trim END
     #include <iostream>
     using namespace std;
@@ -550,17 +538,14 @@ def Test_LspGotoDefinition()
   :messages clear
   cursor(14, 5)
   :LspGotoDeclaration
-  sleep 1
   var m = execute('messages')->split("\n")
   assert_equal('Error: declaration is not found', m[1])
   :messages clear
   :LspGotoDefinition
-  sleep 1
   m = execute('messages')->split("\n")
   assert_equal('Error: definition is not found', m[1])
   :messages clear
   :LspGotoImpl
-  sleep 1
   m = execute('messages')->split("\n")
   assert_equal('Error: implementation is not found', m[1])
   endif
@@ -586,6 +571,7 @@ enddef
 # Test for :LspHighlight
 def Test_LspHighlight()
   silent! edit Xtest.c
+  sleep 200m
   var lines: list<string> =<< trim END
     void f1(int arg)
     {
@@ -597,7 +583,6 @@ def Test_LspHighlight()
   :sleep 1
   cursor(1, 13)
   :LspHighlight
-  :sleep 1
   var expected: dict<any>
   expected = {id: 0, col: 13, end: 1, type: 'LspTextRef', length: 3, start: 1}
   if has('patch-8.2.3233')
@@ -615,7 +600,6 @@ def Test_LspHighlight()
   endif
   assert_equal([expected], prop_list(4))
   :LspHighlightClear
-  :sleep 1
   assert_equal([], prop_list(1))
   assert_equal([], prop_list(3))
   assert_equal([], prop_list(4))
@@ -625,6 +609,7 @@ enddef
 # Test for :LspHover
 def Test_LspHover()
   silent! edit Xtest.c
+  sleep 200m
   var lines: list<string> =<< trim END
     int f1(int a)
     {
@@ -640,14 +625,12 @@ def Test_LspHover()
   :sleep 1
   cursor(8, 4)
   :LspHover
-  :sleep 1
   var p: list<number> = popup_list()
   assert_equal(1, p->len())
   assert_equal(['function f1', '', '→ int', 'Parameters:', '- int a', '', 'int f1(int a)'], getbufline(winbufnr(p[0]), 1, '$'))
   popup_close(p[0])
   cursor(7, 1)
   :LspHover
-  :sleep 1
   assert_equal([], popup_list())
   :%bw!
 enddef
@@ -655,6 +638,7 @@ enddef
 # Test for :LspShowSignature
 def Test_LspShowSignature()
   silent! edit Xtest.c
+  sleep 200m
   var lines: list<string> =<< trim END
     int MyFunc(int a, int b)
     {
@@ -670,7 +654,6 @@ def Test_LspShowSignature()
   :sleep 1
   cursor(8, 10)
   :LspShowSignature
-  :sleep 1
   var p: list<number> = popup_list()
   var bnr: number = winbufnr(p[0])
   assert_equal(1, p->len())
@@ -686,7 +669,6 @@ def Test_LspShowSignature()
   setline(line('.'), '  MyFunc(10, ')
   cursor(8, 13)
   :LspShowSignature
-  :sleep 1
   p = popup_list()
   bnr = winbufnr(p[0])
   assert_equal(1, p->len())
