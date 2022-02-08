@@ -16,7 +16,7 @@ else
 endif
 
 # jump to a symbol selected in the outline window
-def s:outlineJumpToSymbol()
+def s:OutlineJumpToSymbol()
   var lnum: number = line('.') - 1
   if w:lspSymbols.lnumTable[lnum]->empty()
     return
@@ -70,7 +70,7 @@ export def SkipOutlineRefresh(): bool
   return skipRefresh
 enddef
 
-def s:addSymbolText(bnr: number,
+def s:AddSymbolText(bnr: number,
 			symbolTypeTable: dict<list<dict<any>>>,
 			pfx: string,
 			text: list<string>,
@@ -99,7 +99,7 @@ def s:addSymbolText(bnr: number,
 			col: start_col})
       s.outlineLine = lnumMap->len()
       if s->has_key('children') && !s.children->empty()
-	s:addSymbolText(bnr, s.children, prefix, text, lnumMap, true)
+	s:AddSymbolText(bnr, s.children, prefix, text, lnumMap, true)
       endif
     endfor
   endfor
@@ -137,7 +137,7 @@ export def UpdateOutlineWindow(fname: string,
   # First two lines in the buffer display comment information
   var lnumMap: list<dict<any>> = [{}, {}]
   var text: list<string> = []
-  s:addSymbolText(fname->bufnr(), symbolTypeTable, '', text, lnumMap, false)
+  s:AddSymbolText(fname->bufnr(), symbolTypeTable, '', text, lnumMap, false)
   append('$', text)
   w:lspSymbols = {filename: fname, lnumTable: lnumMap,
 				symbolsByLine: symbolLineTable}
@@ -150,13 +150,13 @@ export def UpdateOutlineWindow(fname: string,
   prevWinID->win_gotoid()
 
   # Highlight the current symbol
-  s:outlineHighlightCurrentSymbol()
+  s:OutlineHighlightCurrentSymbol()
 
   # re-enable refreshing the outline window
   skipRefresh = false
 enddef
 
-def s:outlineHighlightCurrentSymbol()
+def s:OutlineHighlightCurrentSymbol()
   var fname: string = expand('%')->fnamemodify(':p')
   if fname == '' || &filetype == ''
     return
@@ -224,7 +224,7 @@ def s:outlineHighlightCurrentSymbol()
 enddef
 
 # when the outline window is closed, do the cleanup
-def s:outlineCleanup()
+def s:OutlineCleanup()
   # Remove the outline autocommands
   :silent! autocmd! LSPOutline
 
@@ -279,8 +279,8 @@ export def OpenOutlineWindow()
     au!
     autocmd BufEnter * call g:LspRequestDocSymbols()
     # when the outline window is closed, do the cleanup
-    autocmd BufUnload LSP-Outline call s:outlineCleanup()
-    autocmd CursorHold * call s:outlineHighlightCurrentSymbol()
+    autocmd BufUnload LSP-Outline call s:OutlineCleanup()
+    autocmd CursorHold * call s:OutlineHighlightCurrentSymbol()
   augroup END
 
   prevWinID->win_gotoid()

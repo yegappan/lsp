@@ -19,7 +19,7 @@ else
   util.GetLineByteFromPos = GetLineByteFromPos
 endif
 
-def s:createLoclistWithCalls(calls: list<dict<any>>, incoming: bool)
+def s:CreateLoclistWithCalls(calls: list<dict<any>>, incoming: bool)
   var qflist: list<dict<any>> = []
 
   for item in calls
@@ -74,7 +74,7 @@ export def IncomingCalls(calls: list<dict<any>>)
     return
   endif
 
-  s:createLoclistWithCalls(calls, true)
+  s:CreateLoclistWithCalls(calls, true)
 enddef
 
 export def OutgoingCalls(calls: list<dict<any>>)
@@ -83,7 +83,7 @@ export def OutgoingCalls(calls: list<dict<any>>)
     return
   endif
 
-  s:createLoclistWithCalls(calls, false)
+  s:CreateLoclistWithCalls(calls, false)
 enddef
 
 # vim: shiftwidth=2 softtabstop=2

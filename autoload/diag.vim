@@ -32,7 +32,7 @@ export def DiagRemoveFile(lspserver: dict<any>, bnr: number)
   endif
 enddef
 
-def s:lspDiagSevToSignName(severity: number): string
+def s:DiagSevToSignName(severity: number): string
   var typeMap: list<string> = ['LspDiagError', 'LspDiagWarning',
 						'LspDiagInfo', 'LspDiagHint']
   if severity > 4
@@ -71,7 +71,7 @@ def ProcessNewDiags(lspserver: dict<any>, bnr: number)
   for [lnum, diag] in lspserver.diagsMap[bnr]->items()
     signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
 				lnum: str2nr(lnum),
-				name: s:lspDiagSevToSignName(diag.severity)})
+				name: s:DiagSevToSignName(diag.severity)})
   endfor
 
   signs->sign_placelist()
@@ -140,7 +140,7 @@ export def DiagsGetErrorCount(lspserver: dict<any>): dict<number>
 enddef
 
 # Map the LSP DiagnosticSeverity to a quickfix type character
-def s:lspDiagSevToQfType(severity: number): string
+def s:DiagSevToQfType(severity: number): string
   var typeMap: list<string> = ['E', 'W', 'I', 'N']
 
   if severity > 4
@@ -173,7 +173,7 @@ export def ShowAllDiags(lspserver: dict<any>): void
 		    'lnum': diag.range.start.line + 1,
 		    'col': util.GetLineByteFromPos(bnr, diag.range.start) + 1,
 		    'text': text,
-		    'type': s:lspDiagSevToQfType(diag.severity)})
+		    'type': s:DiagSevToQfType(diag.severity)})
   endfor
   setloclist(0, [], ' ', {'title': 'Language Server Diagnostics',
 							'items': qflist})
@@ -221,7 +221,7 @@ export def GetDiagByLine(lspserver: dict<any>, bnr: number, lnum: number): dict<
 enddef
 
 # sort the diaganostics messages for a buffer by line number
-def s:getSortedDiagLines(lspsrv: dict<any>, bnr: number): list<number>
+def s:GetSortedDiagLines(lspsrv: dict<any>, bnr: number): list<number>
   # create a list of line numbers from the diag map keys
   var lnums: list<number> =
 		lspsrv.diagsMap[bnr]->keys()->mapnew((_, v) => v->str2nr())
@@ -242,7 +242,7 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
   endif
 
   # sort the diagnostics by line number
-  var sortedDiags: list<number> = s:getSortedDiagLines(lspserver, bnr)
+  var sortedDiags: list<number> = s:GetSortedDiagLines(lspserver, bnr)
 
   if which == 'first'
     cursor(sortedDiags[0], 1)

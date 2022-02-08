@@ -83,7 +83,7 @@ endif
 
 # process the 'initialize' method reply from the LSP server
 # Result: InitializeResult
-def s:processInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+def s:ProcessInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if reply.result->len() <= 0
     return
   endif
@@ -126,7 +126,7 @@ enddef
 # 'textDocument/typeDefinition' and 'textDocument/implementation' replies from
 # the LSP server
 # Result: Location | Location[] | LocationLink[] | null
-def s:processDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+def s:ProcessDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   var location: dict<any>
   if reply.result->type() == v:t_list
     if !reply.result->empty()
@@ -143,7 +143,7 @@ enddef
 
 # process the 'textDocument/signatureHelp' reply from the LSP server
 # Result: SignatureHelp | null
-def s:processSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+def s:ProcessSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   signature.SignatureDisplay(lspserver, reply.result)
 enddef
 
@@ -184,7 +184,7 @@ enddef
 
 # process the 'textDocument/completion' reply from the LSP server
 # Result: CompletionItem[] | CompletionList | null
-def s:processCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+def s:ProcessCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if reply.result->empty()
     return
   endif
@@ -274,7 +274,7 @@ enddef
 
 # process the 'textDocument/hover' reply from the LSP server
 # Result: Hover | null
-def s:processHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+def s:ProcessHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if reply.result->empty()
     return
   endif
@@ -337,13 +337,13 @@ enddef
 
 # process the 'textDocument/references' reply from the LSP server
 # Result: Location[] | null
-def s:processReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+def s:ProcessReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   symbol.ShowReferences(lspserver, reply.result)
 enddef
 
 # process the 'textDocument/documentHighlight' reply from the LSP server
 # Result: DocumentHighlight[] | null
-def s:processDocHighlightReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+def s:ProcessDocHighlightReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   if reply.result->empty()
     return
   endif
@@ -387,7 +387,7 @@ def LspSymbolKindToName(symkind: number): string
 enddef
 
 # process SymbolInformation[]
-def s:processSymbolInfoTable(symbolInfoTable: list<dict<any>>,
+def s:ProcessSymbolInfoTable(symbolInfoTable: list<dict<any>>,
 				symbolTypeTable: dict<list<dict<any>>>,
 				symbolLineTable: list<dict<any>>)
   var fname: string
@@ -417,7 +417,7 @@ def s:processSymbolInfoTable(symbolInfoTable: list<dict<any>>,
 enddef
 
 # process DocumentSymbol[]
-def s:processDocSymbolTable(docSymbolTable: list<dict<any>>,
+def s:ProcessDocSymbolTable(docSymbolTable: list<dict<any>>,
 				symbolTypeTable: dict<list<dict<any>>>,
 				symbolLineTable: list<dict<any>>)
   var symbolType: string
@@ -439,7 +439,7 @@ def s:processDocSymbolTable(docSymbolTable: list<dict<any>>,
     endif
     childSymbols = {}
     if symbol->has_key('children')
-      s:processDocSymbolTable(symbol.children, childSymbols, symbolLineTable)
+      s:ProcessDocSymbolTable(symbol.children, childSymbols, symbolLineTable)
     endif
     symInfo = {name: name, range: r, detail: symbolDetail,
 						children: childSymbols}
@@ -451,7 +451,7 @@ enddef
 # process the 'textDocument/documentSymbol' reply from the LSP server
 # Open a symbols window and display the symbols as a tree
 # Result: DocumentSymbol[] | SymbolInformation[] | null
-def s:processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+def s:ProcessDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   var fname: string
   var symbolTypeTable: dict<list<dict<any>>> = {}
   var symbolLineTable: list<dict<any>> = []
@@ -468,10 +468,10 @@ def s:processDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<an
 
   if reply.result[0]->has_key('location')
     # SymbolInformation[]
-    s:processSymbolInfoTable(reply.result, symbolTypeTable, symbolLineTable)
+    s:ProcessSymbolInfoTable(reply.result, symbolTypeTable, symbolLineTable)
   else
     # DocumentSymbol[]
-    s:processDocSymbolTable(reply.result, symbolTypeTable, symbolLineTable)
+    s:ProcessDocSymbolTable(reply.result, symbolTypeTable, symbolLineTable)
   endif
 
   # sort the symbols by line number
@@ -481,7 +481,7 @@ enddef
 
 # process the 'textDocument/formatting' reply from the LSP server
 # Result: TextEdit[] | null
-def s:processFormatReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+def s:ProcessFormatReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   if reply.result->empty()
     # nothing to format
     return
@@ -506,7 +506,7 @@ enddef
 # Reply: 'textDocument/rename'
 # Result: Range | { range: Range, placeholder: string }
 #	        | { defaultBehavior: boolean } | null
-def s:processRenameReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+def s:ProcessRenameReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   if reply.result->empty()
     # nothing to rename
     return
@@ -518,19 +518,19 @@ enddef
 
 # process the 'textDocument/codeAction' reply from the LSP server
 # Result: (Command | CodeAction)[] | null
-def s:processCodeActionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+def s:ProcessCodeActionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   codeaction.ApplyCodeAction(lspserver, reply.result)
 enddef
 
 # Reply: 'textDocument/selectionRange'
 # Result: SelectionRange[] | null
-def s:processSelectionRangeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+def s:ProcessSelectionRangeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   selection.SelectionStart(lspserver, reply.result)
 enddef
 
 # Reply: 'textDocument/foldingRange'
 # Result: FoldingRange[] | null
-def s:processFoldingRangeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+def s:ProcessFoldingRangeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   if reply.result->empty()
     return
   endif
@@ -556,7 +556,7 @@ enddef
 
 # process the 'workspace/executeCommand' reply from the LSP server
 # Result: any | null
-def s:processWorkspaceExecuteReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+def s:ProcessWorkspaceExecuteReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   if reply.result->empty()
     return
   endif
@@ -566,7 +566,7 @@ enddef
 
 # Convert a file name <filename> (<dirname>) format.
 # Make sure the popup does't occupy the entire screen by reducing the width.
-def s:makeMenuName(popupWidth: number, fname: string): string
+def s:MakeMenuName(popupWidth: number, fname: string): string
   var filename: string = fname->fnamemodify(':t')
   var flen: number = filename->len()
   var dirname: string = fname->fnamemodify(':h')
@@ -587,7 +587,7 @@ enddef
 
 # process the 'workspace/symbol' reply from the LSP server
 # Result: SymbolInformation[] | null
-def s:processWorkspaceSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+def s:ProcessWorkspaceSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   var symbols: list<dict<any>> = []
   var symbolType: string
   var fileName: string
@@ -613,7 +613,7 @@ def s:processWorkspaceSymbolReply(lspserver: dict<any>, req: dict<any>, reply: d
       symName = symbol.containerName .. '::' .. symName
     endif
     symName ..= ' [' .. LspSymbolKindToName(symbol.kind) .. ']'
-    symName ..= ' ' .. s:makeMenuName(
+    symName ..= ' ' .. s:MakeMenuName(
 		lspserver.workspaceSymbolPopup->popup_getpos().core_width,
 		fileName)
 
@@ -628,7 +628,7 @@ enddef
 
 # process the 'textDocument/prepareCallHierarchy' reply from the LSP server
 # Result: CallHierarchyItem[] | null
-def s:processPrepareCallHierarchy(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+def s:ProcessPrepareCallHierarchy(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   if reply.result->empty()
     if lspserver.callHierarchyType == 'incoming'
       util.WarnMsg('No incoming calls')
@@ -659,13 +659,13 @@ enddef
 
 # process the 'callHierarchy/incomingCalls' reply from the LSP server
 # Result: CallHierarchyIncomingCall[] | null
-def s:processIncomingCalls(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+def s:ProcessIncomingCalls(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   callhier.IncomingCalls(reply.result)
 enddef
 
 # process the 'callHierarchy/outgoingCalls' reply from the LSP server
 # Result: CallHierarchyOutgoingCall[] | null
-def s:processOutgoingCalls(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+def s:ProcessOutgoingCalls(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   callhier.OutgoingCalls(reply.result)
 enddef
 
@@ -673,28 +673,28 @@ enddef
 export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   var lsp_reply_handlers: dict<func> =
     {
-      'initialize': function('s:processInitializeReply'),
-      'textDocument/definition': function('s:processDefDeclReply'),
-      'textDocument/declaration': function('s:processDefDeclReply'),
-      'textDocument/typeDefinition': function('s:processDefDeclReply'),
-      'textDocument/implementation': function('s:processDefDeclReply'),
-      'textDocument/signatureHelp': function('s:processSignaturehelpReply'),
-      'textDocument/completion': function('s:processCompletionReply'),
-      'textDocument/hover': function('s:processHoverReply'),
-      'textDocument/references': function('s:processReferencesReply'),
-      'textDocument/documentHighlight': function('s:processDocHighlightReply'),
-      'textDocument/documentSymbol': function('s:processDocSymbolReply'),
-      'textDocument/formatting': function('s:processFormatReply'),
-      'textDocument/rangeFormatting': function('s:processFormatReply'),
-      'textDocument/rename': function('s:processRenameReply'),
-      'textDocument/codeAction': function('s:processCodeActionReply'),
-      'textDocument/selectionRange': function('s:processSelectionRangeReply'),
-      'textDocument/foldingRange': function('s:processFoldingRangeReply'),
-      'workspace/executeCommand': function('s:processWorkspaceExecuteReply'),
-      'workspace/symbol': function('s:processWorkspaceSymbolReply'),
-      'textDocument/prepareCallHierarchy': function('s:processPrepareCallHierarchy'),
-      'callHierarchy/incomingCalls': function('s:processIncomingCalls'),
-      'callHierarchy/outgoingCalls': function('s:processOutgoingCalls')
+      'initialize': function('s:ProcessInitializeReply'),
+      'textDocument/definition': function('s:ProcessDefDeclReply'),
+      'textDocument/declaration': function('s:ProcessDefDeclReply'),
+      'textDocument/typeDefinition': function('s:ProcessDefDeclReply'),
+      'textDocument/implementation': function('s:ProcessDefDeclReply'),
+      'textDocument/signatureHelp': function('s:ProcessSignaturehelpReply'),
+      'textDocument/completion': function('s:ProcessCompletionReply'),
+      'textDocument/hover': function('s:ProcessHoverReply'),
+      'textDocument/references': function('s:ProcessReferencesReply'),
+      'textDocument/documentHighlight': function('s:ProcessDocHighlightReply'),
+      'textDocument/documentSymbol': function('s:ProcessDocSymbolReply'),
+      'textDocument/formatting': function('s:ProcessFormatReply'),
+      'textDocument/rangeFormatting': function('s:ProcessFormatReply'),
+      'textDocument/rename': function('s:ProcessRenameReply'),
+      'textDocument/codeAction': function('s:ProcessCodeActionReply'),
+      'textDocument/selectionRange': function('s:ProcessSelectionRangeReply'),
+      'textDocument/foldingRange': function('s:ProcessFoldingRangeReply'),
+      'workspace/executeCommand': function('s:ProcessWorkspaceExecuteReply'),
+      'workspace/symbol': function('s:ProcessWorkspaceSymbolReply'),
+      'textDocument/prepareCallHierarchy': function('s:ProcessPrepareCallHierarchy'),
+      'callHierarchy/incomingCalls': function('s:ProcessIncomingCalls'),
+      'callHierarchy/outgoingCalls': function('s:ProcessOutgoingCalls')
     }
 
   if lsp_reply_handlers->has_key(req.method)
@@ -707,14 +707,14 @@ enddef
 # process a diagnostic notification message from the LSP server
 # Notification: textDocument/publishDiagnostics
 # Param: PublishDiagnosticsParams
-def s:processDiagNotif(lspserver: dict<any>, reply: dict<any>): void
+def s:ProcessDiagNotif(lspserver: dict<any>, reply: dict<any>): void
   diag.DiagNotification(lspserver, reply.params.uri, reply.params.diagnostics)
 enddef
 
 # process a show notification message from the LSP server
 # Notification: window/showMessage
 # Param: ShowMessageParams
-def s:processShowMsgNotif(lspserver: dict<any>, reply: dict<any>)
+def s:ProcessShowMsgNotif(lspserver: dict<any>, reply: dict<any>)
   var msgType: list<string> = ['', 'Error: ', 'Warning: ', 'Info: ', 'Log: ']
   if reply.params.type == 4
     # ignore log messages from the LSP server (too chatty)
@@ -734,7 +734,7 @@ enddef
 # process a log notification message from the LSP server
 # Notification: window/logMessage
 # Param: LogMessageParams
-def s:processLogMsgNotif(lspserver: dict<any>, reply: dict<any>)
+def s:ProcessLogMsgNotif(lspserver: dict<any>, reply: dict<any>)
   var msgType: list<string> = ['', 'Error: ', 'Warning: ', 'Info: ', 'Log: ']
   var mtype: string = 'Log: '
   if reply.params.type > 0 && reply.params.type < 5
@@ -745,26 +745,26 @@ def s:processLogMsgNotif(lspserver: dict<any>, reply: dict<any>)
 enddef
 
 # process unsupported notification messages
-def s:processUnsupportedNotif(lspserver: dict<any>, reply: dict<any>)
+def s:ProcessUnsupportedNotif(lspserver: dict<any>, reply: dict<any>)
   util.ErrMsg('Error: Unsupported notification message received from the LSP server (' .. lspserver.path .. '), message = ' .. reply->string())
 enddef
 
 # ignore unsupported notification message
-def s:ignoreNotif(lspserver: dict<any>, reply: dict<any>)
+def s:IgnoreNotif(lspserver: dict<any>, reply: dict<any>)
 enddef
 
 # process notification messages from the LSP server
 export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
   var lsp_notif_handlers: dict<func> =
     {
-      'window/showMessage': function('s:processShowMsgNotif'),
-      'window/logMessage': function('s:processLogMsgNotif'),
-      'textDocument/publishDiagnostics': function('s:processDiagNotif'),
-      '$/progress': function('s:processUnsupportedNotif'),
-      'telemetry/event': function('s:processUnsupportedNotif'),
+      'window/showMessage': function('s:ProcessShowMsgNotif'),
+      'window/logMessage': function('s:ProcessLogMsgNotif'),
+      'textDocument/publishDiagnostics': function('s:ProcessDiagNotif'),
+      '$/progress': function('s:ProcessUnsupportedNotif'),
+      'telemetry/event': function('s:ProcessUnsupportedNotif'),
       # Java language server sends the 'language/status' notification which is
       # not in the LSP specification
-      'language/status': function('s:ignoreNotif')
+      'language/status': function('s:IgnoreNotif')
     }
 
   if lsp_notif_handlers->has_key(reply.method)
@@ -777,7 +777,7 @@ enddef
 # process the workspace/applyEdit LSP server request
 # Request: "workspace/applyEdit"
 # Param: ApplyWorkspaceEditParams
-def s:processApplyEditReq(lspserver: dict<any>, request: dict<any>)
+def s:ProcessApplyEditReq(lspserver: dict<any>, request: dict<any>)
   # interface ApplyWorkspaceEditParams
   if !request->has_key('params')
     return
@@ -791,7 +791,7 @@ def s:processApplyEditReq(lspserver: dict<any>, request: dict<any>)
   lspserver.sendResponse(request, {applied: true}, {})
 enddef
 
-def s:processUnsupportedReq(lspserver: dict<any>, request: dict<any>)
+def s:ProcessUnsupportedReq(lspserver: dict<any>, request: dict<any>)
   util.ErrMsg('Error: Unsupported request message received from the LSP server (' .. lspserver.path .. '), message = ' .. request->string())
 enddef
 
@@ -799,14 +799,14 @@ enddef
 export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
   var lspRequestHandlers: dict<func> =
     {
-      'workspace/applyEdit': function('s:processApplyEditReq'),
-      'window/workDoneProgress/create': function('s:processUnsupportedReq'),
-      'client/registerCapability': function('s:processUnsupportedReq'),
-      'client/unregisterCapability': function('s:processUnsupportedReq'),
-      'workspace/workspaceFolders': function('s:processUnsupportedReq'),
-      'workspace/configuration': function('s:processUnsupportedReq'),
-      'workspace/codeLens/refresh': function('s:processUnsupportedReq'),
-      'workspace/semanticTokens/refresh': function('s:processUnsupportedReq')
+      'workspace/applyEdit': function('s:ProcessApplyEditReq'),
+      'window/workDoneProgress/create': function('s:ProcessUnsupportedReq'),
+      'client/registerCapability': function('s:ProcessUnsupportedReq'),
+      'client/unregisterCapability': function('s:ProcessUnsupportedReq'),
+      'workspace/workspaceFolders': function('s:ProcessUnsupportedReq'),
+      'workspace/configuration': function('s:ProcessUnsupportedReq'),
+      'workspace/codeLens/refresh': function('s:ProcessUnsupportedReq'),
+      'workspace/semanticTokens/refresh': function('s:ProcessUnsupportedReq')
     }
 
   if lspRequestHandlers->has_key(request.method)

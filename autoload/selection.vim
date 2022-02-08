@@ -14,7 +14,7 @@ else
 endif
 
 # Visually (character-wise) select the text in a range
-def s:selectText(bnr: number, range: dict<dict<number>>)
+def s:SelectText(bnr: number, range: dict<dict<number>>)
   var start_col: number = util.GetLineByteFromPos(bnr, range.start) + 1
   var end_col: number = util.GetLineByteFromPos(bnr, range.end)
 
@@ -35,11 +35,11 @@ export def SelectionStart(lspserver: dict<any>, sel: list<dict<any>>)
   # save the reply for expanding or shrinking the selected text.
   lspserver.selection = {bnr: bnr, selRange: sel[0], index: 0}
 
-  s:selectText(bnr, sel[0].range)
+  s:SelectText(bnr, sel[0].range)
 enddef
 
 # Locate the range in the LSP reply at a specified level
-def s:getSelRangeAtLevel(selRange: dict<any>, level: number): dict<any>
+def s:GetSelRangeAtLevel(selRange: dict<any>, level: number): dict<any>
   var r: dict<any> = selRange
   var idx: number = 0
 
@@ -56,7 +56,7 @@ enddef
 
 # Returns true if the current visual selection matches a range in the
 # selection reply from LSP.
-def s:selectionFromLSP(range: dict<any>, startpos: list<number>, endpos: list<number>): bool
+def s:SelectionFromLSP(range: dict<any>, startpos: list<number>, endpos: list<number>): bool
   return startpos[1] == range.start.line + 1
 			&& endpos[1] == range.end.line + 1
 			&& startpos[2] == range.start.character + 1
@@ -80,11 +80,11 @@ export def SelectionModify(lspserver: dict<any>, expand: bool)
     var idx: number = lspserver.selection.index
 
     # Locate the range in the LSP reply for the current selection
-    selRange = s:getSelRangeAtLevel(selRange, lspserver.selection.index)
+    selRange = s:GetSelRangeAtLevel(selRange, lspserver.selection.index)
 
     # If the current selection is present in the LSP reply, then modify the
     # selection
-    if s:selectionFromLSP(selRange.range, startpos, endpos)
+    if s:SelectionFromLSP(selRange.range, startpos, endpos)
       if expand
 	# expand the selection
         if selRange->has_key('parent')
@@ -95,12 +95,12 @@ export def SelectionModify(lspserver: dict<any>, expand: bool)
 	# shrink the selection
 	if idx > 0
 	  idx -= 1
-          selRange = s:getSelRangeAtLevel(lspserver.selection.selRange, idx)
+          selRange = s:GetSelRangeAtLevel(lspserver.selection.selRange, idx)
 	  lspserver.selection.index = idx
 	endif
       endif
 
-      s:selectText(bnr, selRange.range)
+      s:SelectText(bnr, selRange.range)
       return
     endif
   endif

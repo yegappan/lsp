@@ -56,19 +56,19 @@ else
 endif
 
 # LSP server standard output handler
-def s:output_cb(lspserver: dict<any>, chan: channel, msg: string): void
+def s:Output_cb(lspserver: dict<any>, chan: channel, msg: string): void
   util.TraceLog(false, msg)
   lspserver.data = lspserver.data .. msg
   lspserver.processMessages()
 enddef
 
 # LSP server error output handler
-def s:error_cb(lspserver: dict<any>, chan: channel, emsg: string,): void
+def s:Error_cb(lspserver: dict<any>, chan: channel, emsg: string,): void
   util.TraceLog(true, emsg)
 enddef
 
 # LSP server exit callback
-def s:exit_cb(lspserver: dict<any>, job: job, status: number): void
+def s:Exit_cb(lspserver: dict<any>, job: job, status: number): void
   util.WarnMsg("LSP server exited with status " .. status)
   lspserver.job = v:null
   lspserver.running = false
@@ -77,7 +77,7 @@ def s:exit_cb(lspserver: dict<any>, job: job, status: number): void
 enddef
 
 # Start a LSP server
-def s:startServer(lspserver: dict<any>): number
+def s:StartServer(lspserver: dict<any>): number
   if lspserver.running
     util.WarnMsg("LSP server for is already running")
     return 0
@@ -90,9 +90,9 @@ def s:startServer(lspserver: dict<any>): number
 		out_mode: 'raw',
 		err_mode: 'raw',
 		noblock: 1,
-		out_cb: function('s:output_cb', [lspserver]),
-		err_cb: function('s:error_cb', [lspserver]),
-		exit_cb: function('s:exit_cb', [lspserver])}
+		out_cb: function('s:Output_cb', [lspserver]),
+		err_cb: function('s:Error_cb', [lspserver]),
+		exit_cb: function('s:Exit_cb', [lspserver])}
 
   lspserver.data = ''
   lspserver.caps = {}
@@ -122,7 +122,7 @@ enddef
 
 # Request: 'initialize'
 # Param: InitializeParams
-def s:initServer(lspserver: dict<any>)
+def s:InitServer(lspserver: dict<any>)
   var req = lspserver.createRequest('initialize')
 
   # client capabilities (ClientCapabilities)
@@ -175,27 +175,27 @@ enddef
 
 # Send a "initialized" LSP notification
 # Params: InitializedParams
-def s:sendInitializedNotif(lspserver: dict<any>)
+def s:SendInitializedNotif(lspserver: dict<any>)
   var notif: dict<any> = lspserver.createNotification('initialized')
   lspserver.sendMessage(notif)
 enddef
 
 # Request: shutdown
 # Param: void
-def s:shutdownServer(lspserver: dict<any>): void
+def s:ShutdownServer(lspserver: dict<any>): void
   var req = lspserver.createRequest('shutdown')
   lspserver.sendMessage(req)
 enddef
 
 # Send a 'exit' notification to the LSP server
 # Params: void
-def s:exitServer(lspserver: dict<any>): void
+def s:ExitServer(lspserver: dict<any>): void
   var notif: dict<any> = lspserver.createNotification('exit')
   lspserver.sendMessage(notif)
 enddef
 
 # Stop a LSP server
-def s:stopServer(lspserver: dict<any>): number
+def s:StopServer(lspserver: dict<any>): number
   if !lspserver.running
     util.WarnMsg("LSP server is not running")
     return 0
@@ -217,21 +217,21 @@ def s:stopServer(lspserver: dict<any>): number
 enddef
 
 # set the LSP server trace level using $/setTrace notification
-def s:setTrace(lspserver: dict<any>, traceVal: string)
+def s:SetTrace(lspserver: dict<any>, traceVal: string)
   var notif: dict<any> = lspserver.createNotification('$/setTrace')
   notif.params->extend({value: traceVal})
   lspserver.sendMessage(notif)
 enddef
 
 # Return the next id for a LSP server request message
-def s:nextReqID(lspserver: dict<any>): number
+def s:NextReqID(lspserver: dict<any>): number
   var id = lspserver.nextID
   lspserver.nextID = id + 1
   return id
 enddef
 
 # create a LSP server request message
-def s:createRequest(lspserver: dict<any>, method: string): dict<any>
+def s:CreateRequest(lspserver: dict<any>, method: string): dict<any>
   var req = {}
   req.jsonrpc = '2.0'
   req.id = lspserver.nextReqID()
@@ -245,7 +245,7 @@ def s:createRequest(lspserver: dict<any>, method: string): dict<any>
 enddef
 
 # create a LSP server response message
-def s:createResponse(lspserver: dict<any>, req_id: number): dict<any>
+def s:CreateResponse(lspserver: dict<any>, req_id: number): dict<any>
   var resp = {}
   resp.jsonrpc = '2.0'
   resp.id = req_id
@@ -254,7 +254,7 @@ def s:createResponse(lspserver: dict<any>, req_id: number): dict<any>
 enddef
 
 # create a LSP server notification message
-def s:createNotification(lspserver: dict<any>, notif: string): dict<any>
+def s:CreateNotification(lspserver: dict<any>, notif: string): dict<any>
   var req = {}
   req.jsonrpc = '2.0'
   req.method = notif
@@ -264,7 +264,7 @@ def s:createNotification(lspserver: dict<any>, notif: string): dict<any>
 enddef
 
 # send a response message to the server
-def s:sendResponse(lspserver: dict<any>, request: dict<any>, result: dict<any>, error: dict<any>)
+def s:SendResponse(lspserver: dict<any>, request: dict<any>, result: dict<any>, error: dict<any>)
   var resp: dict<any> = lspserver.createResponse(request.id)
   if result->type() != v:t_none
     resp->extend({result: result})
@@ -275,7 +275,7 @@ def s:sendResponse(lspserver: dict<any>, request: dict<any>, result: dict<any>, 
 enddef
 
 # Send a request message to LSP server
-def s:sendMessage(lspserver: dict<any>, content: dict<any>): void
+def s:SendMessage(lspserver: dict<any>, content: dict<any>): void
   var payload_js: string = content->json_encode()
   var msg = "Content-Length: " .. payload_js->len() .. "\r\n\r\n"
   var ch = lspserver.job->job_getchannel()
@@ -289,7 +289,7 @@ enddef
 
 # Wait for a response message from the LSP server for the request "req"
 # Waits for a maximum of 5 seconds
-def s:waitForReponse(lspserver: dict<any>, req: dict<any>)
+def s:WaitForReponse(lspserver: dict<any>, req: dict<any>)
   var maxCount: number = 2500
   var key: string = req.id->string()
 
@@ -301,7 +301,7 @@ enddef
 
 # Send a LSP "textDocument/didOpen" notification
 # Params: DidOpenTextDocumentParams
-def s:textdocDidOpen(lspserver: dict<any>, bnr: number, ftype: string): void
+def s:TextdocDidOpen(lspserver: dict<any>, bnr: number, ftype: string): void
   var notif: dict<any> = lspserver.createNotification('textDocument/didOpen')
 
   # interface DidOpenTextDocumentParams
@@ -317,7 +317,7 @@ def s:textdocDidOpen(lspserver: dict<any>, bnr: number, ftype: string): void
 enddef
 
 # Send a LSP "textDocument/didClose" notification
-def s:textdocDidClose(lspserver: dict<any>, bnr: number): void
+def s:TextdocDidClose(lspserver: dict<any>, bnr: number): void
   var notif: dict<any> = lspserver.createNotification('textDocument/didClose')
 
   # interface DidCloseTextDocumentParams
@@ -331,7 +331,7 @@ enddef
 
 # Send a LSP "textDocument/didChange" notification
 # Params: DidChangeTextDocumentParams
-def s:textdocDidChange(lspserver: dict<any>, bnr: number, start: number,
+def s:TextdocDidChange(lspserver: dict<any>, bnr: number, start: number,
 			end: number, added: number,
 			changes: list<dict<number>>): void
   var notif: dict<any> = lspserver.createNotification('textDocument/didChange')
@@ -392,7 +392,7 @@ enddef
 # LSP line and column numbers start from zero, whereas Vim line and column
 # numbers start from one. The LSP column number is the character index in the
 # line and not the byte index in the line.
-def s:getLspPosition(): dict<number>
+def s:GetLspPosition(): dict<number>
   var lnum: number = line('.') - 1
   var col: number = charcol('.') - 1
   return {line: lnum, character: col}
@@ -400,17 +400,17 @@ enddef
 
 # Return the current file name and current cursor position as a LSP
 # TextDocumentPositionParams structure
-def s:getLspTextDocPosition(): dict<dict<any>>
+def s:GetLspTextDocPosition(): dict<dict<any>>
   # interface TextDocumentIdentifier
   # interface Position
   return {textDocument: {uri: util.LspFileToUri(@%)},
-	  position: s:getLspPosition()}
+	  position: s:GetLspPosition()}
 enddef
 
 # Get a list of completion items.
 # Request: "textDocument/completion"
 # Param: CompletionParams
-def s:getCompletion(lspserver: dict<any>, triggerKind_arg: number): void
+def s:GetCompletion(lspserver: dict<any>, triggerKind_arg: number): void
   # Check whether LSP server supports completion
   if !lspserver.caps->has_key('completionProvider')
     util.ErrMsg("Error: LSP server does not support completion")
@@ -426,7 +426,7 @@ def s:getCompletion(lspserver: dict<any>, triggerKind_arg: number): void
 
   # interface CompletionParams
   #   interface TextDocumentPositionParams
-  req.params = s:getLspTextDocPosition()
+  req.params = s:GetLspTextDocPosition()
   #   interface CompletionContext
   req.params.context = {triggerKind: triggerKind_arg}
 
@@ -439,7 +439,7 @@ enddef
 
 # Request: "textDocument/definition"
 # Param: DefinitionParams
-def s:gotoDefinition(lspserver: dict<any>, peek: bool)
+def s:GotoDefinition(lspserver: dict<any>, peek: bool)
   # Check whether LSP server supports jumping to a definition
   if !lspserver.caps->has_key('definitionProvider')
 				|| !lspserver.caps.definitionProvider
@@ -454,7 +454,7 @@ def s:gotoDefinition(lspserver: dict<any>, peek: bool)
   var req = lspserver.createRequest('textDocument/definition')
   # interface DefinitionParams
   #   interface TextDocumentPositionParams
-  req.params->extend(s:getLspTextDocPosition())
+  req.params->extend(s:GetLspTextDocPosition())
   lspserver.sendMessage(req)
 
   lspserver.waitForReponse(req)
@@ -462,7 +462,7 @@ enddef
 
 # Request: "textDocument/declaration"
 # Param: DeclarationParams
-def s:gotoDeclaration(lspserver: dict<any>, peek: bool): void
+def s:GotoDeclaration(lspserver: dict<any>, peek: bool): void
   # Check whether LSP server supports jumping to a declaration
   if !lspserver.caps->has_key('declarationProvider')
 			|| !lspserver.caps.declarationProvider
@@ -478,7 +478,7 @@ def s:gotoDeclaration(lspserver: dict<any>, peek: bool): void
 
   # interface DeclarationParams
   #   interface TextDocumentPositionParams
-  req.params->extend(s:getLspTextDocPosition())
+  req.params->extend(s:GetLspTextDocPosition())
 
   lspserver.sendMessage(req)
 
@@ -487,7 +487,7 @@ enddef
 
 # Request: "textDocument/typeDefinition"
 # Param: TypeDefinitionParams
-def s:gotoTypeDef(lspserver: dict<any>, peek: bool): void
+def s:GotoTypeDef(lspserver: dict<any>, peek: bool): void
   # Check whether LSP server supports jumping to a type definition
   if !lspserver.caps->has_key('typeDefinitionProvider')
 			|| !lspserver.caps.typeDefinitionProvider
@@ -503,7 +503,7 @@ def s:gotoTypeDef(lspserver: dict<any>, peek: bool): void
 
   # interface TypeDefinitionParams
   #   interface TextDocumentPositionParams
-  req.params->extend(s:getLspTextDocPosition())
+  req.params->extend(s:GetLspTextDocPosition())
 
   lspserver.sendMessage(req)
 
@@ -512,7 +512,7 @@ enddef
 
 # Request: "textDocument/implementation"
 # Param: ImplementationParams
-def s:gotoImplementation(lspserver: dict<any>, peek: bool): void
+def s:GotoImplementation(lspserver: dict<any>, peek: bool): void
   # Check whether LSP server supports jumping to a implementation
   if !lspserver.caps->has_key('implementationProvider')
 			|| !lspserver.caps.implementationProvider
@@ -528,7 +528,7 @@ def s:gotoImplementation(lspserver: dict<any>, peek: bool): void
 
   # interface ImplementationParams
   #   interface TextDocumentPositionParams
-  req.params->extend(s:getLspTextDocPosition())
+  req.params->extend(s:GetLspTextDocPosition())
 
   lspserver.sendMessage(req)
 
@@ -538,7 +538,7 @@ enddef
 # get symbol signature help.
 # Request: "textDocument/signatureHelp"
 # Param: SignatureHelpParams
-def s:showSignature(lspserver: dict<any>): void
+def s:ShowSignature(lspserver: dict<any>): void
   # Check whether LSP server supports signature help
   if !lspserver.caps->has_key('signatureHelpProvider')
     util.ErrMsg("Error: LSP server does not support signature help")
@@ -548,7 +548,7 @@ def s:showSignature(lspserver: dict<any>): void
   var req = lspserver.createRequest('textDocument/signatureHelp')
   # interface SignatureHelpParams
   #   interface TextDocumentPositionParams
-  req.params->extend(s:getLspTextDocPosition())
+  req.params->extend(s:GetLspTextDocPosition())
 
   lspserver.sendMessage(req)
 
@@ -558,7 +558,7 @@ def s:showSignature(lspserver: dict<any>): void
   endif
 enddef
 
-def s:didSaveFile(lspserver: dict<any>, bnr: number): void
+def s:DidSaveFile(lspserver: dict<any>, bnr: number): void
   # Check whether the LSP server supports the didSave notification
   if !lspserver.caps->has_key('textDocumentSync')
 		|| lspserver.caps.textDocumentSync->type() == v:t_number
@@ -577,7 +577,7 @@ enddef
 # get the hover information
 # Request: "textDocument/hover"
 # Param: HoverParams
-def s:hover(lspserver: dict<any>): void
+def s:Hover(lspserver: dict<any>): void
   # Check whether LSP server supports getting hover information
   if !lspserver.caps->has_key('hoverProvider')
 			|| !lspserver.caps.hoverProvider
@@ -587,7 +587,7 @@ def s:hover(lspserver: dict<any>): void
   var req = lspserver.createRequest('textDocument/hover')
   # interface HoverParams
   #   interface TextDocumentPositionParams
-  req.params->extend(s:getLspTextDocPosition())
+  req.params->extend(s:GetLspTextDocPosition())
   lspserver.sendMessage(req)
   if exists('g:LSPTest') && g:LSPTest
     # When running LSP tests, make this a synchronous call
@@ -597,7 +597,7 @@ enddef
 
 # Request: "textDocument/references"
 # Param: ReferenceParams
-def s:showReferences(lspserver: dict<any>, peek: bool): void
+def s:ShowReferences(lspserver: dict<any>, peek: bool): void
   # Check whether LSP server supports getting reference information
   if !lspserver.caps->has_key('referencesProvider')
 			|| !lspserver.caps.referencesProvider
@@ -608,7 +608,7 @@ def s:showReferences(lspserver: dict<any>, peek: bool): void
   var req = lspserver.createRequest('textDocument/references')
   # interface ReferenceParams
   #   interface TextDocumentPositionParams
-  req.params->extend(s:getLspTextDocPosition())
+  req.params->extend(s:GetLspTextDocPosition())
   req.params->extend({context: {includeDeclaration: true}})
 
   lspserver.peekSymbol = peek
@@ -621,7 +621,7 @@ enddef
 
 # Request: "textDocument/documentHighlight"
 # Param: DocumentHighlightParams
-def s:docHighlight(lspserver: dict<any>): void
+def s:DocHighlight(lspserver: dict<any>): void
   # Check whether LSP server supports getting highlight information
   if !lspserver.caps->has_key('documentHighlightProvider')
 			|| !lspserver.caps.documentHighlightProvider
@@ -632,7 +632,7 @@ def s:docHighlight(lspserver: dict<any>): void
   var req = lspserver.createRequest('textDocument/documentHighlight')
   # interface DocumentHighlightParams
   #   interface TextDocumentPositionParams
-  req.params->extend(s:getLspTextDocPosition())
+  req.params->extend(s:GetLspTextDocPosition())
   lspserver.sendMessage(req)
   if exists('g:LSPTest') && g:LSPTest
     # When running LSP tests, make this a synchronous call
@@ -642,7 +642,7 @@ enddef
 
 # Request: "textDocument/documentSymbol"
 # Param: DocumentSymbolParams
-def s:getDocSymbols(lspserver: dict<any>, fname: string): void
+def s:GetDocSymbols(lspserver: dict<any>, fname: string): void
   # Check whether LSP server supports getting document symbol information
   if !lspserver.caps->has_key('documentSymbolProvider')
 			|| !lspserver.caps.documentSymbolProvider
@@ -666,7 +666,7 @@ enddef
 # or
 # Request: "textDocument/rangeFormatting"
 # Param: DocumentRangeFormattingParams
-def s:textDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
+def s:TextDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
 				start_lnum: number, end_lnum: number)
   # Check whether LSP server supports formatting documents
   if !lspserver.caps->has_key('documentFormattingProvider')
@@ -717,7 +717,7 @@ enddef
 
 # Request: "textDocument/prepareCallHierarchy"
 # Param: CallHierarchyPrepareParams
-def s:prepareCallHierarchy(lspserver: dict<any>, fname: string)
+def s:PrepareCallHierarchy(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports call hierarchy
   if !lspserver.caps->has_key('callHierarchyProvider')
 			|| !lspserver.caps.callHierarchyProvider
@@ -729,13 +729,13 @@ def s:prepareCallHierarchy(lspserver: dict<any>, fname: string)
 
   # interface CallHierarchyPrepareParams
   #   interface TextDocumentPositionParams
-  req.params->extend(s:getLspTextDocPosition())
+  req.params->extend(s:GetLspTextDocPosition())
   lspserver.sendMessage(req)
 enddef
 
 # Request: "callHierarchy/incomingCalls"
 # Param: CallHierarchyItem
-def s:incomingCalls(lspserver: dict<any>, hierItem: dict<any>)
+def s:IncomingCalls(lspserver: dict<any>, hierItem: dict<any>)
   # Check whether LSP server supports call hierarchy
   if !lspserver.caps->has_key('callHierarchyProvider')
 			|| !lspserver.caps.callHierarchyProvider
@@ -757,7 +757,7 @@ enddef
 
 # Request: "callHierarchy/outgoingCalls"
 # Param: CallHierarchyItem
-def s:outgoingCalls(lspserver: dict<any>, hierItem: dict<any>)
+def s:OutgoingCalls(lspserver: dict<any>, hierItem: dict<any>)
   # Check whether LSP server supports call hierarchy
   if !lspserver.caps->has_key('callHierarchyProvider')
 			|| !lspserver.caps.callHierarchyProvider
@@ -779,7 +779,7 @@ enddef
 
 # Request: "textDocument/rename"
 # Param: RenameParams
-def s:renameSymbol(lspserver: dict<any>, newName: string)
+def s:RenameSymbol(lspserver: dict<any>, newName: string)
   # Check whether LSP server supports rename operation
   if !lspserver.caps->has_key('renameProvider')
 			|| !lspserver.caps.renameProvider
@@ -790,7 +790,7 @@ def s:renameSymbol(lspserver: dict<any>, newName: string)
   var req = lspserver.createRequest('textDocument/rename')
   # interface RenameParams
   #   interface TextDocumentPositionParams
-  req.params = s:getLspTextDocPosition()
+  req.params = s:GetLspTextDocPosition()
   req.params.newName = newName
   lspserver.sendMessage(req)
   if exists('g:LSPTest') && g:LSPTest
@@ -801,7 +801,7 @@ enddef
 
 # Request: "textDocument/codeAction"
 # Param: CodeActionParams
-def s:codeAction(lspserver: dict<any>, fname_arg: string)
+def s:CodeAction(lspserver: dict<any>, fname_arg: string)
   # Check whether LSP server supports code action operation
   if !lspserver.caps->has_key('codeActionProvider')
 			|| !lspserver.caps.codeActionProvider
@@ -836,7 +836,7 @@ enddef
 # List project-wide symbols matching query string
 # Request: "workspace/symbol"
 # Param: WorkspaceSymbolParams
-def s:workspaceQuerySymbols(lspserver: dict<any>, query: string): bool
+def s:WorkspaceQuerySymbols(lspserver: dict<any>, query: string): bool
   # Check whether the LSP server supports listing workspace symbols
   if !lspserver.caps->has_key('workspaceSymbolProvider')
 				|| !lspserver.caps.workspaceSymbolProvider
@@ -854,7 +854,7 @@ enddef
 # Add a workspace folder to the LSP server.
 # Request: "workspace/didChangeWorkspaceFolders"
 # Param: DidChangeWorkspaceFoldersParams
-def s:addWorkspaceFolder(lspserver: dict<any>, dirName: string): void
+def s:AddWorkspaceFolder(lspserver: dict<any>, dirName: string): void
   if !lspserver.caps->has_key('workspace')
 	  || !lspserver.caps.workspace->has_key('workspaceFolders')
 	  || !lspserver.caps.workspace.workspaceFolders->has_key('supported')
@@ -880,7 +880,7 @@ enddef
 # Remove a workspace folder from the LSP server.
 # Request: "workspace/didChangeWorkspaceFolders"
 # Param: DidChangeWorkspaceFoldersParams
-def s:removeWorkspaceFolder(lspserver: dict<any>, dirName: string): void
+def s:RemoveWorkspaceFolder(lspserver: dict<any>, dirName: string): void
   if !lspserver.caps->has_key('workspace')
 	  || !lspserver.caps.workspace->has_key('workspaceFolders')
 	  || !lspserver.caps.workspace.workspaceFolders->has_key('supported')
@@ -907,7 +907,7 @@ enddef
 # select the text around the current cursor location
 # Request: "textDocument/selectionRange"
 # Param: SelectionRangeParams
-def s:selectionRange(lspserver: dict<any>, fname: string)
+def s:SelectionRange(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports selection ranges
   if !lspserver.caps->has_key('selectionRangeProvider')
 			|| !lspserver.caps.selectionRangeProvider
@@ -921,14 +921,14 @@ def s:selectionRange(lspserver: dict<any>, fname: string)
   var req = lspserver.createRequest('textDocument/selectionRange')
   # interface SelectionRangeParams
   # interface TextDocumentIdentifier
-  req.params->extend({textDocument: {uri: util.LspFileToUri(fname)}, positions: [s:getLspPosition()]})
+  req.params->extend({textDocument: {uri: util.LspFileToUri(fname)}, positions: [s:GetLspPosition()]})
   lspserver.sendMessage(req)
 
   lspserver.waitForReponse(req)
 enddef
 
 # Expand the previous selection or start a new one
-def s:selectionExpand(lspserver: dict<any>)
+def s:SelectionExpand(lspserver: dict<any>)
   # Check whether LSP server supports selection ranges
   if !lspserver.caps->has_key('selectionRangeProvider')
 			|| !lspserver.caps.selectionRangeProvider
@@ -940,7 +940,7 @@ def s:selectionExpand(lspserver: dict<any>)
 enddef
 
 # Shrink the previous selection or start a new one
-def s:selectionShrink(lspserver: dict<any>)
+def s:SelectionShrink(lspserver: dict<any>)
   # Check whether LSP server supports selection ranges
   if !lspserver.caps->has_key('selectionRangeProvider')
 			|| !lspserver.caps.selectionRangeProvider
@@ -954,7 +954,7 @@ enddef
 # fold the entire document
 # Request: "textDocument/foldingRange"
 # Param: FoldingRangeParams
-def s:foldRange(lspserver: dict<any>, fname: string)
+def s:FoldRange(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports fold ranges
   if !lspserver.caps->has_key('foldingRangeProvider')
 			|| !lspserver.caps.foldingRangeProvider
@@ -976,7 +976,7 @@ enddef
 # Request the LSP server to execute a command
 # Request: workspace/executeCommand
 # Params: ExecuteCommandParams
-def s:executeCommand(lspserver: dict<any>, cmd: dict<any>)
+def s:ExecuteCommand(lspserver: dict<any>, cmd: dict<any>)
   var req = lspserver.createRequest('workspace/executeCommand')
   req.params->extend(cmd)
   lspserver.sendMessage(req)
@@ -988,7 +988,7 @@ enddef
 
 # Display the LSP server capabilities (received during the initialization
 # stage).
-def s:showCapabilities(lspserver: dict<any>)
+def s:ShowCapabilities(lspserver: dict<any>)
   echo "Capabilities of '" .. lspserver.path .. "' LSP server:"
   for k in lspserver.caps->keys()->sort()
     echo k .. ": " .. lspserver.caps[k]->string()
@@ -1018,54 +1018,54 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
   }
   # Add the LSP server functions
   lspserver->extend({
-    startServer: function('s:startServer', [lspserver]),
-    initServer: function('s:initServer', [lspserver]),
-    stopServer: function('s:stopServer', [lspserver]),
-    shutdownServer: function('s:shutdownServer', [lspserver]),
-    exitServer: function('s:exitServer', [lspserver]),
-    setTrace: function('s:setTrace', [lspserver]),
-    nextReqID: function('s:nextReqID', [lspserver]),
-    createRequest: function('s:createRequest', [lspserver]),
-    createResponse: function('s:createResponse', [lspserver]),
-    createNotification: function('s:createNotification', [lspserver]),
-    sendResponse: function('s:sendResponse', [lspserver]),
-    sendMessage: function('s:sendMessage', [lspserver]),
-    waitForReponse: function('s:waitForReponse', [lspserver]),
+    startServer: function('s:StartServer', [lspserver]),
+    initServer: function('s:InitServer', [lspserver]),
+    stopServer: function('s:StopServer', [lspserver]),
+    shutdownServer: function('s:ShutdownServer', [lspserver]),
+    exitServer: function('s:ExitServer', [lspserver]),
+    setTrace: function('s:SetTrace', [lspserver]),
+    nextReqID: function('s:NextReqID', [lspserver]),
+    createRequest: function('s:CreateRequest', [lspserver]),
+    createResponse: function('s:CreateResponse', [lspserver]),
+    createNotification: function('s:CreateNotification', [lspserver]),
+    sendResponse: function('s:SendResponse', [lspserver]),
+    sendMessage: function('s:SendMessage', [lspserver]),
+    waitForReponse: function('s:WaitForReponse', [lspserver]),
     processReply: function(handlers.ProcessReply, [lspserver]),
     processNotif: function(handlers.ProcessNotif, [lspserver]),
     processRequest: function(handlers.ProcessRequest, [lspserver]),
     processMessages: function(handlers.ProcessMessages, [lspserver]),
     getDiagByLine: function(diag.GetDiagByLine, [lspserver]),
-    textdocDidOpen: function('s:textdocDidOpen', [lspserver]),
-    textdocDidClose: function('s:textdocDidClose', [lspserver]),
-    textdocDidChange: function('s:textdocDidChange', [lspserver]),
-    sendInitializedNotif: function('s:sendInitializedNotif', [lspserver]),
-    getCompletion: function('s:getCompletion', [lspserver]),
-    gotoDefinition: function('s:gotoDefinition', [lspserver]),
-    gotoDeclaration: function('s:gotoDeclaration', [lspserver]),
-    gotoTypeDef: function('s:gotoTypeDef', [lspserver]),
-    gotoImplementation: function('s:gotoImplementation', [lspserver]),
-    showSignature: function('s:showSignature', [lspserver]),
-    didSaveFile: function('s:didSaveFile', [lspserver]),
-    hover: function('s:hover', [lspserver]),
-    showReferences: function('s:showReferences', [lspserver]),
-    docHighlight: function('s:docHighlight', [lspserver]),
-    getDocSymbols: function('s:getDocSymbols', [lspserver]),
-    textDocFormat: function('s:textDocFormat', [lspserver]),
-    prepareCallHierarchy: function('s:prepareCallHierarchy', [lspserver]),
-    incomingCalls: function('s:incomingCalls', [lspserver]),
-    outgoingCalls: function('s:outgoingCalls', [lspserver]),
-    renameSymbol: function('s:renameSymbol', [lspserver]),
-    codeAction: function('s:codeAction', [lspserver]),
-    workspaceQuery: function('s:workspaceQuerySymbols', [lspserver]),
-    addWorkspaceFolder: function('s:addWorkspaceFolder', [lspserver]),
-    removeWorkspaceFolder: function('s:removeWorkspaceFolder', [lspserver]),
-    selectionRange: function('s:selectionRange', [lspserver]),
-    selectionExpand: function('s:selectionExpand', [lspserver]),
-    selectionShrink: function('s:selectionShrink', [lspserver]),
-    foldRange: function('s:foldRange', [lspserver]),
-    executeCommand: function('s:executeCommand', [lspserver]),
-    showCapabilities: function('s:showCapabilities', [lspserver])
+    textdocDidOpen: function('s:TextdocDidOpen', [lspserver]),
+    textdocDidClose: function('s:TextdocDidClose', [lspserver]),
+    textdocDidChange: function('s:TextdocDidChange', [lspserver]),
+    sendInitializedNotif: function('s:SendInitializedNotif', [lspserver]),
+    getCompletion: function('s:GetCompletion', [lspserver]),
+    gotoDefinition: function('s:GotoDefinition', [lspserver]),
+    gotoDeclaration: function('s:GotoDeclaration', [lspserver]),
+    gotoTypeDef: function('s:GotoTypeDef', [lspserver]),
+    gotoImplementation: function('s:GotoImplementation', [lspserver]),
+    showSignature: function('s:ShowSignature', [lspserver]),
+    didSaveFile: function('s:DidSaveFile', [lspserver]),
+    hover: function('s:Hover', [lspserver]),
+    showReferences: function('s:ShowReferences', [lspserver]),
+    docHighlight: function('s:DocHighlight', [lspserver]),
+    getDocSymbols: function('s:GetDocSymbols', [lspserver]),
+    textDocFormat: function('s:TextDocFormat', [lspserver]),
+    prepareCallHierarchy: function('s:PrepareCallHierarchy', [lspserver]),
+    incomingCalls: function('s:IncomingCalls', [lspserver]),
+    outgoingCalls: function('s:OutgoingCalls', [lspserver]),
+    renameSymbol: function('s:RenameSymbol', [lspserver]),
+    codeAction: function('s:CodeAction', [lspserver]),
+    workspaceQuery: function('s:WorkspaceQuerySymbols', [lspserver]),
+    addWorkspaceFolder: function('s:AddWorkspaceFolder', [lspserver]),
+    removeWorkspaceFolder: function('s:RemoveWorkspaceFolder', [lspserver]),
+    selectionRange: function('s:SelectionRange', [lspserver]),
+    selectionExpand: function('s:SelectionExpand', [lspserver]),
+    selectionShrink: function('s:SelectionShrink', [lspserver]),
+    foldRange: function('s:FoldRange', [lspserver]),
+    executeCommand: function('s:ExecuteCommand', [lspserver]),
+    showCapabilities: function('s:ShowCapabilities', [lspserver])
   })
 
   return lspserver

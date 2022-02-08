@@ -28,3 +28,5 @@ enddef
 export def BufHasLspServer(bnr: number): bool
   return bufnrToServer->has_key(bnr)
 enddef
+
+# vim: shiftwidth=2 softtabstop=2

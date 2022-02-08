@@ -25,18 +25,18 @@ else
 endif
 
 # close the signature popup window
-def s:closeSignaturePopup(lspserver: dict<any>)
+def s:CloseSignaturePopup(lspserver: dict<any>)
   lspserver.signaturePopup->popup_close()
   lspserver.signaturePopup = -1
 enddef
 
-def s:closeCurBufSignaturePopup()
+def s:CloseCurBufSignaturePopup()
   var lspserver: dict<any> = buf.CurbufGetServer()
   if lspserver->empty()
     return
   endif
 
-  s:closeSignaturePopup(lspserver)
+  s:CloseSignaturePopup(lspserver)
 enddef
 
 # Initialize the signature triggers for the current buffer
@@ -53,19 +53,19 @@ export def SignatureInit(lspserver: dict<any>)
 					.. "<C-R>=LspShowSignature()<CR>"
   endfor
   # close the signature popup when leaving insert mode
-  autocmd InsertLeave <buffer> call s:closeCurBufSignaturePopup()
+  autocmd InsertLeave <buffer> call s:CloseCurBufSignaturePopup()
 enddef
 
 # Display the symbol signature help
 export def SignatureDisplay(lspserver: dict<any>, sighelp: dict<any>): void
   if sighelp->empty()
-    s:closeSignaturePopup(lspserver)
+    s:CloseSignaturePopup(lspserver)
     return
   endif
 
   if sighelp.signatures->len() <= 0
     util.WarnMsg('No signature help available')
-    s:closeSignaturePopup(lspserver)
+    s:CloseSignaturePopup(lspserver)
     return
   endif
 

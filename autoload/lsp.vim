@@ -121,7 +121,7 @@ var ftypeOmniCtrlMap: dict<bool> = {}
 
 var lspInitializedOnce = false
 
-def s:lspInitOnce()
+def s:LspInitOnce()
   # Signs used for LSP diagnostics
   sign_define([{name: 'LspDiagError', text: 'E ', texthl: 'ErrorMsg',
 						linehl: 'MatchParen'},
@@ -141,13 +141,13 @@ enddef
 
 # Returns the LSP server for the a specific filetype. Returns an empty dict if
 # the server is not found.
-def s:lspGetServer(ftype: string): dict<any>
+def s:LspGetServer(ftype: string): dict<any>
   return ftypeServerMap->get(ftype, {})
 enddef
 
 # Returns the LSP server for the current buffer if it is running and is ready.
 # Returns an empty dict if the server is not found or is not ready.
-def s:curbufGetServerChecked(): dict<any>
+def s:CurbufGetServerChecked(): dict<any>
   var fname: string = @%
   if fname == ''
     return {}
@@ -171,18 +171,18 @@ def s:curbufGetServerChecked(): dict<any>
 enddef
 
 # Add a LSP server for a filetype
-def s:lspAddServer(ftype: string, lspsrv: dict<any>)
+def s:LspAddServer(ftype: string, lspsrv: dict<any>)
   ftypeServerMap->extend({[ftype]: lspsrv})
 enddef
 
 # Returns true if omni-completion is enabled for filetype 'ftype'.
 # Otherwise, returns false.
-def s:lspOmniComplEnabled(ftype: string): bool
+def s:LspOmniComplEnabled(ftype: string): bool
   return ftypeOmniCtrlMap->get(ftype, v:false)
 enddef
 
 # Enables or disables omni-completion for filetype 'fype'
-def s:lspOmniComplSet(ftype: string, enabled: bool)
+def s:LspOmniComplSet(ftype: string, enabled: bool)
   ftypeOmniCtrlMap->extend({[ftype]: enabled})
 enddef
 
@@ -207,7 +207,7 @@ enddef
 
 # Go to a definition using "textDocument/definition" LSP request
 export def GotoDefinition(peek: bool)
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -217,7 +217,7 @@ enddef
 
 # Go to a declaration using "textDocument/declaration" LSP request
 export def GotoDeclaration(peek: bool)
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -227,7 +227,7 @@ enddef
 
 # Go to a type definition using "textDocument/typeDefinition" LSP request
 export def GotoTypedef(peek: bool)
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -237,7 +237,7 @@ enddef
 
 # Go to a implementation using "textDocument/implementation" LSP request
 export def GotoImplementation(peek: bool)
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -248,7 +248,7 @@ enddef
 # Show the signature using "textDocument/signatureHelp" LSP method
 # Invoked from an insert-mode mapping, so return an empty string.
 def g:LspShowSignature(): string
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return ''
   endif
@@ -260,7 +260,7 @@ def g:LspShowSignature(): string
 enddef
 
 # buffer change notification listener
-def s:bufchange_listener(bnr: number, start: number, end: number, added: number, changes: list<dict<number>>)
+def s:Bufchange_listener(bnr: number, start: number, end: number, added: number, changes: list<dict<number>>)
   var lspserver: dict<any> = buf.CurbufGetServer()
   if lspserver->empty() || !lspserver.running
     return
@@ -270,7 +270,7 @@ def s:bufchange_listener(bnr: number, start: number, end: number, added: number,
 enddef
 
 # A buffer is saved. Send the "textDocument/didSave" LSP notification
-def s:lspSavedFile()
+def s:LspSavedFile()
   var bnr: number = expand('<abuf>')->str2nr()
   var lspserver: dict<any> = buf.BufLspServerGet(bnr)
   if lspserver->empty() || !lspserver.running
@@ -339,20 +339,20 @@ export def AddFile(bnr: number): void
   if ftype == ''
     return
   endif
-  var lspserver: dict<any> = s:lspGetServer(ftype)
+  var lspserver: dict<any> = s:LspGetServer(ftype)
   if lspserver->empty()
     return
   endif
   if !lspserver.running
     if !lspInitializedOnce
-      s:lspInitOnce()
+      s:LspInitOnce()
     endif
     lspserver.startServer()
   endif
   lspserver.textdocDidOpen(bnr, ftype)
 
   # add a listener to track changes to this buffer
-  listener_add(function('s:bufchange_listener'), bnr)
+  listener_add(function('s:Bufchange_listener'), bnr)
 
   # set options for insert mode completion
   if opt.lspOptions.autoComplete
@@ -363,7 +363,7 @@ export def AddFile(bnr: number): void
       inoremap <expr> <buffer> <CR> pumvisible() ? "\<C-Y>\<CR>" : "\<CR>"
     endif
   else
-    if s:lspOmniComplEnabled(ftype)
+    if s:LspOmniComplEnabled(ftype)
       setbufvar(bnr, '&omnifunc', 'LspOmniFunc')
     endif
   endif
@@ -376,7 +376,7 @@ export def AddFile(bnr: number): void
   # Set buffer local autocmds
   augroup LSPBufferAutocmds
     # file saved notification handler
-    exe 'autocmd BufWritePost <buffer=' .. bnr .. '> call s:lspSavedFile()'
+    exe 'autocmd BufWritePost <buffer=' .. bnr .. '> call s:LspSavedFile()'
 
     if opt.lspOptions.autoComplete
       # Trigger 24x7 insert mode completion when text is changed
@@ -454,12 +454,12 @@ export def AddServer(serverList: list<dict<any>>)
     var lspserver: dict<any> = lserver.NewLspServer(server.path, args)
 
     if server.filetype->type() == v:t_string
-      s:lspAddServer(server.filetype, lspserver)
-      s:lspOmniComplSet(server.filetype, server.omnicompl)
+      s:LspAddServer(server.filetype, lspserver)
+      s:LspOmniComplSet(server.filetype, server.omnicompl)
     elseif server.filetype->type() == v:t_list
       for ftype in server.filetype
-        s:lspAddServer(ftype, lspserver)
-        s:lspOmniComplSet(ftype, server.omnicompl)
+        s:LspAddServer(ftype, lspserver)
+        s:LspOmniComplSet(ftype, server.omnicompl)
       endfor
     else
       util.ErrMsg('Error: Unsupported file type information "' ..
@@ -492,7 +492,7 @@ export def SetTraceServer(traceVal: string)
     return
   endif
 
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -503,7 +503,7 @@ enddef
 # Display the diagnostic messages from the LSP server for the current buffer
 # in a quickfix list
 export def ShowDiagnostics(): void
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -513,7 +513,7 @@ enddef
 
 # Show the diagnostic message for the current line
 export def LspShowCurrentDiag()
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -554,7 +554,7 @@ enddef
 
 # jump to the next/previous/first diagnostic message in the current buffer
 export def JumpToDiag(which: string): void
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -601,7 +601,7 @@ enddef
 
 # omni complete handler
 def g:LspOmniFunc(findstart: number, base: string): any
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return -2
   endif
@@ -654,7 +654,7 @@ enddef
 
 # show symbol references
 export def ShowReferences(peek: bool)
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -664,7 +664,7 @@ enddef
 
 # highlight all the places where a symbol is referenced
 def g:LspDocHighlight()
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -710,7 +710,7 @@ export def TextDocFormat(range_args: number, line1: number, line2: number)
     return
   endif
 
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -729,7 +729,7 @@ enddef
 # Display all the locations where the current symbol is called from.
 # Uses LSP "callHierarchy/incomingCalls" request
 export def IncomingCalls()
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -740,7 +740,7 @@ export def IncomingCalls()
 enddef
 
 def g:LspGetIncomingCalls(item: dict<any>)
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -749,7 +749,7 @@ def g:LspGetIncomingCalls(item: dict<any>)
 enddef
 
 def g:LspGetOutgoingCalls(item: dict<any>)
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -761,7 +761,7 @@ enddef
 # Display all the symbols used by the current symbol.
 # Uses LSP "callHierarchy/outgoingCalls" request
 export def OutgoingCalls()
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -774,7 +774,7 @@ enddef
 # Rename a symbol
 # Uses LSP "textDocument/rename" request
 export def Rename()
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -790,7 +790,7 @@ enddef
 # Perform a code action
 # Uses LSP "textDocument/codeAction" request
 export def CodeAction()
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -802,7 +802,7 @@ enddef
 # Perform a workspace wide symbol lookup
 # Uses LSP "workspace/symbol" request
 export def SymbolSearch(queryArg: string)
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -825,7 +825,7 @@ enddef
 
 # Display the list of workspace folders
 export def ListWorkspaceFolders()
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -835,7 +835,7 @@ enddef
 
 # Add a workspace folder. Default is to use the current folder.
 export def AddWorkspaceFolder(dirArg: string)
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -858,7 +858,7 @@ enddef
 
 # Remove a workspace folder. Default is to use the current folder.
 export def RemoveWorkspaceFolder(dirArg: string)
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -881,7 +881,7 @@ enddef
 
 # expand the previous selection or start a new selection
 export def SelectionExpand()
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -891,7 +891,7 @@ enddef
 
 # shrink the previous selection or start a new selection
 export def SelectionShrink()
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -901,7 +901,7 @@ enddef
 
 # fold the entire document
 export def FoldDocument()
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
@@ -927,7 +927,7 @@ enddef
 
 # Display the LSP server capabilities
 export def ShowServerCapabilities()
-  var lspserver: dict<any> = s:curbufGetServerChecked()
+  var lspserver: dict<any> = s:CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif

@@ -26,7 +26,7 @@ endif
 # numbers.
 # 'a': {'A': [lnum, col], 'B': [lnum, col]}
 # 'b': {'A': [lnum, col], 'B': [lnum, col]}
-def s:edit_sort_func(a: dict<any>, b: dict<any>): number
+def s:Edit_sort_func(a: dict<any>, b: dict<any>): number
   # line number
   if a.A[0] != b.A[0]
     return b.A[0] - a.A[0]
@@ -49,7 +49,7 @@ enddef
 # 'new_lines' A list of strings to replace the original
 #
 # returns the modified 'lines'
-def s:set_lines(lines: list<string>, A: list<number>, B: list<number>,
+def s:Set_lines(lines: list<string>, A: list<number>, B: list<number>,
 					new_lines: list<string>): list<string>
   var i_0: number = A[0]
 
@@ -153,7 +153,7 @@ export def ApplyTextEdits(bnr: number, text_edits: list<dict<any>>): void
 
   # Reverse sort the edit operations by descending line and column numbers so
   # that they can be applied without interfering with each other.
-  updated_edits->sort('s:edit_sort_func')
+  updated_edits->sort('s:Edit_sort_func')
 
   var lines: list<string> = bnr->getbufline(start_line + 1, finish_line + 1)
   var fix_eol: bool = bnr->getbufvar('&fixeol')
@@ -168,7 +168,7 @@ export def ApplyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   for e in updated_edits
     var A: list<number> = [e.A[0] - start_line, e.A[1]]
     var B: list<number> = [e.B[0] - start_line, e.B[1]]
-    lines = s:set_lines(lines, A, B, e.lines)
+    lines = s:Set_lines(lines, A, B, e.lines)
   endfor
 
   #echomsg 'lines(2) = ' .. string(lines)
@@ -202,7 +202,7 @@ export def ApplyTextEdits(bnr: number, text_edits: list<dict<any>>): void
 enddef
 
 # interface TextDocumentEdit
-def s:applyTextDocumentEdit(textDocEdit: dict<any>)
+def s:ApplyTextDocumentEdit(textDocEdit: dict<any>)
   var bnr: number = bufnr(util.LspUriToFile(textDocEdit.textDocument.uri))
   if bnr == -1
     util.ErrMsg('Error: Text Document edit, buffer ' .. textDocEdit.textDocument.uri .. ' is not found')
@@ -218,7 +218,7 @@ export def ApplyWorkspaceEdit(workspaceEdit: dict<any>)
       if change->has_key('kind')
 	util.ErrMsg('Error: Unsupported change in workspace edit [' .. change.kind .. ']')
       else
-	s:applyTextDocumentEdit(change)
+	s:ApplyTextDocumentEdit(change)
       endif
     endfor
     return
