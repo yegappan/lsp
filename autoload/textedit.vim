@@ -26,7 +26,7 @@ endif
 # numbers.
 # 'a': {'A': [lnum, col], 'B': [lnum, col]}
 # 'b': {'A': [lnum, col], 'B': [lnum, col]}
-def s:Edit_sort_func(a: dict<any>, b: dict<any>): number
+def Edit_sort_func(a: dict<any>, b: dict<any>): number
   # line number
   if a.A[0] != b.A[0]
     return b.A[0] - a.A[0]
@@ -49,7 +49,7 @@ enddef
 # 'new_lines' A list of strings to replace the original
 #
 # returns the modified 'lines'
-def s:Set_lines(lines: list<string>, A: list<number>, B: list<number>,
+def Set_lines(lines: list<string>, A: list<number>, B: list<number>,
 					new_lines: list<string>): list<string>
   var i_0: number = A[0]
 
@@ -202,7 +202,7 @@ export def ApplyTextEdits(bnr: number, text_edits: list<dict<any>>): void
 enddef
 
 # interface TextDocumentEdit
-def s:ApplyTextDocumentEdit(textDocEdit: dict<any>)
+def ApplyTextDocumentEdit(textDocEdit: dict<any>)
   var bnr: number = bufnr(util.LspUriToFile(textDocEdit.textDocument.uri))
   if bnr == -1
     util.ErrMsg('Error: Text Document edit, buffer ' .. textDocEdit.textDocument.uri .. ' is not found')

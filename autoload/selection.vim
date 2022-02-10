@@ -14,7 +14,7 @@ else
 endif
 
 # Visually (character-wise) select the text in a range
-def s:SelectText(bnr: number, range: dict<dict<number>>)
+def SelectText(bnr: number, range: dict<dict<number>>)
   var start_col: number = util.GetLineByteFromPos(bnr, range.start) + 1
   var end_col: number = util.GetLineByteFromPos(bnr, range.end)
 
@@ -39,7 +39,7 @@ export def SelectionStart(lspserver: dict<any>, sel: list<dict<any>>)
 enddef
 
 # Locate the range in the LSP reply at a specified level
-def s:GetSelRangeAtLevel(selRange: dict<any>, level: number): dict<any>
+def GetSelRangeAtLevel(selRange: dict<any>, level: number): dict<any>
   var r: dict<any> = selRange
   var idx: number = 0
 
@@ -56,7 +56,7 @@ enddef
 
 # Returns true if the current visual selection matches a range in the
 # selection reply from LSP.
-def s:SelectionFromLSP(range: dict<any>, startpos: list<number>, endpos: list<number>): bool
+def SelectionFromLSP(range: dict<any>, startpos: list<number>, endpos: list<number>): bool
   return startpos[1] == range.start.line + 1
 			&& endpos[1] == range.end.line + 1
 			&& startpos[2] == range.start.character + 1

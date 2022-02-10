@@ -33,7 +33,7 @@ else
 endif
 
 # Handle keys pressed when the workspace symbol popup menu is displayed
-def s:FilterSymbols(lspserver: dict<any>, popupID: number, key: string): bool
+def FilterSymbols(lspserver: dict<any>, popupID: number, key: string): bool
   var key_handled: bool = false
   var update_popup: bool = false
   var query: string = lspserver.workspaceSymbolQuery
@@ -94,7 +94,7 @@ def s:FilterSymbols(lspserver: dict<any>, popupID: number, key: string): bool
 enddef
 
 # Jump to the location of a symbol selected in the popup menu
-def s:JumpToWorkspaceSymbol(popupID: number, result: number): void
+def JumpToWorkspaceSymbol(popupID: number, result: number): void
   # clear the message displayed at the command-line
   echo ''
 

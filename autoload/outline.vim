@@ -16,7 +16,7 @@ else
 endif
 
 # jump to a symbol selected in the outline window
-def s:OutlineJumpToSymbol()
+def OutlineJumpToSymbol()
   var lnum: number = line('.') - 1
   if w:lspSymbols.lnumTable[lnum]->empty()
     return
@@ -70,7 +70,7 @@ export def SkipOutlineRefresh(): bool
   return skipRefresh
 enddef
 
-def s:AddSymbolText(bnr: number,
+def AddSymbolText(bnr: number,
 			symbolTypeTable: dict<list<dict<any>>>,
 			pfx: string,
 			text: list<string>,
@@ -156,7 +156,7 @@ export def UpdateOutlineWindow(fname: string,
   skipRefresh = false
 enddef
 
-def s:OutlineHighlightCurrentSymbol()
+def OutlineHighlightCurrentSymbol()
   var fname: string = expand('%')->fnamemodify(':p')
   if fname == '' || &filetype == ''
     return
@@ -224,7 +224,7 @@ def s:OutlineHighlightCurrentSymbol()
 enddef
 
 # when the outline window is closed, do the cleanup
-def s:OutlineCleanup()
+def OutlineCleanup()
   # Remove the outline autocommands
   :silent! autocmd! LSPOutline
 

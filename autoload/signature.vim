@@ -25,12 +25,12 @@ else
 endif
 
 # close the signature popup window
-def s:CloseSignaturePopup(lspserver: dict<any>)
+def CloseSignaturePopup(lspserver: dict<any>)
   lspserver.signaturePopup->popup_close()
   lspserver.signaturePopup = -1
 enddef
 
-def s:CloseCurBufSignaturePopup()
+def CloseCurBufSignaturePopup()
   var lspserver: dict<any> = buf.CurbufGetServer()
   if lspserver->empty()
     return

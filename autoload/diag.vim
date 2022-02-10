@@ -32,7 +32,7 @@ export def DiagRemoveFile(lspserver: dict<any>, bnr: number)
   endif
 enddef
 
-def s:DiagSevToSignName(severity: number): string
+def DiagSevToSignName(severity: number): string
   var typeMap: list<string> = ['LspDiagError', 'LspDiagWarning',
 						'LspDiagInfo', 'LspDiagHint']
   if severity > 4
@@ -140,7 +140,7 @@ export def DiagsGetErrorCount(lspserver: dict<any>): dict<number>
 enddef
 
 # Map the LSP DiagnosticSeverity to a quickfix type character
-def s:DiagSevToQfType(severity: number): string
+def DiagSevToQfType(severity: number): string
   var typeMap: list<string> = ['E', 'W', 'I', 'N']
 
   if severity > 4
@@ -221,7 +221,7 @@ export def GetDiagByLine(lspserver: dict<any>, bnr: number, lnum: number): dict<
 enddef
 
 # sort the diaganostics messages for a buffer by line number
-def s:GetSortedDiagLines(lspsrv: dict<any>, bnr: number): list<number>
+def GetSortedDiagLines(lspsrv: dict<any>, bnr: number): list<number>
   # create a list of line numbers from the diag map keys
   var lnums: list<number> =
 		lspsrv.diagsMap[bnr]->keys()->mapnew((_, v) => v->str2nr())

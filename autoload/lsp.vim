@@ -121,7 +121,7 @@ var ftypeOmniCtrlMap: dict<bool> = {}
 
 var lspInitializedOnce = false
 
-def s:LspInitOnce()
+def LspInitOnce()
   # Signs used for LSP diagnostics
   sign_define([{name: 'LspDiagError', text: 'E ', texthl: 'ErrorMsg',
 						linehl: 'MatchParen'},
@@ -141,13 +141,13 @@ enddef
 
 # Returns the LSP server for the a specific filetype. Returns an empty dict if
 # the server is not found.
-def s:LspGetServer(ftype: string): dict<any>
+def LspGetServer(ftype: string): dict<any>
   return ftypeServerMap->get(ftype, {})
 enddef
 
 # Returns the LSP server for the current buffer if it is running and is ready.
 # Returns an empty dict if the server is not found or is not ready.
-def s:CurbufGetServerChecked(): dict<any>
+def CurbufGetServerChecked(): dict<any>
   var fname: string = @%
   if fname == ''
     return {}
@@ -171,18 +171,18 @@ def s:CurbufGetServerChecked(): dict<any>
 enddef
 
 # Add a LSP server for a filetype
-def s:LspAddServer(ftype: string, lspsrv: dict<any>)
+def LspAddServer(ftype: string, lspsrv: dict<any>)
   ftypeServerMap->extend({[ftype]: lspsrv})
 enddef
 
 # Returns true if omni-completion is enabled for filetype 'ftype'.
 # Otherwise, returns false.
-def s:LspOmniComplEnabled(ftype: string): bool
+def LspOmniComplEnabled(ftype: string): bool
   return ftypeOmniCtrlMap->get(ftype, v:false)
 enddef
 
 # Enables or disables omni-completion for filetype 'fype'
-def s:LspOmniComplSet(ftype: string, enabled: bool)
+def LspOmniComplSet(ftype: string, enabled: bool)
   ftypeOmniCtrlMap->extend({[ftype]: enabled})
 enddef
 
@@ -260,7 +260,7 @@ def g:LspShowSignature(): string
 enddef
 
 # buffer change notification listener
-def s:Bufchange_listener(bnr: number, start: number, end: number, added: number, changes: list<dict<number>>)
+def Bufchange_listener(bnr: number, start: number, end: number, added: number, changes: list<dict<number>>)
   var lspserver: dict<any> = buf.CurbufGetServer()
   if lspserver->empty() || !lspserver.running
     return
@@ -270,7 +270,7 @@ def s:Bufchange_listener(bnr: number, start: number, end: number, added: number,
 enddef
 
 # A buffer is saved. Send the "textDocument/didSave" LSP notification
-def s:LspSavedFile()
+def LspSavedFile()
   var bnr: number = expand('<abuf>')->str2nr()
   var lspserver: dict<any> = buf.BufLspServerGet(bnr)
   if lspserver->empty() || !lspserver.running

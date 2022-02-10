@@ -19,7 +19,7 @@ else
   util.GetLineByteFromPos = GetLineByteFromPos
 endif
 
-def s:CreateLoclistWithCalls(calls: list<dict<any>>, incoming: bool)
+def CreateLoclistWithCalls(calls: list<dict<any>>, incoming: bool)
   var qflist: list<dict<any>> = []
 
   for item in calls

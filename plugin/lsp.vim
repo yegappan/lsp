@@ -144,8 +144,6 @@ else
   lspf.showDiagnostics = ShowDiagnostics
   lspf.showCurrentDiag = LspShowCurrentDiag
   lspf.jumpToDiag = JumpToDiag
-  lspf.jumpToDiag = JumpToDiag
-  lspf.jumpToDiag = JumpToDiag
   lspf.diagHighlightEnable = DiagHighlightEnable
   lspf.diagHighlightDisable = DiagHighlightDisable
   lspf.showReferences = ShowReferences
