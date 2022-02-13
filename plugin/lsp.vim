@@ -180,36 +180,36 @@ def g:LspServerReady(): bool
   return lspf.LspServerReady()
 enddef
 
-var TshowServers = s:lspf.showServers
-var TshowServerCapabilities = s:lspf.showServerCapabilities
-var TsetTraceServer = s:lspf.setTraceServer
-var TaddFile = s:lspf.addFile
-var TremoveFile = s:lspf.removeFile
-var TshowCurrentDiagInStatusLine = s:lspf.showCurrentDiagInStatusLine
-var TgotoDefinition = s:lspf.gotoDefinition
-var TgotoDeclaration = s:lspf.gotoDeclaration
-var TgotoTypedef = s:lspf.gotoTypedef
-var TgotoImplementation = s:lspf.gotoImplementation
-var TshowDiagnostics = s:lspf.showDiagnostics
-var TshowCurrentDiag = s:lspf.showCurrentDiag
-var TjumpToDiag = s:lspf.jumpToDiag
-var TdiagHighlightEnable = s:lspf.diagHighlightEnable
-var TdiagHighlightDisable = s:lspf.diagHighlightDisable
-var TshowReferences = s:lspf.showReferences
-var Toutline = s:lspf.outline
-var TtextDocFormat = s:lspf.textDocFormat
-var TincomingCalls = s:lspf.incomingCalls
-var ToutgoingCalls = s:lspf.outgoingCalls
-var Trename = s:lspf.rename
-var TcodeAction = s:lspf.codeAction
-var TsymbolSearch = s:lspf.symbolSearch
-var Thover = s:lspf.hover
-var TselectionExpand = s:lspf.selectionExpand
-var TselectionShrink = s:lspf.selectionShrink
-var TfoldDocument = s:lspf.foldDocument
-var TlistWorkspaceFolders = s:lspf.listWorkspaceFolders
-var TaddWorkspaceFolder = s:lspf.addWorkspaceFolder
-var TremoveWorkspaceFolder = s:lspf.removeWorkspaceFolder
+var TshowServers = lspf.showServers
+var TshowServerCapabilities = lspf.showServerCapabilities
+var TsetTraceServer = lspf.setTraceServer
+var TaddFile = lspf.addFile
+var TremoveFile = lspf.removeFile
+var TshowCurrentDiagInStatusLine = lspf.showCurrentDiagInStatusLine
+var TgotoDefinition = lspf.gotoDefinition
+var TgotoDeclaration = lspf.gotoDeclaration
+var TgotoTypedef = lspf.gotoTypedef
+var TgotoImplementation = lspf.gotoImplementation
+var TshowDiagnostics = lspf.showDiagnostics
+var TshowCurrentDiag = lspf.showCurrentDiag
+var TjumpToDiag = lspf.jumpToDiag
+var TdiagHighlightEnable = lspf.diagHighlightEnable
+var TdiagHighlightDisable = lspf.diagHighlightDisable
+var TshowReferences = lspf.showReferences
+var Toutline = lspf.outline
+var TtextDocFormat = lspf.textDocFormat
+var TincomingCalls = lspf.incomingCalls
+var ToutgoingCalls = lspf.outgoingCalls
+var Trename = lspf.rename
+var TcodeAction = lspf.codeAction
+var TsymbolSearch = lspf.symbolSearch
+var Thover = lspf.hover
+var TselectionExpand = lspf.selectionExpand
+var TselectionShrink = lspf.selectionShrink
+var TfoldDocument = lspf.foldDocument
+var TlistWorkspaceFolders = lspf.listWorkspaceFolders
+var TaddWorkspaceFolder = lspf.addWorkspaceFolder
+var TremoveWorkspaceFolder = lspf.removeWorkspaceFolder
 
 augroup LSPAutoCmds
   au!

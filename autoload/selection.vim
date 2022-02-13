@@ -35,7 +35,7 @@ export def SelectionStart(lspserver: dict<any>, sel: list<dict<any>>)
   # save the reply for expanding or shrinking the selected text.
   lspserver.selection = {bnr: bnr, selRange: sel[0], index: 0}
 
-  s:SelectText(bnr, sel[0].range)
+  SelectText(bnr, sel[0].range)
 enddef
 
 # Locate the range in the LSP reply at a specified level
@@ -80,11 +80,11 @@ export def SelectionModify(lspserver: dict<any>, expand: bool)
     var idx: number = lspserver.selection.index
 
     # Locate the range in the LSP reply for the current selection
-    selRange = s:GetSelRangeAtLevel(selRange, lspserver.selection.index)
+    selRange = GetSelRangeAtLevel(selRange, lspserver.selection.index)
 
     # If the current selection is present in the LSP reply, then modify the
     # selection
-    if s:SelectionFromLSP(selRange.range, startpos, endpos)
+    if SelectionFromLSP(selRange.range, startpos, endpos)
       if expand
 	# expand the selection
         if selRange->has_key('parent')
@@ -95,12 +95,12 @@ export def SelectionModify(lspserver: dict<any>, expand: bool)
 	# shrink the selection
 	if idx > 0
 	  idx -= 1
-          selRange = s:GetSelRangeAtLevel(lspserver.selection.selRange, idx)
+          selRange = GetSelRangeAtLevel(lspserver.selection.selRange, idx)
 	  lspserver.selection.index = idx
 	endif
       endif
 
-      s:SelectText(bnr, selRange.range)
+      SelectText(bnr, selRange.range)
       return
     endif
   endif

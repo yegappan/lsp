@@ -439,7 +439,7 @@ def ProcessDocSymbolTable(docSymbolTable: list<dict<any>>,
     endif
     childSymbols = {}
     if symbol->has_key('children')
-      s:ProcessDocSymbolTable(symbol.children, childSymbols, symbolLineTable)
+      ProcessDocSymbolTable(symbol.children, childSymbols, symbolLineTable)
     endif
     symInfo = {name: name, range: r, detail: symbolDetail,
 						children: childSymbols}
@@ -468,10 +468,10 @@ def ProcessDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>
 
   if reply.result[0]->has_key('location')
     # SymbolInformation[]
-    s:ProcessSymbolInfoTable(reply.result, symbolTypeTable, symbolLineTable)
+    ProcessSymbolInfoTable(reply.result, symbolTypeTable, symbolLineTable)
   else
     # DocumentSymbol[]
-    s:ProcessDocSymbolTable(reply.result, symbolTypeTable, symbolLineTable)
+    ProcessDocSymbolTable(reply.result, symbolTypeTable, symbolLineTable)
   endif
 
   # sort the symbols by line number
@@ -613,7 +613,7 @@ def ProcessWorkspaceSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dic
       symName = symbol.containerName .. '::' .. symName
     endif
     symName ..= ' [' .. LspSymbolKindToName(symbol.kind) .. ']'
-    symName ..= ' ' .. s:MakeMenuName(
+    symName ..= ' ' .. MakeMenuName(
 		lspserver.workspaceSymbolPopup->popup_getpos().core_width,
 		fileName)
 

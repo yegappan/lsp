@@ -71,7 +71,7 @@ def ProcessNewDiags(lspserver: dict<any>, bnr: number)
   for [lnum, diag] in lspserver.diagsMap[bnr]->items()
     signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
 				lnum: str2nr(lnum),
-				name: s:DiagSevToSignName(diag.severity)})
+				name: DiagSevToSignName(diag.severity)})
   endfor
 
   signs->sign_placelist()
@@ -173,7 +173,7 @@ export def ShowAllDiags(lspserver: dict<any>): void
 		    'lnum': diag.range.start.line + 1,
 		    'col': util.GetLineByteFromPos(bnr, diag.range.start) + 1,
 		    'text': text,
-		    'type': s:DiagSevToQfType(diag.severity)})
+		    'type': DiagSevToQfType(diag.severity)})
   endfor
   setloclist(0, [], ' ', {'title': 'Language Server Diagnostics',
 							'items': qflist})
@@ -242,7 +242,7 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
   endif
 
   # sort the diagnostics by line number
-  var sortedDiags: list<number> = s:GetSortedDiagLines(lspserver, bnr)
+  var sortedDiags: list<number> = GetSortedDiagLines(lspserver, bnr)
 
   if which == 'first'
     cursor(sortedDiags[0], 1)

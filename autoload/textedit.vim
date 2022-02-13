@@ -168,7 +168,7 @@ export def ApplyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   for e in updated_edits
     var A: list<number> = [e.A[0] - start_line, e.A[1]]
     var B: list<number> = [e.B[0] - start_line, e.B[1]]
-    lines = s:Set_lines(lines, A, B, e.lines)
+    lines = Set_lines(lines, A, B, e.lines)
   endfor
 
   #echomsg 'lines(2) = ' .. string(lines)

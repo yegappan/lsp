@@ -22,7 +22,7 @@ enddef
 # Returns the LSP server for the current buffer. Returns an empty dict if the
 # server is not found.
 export def CurbufGetServer(): dict<any>
-  return s:BufLspServerGet(bufnr())
+  return BufLspServerGet(bufnr())
 enddef
 
 export def BufHasLspServer(bnr: number): bool

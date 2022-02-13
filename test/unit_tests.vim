@@ -39,7 +39,7 @@ g:LSPTest = true
 # Return zero for success, one for failure (like the assert function).
 func WaitForAssert(assert, ...)
   let timeout = get(a:000, 0, 5000)
-  if s:WaitForCommon(v:null, a:assert, timeout) < 0
+  if WaitForCommon(v:null, a:assert, timeout) < 0
     return 1
   endif
   return 0
@@ -47,7 +47,7 @@ endfunc
 
 # Either "expr" or "assert" is not v:null
 # Return the waiting time for success, -1 for failure.
-func s:WaitForCommon(expr, assert, timeout)
+func WaitForCommon(expr, assert, timeout)
   " using reltime() is more accurate, but not always available
   let slept = 0
   if exists('*reltimefloat')

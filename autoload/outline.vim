@@ -137,7 +137,7 @@ export def UpdateOutlineWindow(fname: string,
   # First two lines in the buffer display comment information
   var lnumMap: list<dict<any>> = [{}, {}]
   var text: list<string> = []
-  s:AddSymbolText(fname->bufnr(), symbolTypeTable, '', text, lnumMap, false)
+  AddSymbolText(fname->bufnr(), symbolTypeTable, '', text, lnumMap, false)
   append('$', text)
   w:lspSymbols = {filename: fname, lnumTable: lnumMap,
 				symbolsByLine: symbolLineTable}
@@ -150,7 +150,7 @@ export def UpdateOutlineWindow(fname: string,
   prevWinID->win_gotoid()
 
   # Highlight the current symbol
-  s:OutlineHighlightCurrentSymbol()
+  OutlineHighlightCurrentSymbol()
 
   # re-enable refreshing the outline window
   skipRefresh = false
@@ -279,8 +279,8 @@ export def OpenOutlineWindow()
     au!
     autocmd BufEnter * call g:LspRequestDocSymbols()
     # when the outline window is closed, do the cleanup
-    autocmd BufUnload LSP-Outline call s:OutlineCleanup()
-    autocmd CursorHold * call s:OutlineHighlightCurrentSymbol()
+    autocmd BufUnload LSP-Outline call OutlineCleanup()
+    autocmd CursorHold * call OutlineHighlightCurrentSymbol()
   augroup END
 
   prevWinID->win_gotoid()

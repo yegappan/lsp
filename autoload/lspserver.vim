@@ -404,7 +404,7 @@ def GetLspTextDocPosition(): dict<dict<any>>
   # interface TextDocumentIdentifier
   # interface Position
   return {textDocument: {uri: util.LspFileToUri(@%)},
-	  position: s:GetLspPosition()}
+	  position: GetLspPosition()}
 enddef
 
 # Get a list of completion items.
@@ -426,7 +426,7 @@ def GetCompletion(lspserver: dict<any>, triggerKind_arg: number): void
 
   # interface CompletionParams
   #   interface TextDocumentPositionParams
-  req.params = s:GetLspTextDocPosition()
+  req.params = GetLspTextDocPosition()
   #   interface CompletionContext
   req.params.context = {triggerKind: triggerKind_arg}
 
@@ -790,7 +790,7 @@ def RenameSymbol(lspserver: dict<any>, newName: string)
   var req = lspserver.createRequest('textDocument/rename')
   # interface RenameParams
   #   interface TextDocumentPositionParams
-  req.params = s:GetLspTextDocPosition()
+  req.params = GetLspTextDocPosition()
   req.params.newName = newName
   lspserver.sendMessage(req)
   if exists('g:LSPTest') && g:LSPTest

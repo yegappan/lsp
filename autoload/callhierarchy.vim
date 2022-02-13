@@ -74,7 +74,7 @@ export def IncomingCalls(calls: list<dict<any>>)
     return
   endif
 
-  s:CreateLoclistWithCalls(calls, true)
+  CreateLoclistWithCalls(calls, true)
 enddef
 
 export def OutgoingCalls(calls: list<dict<any>>)
@@ -83,7 +83,7 @@ export def OutgoingCalls(calls: list<dict<any>>)
     return
   endif
 
-  s:CreateLoclistWithCalls(calls, false)
+  CreateLoclistWithCalls(calls, false)
 enddef
 
 # vim: shiftwidth=2 softtabstop=2
