@@ -153,7 +153,7 @@ export def ApplyTextEdits(bnr: number, text_edits: list<dict<any>>): void
 
   # Reverse sort the edit operations by descending line and column numbers so
   # that they can be applied without interfering with each other.
-  updated_edits->sort('s:Edit_sort_func')
+  updated_edits->sort('Edit_sort_func')
 
   var lines: list<string> = bnr->getbufline(start_line + 1, finish_line + 1)
   var fix_eol: bool = bnr->getbufvar('&fixeol')
@@ -218,7 +218,7 @@ export def ApplyWorkspaceEdit(workspaceEdit: dict<any>)
       if change->has_key('kind')
 	util.ErrMsg('Error: Unsupported change in workspace edit [' .. change.kind .. ']')
       else
-	s:ApplyTextDocumentEdit(change)
+	ApplyTextDocumentEdit(change)
       endif
     endfor
     return

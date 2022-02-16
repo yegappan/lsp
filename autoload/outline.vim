@@ -99,7 +99,7 @@ def AddSymbolText(bnr: number,
 			col: start_col})
       s.outlineLine = lnumMap->len()
       if s->has_key('children') && !s.children->empty()
-	s:AddSymbolText(bnr, s.children, prefix, text, lnumMap, true)
+	AddSymbolText(bnr, s.children, prefix, text, lnumMap, true)
       endif
     endfor
   endfor
@@ -259,7 +259,7 @@ export def OpenOutlineWindow()
   :setlocal foldmethod=indent
   setline(1, ['# File Outline'])
   :nnoremap <silent> <buffer> q :quit<CR>
-  :nnoremap <silent> <buffer> <CR> :call <SID>outlineJumpToSymbol()<CR>
+  :nnoremap <silent> <buffer> <CR> :call <SID>OutlineJumpToSymbol()<CR>
   :setlocal nomodifiable
 
   # highlight all the symbol types

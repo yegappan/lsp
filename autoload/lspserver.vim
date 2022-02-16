@@ -454,7 +454,7 @@ def GotoDefinition(lspserver: dict<any>, peek: bool)
   var req = lspserver.createRequest('textDocument/definition')
   # interface DefinitionParams
   #   interface TextDocumentPositionParams
-  req.params->extend(s:GetLspTextDocPosition())
+  req.params->extend(GetLspTextDocPosition())
   lspserver.sendMessage(req)
 
   lspserver.waitForReponse(req)
@@ -478,7 +478,7 @@ def GotoDeclaration(lspserver: dict<any>, peek: bool): void
 
   # interface DeclarationParams
   #   interface TextDocumentPositionParams
-  req.params->extend(s:GetLspTextDocPosition())
+  req.params->extend(GetLspTextDocPosition())
 
   lspserver.sendMessage(req)
 
@@ -503,7 +503,7 @@ def GotoTypeDef(lspserver: dict<any>, peek: bool): void
 
   # interface TypeDefinitionParams
   #   interface TextDocumentPositionParams
-  req.params->extend(s:GetLspTextDocPosition())
+  req.params->extend(GetLspTextDocPosition())
 
   lspserver.sendMessage(req)
 
@@ -528,7 +528,7 @@ def GotoImplementation(lspserver: dict<any>, peek: bool): void
 
   # interface ImplementationParams
   #   interface TextDocumentPositionParams
-  req.params->extend(s:GetLspTextDocPosition())
+  req.params->extend(GetLspTextDocPosition())
 
   lspserver.sendMessage(req)
 
@@ -548,7 +548,7 @@ def ShowSignature(lspserver: dict<any>): void
   var req = lspserver.createRequest('textDocument/signatureHelp')
   # interface SignatureHelpParams
   #   interface TextDocumentPositionParams
-  req.params->extend(s:GetLspTextDocPosition())
+  req.params->extend(GetLspTextDocPosition())
 
   lspserver.sendMessage(req)
 
@@ -587,7 +587,7 @@ def Hover(lspserver: dict<any>): void
   var req = lspserver.createRequest('textDocument/hover')
   # interface HoverParams
   #   interface TextDocumentPositionParams
-  req.params->extend(s:GetLspTextDocPosition())
+  req.params->extend(GetLspTextDocPosition())
   lspserver.sendMessage(req)
   if exists('g:LSPTest') && g:LSPTest
     # When running LSP tests, make this a synchronous call
@@ -608,7 +608,7 @@ def ShowReferences(lspserver: dict<any>, peek: bool): void
   var req = lspserver.createRequest('textDocument/references')
   # interface ReferenceParams
   #   interface TextDocumentPositionParams
-  req.params->extend(s:GetLspTextDocPosition())
+  req.params->extend(GetLspTextDocPosition())
   req.params->extend({context: {includeDeclaration: true}})
 
   lspserver.peekSymbol = peek
@@ -632,7 +632,7 @@ def DocHighlight(lspserver: dict<any>): void
   var req = lspserver.createRequest('textDocument/documentHighlight')
   # interface DocumentHighlightParams
   #   interface TextDocumentPositionParams
-  req.params->extend(s:GetLspTextDocPosition())
+  req.params->extend(GetLspTextDocPosition())
   lspserver.sendMessage(req)
   if exists('g:LSPTest') && g:LSPTest
     # When running LSP tests, make this a synchronous call
@@ -729,7 +729,7 @@ def PrepareCallHierarchy(lspserver: dict<any>, fname: string)
 
   # interface CallHierarchyPrepareParams
   #   interface TextDocumentPositionParams
-  req.params->extend(s:GetLspTextDocPosition())
+  req.params->extend(GetLspTextDocPosition())
   lspserver.sendMessage(req)
 enddef
 

@@ -673,28 +673,28 @@ enddef
 export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   var lsp_reply_handlers: dict<func> =
     {
-      'initialize': function('s:ProcessInitializeReply'),
-      'textDocument/definition': function('s:ProcessDefDeclReply'),
-      'textDocument/declaration': function('s:ProcessDefDeclReply'),
-      'textDocument/typeDefinition': function('s:ProcessDefDeclReply'),
-      'textDocument/implementation': function('s:ProcessDefDeclReply'),
-      'textDocument/signatureHelp': function('s:ProcessSignaturehelpReply'),
-      'textDocument/completion': function('s:ProcessCompletionReply'),
-      'textDocument/hover': function('s:ProcessHoverReply'),
-      'textDocument/references': function('s:ProcessReferencesReply'),
-      'textDocument/documentHighlight': function('s:ProcessDocHighlightReply'),
-      'textDocument/documentSymbol': function('s:ProcessDocSymbolReply'),
-      'textDocument/formatting': function('s:ProcessFormatReply'),
-      'textDocument/rangeFormatting': function('s:ProcessFormatReply'),
-      'textDocument/rename': function('s:ProcessRenameReply'),
-      'textDocument/codeAction': function('s:ProcessCodeActionReply'),
-      'textDocument/selectionRange': function('s:ProcessSelectionRangeReply'),
-      'textDocument/foldingRange': function('s:ProcessFoldingRangeReply'),
-      'workspace/executeCommand': function('s:ProcessWorkspaceExecuteReply'),
-      'workspace/symbol': function('s:ProcessWorkspaceSymbolReply'),
-      'textDocument/prepareCallHierarchy': function('s:ProcessPrepareCallHierarchy'),
-      'callHierarchy/incomingCalls': function('s:ProcessIncomingCalls'),
-      'callHierarchy/outgoingCalls': function('s:ProcessOutgoingCalls')
+      'initialize': function('ProcessInitializeReply'),
+      'textDocument/definition': function('ProcessDefDeclReply'),
+      'textDocument/declaration': function('ProcessDefDeclReply'),
+      'textDocument/typeDefinition': function('ProcessDefDeclReply'),
+      'textDocument/implementation': function('ProcessDefDeclReply'),
+      'textDocument/signatureHelp': function('ProcessSignaturehelpReply'),
+      'textDocument/completion': function('ProcessCompletionReply'),
+      'textDocument/hover': function('ProcessHoverReply'),
+      'textDocument/references': function('ProcessReferencesReply'),
+      'textDocument/documentHighlight': function('ProcessDocHighlightReply'),
+      'textDocument/documentSymbol': function('ProcessDocSymbolReply'),
+      'textDocument/formatting': function('ProcessFormatReply'),
+      'textDocument/rangeFormatting': function('ProcessFormatReply'),
+      'textDocument/rename': function('ProcessRenameReply'),
+      'textDocument/codeAction': function('ProcessCodeActionReply'),
+      'textDocument/selectionRange': function('ProcessSelectionRangeReply'),
+      'textDocument/foldingRange': function('ProcessFoldingRangeReply'),
+      'workspace/executeCommand': function('ProcessWorkspaceExecuteReply'),
+      'workspace/symbol': function('ProcessWorkspaceSymbolReply'),
+      'textDocument/prepareCallHierarchy': function('ProcessPrepareCallHierarchy'),
+      'callHierarchy/incomingCalls': function('ProcessIncomingCalls'),
+      'callHierarchy/outgoingCalls': function('ProcessOutgoingCalls')
     }
 
   if lsp_reply_handlers->has_key(req.method)
@@ -757,14 +757,14 @@ enddef
 export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
   var lsp_notif_handlers: dict<func> =
     {
-      'window/showMessage': function('s:ProcessShowMsgNotif'),
-      'window/logMessage': function('s:ProcessLogMsgNotif'),
-      'textDocument/publishDiagnostics': function('s:ProcessDiagNotif'),
-      '$/progress': function('s:ProcessUnsupportedNotif'),
-      'telemetry/event': function('s:ProcessUnsupportedNotif'),
+      'window/showMessage': function('ProcessShowMsgNotif'),
+      'window/logMessage': function('ProcessLogMsgNotif'),
+      'textDocument/publishDiagnostics': function('ProcessDiagNotif'),
+      '$/progress': function('ProcessUnsupportedNotif'),
+      'telemetry/event': function('ProcessUnsupportedNotif'),
       # Java language server sends the 'language/status' notification which is
       # not in the LSP specification
-      'language/status': function('s:IgnoreNotif')
+      'language/status': function('IgnoreNotif')
     }
 
   if lsp_notif_handlers->has_key(reply.method)
@@ -799,14 +799,14 @@ enddef
 export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
   var lspRequestHandlers: dict<func> =
     {
-      'workspace/applyEdit': function('s:ProcessApplyEditReq'),
-      'window/workDoneProgress/create': function('s:ProcessUnsupportedReq'),
-      'client/registerCapability': function('s:ProcessUnsupportedReq'),
-      'client/unregisterCapability': function('s:ProcessUnsupportedReq'),
-      'workspace/workspaceFolders': function('s:ProcessUnsupportedReq'),
-      'workspace/configuration': function('s:ProcessUnsupportedReq'),
-      'workspace/codeLens/refresh': function('s:ProcessUnsupportedReq'),
-      'workspace/semanticTokens/refresh': function('s:ProcessUnsupportedReq')
+      'workspace/applyEdit': function('ProcessApplyEditReq'),
+      'window/workDoneProgress/create': function('ProcessUnsupportedReq'),
+      'client/registerCapability': function('ProcessUnsupportedReq'),
+      'client/unregisterCapability': function('ProcessUnsupportedReq'),
+      'workspace/workspaceFolders': function('ProcessUnsupportedReq'),
+      'workspace/configuration': function('ProcessUnsupportedReq'),
+      'workspace/codeLens/refresh': function('ProcessUnsupportedReq'),
+      'workspace/semanticTokens/refresh': function('ProcessUnsupportedReq')
     }
 
   if lspRequestHandlers->has_key(request.method)
