@@ -115,6 +115,7 @@ Command|Description
 :LspWorkspaceAddFolder `{folder}`| Add a folder to the workspace
 :LspWorkspaceRemoveFolder `{folder}`|Remove a folder from the workspace
 :LspWorkspaceListFolders|Show the list of folders in the workspace
+:LspServerRestart|Restart the LSP server for the current buffer
 
 ## Similar Vim LSP Plugins
 

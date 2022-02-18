@@ -401,10 +401,12 @@ enddef
 # Notify LSP server to remove a file
 export def RemoveFile(bnr: number): void
   var lspserver: dict<any> = buf.BufLspServerGet(bnr)
-  if lspserver->empty() || !lspserver.running
+  if lspserver->empty()
     return
   endif
-  lspserver.textdocDidClose(bnr)
+  if lspserver.running
+    lspserver.textdocDidClose(bnr)
+  endif
   diag.DiagRemoveFile(lspserver, bnr)
   buf.BufLspServerRemove(bnr)
 enddef
@@ -414,6 +416,35 @@ export def StopAllServers()
   for lspserver in lspServers
     if lspserver.running
       lspserver.stopServer()
+    endif
+  endfor
+enddef
+
+# Restart the LSP server for the current buffer
+export def RestartServer()
+  var lspserver: dict<any> = CurbufGetServerChecked()
+  if lspserver->empty()
+    return
+  endif
+
+  # Stop the server
+  lspserver.stopServer()
+
+  # Remove all the buffers with the same file type as the current buffer
+  var ftype: string = &filetype
+  for binfo in getbufinfo()
+    if getbufvar(binfo.bufnr, '&filetype') == ftype
+      RemoveFile(binfo.bufnr)
+    endif
+  endfor
+
+  # Start the server again
+  lspserver.startServer(true)
+
+  # Add all the buffers with the same file type as the current buffer
+  for binfo in getbufinfo({bufloaded: 1})
+    if getbufvar(binfo.bufnr, '&filetype') == ftype
+      AddFile(binfo.bufnr)
     endif
   endfor
 enddef
@@ -779,7 +810,8 @@ export def Rename()
     return
   endif
 
-  var newName: string = input("Rename symbol: ", expand('<cword>'))
+  var sym: string = expand('<cword>')
+  var newName: string = input("Rename symbol '" .. sym .. "' to: ", sym)
   if newName == ''
     return
   endif

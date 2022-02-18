@@ -2,7 +2,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 8.2.2342 and above
-Last change: Feb 4, 2022
+Last change: Feb 17, 2022
 
 ==============================================================================
 						*lsp-license*
@@ -126,6 +126,7 @@ The following commands are provided:
 			Show the list of folders in the workspace
 :LspShowServerCapabilities
 			Display the list of capabilities of a LSP server.
+:LspServerRestart	Restart the LSP server for the current buffer.
 
 ==============================================================================
 4. Configuration				*lsp-configuration*
@@ -485,16 +486,20 @@ diagnostic messages, you can add the following line to your .vimrc file:
 :LspWorkspaceRemoveFolder {folder}
 			Remove a folder from the workspace
 
-						*:LspWorkspaceListFolders*
-:LspWorkspaceListFolders
+:LspWorkspaceListFolders			*:LspWorkspaceListFolders*
 			Show the list of folders in the workspace.
 
-						*:LspShowServerCapabilities*
-:LspShowServerCapabilities
+:LspShowServerCapabilities			*:LspShowServerCapabilities*
 			Display the list of capabilities of a LSP server.
 			The server capabilities are described in the LSP
 			protocol specification under the "ServerCapabilities"
 			interface.
+
+						*:LspServerRestart*
+:LspServerRestart	Restart (stop and then start) the LSP server for the
+			current buffer. All the loaded buffers with the same
+			filetype as the current buffer are added back to the
+			server.
 
 ==============================================================================
 6. Insert mode completion

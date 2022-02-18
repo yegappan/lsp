@@ -70,14 +70,16 @@ enddef
 # LSP server exit callback
 def Exit_cb(lspserver: dict<any>, job: job, status: number): void
   util.WarnMsg("LSP server exited with status " .. status)
-  lspserver.job = v:null
   lspserver.running = false
   lspserver.ready = false
   lspserver.requests = {}
 enddef
 
 # Start a LSP server
-def StartServer(lspserver: dict<any>): number
+#
+# If 'isSync' is true, then waits for the server to send the initialize
+# reponse message.
+def StartServer(lspserver: dict<any>, isSync: bool = false): number
   if lspserver.running
     util.WarnMsg("LSP server for is already running")
     return 0
@@ -109,20 +111,23 @@ def StartServer(lspserver: dict<any>): number
     return 1
   endif
 
-  # wait for the LSP server to start
+  # wait a little for the LSP server to start
   sleep 10m
 
   lspserver.job = job
   lspserver.running = true
 
-  lspserver.initServer()
+  lspserver.initServer(isSync)
 
   return 0
 enddef
 
 # Request: 'initialize'
 # Param: InitializeParams
-def InitServer(lspserver: dict<any>)
+#
+# If 'isSync' is true, then waits for the server to send the initialize
+# reponse message.
+def InitServer(lspserver: dict<any>, isSync: bool = false)
   var req = lspserver.createRequest('initialize')
 
   # client capabilities (ClientCapabilities)
@@ -171,6 +176,9 @@ def InitServer(lspserver: dict<any>)
   req.params->extend(initparams)
 
   lspserver.sendMessage(req)
+  if isSync
+    lspserver.waitForReponse(req)
+  endif
 enddef
 
 # Send a "initialized" LSP notification
@@ -185,6 +193,7 @@ enddef
 def ShutdownServer(lspserver: dict<any>): void
   var req = lspserver.createRequest('shutdown')
   lspserver.sendMessage(req)
+  lspserver.waitForReponse(req)
 enddef
 
 # Send a 'exit' notification to the LSP server
@@ -201,15 +210,23 @@ def StopServer(lspserver: dict<any>): number
     return 0
   endif
 
+  # Send the shutdown request to the server
   lspserver.shutdownServer()
 
-  # Wait for the server to process the shutodwn request
-  sleep 1
-
+  # Notify the server to exit
   lspserver.exitServer()
 
-  lspserver.job->job_stop()
-  lspserver.job = v:null
+  # Wait for the server to process the exit notification and exit for a
+  # maximum of 2 seconds.
+  var maxCount: number = 1000
+  while lspserver.job->job_status() == 'run' && maxCount > 0
+    sleep 2m
+    maxCount -= 1
+  endwhile
+
+  if lspserver.job->job_status() == 'run'
+    lspserver.job->job_stop()
+  endif
   lspserver.running = false
   lspserver.ready = false
   lspserver.requests = {}
@@ -921,7 +938,7 @@ def SelectionRange(lspserver: dict<any>, fname: string)
   var req = lspserver.createRequest('textDocument/selectionRange')
   # interface SelectionRangeParams
   # interface TextDocumentIdentifier
-  req.params->extend({textDocument: {uri: util.LspFileToUri(fname)}, positions: [s:GetLspPosition()]})
+  req.params->extend({textDocument: {uri: util.LspFileToUri(fname)}, positions: [GetLspPosition()]})
   lspserver.sendMessage(req)
 
   lspserver.waitForReponse(req)

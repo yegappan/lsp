@@ -122,6 +122,11 @@ def ProcessInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any
   endif
 enddef
 
+# Process a 'shutdown' reply from the LSP server.
+def ProcessShutdownReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+  return
+enddef
+
 # process the 'textDocument/definition' / 'textDocument/declaration' /
 # 'textDocument/typeDefinition' and 'textDocument/implementation' replies from
 # the LSP server
@@ -674,6 +679,7 @@ export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
   var lsp_reply_handlers: dict<func> =
     {
       'initialize': function('ProcessInitializeReply'),
+      'shutdown': function('ProcessShutdownReply'),
       'textDocument/definition': function('ProcessDefDeclReply'),
       'textDocument/declaration': function('ProcessDefDeclReply'),
       'textDocument/typeDefinition': function('ProcessDefDeclReply'),
@@ -700,7 +706,7 @@ export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
   if lsp_reply_handlers->has_key(req.method)
     lsp_reply_handlers[req.method](lspserver, req, reply)
   else
-    util.ErrMsg("Error: Unsupported reply received from LSP server: " .. reply->string())
+    util.ErrMsg("Error: Unsupported reply received from LSP server: " .. reply->string() .. " for request: " .. req->string())
   endif
 enddef
 

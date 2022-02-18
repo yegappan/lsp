@@ -16,6 +16,7 @@ if has('patch-8.2.4257')
   opt.lspOptions = lspoptions.lspOptions
   lspf.enableServerTrace = lsp.EnableServerTrace
   lspf.addServer = lsp.AddServer
+  lspf.restartServer = lsp.RestartServer
   lspf.LspServerReady = lsp.ServerReady
   lspf.addFile = lsp.AddFile
   lspf.removeFile = lsp.RemoveFile
@@ -55,6 +56,7 @@ elseif has('patch-8.2.4019')
   opt.lspOptions = opt_import.lspOptions
   lspf.enableServerTrace = lsp_import.EnableServerTrace
   lspf.addServer = lsp_import.AddServer
+  lspf.restartServer = lsp_import.RestartServer
   lspf.LspServerReady = lsp_import.ServerReady
   lspf.addFile = lsp_import.AddFile
   lspf.removeFile = lsp_import.RemoveFile
@@ -90,6 +92,7 @@ else
   import {lspOptions, OptionsSet} from '../autoload/lspoptions.vim'
   import {EnableServerTrace,
 	  AddServer,
+	  RestartServer,
 	  ServerReady,
 	  AddFile,
 	  RemoveFile,
@@ -126,6 +129,7 @@ else
   opt.lspOptions = lspOptions
   lspf.enableServerTrace = EnableServerTrace
   lspf.addServer = AddServer
+  lspf.restartServer = RestartServer
   lspf.LspServerReady = ServerReady
   lspf.addFile = AddFile
   lspf.removeFile = RemoveFile
@@ -182,6 +186,7 @@ enddef
 
 var TshowServers = lspf.showServers
 var TshowServerCapabilities = lspf.showServerCapabilities
+var TrestartServer = lspf.restartServer
 var TsetTraceServer = lspf.setTraceServer
 var TaddFile = lspf.addFile
 var TremoveFile = lspf.removeFile
@@ -229,6 +234,7 @@ augroup END
 # LSP commands
 command! -nargs=0 -bar LspShowServers call TshowServers()
 command! -nargs=0 -bar LspShowServerCapabilities call TshowServerCapabilities()
+command! -nargs=0 -bar LspServerRestart call TrestartServer()
 command! -nargs=1 -bar LspSetTrace call TsetTraceServer(<q-args>)
 command! -nargs=0 -bar LspGotoDefinition call TgotoDefinition(v:false)
 command! -nargs=0 -bar LspGotoDeclaration call TgotoDeclaration(v:false)
