@@ -9,8 +9,8 @@ endif
 var opt = {}
 var lspf = {}
 if has('patch-8.2.4257')
-  import '../autoload/lspoptions.vim' as lspoptions
-  import '../autoload/lsp.vim'
+  import '../autoload/lsp/lspoptions.vim' as lspoptions
+  import '../autoload/lsp/lsp.vim'
 
   opt.LspOptionsSet = lspoptions.OptionsSet
   opt.lspOptions = lspoptions.lspOptions
@@ -49,8 +49,8 @@ if has('patch-8.2.4257')
   lspf.addWorkspaceFolder = lsp.AddWorkspaceFolder
   lspf.removeWorkspaceFolder = lsp.RemoveWorkspaceFolder
 elseif has('patch-8.2.4019')
-  import '../autoload/lspoptions.vim' as opt_import
-  import '../autoload/lsp.vim' as lsp_import
+  import '../autoload/lsp/lspoptions.vim' as opt_import
+  import '../autoload/lsp/lsp.vim' as lsp_import
 
   opt.LspOptionsSet = opt_import.OptionsSet
   opt.lspOptions = opt_import.lspOptions
@@ -89,7 +89,7 @@ elseif has('patch-8.2.4019')
   lspf.addWorkspaceFolder = lsp_import.AddWorkspaceFolder
   lspf.removeWorkspaceFolder = lsp_import.RemoveWorkspaceFolder
 else
-  import {lspOptions, OptionsSet} from '../autoload/lspoptions.vim'
+  import {lspOptions, OptionsSet} from '../autoload/lsp/lspoptions.vim'
   import {EnableServerTrace,
 	  AddServer,
 	  RestartServer,
@@ -123,7 +123,7 @@ else
 	  FoldDocument,
 	  ListWorkspaceFolders,
 	  AddWorkspaceFolder,
-	  RemoveWorkspaceFolder} from '../autoload/lsp.vim'
+	  RemoveWorkspaceFolder} from '../autoload/lsp/lsp.vim'
 
   opt.LspOptionsSet = OptionsSet
   opt.lspOptions = lspOptions
