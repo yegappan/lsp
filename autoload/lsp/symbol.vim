@@ -150,8 +150,8 @@ export def ShowSymbolMenu(lspserver: dict<any>, query: string)
       mapping: false,
       fixed: 1,
       close: "button",
-      filter: function('s:FilterSymbols', [lspserver]),
-      callback: function('s:JumpToWorkspaceSymbol')
+      filter: function(FilterSymbols, [lspserver]),
+      callback: JumpToWorkspaceSymbol
   }
   lspserver.workspaceSymbolPopup = popup_menu([], popupAttr)
   lspserver.workspaceSymbolQuery = query

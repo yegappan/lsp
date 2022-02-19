@@ -352,7 +352,7 @@ export def AddFile(bnr: number): void
   lspserver.textdocDidOpen(bnr, ftype)
 
   # add a listener to track changes to this buffer
-  listener_add(function('s:Bufchange_listener'), bnr)
+  listener_add(Bufchange_listener, bnr)
 
   # set options for insert mode completion
   if opt.lspOptions.autoComplete
