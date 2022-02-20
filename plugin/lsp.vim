@@ -304,7 +304,7 @@ if has('gui_running')
 	  \ :LspGotoDefinition<CR>
     anoremenu <silent> PopUp.L&sp.Go\ to\ Declaration
 	  \ :LspGotoDeclaration<CR>
-    anoremenu <silent> Popup.L&sp.Find\ All\ References
+    anoremenu <silent> PopUp.L&sp.Find\ All\ References
 	  \ :LspShowReferences<CR>
     anoremenu <silent> PopUp.L&sp.Show\ Detail
           \ :LspHover<CR>
