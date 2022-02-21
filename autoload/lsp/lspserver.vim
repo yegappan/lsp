@@ -594,7 +594,7 @@ enddef
 # get the hover information
 # Request: "textDocument/hover"
 # Param: HoverParams
-def Hover(lspserver: dict<any>): void
+def ShowHoverInfo(lspserver: dict<any>): void
   # Check whether LSP server supports getting hover information
   if !lspserver.caps->has_key('hoverProvider')
 			|| !lspserver.caps.hoverProvider
@@ -1064,7 +1064,7 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
     gotoImplementation: function(GotoImplementation, [lspserver]),
     showSignature: function(ShowSignature, [lspserver]),
     didSaveFile: function(DidSaveFile, [lspserver]),
-    hover: function(Hover, [lspserver]),
+    hover: function(ShowHoverInfo, [lspserver]),
     showReferences: function(ShowReferences, [lspserver]),
     docHighlight: function(DocHighlight, [lspserver]),
     getDocSymbols: function(GetDocSymbols, [lspserver]),
