@@ -84,7 +84,7 @@ endif
 # process the 'initialize' method reply from the LSP server
 # Result: InitializeResult
 def ProcessInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
-  if reply.result->len() <= 0
+  if reply.result->empty()
     return
   endif
 
@@ -149,6 +149,9 @@ enddef
 # process the 'textDocument/signatureHelp' reply from the LSP server
 # Result: SignatureHelp | null
 def ProcessSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+  if reply.result->empty()
+    return
+  endif
   signature.SignatureDisplay(lspserver, reply.result)
 enddef
 
@@ -343,6 +346,12 @@ enddef
 # process the 'textDocument/references' reply from the LSP server
 # Result: Location[] | null
 def ProcessReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+  if reply.result->empty()
+    util.WarnMsg('Error: No references found')
+    lspserver.peekSymbol = false
+    return
+  endif
+
   symbol.ShowReferences(lspserver, reply.result)
 enddef
 
@@ -524,12 +533,22 @@ enddef
 # process the 'textDocument/codeAction' reply from the LSP server
 # Result: (Command | CodeAction)[] | null
 def ProcessCodeActionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+  if reply.result->empty()
+    # no action can be performed
+    util.WarnMsg('No code action is available')
+    return
+  endif
+
   codeaction.ApplyCodeAction(lspserver, reply.result)
 enddef
 
 # Reply: 'textDocument/selectionRange'
 # Result: SelectionRange[] | null
 def ProcessSelectionRangeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+  if reply.result->empty()
+    return
+  endif
+
   selection.SelectionStart(lspserver, reply.result)
 enddef
 
@@ -599,7 +618,7 @@ def ProcessWorkspaceSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dic
   var r: dict<dict<number>>
   var symName: string
 
-  if reply.result->type() != v:t_list
+  if reply.result->empty()
     return
   endif
 
@@ -665,12 +684,20 @@ enddef
 # process the 'callHierarchy/incomingCalls' reply from the LSP server
 # Result: CallHierarchyIncomingCall[] | null
 def ProcessIncomingCalls(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+  if reply.result->empty()
+    return
+  endif
+
   callhier.IncomingCalls(reply.result)
 enddef
 
 # process the 'callHierarchy/outgoingCalls' reply from the LSP server
 # Result: CallHierarchyOutgoingCall[] | null
 def ProcessOutgoingCalls(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
+  if reply.result->empty()
+    return
+  endif
+
   callhier.OutgoingCalls(reply.result)
 enddef
 
