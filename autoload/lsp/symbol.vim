@@ -264,15 +264,19 @@ export def GotoSymbol(lspserver: dict<any>, location: dict<any>, type: string)
     else
       var bnr: number = fname->bufnr()
       if bnr != -1
-        if &modified || &buftype != ''
+	# Reuse an existing buffer. If the current buffer has unsaved changes
+	# and 'hidden' is not set or if the current buffer is a special
+	# buffer, then open the buffer in a new window.
+        if (&modified && !&hidden) || &buftype != ''
           exe 'sbuffer ' .. bnr
         else
           exe 'buf ' .. bnr
         endif
       else
-        if &modified || &buftype != ''
-          # if the current buffer has unsaved changes, then open the file in a
-          # new window
+        if (&modified && !&hidden) || &buftype != ''
+	  # if the current buffer has unsaved changes and 'hidden' is not set,
+	  # or if the current buffer is a special buffer, then open the file
+	  # in a new window
           exe 'split ' .. fname
         else
           exe 'edit  ' .. fname
