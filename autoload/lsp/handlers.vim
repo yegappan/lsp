@@ -146,6 +146,19 @@ def ProcessDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
   symbol.GotoSymbol(lspserver, location, req.method)
 enddef
 
+# process the 'textDocument/switchSourceHeader' reply from the LSP server
+# Result: URI | null
+def ProcessSwitchHeaderReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+  var fname = util.LspUriToFile(reply.result)
+  if (&modified && !&hidden) || &buftype != ''
+    # if the current buffer has unsaved changes and 'hidden' is not set,
+    # or if the current buffer is a special buffer, then ask to save changes
+    exe 'confirm edit ' .. fname
+  else
+    exe 'edit  ' .. fname
+  endif
+enddef
+
 # process the 'textDocument/signatureHelp' reply from the LSP server
 # Result: SignatureHelp | null
 def ProcessSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
@@ -710,6 +723,7 @@ export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
       'textDocument/definition': ProcessDefDeclReply,
       'textDocument/declaration': ProcessDefDeclReply,
       'textDocument/typeDefinition': ProcessDefDeclReply,
+      'textDocument/switchSourceHeader': ProcessSwitchHeaderReply,
       'textDocument/implementation': ProcessDefDeclReply,
       'textDocument/signatureHelp': ProcessSignaturehelpReply,
       'textDocument/completion': ProcessCompletionReply,

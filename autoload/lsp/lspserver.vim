@@ -477,6 +477,16 @@ def GotoDefinition(lspserver: dict<any>, peek: bool)
   lspserver.waitForReponse(req)
 enddef
 
+# Request: "textDocument/switchSourceHeader"
+# Param: TextDocumentIdentifier
+def SwitchSourceHeader(lspserver: dict<any>)
+  var req = lspserver.createRequest('textDocument/switchSourceHeader')
+  req.params->extend({uri: util.LspFileToUri(@%)})
+  lspserver.sendMessage(req)
+
+  lspserver.waitForReponse(req)
+enddef
+
 # Request: "textDocument/declaration"
 # Param: DeclarationParams
 def GotoDeclaration(lspserver: dict<any>, peek: bool): void
@@ -1059,6 +1069,7 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
     sendInitializedNotif: function(SendInitializedNotif, [lspserver]),
     getCompletion: function(GetCompletion, [lspserver]),
     gotoDefinition: function(GotoDefinition, [lspserver]),
+    switchSourceHeader: function(SwitchSourceHeader, [lspserver]),
     gotoDeclaration: function(GotoDeclaration, [lspserver]),
     gotoTypeDef: function(GotoTypeDef, [lspserver]),
     gotoImplementation: function(GotoImplementation, [lspserver]),

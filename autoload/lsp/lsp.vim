@@ -215,6 +215,16 @@ export def GotoDefinition(peek: bool)
   lspserver.gotoDefinition(peek)
 enddef
 
+# Switch source header using "textDocument/switchSourceHeader" LSP request
+export def SwitchSourceHeader()
+  var lspserver: dict<any> = CurbufGetServerChecked()
+  if lspserver->empty()
+    return
+  endif
+
+  lspserver.switchSourceHeader()
+enddef
+
 # Go to a declaration using "textDocument/declaration" LSP request
 export def GotoDeclaration(peek: bool)
   var lspserver: dict<any> = CurbufGetServerChecked()
