@@ -479,6 +479,7 @@ enddef
 
 # Request: "textDocument/switchSourceHeader"
 # Param: TextDocumentIdentifier
+# Clangd specific extension
 def SwitchSourceHeader(lspserver: dict<any>)
   var req = lspserver.createRequest('textDocument/switchSourceHeader')
   req.params->extend({uri: util.LspFileToUri(@%)})

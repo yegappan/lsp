@@ -147,8 +147,12 @@ def ProcessDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
 enddef
 
 # process the 'textDocument/switchSourceHeader' reply from the LSP server
+# Clangd specific extension
 # Result: URI | null
 def ProcessSwitchHeaderReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+  if reply.result->empty()
+    return
+  endif
   var fname = util.LspUriToFile(reply.result)
   if (&modified && !&hidden) || &buftype != ''
     # if the current buffer has unsaved changes and 'hidden' is not set,

@@ -319,7 +319,9 @@ diagnostic messages, you can add the following line to your .vimrc file:
 			Default is false.
 
 						*:LspSwitchSourceHeader*
-:LspSwitchSourceHeader	Switch between source and header files.
+:LspSwitchSourceHeader	Switch between source and header files. This is a
+			Clangd specific extension and only works with C/C++
+			source files.
 
 						*:LspDiagShow*
 :LspDiagShow		Creates a new location list with the diagnostics

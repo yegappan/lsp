@@ -6,6 +6,10 @@ if !has('patch-8.2.2342')
   finish
 endif
 
+# The following is needed to support both Vim 8.2.3741 (shipped with Ubuntu
+# 21.10) and the latest Vim. The Vim9 script syntax for import changed between
+# these two versions. Once offical Vim9 is out, the following can be
+# simplified.
 var opt = {}
 var lspf = {}
 if has('patch-8.2.4257')
@@ -85,6 +89,7 @@ elseif has('patch-8.2.4019')
   lspf.hover = lsp_import.Hover
   lspf.selectionExpand = lsp_import.SelectionExpand
   lspf.selectionShrink = lsp_import.SelectionShrink
+  lspf.switchSourceHeader = lsp_import.SwitchSourceHeader
   lspf.foldDocument = lsp_import.FoldDocument
   lspf.listWorkspaceFolders = lsp_import.ListWorkspaceFolders
   lspf.addWorkspaceFolder = lsp_import.AddWorkspaceFolder
@@ -121,6 +126,7 @@ else
 	  Hover,
 	  SelectionExpand,
 	  SelectionShrink,
+	  SwitchSourceHeader,
 	  FoldDocument,
 	  ListWorkspaceFolders,
 	  AddWorkspaceFolder,
@@ -163,6 +169,7 @@ else
   lspf.hover = Hover
   lspf.selectionExpand = SelectionExpand
   lspf.selectionShrink = SelectionShrink
+  lspf.switchSourceHeader = SwitchSourceHeader
   lspf.foldDocument = FoldDocument
   lspf.listWorkspaceFolders = ListWorkspaceFolders
   lspf.addWorkspaceFolder = AddWorkspaceFolder
@@ -256,6 +263,8 @@ command! -nargs=0 -bar LspDiagHighlightEnable call TdiagHighlightEnable()
 command! -nargs=0 -bar LspDiagHighlightDisable call TdiagHighlightDisable()
 command! -nargs=0 -bar LspShowReferences call TshowReferences(v:false)
 command! -nargs=0 -bar LspPeekReferences call TshowReferences(v:true)
+# Clangd specifc extension to switch from one C/C++ source file to a
+# corresponding header file
 command! -nargs=0 -bar LspSwitchSourceHeader call TswitchSourceHeader()
 command! -nargs=0 -bar LspHighlight call LspDocHighlight()
 command! -nargs=0 -bar LspHighlightClear call LspDocHighlightClear()

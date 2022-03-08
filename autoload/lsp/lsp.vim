@@ -216,6 +216,7 @@ export def GotoDefinition(peek: bool)
 enddef
 
 # Switch source header using "textDocument/switchSourceHeader" LSP request
+# (Clangd specifc extension)
 export def SwitchSourceHeader()
   var lspserver: dict<any> = CurbufGetServerChecked()
   if lspserver->empty()
