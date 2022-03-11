@@ -133,14 +133,13 @@ enddef
 # Result: Location | Location[] | LocationLink[] | null
 def ProcessDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   var location: dict<any>
-  if reply.result->type() == v:t_list && !reply.result->empty() && reply.result[0]->type() == v:t_dict
+  if reply.result->empty()
+    return
+  endif
+  if reply.result->type() == v:t_list
     location = reply.result[0]
-  elseif reply.result->type() == v:t_dict
-    # not sure if there possible 'dict' type of 'result' but just in case
-    location = reply.result
   else
-    # cannot assign 'null' to 'location' and/so all else cases assign '{}'
-    location = {}
+    location = reply.result
   endif
 
   symbol.GotoSymbol(lspserver, location, req.method)
@@ -842,6 +841,27 @@ def ProcessApplyEditReq(lspserver: dict<any>, request: dict<any>)
   lspserver.sendResponse(request, {applied: true}, {})
 enddef
 
+# process the workspace/workspaceFolders LSP server request
+# Request: "workspace/workspaceFolders"
+# Param: none
+def ProcessWorkspaceFoldersReq(lspserver: dict<any>, request: dict<any>)
+  lspserver.sendResponse(request, {}, {})
+enddef
+
+# process the client/registerCapability LSP server request
+# Request: "client/registerCapability"
+# Param: RegistrationParams
+def ProcessClientRegisterCap(lspserver: dict<any>, request: dict<any>)
+  lspserver.sendResponse(request, {}, {})
+enddef
+
+# process the client/unregisterCapability LSP server request
+# Request: "client/unregisterCapability"
+# Param: UnregistrationParams
+def ProcessClientUnregisterCap(lspserver: dict<any>, request: dict<any>)
+  lspserver.sendResponse(request, {}, {})
+enddef
+
 def ProcessUnsupportedReq(lspserver: dict<any>, request: dict<any>)
   util.ErrMsg('Error: Unsupported request message received from the LSP server (' .. lspserver.path .. '), message = ' .. request->string())
 enddef
@@ -851,10 +871,10 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
   var lspRequestHandlers: dict<func> =
     {
       'workspace/applyEdit': ProcessApplyEditReq,
+      'workspace/workspaceFolders': ProcessWorkspaceFoldersReq,
       'window/workDoneProgress/create': ProcessUnsupportedReq,
-      'client/registerCapability': ProcessUnsupportedReq,
-      'client/unregisterCapability': ProcessUnsupportedReq,
-      'workspace/workspaceFolders': ProcessUnsupportedReq,
+      'client/registerCapability': ProcessClientRegisterCap,
+      'client/unregisterCapability': ProcessClientUnregisterCap,
       'workspace/configuration': ProcessUnsupportedReq,
       'workspace/codeLens/refresh': ProcessUnsupportedReq,
       'workspace/semanticTokens/refresh': ProcessUnsupportedReq
