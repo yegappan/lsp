@@ -133,14 +133,14 @@ enddef
 # Result: Location | Location[] | LocationLink[] | null
 def ProcessDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   var location: dict<any>
-  if reply.result->type() == v:t_list
-    if !reply.result->empty()
-      location = reply.result[0]
-    else
-      location = {}
-    endif
-  else
+  if reply.result->type() == v:t_list && !reply.result->empty() && reply.result[0]->type() == v:t_dict
+    location = reply.result[0]
+  elseif reply.result->type() == v:t_dict
+    # not sure if there possible 'dict' type of 'result' but just in case
     location = reply.result
+  else
+    # cannot assign 'null' to 'location' and/so all else cases assign '{}'
+    location = {}
   endif
 
   symbol.GotoSymbol(lspserver, location, req.method)
