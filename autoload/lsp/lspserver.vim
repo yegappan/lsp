@@ -282,7 +282,12 @@ enddef
 
 # send a response message to the server
 def SendResponse(lspserver: dict<any>, request: dict<any>, result: dict<any>, error: dict<any>)
-  var resp: dict<any> = lspserver.createResponse(request.id)
+  if (type(request.id) == v:t_string && (trim(request.id) =~ '[^[:digit:]]\+' || trim(request.id) == ''))
+    || (type(request.id) != v:t_string && type(request.id) != v:t_number)
+    util.ErrMsg("Error: request.id of response to LSP server is not a correct number")
+    return
+  endif
+  var resp: dict<any> = lspserver.createResponse(type(request.id) == v:t_string ? str2nr(request.id) : request.id)
   if result->type() != v:t_none
     resp->extend({result: result})
   else
