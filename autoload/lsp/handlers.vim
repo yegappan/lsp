@@ -799,6 +799,16 @@ def ProcessUnsupportedNotif(lspserver: dict<any>, reply: dict<any>)
   util.ErrMsg('Error: Unsupported notification message received from the LSP server (' .. lspserver.path .. '), message = ' .. reply->string())
 enddef
 
+# per-filetype private map inside to record if ntf once or not
+var ftypeNtfOnceMap: dict<bool> = {}
+# process unsupported notification messages but only notify once
+def ProcessUnsupportedNotifOnce(lspserver: dict<any>, reply: dict<any>)
+  if !ftypeNtfOnceMap->get(&ft, v:false)
+	ProcessUnsupportedNotif(lspserver, reply)
+	ftypeNtfOnceMap->extend({[&ft]: v:true})
+  endif
+enddef
+
 # ignore unsupported notification message
 def IgnoreNotif(lspserver: dict<any>, reply: dict<any>)
 enddef
@@ -811,7 +821,7 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       'window/logMessage': ProcessLogMsgNotif,
       'textDocument/publishDiagnostics': ProcessDiagNotif,
       '$/progress': ProcessUnsupportedNotif,
-      'telemetry/event': ProcessUnsupportedNotif,
+      'telemetry/event': ProcessUnsupportedNotifOnce,
       # Java language server sends the 'language/status' notification which is
       # not in the LSP specification
       'language/status': IgnoreNotif
