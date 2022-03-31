@@ -45,7 +45,7 @@ enddef
 # Update the signs placed in the buffer for this file
 def ProcessNewDiags(lspserver: dict<any>, bnr: number)
   if opt.lspOptions.autoPopulateDiags
-    DiagsUpdateLocList(lspserver)
+    DiagsUpdateLocList(lspserver, bnr)
   endif
 
   if !opt.lspOptions.autoHighlightDiags
@@ -157,15 +157,15 @@ enddef
 # Update the location list window for the current window with the diagnostic
 # messages.
 # Returns true if diagnostics is not empty and false if it is empty.
-def DiagsUpdateLocList(lspserver: dict<any>): bool
-  var fname: string = expand('%:p')
+def DiagsUpdateLocList(lspserver: dict<any>, bnr: number): bool
+  var fname: string = bufname(bnr)->fnamemodify(':p')
   if fname == ''
     return false
   endif
-  var bnr: number = bufnr()
 
   var LspQfId: number = 0
-  if exists('b:LspQfId') && getloclist(0, {id: b:LspQfId}).id == b:LspQfId
+  if bnr->getbufvar('LspQfId', 0) != 0 &&
+		  getloclist(0, {id: b:LspQfId}).id == b:LspQfId
     LspQfId = b:LspQfId
   endif
 
@@ -203,7 +203,7 @@ enddef
 # Display the diagnostic messages from the LSP server for the current buffer
 # in a location list
 export def ShowAllDiags(lspserver: dict<any>): void
-  if !DiagsUpdateLocList(lspserver)
+  if !DiagsUpdateLocList(lspserver, bufnr())
     util.WarnMsg('No diagnostic messages found for ' .. @%)
     return
   endif
