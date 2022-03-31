@@ -718,17 +718,9 @@ def TextDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
 
   # interface DocumentFormattingParams
   # interface TextDocumentIdentifier
-  var tabsz: number
-  if &sts > 0
-    tabsz = &sts
-  elseif &sts < 0
-    tabsz = &shiftwidth
-  else
-    tabsz = &tabstop
-  endif
   # interface FormattingOptions
   var fmtopts: dict<any> = {
-    tabSize: tabsz,
+    tabSize: shiftwidth(),
     insertSpaces: &expandtab ? true : false,
   }
   #req.params->extend({textDocument: {uri: util.LspFileToUri(fname)},
