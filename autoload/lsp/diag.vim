@@ -44,6 +44,10 @@ enddef
 # New LSP diagnostic messages received from the server for a file.
 # Update the signs placed in the buffer for this file
 def ProcessNewDiags(lspserver: dict<any>, bnr: number)
+  if opt.lspOptions.autoPopulateDiags
+    ShowAllDiags(lspserver, false)
+  endif
+
   if !opt.lspOptions.autoHighlightDiags
     return
   endif
@@ -152,7 +156,7 @@ enddef
 
 # Display the diagnostic messages from the LSP server for the current buffer
 # in a location list
-export def ShowAllDiags(lspserver: dict<any>): void
+export def ShowAllDiags(lspserver: dict<any>, open = true): void
   var fname: string = expand('%:p')
   if fname == ''
     return
@@ -177,7 +181,9 @@ export def ShowAllDiags(lspserver: dict<any>): void
   endfor
   setloclist(0, [], ' ', {'title': 'Language Server Diagnostics',
 							'items': qflist})
-  :lopen
+  if open
+    :lopen
+  endif
 enddef
 
 # Show the diagnostic message for the current line

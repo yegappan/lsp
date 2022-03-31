@@ -212,6 +212,9 @@ echoSignature		In insert mode, echo the current symbol signature
 autoHighlightDiags	Automatically place signs on the lines with a
 			diagnostic message from the LSP server. By default
 			this is set to true.
+autoPopulateDiags	Automatically populate the location list with
+			diagnostics from the LSP server. By default this is
+			set to false.
 keepFocusInReferences	Focus on the location list window after
 			LspShowReferences.  By default this is set to false.
 noNewlineInCompletion	Suppress adding a new line on completion selection

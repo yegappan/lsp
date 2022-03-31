@@ -15,6 +15,8 @@ export var lspOptions: dict<any> = {
   echoSignature: false,
   # Automatically highlight diagnostics messages from LSP server
   autoHighlightDiags: true,
+  # Automatically populate the location list with new diagnostics
+  autoPopulateDiags: false,
   # Show the symbol documentation in the preview window instead of in a popup
   hoverInPreview: false,
   # Focus on the location list window after LspShowReferences
