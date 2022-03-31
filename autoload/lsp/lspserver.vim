@@ -78,7 +78,7 @@ enddef
 # Start a LSP server
 #
 # If 'isSync' is true, then waits for the server to send the initialize
-# reponse message.
+# response message.
 def StartServer(lspserver: dict<any>, isSync: bool = false): number
   if lspserver.running
     util.WarnMsg("LSP server for is already running")
@@ -126,7 +126,7 @@ enddef
 # Param: InitializeParams
 #
 # If 'isSync' is true, then waits for the server to send the initialize
-# reponse message.
+# response message.
 def InitServer(lspserver: dict<any>, isSync: bool = false)
   var req = lspserver.createRequest('initialize')
 
@@ -177,7 +177,7 @@ def InitServer(lspserver: dict<any>, isSync: bool = false)
 
   lspserver.sendMessage(req)
   if isSync
-    lspserver.waitForReponse(req)
+    lspserver.waitForResponse(req)
   endif
 enddef
 
@@ -193,7 +193,7 @@ enddef
 def ShutdownServer(lspserver: dict<any>): void
   var req = lspserver.createRequest('shutdown')
   lspserver.sendMessage(req)
-  lspserver.waitForReponse(req)
+  lspserver.waitForResponse(req)
 enddef
 
 # Send a 'exit' notification to the LSP server
@@ -311,7 +311,7 @@ enddef
 
 # Wait for a response message from the LSP server for the request "req"
 # Waits for a maximum of 5 seconds
-def WaitForReponse(lspserver: dict<any>, req: dict<any>)
+def WaitForResponse(lspserver: dict<any>, req: dict<any>)
   var maxCount: number = 2500
   var key: string = req.id->string()
 
@@ -455,7 +455,7 @@ def GetCompletion(lspserver: dict<any>, triggerKind_arg: number): void
   lspserver.sendMessage(req)
   if exists('g:LSPTest') && g:LSPTest
     # When running LSP tests, make this a synchronous call
-    lspserver.waitForReponse(req)
+    lspserver.waitForResponse(req)
   endif
 enddef
 
@@ -479,7 +479,7 @@ def GotoDefinition(lspserver: dict<any>, peek: bool)
   req.params->extend(GetLspTextDocPosition())
   lspserver.sendMessage(req)
 
-  lspserver.waitForReponse(req)
+  lspserver.waitForResponse(req)
 enddef
 
 # Request: "textDocument/switchSourceHeader"
@@ -490,7 +490,7 @@ def SwitchSourceHeader(lspserver: dict<any>)
   req.params->extend({uri: util.LspFileToUri(@%)})
   lspserver.sendMessage(req)
 
-  lspserver.waitForReponse(req)
+  lspserver.waitForResponse(req)
 enddef
 
 # Request: "textDocument/declaration"
@@ -515,7 +515,7 @@ def GotoDeclaration(lspserver: dict<any>, peek: bool): void
 
   lspserver.sendMessage(req)
 
-  lspserver.waitForReponse(req)
+  lspserver.waitForResponse(req)
 enddef
 
 # Request: "textDocument/typeDefinition"
@@ -540,7 +540,7 @@ def GotoTypeDef(lspserver: dict<any>, peek: bool): void
 
   lspserver.sendMessage(req)
 
-  lspserver.waitForReponse(req)
+  lspserver.waitForResponse(req)
 enddef
 
 # Request: "textDocument/implementation"
@@ -565,7 +565,7 @@ def GotoImplementation(lspserver: dict<any>, peek: bool): void
 
   lspserver.sendMessage(req)
 
-  lspserver.waitForReponse(req)
+  lspserver.waitForResponse(req)
 enddef
 
 # get symbol signature help.
@@ -587,7 +587,7 @@ def ShowSignature(lspserver: dict<any>): void
 
   if exists('g:LSPTest') && g:LSPTest
     # When running LSP tests, make this a synchronous call
-    lspserver.waitForReponse(req)
+    lspserver.waitForResponse(req)
   endif
 enddef
 
@@ -624,7 +624,7 @@ def ShowHoverInfo(lspserver: dict<any>): void
   lspserver.sendMessage(req)
   if exists('g:LSPTest') && g:LSPTest
     # When running LSP tests, make this a synchronous call
-    lspserver.waitForReponse(req)
+    lspserver.waitForResponse(req)
   endif
 enddef
 
@@ -648,7 +648,7 @@ def ShowReferences(lspserver: dict<any>, peek: bool): void
   lspserver.sendMessage(req)
   if exists('g:LSPTest') && g:LSPTest
     # When running LSP tests, make this a synchronous call
-    lspserver.waitForReponse(req)
+    lspserver.waitForResponse(req)
   endif
 enddef
 
@@ -669,7 +669,7 @@ def DocHighlight(lspserver: dict<any>): void
   lspserver.sendMessage(req)
   if exists('g:LSPTest') && g:LSPTest
     # When running LSP tests, make this a synchronous call
-    lspserver.waitForReponse(req)
+    lspserver.waitForResponse(req)
   endif
 enddef
 
@@ -690,7 +690,7 @@ def GetDocSymbols(lspserver: dict<any>, fname: string): void
   lspserver.sendMessage(req)
   if exists('g:LSPTest') && g:LSPTest
     # When running LSP tests, make this a synchronous call
-    lspserver.waitForReponse(req)
+    lspserver.waitForResponse(req)
   endif
 enddef
 
@@ -736,7 +736,7 @@ def TextDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
   lspserver.sendMessage(req)
   if exists('g:LSPTest') && g:LSPTest
     # When running LSP tests, make this a synchronous call
-    lspserver.waitForReponse(req)
+    lspserver.waitForResponse(req)
   endif
 enddef
 
@@ -776,7 +776,7 @@ def IncomingCalls(lspserver: dict<any>, hierItem: dict<any>)
   lspserver.sendMessage(req)
   if exists('g:LSPTest') && g:LSPTest
     # When running LSP tests, make this a synchronous call
-    lspserver.waitForReponse(req)
+    lspserver.waitForResponse(req)
   endif
 enddef
 
@@ -798,7 +798,7 @@ def OutgoingCalls(lspserver: dict<any>, hierItem: dict<any>)
   lspserver.sendMessage(req)
   if exists('g:LSPTest') && g:LSPTest
     # When running LSP tests, make this a synchronous call
-    lspserver.waitForReponse(req)
+    lspserver.waitForResponse(req)
   endif
 enddef
 
@@ -820,7 +820,7 @@ def RenameSymbol(lspserver: dict<any>, newName: string)
   lspserver.sendMessage(req)
   if exists('g:LSPTest') && g:LSPTest
     # When running LSP tests, make this a synchronous call
-    lspserver.waitForReponse(req)
+    lspserver.waitForResponse(req)
   endif
 enddef
 
@@ -854,7 +854,7 @@ def CodeAction(lspserver: dict<any>, fname_arg: string)
   lspserver.sendMessage(req)
   if exists('g:LSPTest') && g:LSPTest
     # When running LSP tests, make this a synchronous call
-    lspserver.waitForReponse(req)
+    lspserver.waitForResponse(req)
   endif
 enddef
 
@@ -949,7 +949,7 @@ def SelectionRange(lspserver: dict<any>, fname: string)
   req.params->extend({textDocument: {uri: util.LspFileToUri(fname)}, positions: [GetLspPosition()]})
   lspserver.sendMessage(req)
 
-  lspserver.waitForReponse(req)
+  lspserver.waitForResponse(req)
 enddef
 
 # Expand the previous selection or start a new one
@@ -994,7 +994,7 @@ def FoldRange(lspserver: dict<any>, fname: string)
   lspserver.sendMessage(req)
   if exists('g:LSPTest') && g:LSPTest
     # When running LSP tests, make this a synchronous call
-    lspserver.waitForReponse(req)
+    lspserver.waitForResponse(req)
   endif
 enddef
 
@@ -1007,7 +1007,7 @@ def ExecuteCommand(lspserver: dict<any>, cmd: dict<any>)
   lspserver.sendMessage(req)
   if exists('g:LSPTest') && g:LSPTest
     # When running LSP tests, make this a synchronous call
-    lspserver.waitForReponse(req)
+    lspserver.waitForResponse(req)
   endif
 enddef
 
@@ -1055,7 +1055,7 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
     createNotification: function(CreateNotification, [lspserver]),
     sendResponse: function(SendResponse, [lspserver]),
     sendMessage: function(SendMessage, [lspserver]),
-    waitForReponse: function(WaitForReponse, [lspserver]),
+    waitForResponse: function(WaitForResponse, [lspserver]),
     processReply: function(handlers.ProcessReply, [lspserver]),
     processNotif: function(handlers.ProcessNotif, [lspserver]),
     processRequest: function(handlers.ProcessRequest, [lspserver]),

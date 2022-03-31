@@ -45,7 +45,7 @@ enddef
 # Update the signs placed in the buffer for this file
 def ProcessNewDiags(lspserver: dict<any>, bnr: number)
   if opt.lspOptions.autoPopulateDiags
-    ShowAllDiags(lspserver, false)
+    DiagsUpdateLocList(lspserver)
   endif
 
   if !opt.lspOptions.autoHighlightDiags
@@ -154,18 +154,26 @@ def DiagSevToQfType(severity: number): string
   return typeMap[severity - 1]
 enddef
 
-# Display the diagnostic messages from the LSP server for the current buffer
-# in a location list
-export def ShowAllDiags(lspserver: dict<any>, open = true): void
+# Update the location list window for the current window with the diagnostic
+# messages.
+# Returns true if diagnostics is not empty and false if it is empty.
+def DiagsUpdateLocList(lspserver: dict<any>): bool
   var fname: string = expand('%:p')
   if fname == ''
-    return
+    return false
   endif
   var bnr: number = bufnr()
 
+  var LspQfId: number = 0
+  if exists('b:LspQfId') && getloclist(0, {id: b:LspQfId}).id == b:LspQfId
+    LspQfId = b:LspQfId
+  endif
+
   if !lspserver.diagsMap->has_key(bnr) || lspserver.diagsMap[bnr]->empty()
-    util.WarnMsg('No diagnostic messages found for ' .. fname)
-    return
+    if LspQfId != 0
+      setloclist(0, [], 'r', {id: LspQfId, items: []})
+    endif
+    return false
   endif
 
   var qflist: list<dict<any>> = []
@@ -173,17 +181,34 @@ export def ShowAllDiags(lspserver: dict<any>, open = true): void
 
   for [lnum, diag] in lspserver.diagsMap[bnr]->items()
     text = diag.message->substitute("\n\\+", "\n", 'g')
-    qflist->add({'filename': fname,
-		    'lnum': diag.range.start.line + 1,
-		    'col': util.GetLineByteFromPos(bnr, diag.range.start) + 1,
-		    'text': text,
-		    'type': DiagSevToQfType(diag.severity)})
+    qflist->add({filename: fname,
+		    lnum: diag.range.start.line + 1,
+		    col: util.GetLineByteFromPos(bnr, diag.range.start) + 1,
+		    text: text,
+		    type: DiagSevToQfType(diag.severity)})
   endfor
-  setloclist(0, [], ' ', {'title': 'Language Server Diagnostics',
-							'items': qflist})
-  if open
-    :lopen
+
+  var op: string = ' '
+  var props = {title: 'Language Server Diagnostics', items: qflist}
+  if LspQfId != 0
+    op = 'r'
+    props.id = LspQfId
   endif
+  setloclist(0, [], op, props)
+  b:LspQfId = getloclist(0, {id: 0}).id
+
+  return true
+enddef
+
+# Display the diagnostic messages from the LSP server for the current buffer
+# in a location list
+export def ShowAllDiags(lspserver: dict<any>): void
+  if !DiagsUpdateLocList(lspserver)
+    util.WarnMsg('No diagnostic messages found for ' .. @%)
+    return
+  endif
+
+  :lopen
 enddef
 
 # Show the diagnostic message for the current line
