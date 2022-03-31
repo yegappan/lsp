@@ -406,6 +406,8 @@ export def AddFile(bnr: number): void
     endif
   augroup END
 
+  doautocmd <nomodeline> User LspAttached
+
   buf.BufLspServerSet(bnr, lspserver)
 enddef
 
