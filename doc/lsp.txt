@@ -2,12 +2,12 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 8.2.2342 and above
-Last change: Mar 8, 2022
+Last change: Sep 9, 2022
 
 ==============================================================================
 						*lsp-license*
 License: MIT License
-Copyright (c) 2020-2021 Yegappan Lakshmanan
+Copyright (c) 2020-2022 Yegappan Lakshmanan
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to
@@ -49,8 +49,8 @@ The Github repository for this plugin is available at:
 
 You can install this plugin directly from github using the following steps:
 
-    $ mkdir -p $HOME/.vim/pack/downloads/lsp
-    $ cd $HOME/.vim/packa/downloads/lsp
+    $ mkdir -p $HOME/.vim/pack/downloads/opt
+    $ cd $HOME/.vim/pack/downloads/opt
     $ git clone https://github.com/yegappan/lsp
 
 or you can use any one of the Vim plugin managers (dein.vim, pathogen, vam,
