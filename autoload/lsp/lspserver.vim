@@ -118,8 +118,16 @@ def StartServer(lspserver: dict<any>, isSync: bool = false): number
   lspserver.running = true
 
   lspserver.initServer(isSync)
+  lspserver.initialized(isSync)
 
   return 0
+enddef
+
+def Initialized(lspserver: dict<any>, isSync: bool = false)
+  var req = {}
+  req.jsonrpc = '2.0'
+  req.method = 'initialized'
+  lspserver.sendMessage(req)
 enddef
 
 # Request: 'initialize'
@@ -1045,6 +1053,7 @@ export def NewLspServer(path: string, args: list<string>): dict<any>
   lspserver->extend({
     startServer: function(StartServer, [lspserver]),
     initServer: function(InitServer, [lspserver]),
+    initialized: function(Initialized, [lspserver]),
     stopServer: function(StopServer, [lspserver]),
     shutdownServer: function(ShutdownServer, [lspserver]),
     exitServer: function(ExitServer, [lspserver]),
