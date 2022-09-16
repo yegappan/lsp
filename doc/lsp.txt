@@ -154,10 +154,10 @@ file types, add the following commands to the .vimrc file: >
 <
 Depending on the location of the typescript and python pyls language servers
 installed in your system, update the 'path' in the above snippet
-appripriately.
+appropriately.
 
-Another example, for adding the LSP servers for the C, C++, Shell script and
-Vim file types: >
+Another example, for adding the LSP servers for the C, C++, Golang, Rust, 
+Shell script and Vim file types: >
 
    let lspServers = [
 		\     #{
@@ -165,6 +165,20 @@ Vim file types: >
 		\        path: '/usr/local/bin/clangd',
 		\        args: ['--background-index']
 		\     },
+                \     #{ 
+                \        filetype: ['go', 'gomod', 'gohtmltmpl', 'gotexttmpl'],
+                \        path: '/home/dza/.go/bin/gopls',
+                \        args: [],
+                \        sync: v:true,
+                \        omnicompl: v:true,
+                \      },
+                \     #{
+                \        filetype: ['rust'],
+                \        path: '/home/dza/.cargo/bin/rust-analyzer',
+                \        args: [],
+                \        sync: v:true,
+                \        omnicompl: v:true,
+                \      },
 		\     #{
 		\	 filetype: 'sh',
 		\	 path: '/usr/local/bin/bash-language-server',
@@ -189,6 +203,10 @@ To add a LSP server, the following information is needed:
 			server. Each argument is a separate List item.
 	omnicompl	a boolean value that enables (true) or disables
 			(false) omni-completion for this file type.
+        sync            (Optional) for lsp servers that responds to a 
+                        'initialize'-request with a 'initialzed' response this
+                        should be set to 'v:true'. By default this is set to
+                        'v:false'.
 
 The LSP servers are added using the LspAddServer() function. This function
 accepts a list of LSP servers with the above information.

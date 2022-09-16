@@ -77,9 +77,7 @@ enddef
 
 # Start a LSP server
 #
-# If 'isSync' is true, then waits for the server to send the initialize
-# response message.
-def StartServer(lspserver: dict<any>, isSync: bool = false): number
+def StartServer(lspserver: dict<any>): number
   if lspserver.running
     util.WarnMsg("LSP server for is already running")
     return 0
@@ -117,7 +115,7 @@ def StartServer(lspserver: dict<any>, isSync: bool = false): number
   lspserver.job = job
   lspserver.running = true
 
-  lspserver.initServer(isSync)
+  lspserver.initServer()
 
   return 0
 enddef
@@ -125,9 +123,7 @@ enddef
 # Request: 'initialize'
 # Param: InitializeParams
 #
-# If 'isSync' is true, then waits for the server to send the initialize
-# response message.
-def InitServer(lspserver: dict<any>, isSync: bool = false)
+def InitServer(lspserver: dict<any>)
   var req = lspserver.createRequest('initialize')
 
   # client capabilities (ClientCapabilities)
@@ -176,7 +172,7 @@ def InitServer(lspserver: dict<any>, isSync: bool = false)
   req.params->extend(initparams)
 
   lspserver.sendMessage(req)
-  if isSync
+  if lspserver.sync
     lspserver.waitForResponse(req)
   endif
 enddef
@@ -1020,10 +1016,11 @@ def ShowCapabilities(lspserver: dict<any>)
   endfor
 enddef
 
-export def NewLspServer(path: string, args: list<string>): dict<any>
+export def NewLspServer(path: string, args: list<string>, isSync: bool): dict<any>
   var lspserver: dict<any> = {
     path: path,
     args: args,
+    sync: isSync,
     running: false,
     ready: false,
     job: v:none,
