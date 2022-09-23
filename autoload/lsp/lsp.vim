@@ -497,7 +497,12 @@ export def AddServer(serverList: list<dict<any>>)
       return
     endif
 
-    var lspserver: dict<any> = lserver.NewLspServer(server.path, args)
+    if !server->has_key('sync')
+      server['sync'] = v:false
+    endif
+
+    var lspserver: dict<any> = lserver.NewLspServer(server.path, args,
+          \ server.sync)
 
     if server.filetype->type() == v:t_string
       LspAddServer(server.filetype, lspserver)
