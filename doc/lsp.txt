@@ -203,10 +203,13 @@ To add a LSP server, the following information is needed:
 			server. Each argument is a separate List item.
 	omnicompl	a boolean value that enables (true) or disables
 			(false) omni-completion for this file type.
-        sync            (Optional) for lsp servers that responds to a 
-                        'initialize'-request with a 'initialzed' response this
-                        should be set to 'v:true'. By default this is set to
-                        'v:false'.
+	syncInit        (Optional) for lsp servers (e.g. rust analyzer, gopls)
+			that take time to reply to a 'initialize' request
+			message this should be set to 'v:true'. By default
+			this is set to 'v:false'.  If this is set to true,
+			then a synchronous call is used to initialize the LSP
+			server.  Otherwise the server is initialized
+			asynchronously.
 
 The LSP servers are added using the LspAddServer() function. This function
 accepts a list of LSP servers with the above information.

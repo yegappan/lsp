@@ -172,7 +172,7 @@ def InitServer(lspserver: dict<any>)
   req.params->extend(initparams)
 
   lspserver.sendMessage(req)
-  if lspserver.sync
+  if lspserver.syncInit
     lspserver.waitForResponse(req)
   endif
 enddef
@@ -1020,7 +1020,7 @@ export def NewLspServer(path: string, args: list<string>, isSync: bool): dict<an
   var lspserver: dict<any> = {
     path: path,
     args: args,
-    sync: isSync,
+    syncInit: isSync,
     running: false,
     ready: false,
     job: v:none,
