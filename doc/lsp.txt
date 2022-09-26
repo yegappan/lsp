@@ -169,14 +169,14 @@ Shell script and Vim file types: >
                 \        filetype: ['go', 'gomod', 'gohtmltmpl', 'gotexttmpl'],
                 \        path: '/home/dza/.go/bin/gopls',
                 \        args: [],
-                \        sync: v:true,
+                \        syncInit: v:true,
                 \        omnicompl: v:true,
                 \      },
                 \     #{
                 \        filetype: ['rust'],
                 \        path: '/home/dza/.cargo/bin/rust-analyzer',
                 \        args: [],
-                \        sync: v:true,
+                \        syncInit: v:true,
                 \        omnicompl: v:true,
                 \      },
 		\     #{
@@ -201,15 +201,15 @@ To add a LSP server, the following information is needed:
 			any arguments).
 	args		a list of command-line arguments passed to the LSP
 			server. Each argument is a separate List item.
-	omnicompl	a boolean value that enables (true) or disables
-			(false) omni-completion for this file type.
+	omnicompl	(Optional) a boolean value that enables (true)
+			or disables (false) omni-completion for this file
+			types. By default this is set to 'v:true'.
 	syncInit        (Optional) for lsp servers (e.g. rust analyzer, gopls)
 			that take time to reply to a 'initialize' request
-			message this should be set to 'v:true'. By default
-			this is set to 'v:false'.  If this is set to true,
-			then a synchronous call is used to initialize the LSP
-			server.  Otherwise the server is initialized
-			asynchronously.
+			message this should be set to 'v:true'. If this is set
+			to true, then a synchronous call is used to initialize
+			the LSP server, otherwise the server is initialized
+			asynchronously. By default this is set to 'v:false'.
 
 The LSP servers are added using the LspAddServer() function. This function
 accepts a list of LSP servers with the above information.
