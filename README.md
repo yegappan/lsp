@@ -51,14 +51,14 @@ To register a LSP server, add the following lines to your .vimrc file:
 		\     #{
 		\	 filetype: ['go', 'gomod'],
 		\	 path: '/usr/local/bin/gopls',
-		\	 args: ['serve']
-                \        syncInit: v:true,
+		\	 args: ['serve'],
+                \        syncInit: v:true
 		\      },
 		\     #{
 		\	 filetype: ['rust'],
 		\	 path: '/usr/local/bin/rust-analyzer',
-		\	 args: []
-                \        syncInit: v:true,
+		\	 args: [],
+                \        syncInit: v:true
 		\      },
 		\     #{
 		\	 filetype: ['python'],
