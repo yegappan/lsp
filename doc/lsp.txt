@@ -2,7 +2,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 8.2.2342 and above
-Last change: Sep 9, 2022
+Last change: Sep 27, 2022
 
 ==============================================================================
 						*lsp-license*
@@ -139,16 +139,16 @@ For example, to add the LSP servers for the Javascript, Typescript and Python
 file types, add the following commands to the .vimrc file: >
 
    let lspServers = [
-		\     {
-		\	'filetype': ['javascript', 'typescript'],
-		\	'path': '/usr/local/bin/typescript-language-server',
-		\	'args': ['--stdio']
-		\     },
-		\     {
-		\	'filetype': 'python',
-		\	'path': '/usr/local/bin/pyls',
-		\	'args': ['--check-parent-process', '-v']
-		\     }
+		\     #{
+		\	 filetype: ['javascript', 'typescript'],
+		\	 path: '/usr/local/bin/typescript-language-server',
+		\	 args: ['--stdio']
+		\      },
+		\     #{
+		\	 filetype: 'python',
+		\	 path: '/usr/local/bin/pyls',
+		\	 args: ['--check-parent-process', '-v']
+		\      }
 		\   ]
    call LspAddServer(lspServers)
 <
@@ -167,17 +167,15 @@ Shell script and Vim file types: >
 		\     },
                 \     #{ 
                 \        filetype: ['go', 'gomod', 'gohtmltmpl', 'gotexttmpl'],
-                \        path: '/home/dza/.go/bin/gopls',
+                \        path: '/path/to/.go/bin/gopls',
                 \        args: [],
                 \        syncInit: v:true,
-                \        omnicompl: v:true,
                 \      },
                 \     #{
                 \        filetype: ['rust'],
-                \        path: '/home/dza/.cargo/bin/rust-analyzer',
+                \        path: '/path/to/.cargo/bin/rust-analyzer',
                 \        args: [],
                 \        syncInit: v:true,
-                \        omnicompl: v:true,
                 \      },
 		\     #{
 		\	 filetype: 'sh',

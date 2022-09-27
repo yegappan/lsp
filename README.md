@@ -28,41 +28,48 @@ You will also need to install one or more language servers corresponding to the 
 To register a LSP server, add the following lines to your .vimrc file:
 ```
    let lspServers = [
-		\     {
-		\       'filetype': ['c', 'cpp'],
-		\       'path': '/usr/local/bin/clangd',
-		\       'args': ['--background-index']
-		\     },
-		\     {
-		\	'filetype': ['javascript', 'typescript'],
-		\	'path': '/usr/local/bin/typescript-language-server',
-		\	'args': ['--stdio']
-		\     },
-		\     {
-		\	'filetype': 'sh',
-		\	'path': '/usr/local/bin/bash-language-server',
-		\	'args': ['start']
-		\     },
-		\     {
-		\	'filetype': 'vim',
-		\	'path': '/usr/local/bin/vim-language-server',
-		\	'args': ['--stdio']
-		\     },
-		\     {
-		\	'filetype': ['go', 'gomod'],
-		\	'path': '/usr/local/bin/gopls',
-		\	'args': []
-		\     },
-		\     {
-		\	'filetype': ['python'],
-		\	'path': '/usr/local/bin/pyls',
-		\	'args': []
-		\     },
-		\     {
-		\	'filetype': ['fortran'],
-		\	'path': '/usr/local/bin/fortls',
-		\	'args': ['--nthreads=1', '--use_signature_help', '--hover_signature']
-		\     }
+		\     #{
+		\        filetype: ['c', 'cpp'],
+		\        path: '/usr/local/bin/clangd',
+		\        args: ['--background-index']
+		\      },
+		\     #{
+		\	 filetype: ['javascript', 'typescript'],
+		\	 path: '/usr/local/bin/typescript-language-server',
+		\	 args: ['--stdio']
+		\      },
+		\     #{
+		\	 filetype: 'sh',
+		\	 path: '/usr/local/bin/bash-language-server',
+		\	 args: ['start']
+		\      },
+		\     #{
+		\	 filetype: 'vim',
+		\	 path: '/usr/local/bin/vim-language-server',
+		\	 args: ['--stdio']
+		\      },
+		\     #{
+		\	 filetype: ['go', 'gomod'],
+		\	 path: '/usr/local/bin/gopls',
+		\	 args: ['serve']
+                \        syncInit: v:true,
+		\      },
+		\     #{
+		\	 filetype: ['rust'],
+		\	 path: '/usr/local/bin/rust-analyzer',
+		\	 args: []
+                \        syncInit: v:true,
+		\      },
+		\     #{
+		\	 filetype: ['python'],
+		\	 path: '/usr/local/bin/pyls',
+		\	 args: []
+		\      },
+		\     #{
+		\	 filetype: ['fortran'],
+		\	 path: '/usr/local/bin/fortls',
+		\	 args: ['--nthreads=1', '--use_signature_help', '--hover_signature']
+		\      }
 		\   ]
    call LspAddServer(lspServers)
 ```
