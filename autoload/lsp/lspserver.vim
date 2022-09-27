@@ -167,6 +167,7 @@ def InitServer(lspserver: dict<any>)
 	name: fnamemodify(curdir, ':t'),
 	uri: util.LspFileToUri(curdir)
      }]
+  # [off|message|verbose]
   initparams.trace = 'off'
   initparams.capabilities = clientCaps
   req.params->extend(initparams)
