@@ -991,4 +991,21 @@ export def ShowServerCapabilities()
   lspserver.showCapabilities()
 enddef
 
+export def Ft2ExtGlob(ftype: string): string
+  var ft_detect: list<dict<any>> = autocmd_get({'group': 'filetypedetect', 'event': 'BufRead'})
+  if (!empty(ft_detect))
+    var found_ft: list<dict<any>> = ft_detect->filter($'v:val["cmd"] == "setf {ftype}"')
+    if (!empty(found_ft))
+      var ft_glob: string = found_ft->mapnew("v:val['pattern']")->join(',')
+      return ft_glob
+    endif
+  endif
+  return ""
+enddef
+
+# Show filetypes handled by LSP
+export def EnabledFt(): list<string>
+  return ftypeServerMap->keys()
+enddef
+
 # vim: shiftwidth=2 softtabstop=2

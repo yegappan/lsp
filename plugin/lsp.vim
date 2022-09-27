@@ -11,11 +11,15 @@ endif
 # these two versions. Once offical Vim9 is out, the following can be
 # simplified.
 var opt = {}
+var util = {}
 var lspf = {}
+var doc = {}
 if has('patch-8.2.4257')
+  import '../autoload/lsp/util.vim' as util_import
   import '../autoload/lsp/lspoptions.vim' as lspoptions
   import '../autoload/lsp/lsp.vim'
 
+  util.ErrMsg = util_import.ErrMsg
   opt.LspOptionsSet = lspoptions.OptionsSet
   opt.lspOptions = lspoptions.lspOptions
   lspf.enableServerTrace = lsp.EnableServerTrace
@@ -53,10 +57,14 @@ if has('patch-8.2.4257')
   lspf.listWorkspaceFolders = lsp.ListWorkspaceFolders
   lspf.addWorkspaceFolder = lsp.AddWorkspaceFolder
   lspf.removeWorkspaceFolder = lsp.RemoveWorkspaceFolder
+  lspf.ft2ExtGlob = lsp.Ft2ExtGlob
+  lspf.enabledFt = lsp.EnabledFt
 elseif has('patch-8.2.4019')
+  import '../autoload/lsp/util.vim' as util_import
   import '../autoload/lsp/lspoptions.vim' as opt_import
   import '../autoload/lsp/lsp.vim' as lsp_import
 
+  util.ErrMsg = util_import.ErrMsg
   opt.LspOptionsSet = opt_import.OptionsSet
   opt.lspOptions = opt_import.lspOptions
   lspf.enableServerTrace = lsp_import.EnableServerTrace
@@ -94,7 +102,10 @@ elseif has('patch-8.2.4019')
   lspf.listWorkspaceFolders = lsp_import.ListWorkspaceFolders
   lspf.addWorkspaceFolder = lsp_import.AddWorkspaceFolder
   lspf.removeWorkspaceFolder = lsp_import.RemoveWorkspaceFolder
+  lspf.ft2ExtGlob = lsp_import.Ft2ExtGlob
+  lspf.enabledFt = lsp_import.EnabledFt
 else
+  import {ErrMsg} from '../autoload/lsp/util.vim'
   import {lspOptions, OptionsSet} from '../autoload/lsp/lspoptions.vim'
   import {EnableServerTrace,
 	  AddServer,
@@ -130,8 +141,11 @@ else
 	  FoldDocument,
 	  ListWorkspaceFolders,
 	  AddWorkspaceFolder,
-	  RemoveWorkspaceFolder} from '../autoload/lsp/lsp.vim'
+	  RemoveWorkspaceFolder
+          Ft2ExtGlob,
+          EnabledFt} from '../autoload/lsp/lsp.vim'
 
+  util.ErrMsg = ErrMsg
   opt.LspOptionsSet = OptionsSet
   opt.lspOptions = lspOptions
   lspf.enableServerTrace = EnableServerTrace
@@ -174,6 +188,8 @@ else
   lspf.listWorkspaceFolders = ListWorkspaceFolders
   lspf.addWorkspaceFolder = AddWorkspaceFolder
   lspf.removeWorkspaceFolder = RemoveWorkspaceFolder
+  lspf.ft2ExtGlob = Ft2ExtGlob
+  lspf.enabledFt = EnabledFt
 endif
 
 def g:LspOptionsSet(opts: dict<any>)
@@ -186,6 +202,7 @@ enddef
 
 def g:LspAddServer(serverList: list<dict<any>>)
   lspf.addServer(serverList)
+  g:UpdateAutocmds()
 enddef
 
 def g:LspServerReady(): bool
@@ -225,16 +242,36 @@ var TlistWorkspaceFolders = lspf.listWorkspaceFolders
 var TaddWorkspaceFolder = lspf.addWorkspaceFolder
 var TremoveWorkspaceFolder = lspf.removeWorkspaceFolder
 
-augroup LSPAutoCmds
-  au!
-  autocmd BufNewFile,BufReadPost * TaddFile(expand('<abuf>')->str2nr())
-  # Note that when BufWipeOut is invoked, the current buffer may be different
-  # from the buffer getting wiped out.
-  autocmd BufWipeOut * TremoveFile(expand('<abuf>')->str2nr())
-  if opt.lspOptions.showDiagOnStatusLine
-    autocmd CursorMoved * TshowCurrentDiagInStatusLine()
+def g:LspUpdateAutocmds(): bool
+  var ftypes: list<string> = lspf.enabledFt()
+  var ft_globs: string
+  for ft in ftypes
+    var ft2ext: string = lspf.ft2ExtGlob(ft)
+    if !empty(ft2ext)
+      ft_globs = $"{ft_globs},{ft2ext}"
+    endif
+  endfor
+  if !empty(ft_globs)
+    augroup LSPAutoCmds
+      au!
+      execute printf('autocmd BufNewFile,BufReadPost %s %s',
+            \ ft_globs, "TaddFile(expand('<abuf>')->str2nr())")
+      # Note that when BufWipeOut is invoked, the current buffer may be different
+      # from the buffer getting wiped out.
+      execute printf('autocmd BufWipeOut %s %s',
+            \ ft_globs, "TremoveFile(expand('<abuf>')->str2nr())")
+      if opt.lspOptions.showDiagOnStatusLine
+        execute printf('autocmd CursorMoved %s %s',
+              \ ft_globs, 'TshowCurrentDiagInStatusLine()')
+      endif
+    augroup END
+    return true
   endif
-augroup END
+  util.ErrMsg("Error: No filetypes returned for LspUpdateAutocmds")
+  return false
+enddef
+
+g:LspUpdateAutocmds()
 
 # TODO: Is it needed to shutdown all the LSP servers when exiting Vim?
 # This takes some time.
