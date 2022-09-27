@@ -367,8 +367,12 @@ export def AddFile(bnr: number): void
 
   # set options for insert mode completion
   if opt.lspOptions.autoComplete
-    setbufvar(bnr, '&completeopt', 'menuone,popup,noinsert,noselect')
-    setbufvar(bnr, '&completepopup', 'border:off')
+    if !exists('&completeopt')
+      setbufvar(bnr, '&completeopt', 'menuone,popup,noinsert,noselect')
+    endif
+    if !exists('&completepopup')
+      setbufvar(bnr, '&completepopup', 'border:off')
+    endif
     # <Enter> in insert mode stops completion and inserts a <Enter>
     if !opt.lspOptions.noNewlineInCompletion
       inoremap <expr> <buffer> <CR> pumvisible() ? "\<C-Y>\<CR>" : "\<CR>"
