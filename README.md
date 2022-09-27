@@ -25,7 +25,7 @@ You will also need to install one or more language servers corresponding to the 
 
 ## Configuration
 
-To register a LSP server, add the following lines to your .vimrc file:
+To register a LSP server, add the following lines to your .vimrc file (use only the LSP servers that you need from the below list):
 ```
    let lspServers = [
 		\     #{
@@ -74,7 +74,7 @@ To register a LSP server, add the following lines to your .vimrc file:
    call LspAddServer(lspServers)
 ```
 
-The above lines add the LSP servers for C, C++, Javascript, Typescript, Shell script, Vim script, Go and Python file types.
+The above lines add the LSP servers for C, C++, Javascript, Typescript, Shell script, Vim script, Go, Rust, Python and Fortran file types.
 
 To add a LSP server, the following information is needed:
 
