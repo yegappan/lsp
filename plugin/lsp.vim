@@ -13,7 +13,6 @@ endif
 var opt = {}
 var util = {}
 var lspf = {}
-var doc = {}
 if has('patch-8.2.4257')
   import '../autoload/lsp/util.vim' as util_import
   import '../autoload/lsp/lspoptions.vim' as lspoptions
