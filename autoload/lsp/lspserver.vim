@@ -169,6 +169,9 @@ def InitServer(lspserver: dict<any>)
      }]
   initparams.trace = 'off'
   initparams.capabilities = clientCaps
+  if !empty(lspserver.initializationOptions)
+    initparams.initializationOptions = lspserver.initializationOptions
+  endif
   req.params->extend(initparams)
 
   lspserver.sendMessage(req)
@@ -1016,11 +1019,12 @@ def ShowCapabilities(lspserver: dict<any>)
   endfor
 enddef
 
-export def NewLspServer(path: string, args: list<string>, isSync: bool): dict<any>
+export def NewLspServer(path: string, args: list<string>, isSync: bool, initializationOptions: dict<any>): dict<any>
   var lspserver: dict<any> = {
     path: path,
     args: args,
     syncInit: isSync,
+    initializationOptions: initializationOptions,
     running: false,
     ready: false,
     job: v:none,

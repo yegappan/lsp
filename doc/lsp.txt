@@ -157,7 +157,7 @@ installed in your system, update the 'path' in the above snippet
 appropriately.
 
 Another example, for adding the LSP servers for the C, C++, Golang, Rust, 
-Shell script and Vim file types: >
+Shell script, Vim script and PHP file types: >
 
    let lspServers = [
 		\     #{
@@ -186,7 +186,16 @@ Shell script and Vim file types: >
 		\	 filetype: ['vim'],
 		\	 path: '/usr/local/bin/vim-language-server',
 		\	 args: ['--stdio']
-		\     }
+		\     },
+		\     #{
+		\        filetype: ['php'],
+		\        path: '/usr/local/bin/intelephense',
+		\        args: ['--stdio'],
+		\        syncInit: v:true,
+		\        initializationOptions: {
+		\          licenceKey: 'xxxxxxxxxxxxxxx'
+		\        }
+		\      }
 		\   ]
    call LspAddServer(lspServers)
 <
@@ -208,6 +217,12 @@ To add a LSP server, the following information is needed:
 			to true, then a synchronous call is used to initialize
 			the LSP server, otherwise the server is initialized
 			asynchronously. By default this is set to 'v:false'.
+	initializationOptions
+			(Optional) for lsp servers (e.g. intelephense) some
+			additional initialization options may be required
+			or useful for initialization. Those can be provided in
+			this dictionary and if present will be transmitted to
+			the lsp server.
 
 The LSP servers are added using the LspAddServer() function. This function
 accepts a list of LSP servers with the above information.
