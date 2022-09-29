@@ -492,6 +492,16 @@ export def AddServer(serverList: list<dict<any>>)
     else
 
     endif
+
+    var initializationOptions: dict<any> = {}
+    if server->has_key('initializationOptions')
+      if server.initializationOptions->type() != v:t_dict
+        util.ErrMsg('Error: initializationOptions for LSP server ' .. server.initializationOptions .. ' is not a Dictionary')
+        return
+      endif
+      initializationOptions = server.initializationOptions
+    endif
+
     if server.omnicompl->type() != v:t_bool
       util.ErrMsg('Error: Setting of omnicompl ' .. server.omnicompl .. ' is not a Boolean')
       return
@@ -501,8 +511,10 @@ export def AddServer(serverList: list<dict<any>>)
       server.syncInit = v:false
     endif
 
-    var lspserver: dict<any> = lserver.NewLspServer(server.path, args,
-						    server.syncInit)
+    var lspserver: dict<any> = lserver.NewLspServer(server.path,
+						    args,
+						    server.syncInit,
+						    initializationOptions)
 
     if server.filetype->type() == v:t_string
       LspAddServer(server.filetype, lspserver)

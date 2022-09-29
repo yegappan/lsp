@@ -69,6 +69,15 @@ To register a LSP server, add the following lines to your .vimrc file (use only 
 		\	 filetype: ['fortran'],
 		\	 path: '/usr/local/bin/fortls',
 		\	 args: ['--nthreads=1', '--use_signature_help', '--hover_signature']
+		\      },
+		\     #{
+		\        filetype: ['php'],
+		\        path: '/usr/local/bin/intelephense',
+		\        args: ['--stdio'],
+		\        syncInit: v:true,
+		\        initializationOptions: {
+		\          licenceKey: 'xxxxxxxxxxxxxxx'
+		\        }
 		\      }
 		\   ]
    call LspAddServer(lspServers)
