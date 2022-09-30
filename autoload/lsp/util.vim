@@ -35,9 +35,9 @@ export def TraceLog(stderr: bool, msg: string)
     return
   endif
   if stderr
-    writefile(split(msg, "\n"), lsp_log_dir .. 'lsp_server.err', 'a')
+    writefile(split(msg, "\n"), $'{lsp_log_dir}lsp_server.err', 'a')
   else
-    writefile(split(msg, "\n"), lsp_log_dir .. 'lsp_server.out', 'a')
+    writefile(split(msg, "\n"), $'{lsp_log_dir}lsp_server.out', 'a')
   endif
 enddef
 
@@ -46,8 +46,8 @@ export def ClearTraceLogs()
   if !lsp_server_trace
     return
   endif
-  writefile([], lsp_log_dir .. 'lsp_server.out')
-  writefile([], lsp_log_dir .. 'lsp_server.err')
+  writefile([], $'{lsp_log_dir}lsp_server.out')
+  writefile([], $'{lsp_log_dir}lsp_server.err')
 enddef
 
 # Convert a LSP file URI (file://<absolute_path>) to a Vim file name
@@ -93,9 +93,9 @@ def ConvertFilenameToUri(fname: string): string
 			'\=printf("%%%02x", char2nr(submatch(1)))', 'g')
 
   if on_windows
-    uri = 'file:///' .. uri
+    uri = $'file:///{uri}'
   else
-    uri = 'file://' .. uri
+    uri = $'file://{uri}'
   endif
 
   return uri

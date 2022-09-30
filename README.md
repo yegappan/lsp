@@ -1,6 +1,6 @@
 ![unit-tests](https://github.com/yegappan/mru/workflows/unit-tests/badge.svg?branch=master)
 
-Language Server Protocol (LSP) plugin for Vim9. You need Vim version 8.2.2342 or above to use this plugin.
+Language Server Protocol (LSP) plugin for Vim9. You need Vim version 9.0 or above to use this plugin.
 
 ## Installation
 

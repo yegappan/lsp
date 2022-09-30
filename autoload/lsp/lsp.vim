@@ -2,113 +2,19 @@ vim9script
 
 # Vim9 LSP client
 
-# Needs Vim 8.2.2342 and higher
-if v:version < 802 || !has('patch-8.2.2342')
+# Needs Vim 9.0 and higher
+if v:version < 900
   finish
 endif
 
-var opt = {}
-var lserver = {}
-var util = {}
-var diag = {}
-var symbol = {}
-var outline = {}
-var signature = {}
-var buf = {}
-
-if has('patch-8.2.4019')
-  import './lspoptions.vim' as opt_import
-  import './lspserver.vim' as server_import
-  import './util.vim' as util_import
-  import './buffer.vim' as buf_import
-  import './diag.vim' as diag_import
-  import './symbol.vim' as symbol_import
-  import './outline.vim' as outline_import
-  import './signature.vim' as signature_import
-
-  opt.lspOptions = opt_import.lspOptions
-  lserver.NewLspServer = server_import.NewLspServer
-  util.WarnMsg = util_import.WarnMsg
-  util.ErrMsg = util_import.ErrMsg
-  util.ServerTrace = util_import.ServerTrace
-  util.ClearTraceLogs = util_import.ClearTraceLogs
-  util.GetLineByteFromPos = util_import.GetLineByteFromPos
-  util.PushCursorToTagStack = util_import.PushCursorToTagStack
-  util.LspUriRemote = util_import.LspUriRemote
-  buf.BufLspServerSet = buf_import.BufLspServerSet
-  buf.BufLspServerRemove = buf_import.BufLspServerRemove
-  buf.BufHasLspServer = buf_import.BufHasLspServer
-  buf.BufLspServerGet = buf_import.BufLspServerGet
-  buf.CurbufGetServer = buf_import.CurbufGetServer
-  diag.UpdateDiags = diag_import.UpdateDiags
-  diag.DiagsGetErrorCount = diag_import.DiagsGetErrorCount
-  diag.ShowAllDiags = diag_import.ShowAllDiags
-  diag.ShowCurrentDiag = diag_import.ShowCurrentDiag
-  diag.ShowCurrentDiagInStatusLine = diag_import.ShowCurrentDiagInStatusLine
-  diag.LspDiagsJump = diag_import.LspDiagsJump
-  diag.DiagRemoveFile = diag_import.DiagRemoveFile
-  diag.DiagsHighlightEnable = diag_import.DiagsHighlightEnable
-  diag.DiagsHighlightDisable = diag_import.DiagsHighlightDisable
-  symbol.ShowSymbolMenu = symbol_import.ShowSymbolMenu
-  outline.OpenOutlineWindow = outline_import.OpenOutlineWindow
-  outline.SkipOutlineRefresh = outline_import.SkipOutlineRefresh
-  signature.SignatureInit = signature_import.SignatureInit
-else
-  import {lspOptions} from './lspoptions.vim'
-  import NewLspServer from './lspserver.vim'
-  import {WarnMsg,
-        ErrMsg,
-        ServerTrace,
-        ClearTraceLogs,
-        GetLineByteFromPos,
-        PushCursorToTagStack,
-	LspUriRemote} from './util.vim'
-  import {BufLspServerSet,
-	  BufLspServerRemove,
-	  BufHasLspServer,
-	  BufLspServerGet,
-	  CurbufGetServer} from './buffer.vim'
-  import {DiagRemoveFile,
-	UpdateDiags,
-	DiagsGetErrorCount,
-	ShowAllDiags,
-	ShowCurrentDiag,
-	ShowCurrentDiagInStatusLine,
-	LspDiagsJump,
-	DiagsHighlightEnable,
-	DiagsHighlightDisable} from './diag.vim'
-  import ShowSymbolMenu from './symbol.vim'
-  import {OpenOutlineWindow, SkipOutlineRefresh} from './outline.vim'
-  import {SignatureInit} from './signature.vim'
-
-  opt.lspOptions = lspOptions
-  lserver.NewLspServer = NewLspServer
-  util.WarnMsg = WarnMsg
-  util.ErrMsg = ErrMsg
-  util.ServerTrace = ServerTrace
-  util.ClearTraceLogs = ClearTraceLogs
-  util.GetLineByteFromPos = GetLineByteFromPos
-  util.PushCursorToTagStack = PushCursorToTagStack
-  util.LspUriRemote = LspUriRemote
-  buf.BufLspServerSet = BufLspServerSet
-  buf.BufLspServerRemove = BufLspServerRemove
-  buf.BufHasLspServer = BufHasLspServer
-  buf.BufLspServerGet = BufLspServerGet
-  buf.CurbufGetServer = CurbufGetServer
-  diag.DiagRemoveFile = DiagRemoveFile
-  diag.UpdateDiags = UpdateDiags
-  diag.DiagsGetErrorCount = DiagsGetErrorCount
-  diag.ShowAllDiags = ShowAllDiags
-  diag.ShowCurrentDiag = ShowCurrentDiag
-  diag.ShowCurrentDiagInStatusLine = ShowCurrentDiagInStatusLine
-  diag.LspDiagsJump = LspDiagsJump
-  diag.DiagsHighlightEnable = DiagsHighlightEnable
-  diag.DiagsHighlightDisable = DiagsHighlightDisable
-  symbol.ShowSymbolMenu = ShowSymbolMenu
-  outline.OpenOutlineWindow = OpenOutlineWindow
-  outline.SkipOutlineRefresh = SkipOutlineRefresh
-  signature.SignatureInit = SignatureInit
-endif
+import './lspoptions.vim' as opt
+import './lspserver.vim' as lserver
+import './util.vim'
+import './buffer.vim' as buf
+import './diag.vim'
+import './symbol.vim'
+import './outline.vim'
+import './signature.vim'
 
 # LSP server information
 var lspServers: list<dict<any>> = []
@@ -155,15 +61,15 @@ def CurbufGetServerChecked(): dict<any>
 
   var lspserver: dict<any> = buf.CurbufGetServer()
   if lspserver->empty()
-    util.ErrMsg('Error: LSP server for "' .. fname .. '" is not found')
+    util.ErrMsg($'Error: LSP server for "{fname}" is not found')
     return {}
   endif
   if !lspserver.running
-    util.ErrMsg('Error: LSP server for "' .. fname .. '" is not running')
+    util.ErrMsg($'Error: LSP server for "{fname}" is not running')
     return {}
   endif
   if !lspserver.ready
-    util.ErrMsg('Error: LSP server for "' .. fname .. '" is not ready')
+    util.ErrMsg($'Error: LSP server for "{fname}" is not ready')
     return {}
   endif
 
@@ -200,7 +106,7 @@ export def ShowServers()
     else
       msg ..= 'not running'
     endif
-    msg ..= '    ' .. lspserver.path
+    msg ..= $'    {lspserver.path}'
     :echomsg msg
   endfor
 enddef
@@ -387,22 +293,21 @@ export def AddFile(bnr: number): void
   # Set buffer local autocmds
   augroup LSPBufferAutocmds
     # file saved notification handler
-    exe 'autocmd BufWritePost <buffer=' .. bnr .. '> call LspSavedFile()'
+    exe $'autocmd BufWritePost <buffer={bnr}> call LspSavedFile()'
 
     if opt.lspOptions.autoComplete
       # Trigger 24x7 insert mode completion when text is changed
-      exe 'autocmd TextChangedI <buffer=' .. bnr .. '> call LspComplete()'
+      exe $'autocmd TextChangedI <buffer={bnr}> call LspComplete()'
     endif
 
     # Update the diagnostics when insert mode is stopped
-    exe 'autocmd InsertLeave <buffer=' .. bnr .. '> call LspLeftInsertMode()'
+    exe $'autocmd InsertLeave <buffer={bnr}> call LspLeftInsertMode()'
 
     if opt.lspOptions.autoHighlight &&
 			lspserver.caps->has_key('documentHighlightProvider')
 			&& lspserver.caps.documentHighlightProvider
       # Highlight all the occurrences of the current keyword
-      exe 'autocmd CursorMoved <buffer=' .. bnr .. '> '
-		  .. 'call LspDocHighlightClear() | call LspDocHighlight()'
+      exe $'autocmd CursorMoved <buffer={bnr}> call LspDocHighlightClear() | call LspDocHighlight()'
     endif
   augroup END
 
@@ -454,7 +359,7 @@ export def RestartServer()
   endfor
 
   # Start the server again
-  lspserver.startServer(true)
+  lspserver.startServer()
 
   # Add all the buffers with the same file type as the current buffer
   for binfo in getbufinfo({bufloaded: 1})
@@ -478,14 +383,14 @@ export def AddServer(serverList: list<dict<any>>)
 
     if !executable(server.path)
       if !opt.lspOptions.ignoreMissingServer
-        util.ErrMsg('Error: LSP server ' .. server.path .. ' is not found')
+        util.ErrMsg($'Error: LSP server {server.path} is not found')
       endif
       return
     endif
     var args: list<string> = []
     if server->has_key('args')
       if server.args->type() != v:t_list
-        util.ErrMsg('Error: Arguments for LSP server ' .. server.args .. ' is not a List')
+        util.ErrMsg($'Error: Arguments for LSP server {server.args} is not a List')
         return
       endif
       args = server.args
@@ -496,14 +401,14 @@ export def AddServer(serverList: list<dict<any>>)
     var initializationOptions: dict<any> = {}
     if server->has_key('initializationOptions')
       if server.initializationOptions->type() != v:t_dict
-        util.ErrMsg('Error: initializationOptions for LSP server ' .. server.initializationOptions .. ' is not a Dictionary')
+        util.ErrMsg($'Error: initializationOptions for LSP server {server.initializationOptions} is not a Dictionary')
         return
       endif
       initializationOptions = server.initializationOptions
     endif
 
     if server.omnicompl->type() != v:t_bool
-      util.ErrMsg('Error: Setting of omnicompl ' .. server.omnicompl .. ' is not a Boolean')
+      util.ErrMsg($'Error: Setting of omnicompl {server.omnicompl} is not a Boolean')
       return
     endif
 
@@ -525,8 +430,7 @@ export def AddServer(serverList: list<dict<any>>)
         LspOmniComplSet(ftype, server.omnicompl)
       endfor
     else
-      util.ErrMsg('Error: Unsupported file type information "' ..
-		server.filetype->string() .. '" in LSP server registration')
+      util.ErrMsg($'Error: Unsupported file type information "{server.filetype->string()}" in LSP server registration')
       continue
     endif
   endfor
@@ -551,7 +455,7 @@ enddef
 # Params: SetTraceParams
 export def SetTraceServer(traceVal: string)
   if ['off', 'message', 'verbose']->index(traceVal) == -1
-    util.ErrMsg("Error: Unsupported LSP server trace value " .. traceVal)
+    util.ErrMsg($'Error: Unsupported LSP server trace value {traceVal}')
     return
   endif
 
@@ -843,7 +747,7 @@ export def Rename()
   endif
 
   var sym: string = expand('<cword>')
-  var newName: string = input("Rename symbol '" .. sym .. "' to: ", sym)
+  var newName: string = input($"Rename symbol '{sym}' to: ", sym)
   if newName == ''
     return
   endif
@@ -894,7 +798,7 @@ export def ListWorkspaceFolders()
     return
   endif
 
-  echomsg 'Workspace Folders: ' .. lspserver.workspaceFolders->string()
+  echomsg $'Workspace Folders: {lspserver.workspaceFolders->string()}'
 enddef
 
 # Add a workspace folder. Default is to use the current folder.
@@ -913,7 +817,7 @@ export def AddWorkspaceFolder(dirArg: string)
   endif
   :redraw!
   if !dirName->isdirectory()
-    util.ErrMsg('Error: ' .. dirName .. ' is not a directory')
+    util.ErrMsg($'Error: {dirName} is not a directory')
     return
   endif
 
@@ -936,7 +840,7 @@ export def RemoveWorkspaceFolder(dirArg: string)
   endif
   :redraw!
   if !dirName->isdirectory()
-    util.ErrMsg('Error: ' .. dirName .. ' is not a directory')
+    util.ErrMsg($'Error: {dirName} is not a directory')
     return
   endif
 

@@ -585,19 +585,13 @@ def Test_LspHighlight()
   :LspHighlight
   var expected: dict<any>
   expected = {id: 0, col: 13, end: 1, type: 'LspTextRef', length: 3, start: 1}
-  if has('patch-8.2.3233')
-    expected.type_bufnr = 0
-  endif
+  expected.type_bufnr = 0
   assert_equal([expected], prop_list(1))
   expected = {id: 0, col: 11, end: 1, type: 'LspReadRef', length: 3, start: 1}
-  if has('patch-8.2.3233')
-    expected.type_bufnr = 0
-  endif
+  expected.type_bufnr = 0
   assert_equal([expected], prop_list(3))
   expected = {id: 0, col: 3, end: 1, type: 'LspWriteRef', length: 3, start: 1}
-  if has('patch-8.2.3233')
-    expected.type_bufnr = 0
-  endif
+  expected.type_bufnr = 0
   assert_equal([expected], prop_list(4))
   :LspHighlightClear
   assert_equal([], prop_list(1))
@@ -660,9 +654,7 @@ def Test_LspShowSignature()
   assert_equal(['MyFunc(int a, int b) -> int'], getbufline(bnr, 1, '$'))
   var expected: dict<any>
   expected = {id: 0, col: 8, end: 1, type: 'signature', length: 5, start: 1}
-  if has('patch-8.2.3233')
-    expected.type_bufnr = bnr
-  endif
+  expected.type_bufnr = bnr
   assert_equal([expected], prop_list(1, {bufnr: bnr}))
   popup_close(p[0])
 
@@ -674,9 +666,7 @@ def Test_LspShowSignature()
   assert_equal(1, p->len())
   assert_equal(['MyFunc(int a, int b) -> int'], getbufline(bnr, 1, '$'))
   expected = {id: 0, col: 15, end: 1, type: 'signature', length: 5, start: 1}
-  if has('patch-8.2.3233')
-    expected.type_bufnr = bnr
-  endif
+  expected.type_bufnr = bnr
   assert_equal([expected], prop_list(1, {bufnr: bnr}))
   popup_close(p[0])
   :%bw!

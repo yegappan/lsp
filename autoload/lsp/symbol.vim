@@ -6,31 +6,8 @@ vim9script
 #   - jump to a symbol definition, declaration, type definition or
 #     implementation
 
-var opt = {}
-var util = {}
-
-if has('patch-8.2.4019')
-  import './lspoptions.vim' as opt_import
-  import './util.vim' as util_import
-
-  opt.lspOptions = opt_import.lspOptions
-  util.PushCursorToTagStack = util_import.PushCursorToTagStack
-  util.WarnMsg = util_import.WarnMsg
-  util.LspUriToFile = util_import.LspUriToFile
-  util.GetLineByteFromPos = util_import.GetLineByteFromPos
-else
-  import lspOptions from './lspoptions.vim'
-  import {WarnMsg,
-	LspUriToFile,
-	GetLineByteFromPos,
-	PushCursorToTagStack} from './util.vim'
-
-  opt.lspOptions = lspOptions
-  util.WarnMsg = WarnMsg
-  util.LspUriToFile = LspUriToFile
-  util.GetLineByteFromPos = GetLineByteFromPos
-  util.PushCursorToTagStack = PushCursorToTagStack
-endif
+import './lspoptions.vim' as opt
+import './util.vim'
 
 # Handle keys pressed when the workspace symbol popup menu is displayed
 def FilterSymbols(lspserver: dict<any>, popupID: number, key: string): bool
@@ -80,7 +57,7 @@ def FilterSymbols(lspserver: dict<any>, popupID: number, key: string): bool
     else
       []->setwinvar(popupID, 'LspSymbolTable')
     endif
-    echo 'Symbol: ' .. query
+    echo $'Symbol: {query}'
   endif
 
   # Update the workspace symbol query string
@@ -119,9 +96,9 @@ def JumpToWorkspaceSymbol(popupID: number, result: number): void
       if &modified || &buftype != ''
 	# the current buffer is modified or is not a normal buffer, then open
 	# the file in a new window
-	exe "split " .. symTbl[result - 1].file
+	exe $'split {symTbl[result - 1].file}'
       else
-	exe "confirm edit " .. symTbl[result - 1].file
+	exe $'confirm edit {symTbl[result - 1].file}'
       endif
     else
       winList[0]->win_gotoid()
@@ -158,7 +135,7 @@ export def ShowSymbolMenu(lspserver: dict<any>, query: string)
   prop_type_add('lspworkspacesymbol',
 			{bufnr: lspserver.workspaceSymbolPopup->winbufnr(),
 			 highlight: 'Title'})
-  echo 'Symbol: ' .. query
+  echo $'Symbol: {query}'
 enddef
 
 # Display or peek symbol references in a location list
@@ -199,9 +176,9 @@ export def ShowReferences(lspserver: dict<any>, refs: list<dict<any>>)
     # When peeking the references, open the location list in a vertically
     # split window to the right and make the location list window 30% of the
     # source window width
-    mods = 'belowright vert :' .. (winwidth(0) * 30) / 100
+    mods = $'belowright vert :{(winwidth(0) * 30) / 100}'
   endif
-  exe mods .. 'lopen'
+  exe $'{mods} lopen'
   if !opt.lspOptions.keepFocusInReferences
     save_winid->win_gotoid()
   endif
@@ -240,7 +217,7 @@ export def GotoSymbol(lspserver: dict<any>, location: dict<any>, type: string)
   if lspserver.peekSymbol
     # open the definition/declaration in the preview window and highlight the
     # matching symbol
-    exe 'pedit ' .. fname
+    exe $'pedit {fname}'
     var cur_wid = win_getid()
     wincmd P
     var pvwbuf = bufnr()
@@ -268,18 +245,18 @@ export def GotoSymbol(lspserver: dict<any>, location: dict<any>, type: string)
 	# and 'hidden' is not set or if the current buffer is a special
 	# buffer, then open the buffer in a new window.
         if (&modified && !&hidden) || &buftype != ''
-          exe 'sbuffer ' .. bnr
+          exe $'sbuffer {bnr}'
         else
-          exe 'buf ' .. bnr
+          exe $'buf {bnr}'
         endif
       else
         if (&modified && !&hidden) || &buftype != ''
 	  # if the current buffer has unsaved changes and 'hidden' is not set,
 	  # or if the current buffer is a special buffer, then open the file
 	  # in a new window
-          exe 'split ' .. fname
+          exe $'split {fname}'
         else
-          exe 'edit  ' .. fname
+          exe $'edit {fname}'
         endif
       endif
     endif

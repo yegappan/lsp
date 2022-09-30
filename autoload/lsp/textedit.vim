@@ -1,26 +1,6 @@
 vim9script
 
-var util = {}
-
-if has('patch-8.2.4019')
-  import './util.vim' as util_import
-
-  util.WarnMsg = util_import.WarnMsg
-  util.ErrMsg = util_import.ErrMsg
-  util.LspUriToFile = util_import.LspUriToFile
-  util.GetLineByteFromPos = util_import.GetLineByteFromPos
-else
-  import {WarnMsg,
-	ErrMsg,
-	TraceLog,
-	LspUriToFile,
-	GetLineByteFromPos} from './util.vim'
-
-  util.WarnMsg = WarnMsg
-  util.ErrMsg = ErrMsg
-  util.LspUriToFile = LspUriToFile
-  util.GetLineByteFromPos = GetLineByteFromPos
-endif
+import './util.vim'
 
 # sort the list of edit operations in the descending order of line and column
 # numbers.
@@ -205,7 +185,7 @@ enddef
 def ApplyTextDocumentEdit(textDocEdit: dict<any>)
   var bnr: number = bufnr(util.LspUriToFile(textDocEdit.textDocument.uri))
   if bnr == -1
-    util.ErrMsg('Error: Text Document edit, buffer ' .. textDocEdit.textDocument.uri .. ' is not found')
+    util.ErrMsg($'Error: Text Document edit, buffer {textDocEdit.textDocument.uri} is not found')
     return
   endif
   ApplyTextEdits(bnr, textDocEdit.edits)
@@ -216,7 +196,7 @@ export def ApplyWorkspaceEdit(workspaceEdit: dict<any>)
   if workspaceEdit->has_key('documentChanges')
     for change in workspaceEdit.documentChanges
       if change->has_key('kind')
-	util.ErrMsg('Error: Unsupported change in workspace edit [' .. change.kind .. ']')
+	util.ErrMsg($'Error: Unsupported change in workspace edit [{change.kind}]')
       else
 	ApplyTextDocumentEdit(change)
       endif

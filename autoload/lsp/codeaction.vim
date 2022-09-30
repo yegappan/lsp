@@ -2,22 +2,8 @@ vim9script
 
 # Functions related to handling LSP code actions to fix diagnostics.
 
-var util = {}
-var textedit = {}
-
-if has('patch-8.2.4019')
-  import './util.vim' as util_import
-  import './textedit.vim' as textedit_import
-
-  util.WarnMsg = util_import.WarnMsg
-  textedit.ApplyWorkspaceEdit = textedit_import.ApplyWorkspaceEdit
-else
-  import WarnMsg from './util.vim'
-  import ApplyWorkspaceEdit from './textedit.vim'
-
-  util.WarnMsg = WarnMsg
-  textedit.ApplyWorkspaceEdit = ApplyWorkspaceEdit
-endif
+import './util.vim'
+import './textedit.vim'
 
 export def ApplyCodeAction(lspserver: dict<any>, actions: list<dict<any>>): void
   if actions->empty()

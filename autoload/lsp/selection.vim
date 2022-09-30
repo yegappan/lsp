@@ -2,16 +2,7 @@ vim9script
 
 # Functions related to handling LSP range selection.
 
-var util = {}
-if has('patch-8.2.4019')
-  import './util.vim' as util_import
-
-  util.GetLineByteFromPos = util_import.GetLineByteFromPos
-else
-  import {GetLineByteFromPos} from './util.vim'
-
-  util.GetLineByteFromPos = GetLineByteFromPos
-endif
+import './util.vim'
 
 # Visually (character-wise) select the text in a range
 def SelectText(bnr: number, range: dict<dict<number>>)

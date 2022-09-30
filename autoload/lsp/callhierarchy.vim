@@ -2,22 +2,7 @@ vim9script
 
 # Functions for dealing with call hierarchy (incoming/outgoing calls)
 
-var util = {}
-if has('patch-8.2.4019')
-  import './util.vim' as util_import
-
-  util.WarnMsg = util_import.WarnMsg
-  util.LspUriToFile = util_import.LspUriToFile
-  util.GetLineByteFromPos = util_import.GetLineByteFromPos
-else
-  import {WarnMsg,
-	  LspUriToFile,
-	  GetLineByteFromPos} from './util.vim'
-
-  util.WarnMsg = WarnMsg
-  util.LspUriToFile = LspUriToFile
-  util.GetLineByteFromPos = GetLineByteFromPos
-endif
+import './util.vim'
 
 def CreateLoclistWithCalls(calls: list<dict<any>>, incoming: bool)
   var qflist: list<dict<any>> = []
@@ -51,15 +36,15 @@ def CreateLoclistWithCalls(calls: list<dict<any>>, incoming: bool)
         qflist->add({filename: fname,
           		lnum: r.start.line + 1,
           		col: util.GetLineByteFromPos(bnr, r.start) + 1,
-          		text: name .. ': ' .. text})
+			text: $'{name}: {text}'})
       endfor
     else
       var pos: dict<any> = item.to.range.start
       var text: string = bnr->getbufline(pos.line + 1)[0]->trim("\t ", 1)
       qflist->add({filename: fname,
-       		lnum: item.to.range.start.line + 1,
-       		col: util.GetLineByteFromPos(bnr, pos) + 1,
-       		text: name .. ': ' .. text})
+			lnum: item.to.range.start.line + 1,
+			col: util.GetLineByteFromPos(bnr, pos) + 1,
+			text: $'{name}: {text}'})
     endif
   endfor
   var save_winid = win_getid()

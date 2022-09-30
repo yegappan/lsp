@@ -2,27 +2,9 @@ vim9script
 
 # Functions related to handling LSP symbol signature help.
 
-var opt = {}
-var util = {}
-var buf = {}
-
-if has('patch-8.2.4019')
-  import './lspoptions.vim' as opt_import
-  import './util.vim' as util_import
-  import './buffer.vim' as buf_import
-
-  opt.lspOptions = opt_import.lspOptions
-  util.WarnMsg = util_import.WarnMsg
-  buf.CurbufGetServer = buf_import.CurbufGetServer
-else
-  import lspOptions from './lspoptions.vim'
-  import {WarnMsg} from './util.vim'
-  import {CurbufGetServer} from './buffer.vim'
-
-  opt.lspOptions = lspOptions
-  util.WarnMsg = WarnMsg
-  buf.CurbufGetServer = CurbufGetServer
-endif
+import './lspoptions.vim' as opt
+import './util.vim'
+import './buffer.vim' as buf
 
 # close the signature popup window
 def CloseSignaturePopup(lspserver: dict<any>)
@@ -49,8 +31,7 @@ export def SignatureInit(lspserver: dict<any>)
 
   # map characters that trigger signature help
   for ch in lspserver.caps.signatureHelpProvider.triggerCharacters
-    exe 'inoremap <buffer> <silent> ' .. ch .. ' ' .. ch
-					.. "<C-R>=LspShowSignature()<CR>"
+    exe $"inoremap <buffer> <silent> {ch} {ch}<C-R>=LspShowSignature()<CR>"
   endfor
   # close the signature popup when leaving insert mode
   autocmd InsertLeave <buffer> call CloseCurBufSignaturePopup()

@@ -1,19 +1,7 @@
 vim9script
 
-var util = {}
-var opt = {}
-if has('patch-8.2.4019')
-  import './util.vim' as util_import
-  import './lspoptions.vim' as opt_import
-  util.GetLineByteFromPos = util_import.GetLineByteFromPos
-  opt.lspOptions = opt_import.lspOptions
-else
-  import GetLineByteFromPos from './util.vim'
-  import lspOptions from './lspoptions.vim'
-
-  util.GetLineByteFromPos = GetLineByteFromPos
-  opt.lspOptions = lspOptions
-endif
+import './util.vim'
+import './lspoptions.vim' as opt
 
 # jump to a symbol selected in the outline window
 def OutlineJumpToSymbol()
@@ -54,7 +42,7 @@ def OutlineJumpToSymbol()
       win_execute(symWinid, 'vertical resize 20')
     endif
 
-    exe 'edit ' .. fname
+    exe $'edit {fname}'
   else
     wid->win_gotoid()
   endif
@@ -131,8 +119,7 @@ export def UpdateOutlineWindow(fname: string,
   :setlocal modifiable
   :silent! :%d _
   setline(1, ['# LSP Outline View',
-		'# ' .. fname->fnamemodify(':t') .. ' ('
-				.. fname->fnamemodify(':h') .. ')'])
+		$'# {fname->fnamemodify(":t")} ({fname->fnamemodify(":h")})'])
 
   # First two lines in the buffer display comment information
   var lnumMap: list<dict<any>> = [{}, {}]
@@ -217,8 +204,7 @@ def OutlineHighlightCurrentSymbol()
   var wininfo = wid->getwininfo()
   if symbolTable[mid].outlineLine < wininfo[0].topline
 			|| symbolTable[mid].outlineLine > wininfo[0].botline
-    var cmd: string = 'call cursor(' ..
-			symbolTable[mid].outlineLine .. ', 1) | normal z.'
+    var cmd: string = $'call cursor({symbolTable[mid].outlineLine}, 1) | normal z.'
     win_execute(wid, cmd)
   endif
 enddef
@@ -241,9 +227,9 @@ export def OpenOutlineWindow()
   var prevWinID: number = win_getid()
 
   if opt.lspOptions.outlineOnRight
-    execute ':botright :' .. opt.lspOptions.outlineWinSize .. 'vnew LSP-Outline'
+    execute $':botright :{opt.lspOptions.outlineWinSize}vnew LSP-Outline'
   else
-    execute ':topleft :' .. opt.lspOptions.outlineWinSize .. 'vnew LSP-Outline'
+    execute $':topleft :{opt.lspOptions.outlineWinSize}vnew LSP-Outline'
   endif
   :setlocal modifiable
   :setlocal noreadonly

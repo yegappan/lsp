@@ -4,56 +4,10 @@ vim9script
 # Refer to https://microsoft.github.io/language-server-protocol/specification
 # for the Language Server Protocol (LSP) specificaiton.
 
-var handlers = {}
-var diag = {}
-var util = {}
-var selection = {}
-
-if has('patch-8.2.4019')
-  import './handlers.vim' as handlers_import
-  import './util.vim' as util_import
-  import './diag.vim' as diag_import
-  import './selection.vim' as selection_import
-
-  handlers.ProcessReply = handlers_import.ProcessReply
-  handlers.ProcessNotif = handlers_import.ProcessNotif
-  handlers.ProcessRequest = handlers_import.ProcessRequest
-  handlers.ProcessMessages = handlers_import.ProcessMessages
-  util.WarnMsg = util_import.WarnMsg
-  util.ErrMsg = util_import.ErrMsg
-  util.TraceLog = util_import.TraceLog
-  util.LspBufnrToUri = util_import.LspBufnrToUri
-  util.LspFileToUri = util_import.LspFileToUri
-  util.PushCursorToTagStack = util_import.PushCursorToTagStack
-  diag.GetDiagByLine = diag_import.GetDiagByLine
-  selection.SelectionModify = selection_import.SelectionModify
-else
-  import {ProcessReply,
-	ProcessNotif,
-	ProcessRequest,
-	ProcessMessages} from './handlers.vim'
-  import {GetDiagByLine} from './diag.vim'
-  import {WarnMsg,
-	ErrMsg,
-	TraceLog,
-	LspBufnrToUri,
-	LspFileToUri,
-	PushCursorToTagStack} from './util.vim'
-  import {SelectionModify} from './selection.vim'
-
-  handlers.ProcessReply = ProcessReply
-  handlers.ProcessNotif = ProcessNotif
-  handlers.ProcessRequest = ProcessRequest
-  handlers.ProcessMessages = ProcessMessages
-  util.WarnMsg = WarnMsg
-  util.ErrMsg = ErrMsg
-  util.TraceLog = TraceLog
-  util.LspBufnrToUri = LspBufnrToUri
-  util.LspFileToUri = LspFileToUri
-  util.PushCursorToTagStack = PushCursorToTagStack
-  diag.GetDiagByLine = GetDiagByLine
-  selection.SelectionModify = SelectionModify
-endif
+import './handlers.vim'
+import './util.vim'
+import './diag.vim'
+import './selection.vim'
 
 # LSP server standard output handler
 def Output_cb(lspserver: dict<any>, chan: channel, msg: string): void
@@ -69,7 +23,7 @@ enddef
 
 # LSP server exit callback
 def Exit_cb(lspserver: dict<any>, job: job, status: number): void
-  util.WarnMsg("LSP server exited with status " .. status)
+  util.WarnMsg($'LSP server exited with status {status}')
   lspserver.running = false
   lspserver.ready = false
   lspserver.requests = {}
@@ -79,7 +33,7 @@ enddef
 #
 def StartServer(lspserver: dict<any>): number
   if lspserver.running
-    util.WarnMsg("LSP server for is already running")
+    util.WarnMsg('LSP server for is already running')
     return 0
   endif
 
@@ -105,7 +59,7 @@ def StartServer(lspserver: dict<any>): number
 
   var job = job_start(cmd, opts)
   if job->job_status() == 'fail'
-    util.ErrMsg("Error: Failed to start LSP server " .. lspserver.path)
+    util.ErrMsg($'Error: Failed to start LSP server {lspserver.path}')
     return 1
   endif
 
@@ -298,7 +252,7 @@ enddef
 # Send a request message to LSP server
 def SendMessage(lspserver: dict<any>, content: dict<any>): void
   var payload_js: string = content->json_encode()
-  var msg = "Content-Length: " .. payload_js->len() .. "\r\n\r\n"
+  var msg = $"Content-Length: {payload_js->len()}\r\n\r\n"
   var ch = lspserver.job->job_getchannel()
   if ch_status(ch) != 'open'
     # LSP server has exited
@@ -888,7 +842,7 @@ def AddWorkspaceFolder(lspserver: dict<any>, dirName: string): void
   endif
 
   if lspserver.workspaceFolders->index(dirName) != -1
-    util.ErrMsg('Error: ' .. dirName .. ' is already part of this workspace')
+    util.ErrMsg($'Error: {dirName} is already part of this workspace')
     return
   endif
 
@@ -915,7 +869,7 @@ def RemoveWorkspaceFolder(lspserver: dict<any>, dirName: string): void
 
   var idx: number = lspserver.workspaceFolders->index(dirName)
   if idx == -1
-    util.ErrMsg('Error: ' .. dirName .. ' is not currently part of this workspace')
+    util.ErrMsg($'Error: {dirName} is not currently part of this workspace')
     return
   endif
 
@@ -1013,9 +967,9 @@ enddef
 # Display the LSP server capabilities (received during the initialization
 # stage).
 def ShowCapabilities(lspserver: dict<any>)
-  echo "Capabilities of '" .. lspserver.path .. "' LSP server:"
+  echo $"Capabilities of '{lspserver.path}' LSP server:"
   for k in lspserver.caps->keys()->sort()
-    echo k .. ": " .. lspserver.caps[k]->string()
+    echo $'{k}: {lspserver.caps[k]->string()}'
   endfor
 enddef
 

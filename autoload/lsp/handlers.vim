@@ -4,82 +4,16 @@ vim9script
 # Refer to https://microsoft.github.io/language-server-protocol/specification
 # for the Language Server Protocol (LSP) specificaiton.
 
-var opt = {}
-var util = {}
-var diag = {}
-var outline = {}
-var textedit = {}
-var symbol = {}
-var codeaction = {}
-var callhier = {}
-var selection = {}
-var signature = {}
-
-if has('patch-8.2.4019')
-  import './lspoptions.vim' as opt_import
-  import './util.vim' as util_import
-  import './diag.vim' as diag_import
-  import './outline.vim' as outline_import
-  import './textedit.vim' as textedit_import
-  import './symbol.vim' as symbol_import
-  import './codeaction.vim' as codeaction_import
-  import './callhierarchy.vim' as callhierarchy_import
-  import './selection.vim' as selection_import
-  import './signature.vim' as signature_import
-
-  opt.lspOptions = opt_import.lspOptions
-  util.WarnMsg = util_import.WarnMsg
-  util.ErrMsg = util_import.ErrMsg
-  util.TraceLog = util_import.TraceLog
-  util.LspUriToFile = util_import.LspUriToFile
-  util.GetLineByteFromPos = util_import.GetLineByteFromPos
-  diag.DiagNotification = diag_import.DiagNotification
-  outline.UpdateOutlineWindow = outline_import.UpdateOutlineWindow
-  textedit.ApplyTextEdits = textedit_import.ApplyTextEdits
-  textedit.ApplyWorkspaceEdit = textedit_import.ApplyWorkspaceEdit
-  symbol.ShowReferences = symbol_import.ShowReferences
-  symbol.GotoSymbol = symbol_import.GotoSymbol
-  codeaction.ApplyCodeAction = codeaction_import.ApplyCodeAction
-  callhier.IncomingCalls = callhierarchy_import.IncomingCalls
-  callhier.OutgoingCalls = callhierarchy_import.OutgoingCalls
-  selection.SelectionStart = selection_import.SelectionStart
-  signature.SignatureInit = signature_import.SignatureInit
-  signature.SignatureDisplay = signature_import.SignatureDisplay
-else
-  import lspOptions from './lspoptions.vim'
-  import {WarnMsg,
-	ErrMsg,
-	TraceLog,
-	LspUriToFile,
-	GetLineByteFromPos} from './util.vim'
-  import DiagNotification from './diag.vim'
-  import UpdateOutlineWindow from './outline.vim'
-  import {ApplyTextEdits, ApplyWorkspaceEdit} from './textedit.vim'
-  import {ShowReferences, GotoSymbol} from './symbol.vim'
-  import ApplyCodeAction from './codeaction.vim'
-  import {IncomingCalls, OutgoingCalls} from './callhierarchy.vim'
-  import {SelectionStart} from './selection.vim'
-  import {SignatureInit, SignatureDisplay} from './signature.vim'
-
-  opt.lspOptions = lspOptions
-  util.WarnMsg = WarnMsg
-  util.ErrMsg = ErrMsg
-  util.TraceLog = TraceLog
-  util.LspUriToFile = LspUriToFile
-  util.GetLineByteFromPos = GetLineByteFromPos
-  diag.DiagNotification = DiagNotification
-  outline.UpdateOutlineWindow = UpdateOutlineWindow
-  textedit.ApplyTextEdits = ApplyTextEdits
-  textedit.ApplyWorkspaceEdit = ApplyWorkspaceEdit
-  symbol.ShowReferences = ShowReferences
-  symbol.GotoSymbol = GotoSymbol
-  codeaction.ApplyCodeAction = ApplyCodeAction
-  callhier.IncomingCalls = IncomingCalls
-  callhier.OutgoingCalls = OutgoingCalls
-  selection.SelectionStart = SelectionStart
-  signature.SignatureInit = SignatureInit
-  signature.SignatureDisplay = SignatureDisplay
-endif
+import './lspoptions.vim' as opt
+import './util.vim'
+import './diag.vim'
+import './outline.vim'
+import './textedit.vim'
+import './symbol.vim'
+import './codeaction.vim'
+import './callhierarchy.vim' as callhier
+import './selection.vim'
+import './signature.vim'
 
 # process the 'initialize' method reply from the LSP server
 # Result: InitializeResult
@@ -156,9 +90,9 @@ def ProcessSwitchHeaderReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
   if (&modified && !&hidden) || &buftype != ''
     # if the current buffer has unsaved changes and 'hidden' is not set,
     # or if the current buffer is a special buffer, then ask to save changes
-    exe 'confirm edit ' .. fname
+    exe $'confirm edit {fname}'
   else
-    exe 'edit  ' .. fname
+    exe $'edit {fname}'
   endif
 enddef
 
@@ -316,14 +250,14 @@ def ProcessHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): v
         hoverText = reply.result.contents.value->split("\n")
         hoverKind = 'markdown'
       else
-        util.ErrMsg('Error: Unsupported hover contents type (' .. reply.result.contents.kind .. ')')
+        util.ErrMsg($'Error: Unsupported hover contents type ({reply.result.contents.kind})')
         return
       endif
     elseif reply.result.contents->has_key('value')
       # MarkedString
       hoverText = reply.result.contents.value->split("\n")
     else
-      util.ErrMsg('Error: Unsupported hover contents (' .. reply.result.contents .. ')')
+      util.ErrMsg($'Error: Unsupported hover contents ({reply.result.contents})')
       return
     endif
   elseif reply.result.contents->type() == v:t_list
@@ -341,7 +275,7 @@ def ProcessHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): v
     endif
     hoverText->extend(reply.result.contents->split("\n"))
   else
-    util.ErrMsg('Error: Unsupported hover contents (' .. reply.result.contents .. ')')
+    util.ErrMsg($'Error: Unsupported hover contents ({reply.result.contents})')
     return
   endif
   if opt.lspOptions.hoverInPreview
@@ -349,7 +283,7 @@ def ProcessHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): v
     wincmd P
     setlocal buftype=nofile
     setlocal bufhidden=delete
-    exe 'setlocal ft=' .. hoverKind
+    exe $'setlocal ft={hoverKind}'
     deletebufline(bufnr(), 1, '$')
     append(0, hoverText)
     cursor(1, 1)
@@ -432,7 +366,7 @@ def ProcessSymbolInfoTable(symbolInfoTable: list<dict<any>>,
     name = symbol.name
     if symbol->has_key('containerName')
       if symbol.containerName != ''
-	name ..= ' [' .. symbol.containerName .. ']'
+	name ..= $' [{symbol.containerName}]'
       endif
     endif
     r = symbol.location.range
@@ -583,7 +517,7 @@ def ProcessFoldingRangeReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
     if end_lnum < foldRange.startLine + 2
       end_lnum = foldRange.startLine + 2
     endif
-    exe ':' .. (foldRange.startLine + 2) .. ',' .. end_lnum .. 'fold'
+    exe $':{foldRange.startLine + 2}, {end_lnum}fold'
     # Open all the folds, otherwise the subsequently created folds are not
     # correct.
     :silent! foldopen!
@@ -620,7 +554,7 @@ def MakeMenuName(popupWidth: number, fname: string): string
   endif
   var str: string = filename
   if dirname != '.'
-    str ..= ' (' .. dirname .. '/)'
+    str ..= $' ({dirname}/)'
   endif
   return str
 enddef
@@ -650,9 +584,9 @@ def ProcessWorkspaceSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dic
 
     symName = symbol.name
     if symbol->has_key('containerName') && symbol.containerName != ''
-      symName = symbol.containerName .. '::' .. symName
+      symName = $'{symbol.containerName}::{symName}'
     endif
-    symName ..= ' [' .. LspSymbolKindToName(symbol.kind) .. ']'
+    symName ..= $' [{LspSymbolKindToName(symbol.kind)}]'
     symName ..= ' ' .. MakeMenuName(
 		lspserver.workspaceSymbolPopup->popup_getpos().core_width,
 		fileName)
@@ -750,7 +684,7 @@ export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
   if lsp_reply_handlers->has_key(req.method)
     lsp_reply_handlers[req.method](lspserver, req, reply)
   else
-    util.ErrMsg("Error: Unsupported reply received from LSP server: " .. reply->string() .. " for request: " .. req->string())
+    util.ErrMsg($'Error: Unsupported reply received from LSP server: {reply->string()} for request: {req->string()}')
   endif
 enddef
 
@@ -778,7 +712,7 @@ def ProcessShowMsgNotif(lspserver: dict<any>, reply: dict<any>)
     mtype = msgType[reply.params.type]
   endif
 
-  :echomsg 'Lsp ' .. mtype .. reply.params.message
+  :echomsg $'Lsp {mtype} {reply.params.message}'
 enddef
 
 # process a log notification message from the LSP server
@@ -791,12 +725,12 @@ def ProcessLogMsgNotif(lspserver: dict<any>, reply: dict<any>)
     mtype = msgType[reply.params.type]
   endif
 
-  util.TraceLog(false, '[' .. mtype .. ']: ' .. reply.params.message)
+  util.TraceLog(false, $'[{mtype}]: {reply.params.message}')
 enddef
 
 # process unsupported notification messages
 def ProcessUnsupportedNotif(lspserver: dict<any>, reply: dict<any>)
-  util.ErrMsg('Error: Unsupported notification message received from the LSP server (' .. lspserver.path .. '), message = ' .. reply->string())
+  util.ErrMsg($'Error: Unsupported notification message received from the LSP server ({lspserver.path}), message = {reply->string()}')
 enddef
 
 # per-filetype private map inside to record if ntf once or not
@@ -830,7 +764,7 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
   if lsp_notif_handlers->has_key(reply.method)
     lsp_notif_handlers[reply.method](lspserver, reply)
   else
-    util.ErrMsg('Error: Unsupported notification received from LSP server ' .. reply->string())
+    util.ErrMsg($'Error: Unsupported notification received from LSP server {reply->string()}')
   endif
 enddef
 
@@ -844,7 +778,7 @@ def ProcessApplyEditReq(lspserver: dict<any>, request: dict<any>)
   endif
   var workspaceEditParams: dict<any> = request.params
   if workspaceEditParams->has_key('label')
-    :echomsg "Workspace edit" .. workspaceEditParams.label
+    :echomsg $'Workspace edit {workspaceEditParams.label}'
   endif
   textedit.ApplyWorkspaceEdit(workspaceEditParams.edit)
   # TODO: Need to return the proper result of the edit operation
@@ -873,7 +807,7 @@ def ProcessClientUnregisterCap(lspserver: dict<any>, request: dict<any>)
 enddef
 
 def ProcessUnsupportedReq(lspserver: dict<any>, request: dict<any>)
-  util.ErrMsg('Error: Unsupported request message received from the LSP server (' .. lspserver.path .. '), message = ' .. request->string())
+  util.ErrMsg($'Error: Unsupported request message received from the LSP server ({lspserver.path}), message = {request->string()}')
 enddef
 
 # process a request message from the server
@@ -893,7 +827,7 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
   if lspRequestHandlers->has_key(request.method)
     lspRequestHandlers[request.method](lspserver, request)
   else
-    util.ErrMsg('Error: Unsupported request message received from the LSP server (' .. lspserver.path .. '), message = ' .. request->string())
+    util.ErrMsg($'Error: Unsupported request message received from the LSP server ({lspserver.path}), message = {request->string()}')
   endif
 enddef
 
@@ -944,7 +878,7 @@ export def ProcessMessages(lspserver: dict<any>): void
     try
       msg = content->json_decode()
     catch
-      util.ErrMsg("Error(LSP): Malformed content (" .. content .. ")")
+      util.ErrMsg($'Error(LSP): Malformed content ({content})')
       lspserver.data = lspserver.data[idx + len :]
       continue
     endtry
@@ -961,12 +895,11 @@ export def ProcessMessages(lspserver: dict<any>): void
 	else
 	  # request failed
 	  var emsg: string = msg.error.message
-	  emsg ..= ', code = ' .. msg.error.code
+	  emsg ..= $', code = {msg.error.code}'
 	  if msg.error->has_key('data')
-	    emsg = emsg .. ', data = ' .. msg.error.data->string()
+	    emsg = $'{emsg}, data = {msg.error.data->string()}'
 	  endif
-	  util.ErrMsg("Error(LSP): request " .. req.method .. " failed ("
-							.. emsg .. ")")
+	  util.ErrMsg($'Error(LSP): request {req.method} failed ({emsg})')
 	endif
       endif
     elseif msg->has_key('id') && msg->has_key('method')
@@ -976,7 +909,7 @@ export def ProcessMessages(lspserver: dict<any>): void
       # notification message from the server
       lspserver.processNotif(msg)
     else
-      util.ErrMsg("Error(LSP): Unsupported message (" .. msg->string() .. ")")
+      util.ErrMsg($'Error(LSP): Unsupported message ({msg->string()})')
     endif
 
     lspserver.data = lspserver.data[idx + len :]

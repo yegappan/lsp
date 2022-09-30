@@ -2,28 +2,8 @@ vim9script
 
 # Functions related to handling LSP diagnostics.
 
-var opt = {}
-var util = {}
-
-if has('patch-8.2.4019')
-  import './lspoptions.vim' as opt_import
-  import './util.vim' as util_import
-
-  opt.lspOptions = opt_import.lspOptions
-  util.WarnMsg = util_import.WarnMsg
-  util.GetLineByteFromPos = util_import.GetLineByteFromPos
-  util.LspUriToFile = util_import.LspUriToFile
-else
-  import lspOptions from './lspoptions.vim'
-  import {WarnMsg,
-	LspUriToFile,
-	GetLineByteFromPos} from './util.vim'
-
-  opt.lspOptions = lspOptions
-  util.WarnMsg = WarnMsg
-  util.LspUriToFile = LspUriToFile
-  util.GetLineByteFromPos = GetLineByteFromPos
-endif
+import './lspoptions.vim' as opt
+import './util.vim'
 
 # Remove the diagnostics stored for buffer 'bnr'
 export def DiagRemoveFile(lspserver: dict<any>, bnr: number)
@@ -115,7 +95,7 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags: list<dict<
     diag_by_lnum[lnum] = d
   endfor
 
-  lspserver.diagsMap->extend({['' .. bnr]: diag_by_lnum})
+  lspserver.diagsMap->extend({[$'{bnr}']: diag_by_lnum})
   ProcessNewDiags(lspserver, bnr)
 enddef
 
@@ -204,7 +184,7 @@ enddef
 # in a location list
 export def ShowAllDiags(lspserver: dict<any>): void
   if !DiagsUpdateLocList(lspserver, bufnr())
-    util.WarnMsg('No diagnostic messages found for ' .. @%)
+    util.WarnMsg($'No diagnostic messages found for {@%}')
     return
   endif
 
@@ -233,7 +213,7 @@ export def ShowCurrentDiagInStatusLine(lspserver: dict<any>)
     var max_width = &columns - 15
     var code = ""
     if has_key(diag, 'code')
-      code = "[" .. diag.code .. "] "
+      code = $'[{diag.code}] '
     endif
     var msgNoLineBreak = code .. substitute(substitute(diag.message, "\n", " ", ""), "\\n", " ", "")
     echo msgNoLineBreak[ : max_width]
@@ -268,7 +248,7 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
   var bnr: number = bufnr()
 
   if !lspserver.diagsMap->has_key(bnr) || lspserver.diagsMap[bnr]->empty()
-    util.WarnMsg('No diagnostic messages found for ' .. fname)
+    util.WarnMsg($'No diagnostic messages found for {fname}')
     return
   endif
 
