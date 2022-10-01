@@ -1,11 +1,11 @@
+if !has('vim9script') ||  v:version < 900
+  " Needs Vim version 9.0 and above
+  finish
+endif
+
 vim9script
 
 # Language Server Protocol (LSP) plugin for vim
-
-# Needs Vim version 9.0 and above
-if v:version < 900
-  finish
-endif
 
 import autoload '../autoload/lsp/lspoptions.vim'
 import autoload '../autoload/lsp/lsp.vim'
