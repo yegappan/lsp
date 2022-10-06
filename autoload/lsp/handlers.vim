@@ -839,81 +839,35 @@ export def ProcessMessages(lspserver: dict<any>): void
   var msg: dict<any>
   var req: dict<any>
 
-  while lspserver.data->len() > 0
-    idx = stridx(lspserver.data, 'Content-Length: ')
-    if idx == -1
-      return
-    endif
+  msg = lspserver.data
+  if msg->has_key('result') || msg->has_key('error')
+    # response message from the server
+    req = lspserver.requests->get(msg.id->string(), {})
+    if !req->empty()
+      # Remove the corresponding stored request message
+      lspserver.requests->remove(msg.id->string())
 
-    if stridx(lspserver.data, "\r\n", idx + 16) == -1
-      # not enough data is received. Wait for more data to arrive
-      return
-    endif
-
-    len = str2nr(lspserver.data[idx + 16 : ])
-    if len == 0
-      util.ErrMsg("Error(LSP): Invalid content length")
-      # Discard the header
-      lspserver.data = lspserver.data[idx + 16 :]
-      return
-    endif
-
-    # Header and contents are separated by '\r\n\r\n'
-    idx = stridx(lspserver.data, "\r\n\r\n", idx + 16)
-    if idx == -1
-      # content separator is not found. Wait for more data to arrive.
-      return
-    endif
-
-    # skip the separator
-    idx = idx + 4
-
-    if lspserver.data->len() - idx < len
-      # message is not fully received. Process the message after more data is
-      # received
-      return
-    endif
-
-    content = lspserver.data[idx : idx + len - 1]
-    try
-      msg = content->json_decode()
-    catch
-      util.ErrMsg($'Error(LSP): Malformed content ({content})')
-      lspserver.data = lspserver.data[idx + len :]
-      continue
-    endtry
-
-    if msg->has_key('result') || msg->has_key('error')
-      # response message from the server
-      req = lspserver.requests->get(msg.id->string(), {})
-      if !req->empty()
-	# Remove the corresponding stored request message
-	lspserver.requests->remove(msg.id->string())
-
-	if msg->has_key('result')
-	  lspserver.processReply(req, msg)
-	else
-	  # request failed
-	  var emsg: string = msg.error.message
-	  emsg ..= $', code = {msg.error.code}'
-	  if msg.error->has_key('data')
-	    emsg = $'{emsg}, data = {msg.error.data->string()}'
-	  endif
-	  util.ErrMsg($'Error(LSP): request {req.method} failed ({emsg})')
+      if msg->has_key('result')
+	lspserver.processReply(req, msg)
+      else
+	# request failed
+	var emsg: string = msg.error.message
+	emsg ..= ', code = ' .. msg.error.code
+	if msg.error->has_key('data')
+	  emsg = emsg .. ', data = ' .. msg.error.data->string()
 	endif
+	util.ErrMsg($'Error(LSP): request {req.method} failed ({emsg})')
       endif
-    elseif msg->has_key('id') && msg->has_key('method')
-      # request message from the server
-      lspserver.processRequest(msg)
-    elseif msg->has_key('method')
-      # notification message from the server
-      lspserver.processNotif(msg)
-    else
-      util.ErrMsg($'Error(LSP): Unsupported message ({msg->string()})')
     endif
-
-    lspserver.data = lspserver.data[idx + len :]
-  endwhile
+  elseif msg->has_key('id') && msg->has_key('method')
+    # request message from the server
+    lspserver.processRequest(msg)
+  elseif msg->has_key('method')
+    # notification message from the server
+    lspserver.processNotif(msg)
+  else
+    util.ErrMsg($'Error(LSP): Unsupported message ({msg->string()})')
+  endif
 enddef
 
 # vim: shiftwidth=2 softtabstop=2

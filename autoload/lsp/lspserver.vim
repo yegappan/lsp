@@ -10,9 +10,9 @@ import './diag.vim'
 import './selection.vim'
 
 # LSP server standard output handler
-def Output_cb(lspserver: dict<any>, chan: channel, msg: string): void
-  util.TraceLog(false, msg)
-  lspserver.data = lspserver.data .. msg
+def Output_cb(lspserver: dict<any>, chan: channel, msg: any): void
+  util.TraceLog(false, msg->string())
+  lspserver.data = msg
   lspserver.processMessages()
 enddef
 
@@ -40,8 +40,8 @@ def StartServer(lspserver: dict<any>): number
   var cmd = [lspserver.path]
   cmd->extend(lspserver.args)
 
-  var opts = {in_mode: 'raw',
-		out_mode: 'raw',
+  var opts = {in_mode: 'lsp',
+		out_mode: 'lsp',
 		err_mode: 'raw',
 		noblock: 1,
 		out_cb: function(Output_cb, [lspserver]),
@@ -251,15 +251,27 @@ enddef
 
 # Send a request message to LSP server
 def SendMessage(lspserver: dict<any>, content: dict<any>): void
-  var payload_js: string = content->json_encode()
-  var msg = $"Content-Length: {payload_js->len()}\r\n\r\n"
   var ch = lspserver.job->job_getchannel()
   if ch_status(ch) != 'open'
     # LSP server has exited
     return
   endif
-  ch->ch_sendraw(msg)
-  ch->ch_sendraw(payload_js)
+  ch->ch_sendexpr(content)
+enddef
+
+# Send a RPC request message to LSP server
+def RpcCall(lspserver: dict<any>, method: string, params: any): dict<any>
+  var req = {}
+  req.method = method
+  req.params = {}
+  req.params->extend(params)
+
+  var ch = lspserver.job->job_getchannel()
+  if ch_status(ch) != 'open'
+    # LSP server has exited
+    return {}
+  endif
+  return ch->ch_evalexpr(req)
 enddef
 
 # Wait for a response message from the LSP server for the request "req"
@@ -1010,6 +1022,7 @@ export def NewLspServer(path: string, args: list<string>, isSync: bool, initiali
     createNotification: function(CreateNotification, [lspserver]),
     sendResponse: function(SendResponse, [lspserver]),
     sendMessage: function(SendMessage, [lspserver]),
+    rpc: function(RpcCall, [lspserver]),
     waitForResponse: function(WaitForResponse, [lspserver]),
     processReply: function(handlers.ProcessReply, [lspserver]),
     processNotif: function(handlers.ProcessNotif, [lspserver]),
