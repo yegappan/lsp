@@ -61,24 +61,6 @@ def ProcessShutdownReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   return
 enddef
 
-# process the 'textDocument/definition' / 'textDocument/declaration' /
-# 'textDocument/typeDefinition' and 'textDocument/implementation' replies from
-# the LSP server
-# Result: Location | Location[] | LocationLink[] | null
-def ProcessDefDeclReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
-  var location: dict<any>
-  if reply.result->empty()
-    return
-  endif
-  if reply.result->type() == v:t_list
-    location = reply.result[0]
-  else
-    location = reply.result
-  endif
-
-  symbol.GotoSymbol(lspserver, location, req.method)
-enddef
-
 # process the 'textDocument/switchSourceHeader' reply from the LSP server
 # Clangd specific extension
 # Result: URI | null
@@ -657,11 +639,7 @@ export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
     {
       'initialize': ProcessInitializeReply,
       'shutdown': ProcessShutdownReply,
-      'textDocument/definition': ProcessDefDeclReply,
-      'textDocument/declaration': ProcessDefDeclReply,
-      'textDocument/typeDefinition': ProcessDefDeclReply,
       'textDocument/switchSourceHeader': ProcessSwitchHeaderReply,
-      'textDocument/implementation': ProcessDefDeclReply,
       'textDocument/signatureHelp': ProcessSignaturehelpReply,
       'textDocument/completion': ProcessCompletionReply,
       'textDocument/hover': ProcessHoverReply,

@@ -188,33 +188,9 @@ enddef
 # Jump to the definition, declaration or implementation of a symbol.
 # Also, used to peek at the definition, declaration or implementation of a
 # symbol.
-export def GotoSymbol(lspserver: dict<any>, location: dict<any>, type: string)
-  if location->empty()
-    var msg: string
-    if type ==# 'textDocument/declaration'
-      msg = 'Error: declaration is not found'
-    elseif type ==# 'textDocument/typeDefinition'
-      msg = 'Error: type definition is not found'
-    elseif type ==# 'textDocument/implementation'
-      msg = 'Error: implementation is not found'
-    else
-      msg = 'Error: definition is not found'
-    endif
-
-    util.WarnMsg(msg)
-    if !lspserver.peekSymbol
-      # pop the tag stack
-      var tagstack: dict<any> = gettagstack()
-      if tagstack.length > 0
-        settagstack(winnr(), {curidx: tagstack.length}, 't')
-      endif
-    endif
-    lspserver.peekSymbol = false
-    return
-  endif
-
+export def GotoSymbol(lspserver: dict<any>, location: dict<any>, peekSymbol: bool)
   var fname = util.LspUriToFile(location.uri)
-  if lspserver.peekSymbol
+  if peekSymbol
     # open the definition/declaration in the preview window and highlight the
     # matching symbol
     exe $'pedit {fname}'
@@ -267,7 +243,6 @@ export def GotoSymbol(lspserver: dict<any>, location: dict<any>, type: string)
 			location.range.start.character + 1)
   endif
   redraw!
-  lspserver.peekSymbol = false
 enddef
 
 # vim: shiftwidth=2 softtabstop=2

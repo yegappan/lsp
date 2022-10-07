@@ -8,6 +8,7 @@ import './handlers.vim'
 import './util.vim'
 import './diag.vim'
 import './selection.vim'
+import './symbol.vim'
 
 # LSP server standard output handler
 def Output_cb(lspserver: dict<any>, chan: channel, msg: any): void
@@ -424,38 +425,68 @@ def GetCompletion(lspserver: dict<any>, triggerKind_arg: number): void
   endif
 enddef
 
+# Jump to or peek a symbol location.
+#
+# Send 'msg' to a LSP server and process the reply.  'msg' is one of the
+# following:
+#   textDocument/definition
+#   textDocument/declaration
+#   textDocument/typeDefinition
+#   textDocument/implementation
+#
+# Process the LSP server reply and jump to the symbol location.  Before
+# jumping to the symbol location, save the current cursor position in the tag
+# stack.
+#
+# If 'peekSymbol' is true, then display the symbol location in the preview
+# window but don't jump to the symbol location.
+#
+# Result: Location | Location[] | LocationLink[] | null
+def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool)
+  var resp = lspserver.rpc(msg, GetLspTextDocPosition())
+  if resp->empty() || resp.result->empty()
+    var emsg: string
+    if msg ==# 'textDocument/declaration'
+      emsg = 'Error: symbol declaration is not found'
+    elseif msg ==# 'textDocument/typeDefinition'
+      emsg = 'Error: symbol type definition is not found'
+    elseif msg ==# 'textDocument/implementation'
+      emsg = 'Error: symbol implementation is not found'
+    else
+      emsg = 'Error: symbol definition is not found'
+    endif
+
+    util.WarnMsg(emsg)
+    return
+  endif
+
+  if !peekSymbol
+    util.PushCursorToTagStack()
+  endif
+
+  var location: dict<any>
+  if resp.result->type() == v:t_list
+    location = resp.result[0]
+  else
+    location = resp.result
+  endif
+
+  symbol.GotoSymbol(lspserver, location, peekSymbol)
+enddef
+
 # Request: "textDocument/definition"
 # Param: DefinitionParams
 def GotoDefinition(lspserver: dict<any>, peek: bool)
   # Check whether LSP server supports jumping to a definition
   if !lspserver.caps->has_key('definitionProvider')
 				|| !lspserver.caps.definitionProvider
-    util.ErrMsg("Error: LSP server does not support jumping to a definition")
+    util.ErrMsg("Error: Jumping to a symbol definition is not supported")
     return
   endif
 
-  if !peek
-    util.PushCursorToTagStack()
-  endif
-  lspserver.peekSymbol = peek
-  var req = lspserver.createRequest('textDocument/definition')
   # interface DefinitionParams
   #   interface TextDocumentPositionParams
-  req.params->extend(GetLspTextDocPosition())
-  lspserver.sendMessage(req)
-
-  lspserver.waitForResponse(req)
-enddef
-
-# Request: "textDocument/switchSourceHeader"
-# Param: TextDocumentIdentifier
-# Clangd specific extension
-def SwitchSourceHeader(lspserver: dict<any>)
-  var req = lspserver.createRequest('textDocument/switchSourceHeader')
-  req.params->extend({uri: util.LspFileToUri(@%)})
-  lspserver.sendMessage(req)
-
-  lspserver.waitForResponse(req)
+  GotoSymbolLoc(lspserver, 'textDocument/definition', peek)
 enddef
 
 # Request: "textDocument/declaration"
@@ -464,23 +495,13 @@ def GotoDeclaration(lspserver: dict<any>, peek: bool): void
   # Check whether LSP server supports jumping to a declaration
   if !lspserver.caps->has_key('declarationProvider')
 			|| !lspserver.caps.declarationProvider
-    util.ErrMsg("Error: LSP server does not support jumping to a declaration")
+    util.ErrMsg("Error: Jumping to a symbol declaration is not supported")
     return
   endif
 
-  if !peek
-    util.PushCursorToTagStack()
-  endif
-  lspserver.peekSymbol = peek
-  var req = lspserver.createRequest('textDocument/declaration')
-
   # interface DeclarationParams
   #   interface TextDocumentPositionParams
-  req.params->extend(GetLspTextDocPosition())
-
-  lspserver.sendMessage(req)
-
-  lspserver.waitForResponse(req)
+  GotoSymbolLoc(lspserver, 'textDocument/declaration', peek)
 enddef
 
 # Request: "textDocument/typeDefinition"
@@ -489,23 +510,13 @@ def GotoTypeDef(lspserver: dict<any>, peek: bool): void
   # Check whether LSP server supports jumping to a type definition
   if !lspserver.caps->has_key('typeDefinitionProvider')
 			|| !lspserver.caps.typeDefinitionProvider
-    util.ErrMsg("Error: LSP server does not support jumping to a type definition")
+    util.ErrMsg("Error: Jumping to a symbol type definition is not supported")
     return
   endif
 
-  if !peek
-    util.PushCursorToTagStack()
-  endif
-  lspserver.peekSymbol = peek
-  var req = lspserver.createRequest('textDocument/typeDefinition')
-
   # interface TypeDefinitionParams
   #   interface TextDocumentPositionParams
-  req.params->extend(GetLspTextDocPosition())
-
-  lspserver.sendMessage(req)
-
-  lspserver.waitForResponse(req)
+  GotoSymbolLoc(lspserver, 'textDocument/typeDefinition', peek)
 enddef
 
 # Request: "textDocument/implementation"
@@ -514,20 +525,21 @@ def GotoImplementation(lspserver: dict<any>, peek: bool): void
   # Check whether LSP server supports jumping to a implementation
   if !lspserver.caps->has_key('implementationProvider')
 			|| !lspserver.caps.implementationProvider
-    util.ErrMsg("Error: LSP server does not support jumping to an implementation")
+    util.ErrMsg("Error: Jumping to a symbol implementation is not supported")
     return
   endif
 
-  if !peek
-    util.PushCursorToTagStack()
-  endif
-  lspserver.peekSymbol = peek
-  var req = lspserver.createRequest('textDocument/implementation')
-
   # interface ImplementationParams
   #   interface TextDocumentPositionParams
-  req.params->extend(GetLspTextDocPosition())
+  GotoSymbolLoc(lspserver, 'textDocument/implementation', peek)
+enddef
 
+# Request: "textDocument/switchSourceHeader"
+# Param: TextDocumentIdentifier
+# Clangd specific extension
+def SwitchSourceHeader(lspserver: dict<any>)
+  var req = lspserver.createRequest('textDocument/switchSourceHeader')
+  req.params->extend({uri: util.LspFileToUri(@%)})
   lspserver.sendMessage(req)
 
   lspserver.waitForResponse(req)
