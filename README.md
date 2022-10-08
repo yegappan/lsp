@@ -1,6 +1,6 @@
 ![unit-tests](https://github.com/yegappan/mru/workflows/unit-tests/badge.svg?branch=master)
 
-Language Server Protocol (LSP) plugin for Vim9. You need Vim version 9.0 or above to use this plugin.
+Language Server Protocol (LSP) plugin for Vim. You need Vim version 9.0 or above to use this plugin.  This plugin is written using only the Vim9 script.
 
 ## Installation
 
@@ -23,7 +23,27 @@ You can also install and manage this plugin using any one of the Vim plugin mana
 
 You will also need to install one or more language servers corresponding to the programming languages that you are using. Refer to the https://langserver.org/ page for the list of available language servers.
 
+## Features
+
+The following language server protocol (LSP) features are supported:
+
+* Code completion
+* Jump to definition, declaration, implementation, type definition
+* Display warning and error diagnostics
+* Find all symbol references
+* Workspace symbol search
+* Display code outline
+* Rename symbol
+* Display type and documentation on hover
+* Inlay hints
+* Code action
+* Formatting code
+* Folding code
+* Visually select symbol block/region
+
 ## Configuration
+
+To use the plugin features with a particular file type(s), you need to first register a LSP server for that file type(s).
 
 To register a LSP server, add the following lines to your .vimrc file (use only the LSP servers that you need from the below list):
 ```
@@ -83,7 +103,7 @@ To register a LSP server, add the following lines to your .vimrc file (use only 
    call LspAddServer(lspServers)
 ```
 
-The above lines add the LSP servers for C, C++, Javascript, Typescript, Shell script, Vim script, Go, Rust, Python and Fortran file types.
+The above lines add the LSP servers for C, C++, Javascript, Typescript, Shell script, Vim script, Go, Rust, Python and Fortran file types.  In addition to the above listed file types, this plugin also supports other file types.
 
 To add a LSP server, the following information is needed:
 
@@ -96,6 +116,9 @@ args|a list of command-line arguments passed to the LSP server. Each argument is
 The LSP servers are added using the LspAddServer() function. This function accepts a list of LSP servers with the above information.
 
 ## Supported Commands
+
+The following commands are provided to use the LSP features.
+
 Command|Description
 -------|-----------
 :LspShowServers|Display the list of registered LSP servers

@@ -12,7 +12,6 @@ import './textedit.vim'
 import './symbol.vim'
 import './codeaction.vim'
 import './callhierarchy.vim' as callhier
-import './selection.vim'
 import './signature.vim'
 
 # process the 'initialize' method reply from the LSP server
@@ -474,16 +473,6 @@ def ProcessCodeActionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any
   codeaction.ApplyCodeAction(lspserver, reply.result)
 enddef
 
-# Reply: 'textDocument/selectionRange'
-# Result: SelectionRange[] | null
-def ProcessSelectionRangeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
-  if reply.result->empty()
-    return
-  endif
-
-  selection.SelectionStart(lspserver, reply.result)
-enddef
-
 # Reply: 'textDocument/foldingRange'
 # Result: FoldingRange[] | null
 def ProcessFoldingRangeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
@@ -650,7 +639,6 @@ export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
       'textDocument/rangeFormatting': ProcessFormatReply,
       'textDocument/rename': ProcessRenameReply,
       'textDocument/codeAction': ProcessCodeActionReply,
-      'textDocument/selectionRange': ProcessSelectionRangeReply,
       'textDocument/foldingRange': ProcessFoldingRangeReply,
       'workspace/executeCommand': ProcessWorkspaceExecuteReply,
       'workspace/symbol': ProcessWorkspaceSymbolReply,

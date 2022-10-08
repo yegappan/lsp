@@ -2,7 +2,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: Sep 29, 2022
+Last change: Oct 7, 2022
 
 ==============================================================================
 						*lsp-license*
@@ -292,6 +292,10 @@ diagnostic messages, you can add the following line to your .vimrc file:
 			can be used to go back up the tag stack.  Also the
 			|``| mark is set to the position before the jump.
 
+			You may want to map a key to invoke this command: >
+
+			    nnoremap <buffer> gd <Cmd>LspGotoDefinition<CR>
+<
 						*:LspGotoDeclaration*
 :LspGotoDeclaration	Jumps to the declaration of the symbol under the
 			cursor. The behavior of this command is similar to the
@@ -303,12 +307,20 @@ diagnostic messages, you can add the following line to your .vimrc file:
 			|:LspGotoDefinition| command. Note that not all the LSP
 			servers support this feature.
 
+			You may want to map a key to invoke this command: >
+
+			    nnoremap <buffer> gt <Cmd>LspGotoTypeDef<CR>
+<
 						*:LspGotoImpl*
 :LspGotoImpl		Jumps to the implementation of the symbol under the
 			cursor. The behavior of this command is similar to the
 			|:LspGotoDefinition| command. Note that not all the LSP
 			servers support this feature.
 
+			You may want to map a key to invoke this command: >
+
+			    nnoremap <buffer> gi <Cmd>LspGotoImpl<CR>
+<
 						*:LspPeekDefinition*
 :LspPeekDefinition	Displays the line where the symbol under the cursor is
 			defined in the |preview-window|. The symbol is
@@ -502,24 +514,33 @@ diagnostic messages, you can add the following line to your .vimrc file:
 			Default is false
 
 						*:LspSelectionExpand*
-:LspSelectionExpand	Expand the current symbol range visual selection. It
-			is useful to create a visual map to use this command.
-			Example: >
+:LspSelectionExpand	Visually select the region of the symbol under the
+			cursor.  In visual mode, expands the current symbol
+			visual region selection to include the next level.
 
-			    xnoremap <silent> le <Cmd>LspSelectionExpand<CR>
+			For example, if the cursor is on a "for" statement,
+			this command selects the "for" statement and the body
+			of the "for" statement.
+
+			It is useful to create a visual map to use this
+			command.  Example: >
+
+			 xnoremap <silent> <Leader>e <Cmd>LspSelectionExpand<CR>
 <
-			With the above map, you can press "le" in visual mode
-			successively to expand the current visual region.
+			With the above map, you can press "\e" in visual mode
+			successively to expand the current symbol visual
+			region.
 
 						*:LspSelectionShrink*
 :LspSelectionShrink	Shrink the current symbol range visual selection. It
 			is useful to create a visual map to use this command.
 			Example: >
 
-			    xnoremap <silent> ls <Cmd>LspSelectionShrink<CR>
+			 xnoremap <silent> <Leader>s <Cmd>LspSelectionShrink<CR>
 <
-			With the above map, you can press "ls" in visual mode
-			successively to shrink the current visual region.
+			With the above map, you can press "\s" in visual mode
+			successively to shrink the current symbol visual
+			region.
 
 						*:LspFold*
 :LspFold		Fold the current file.

@@ -920,13 +920,19 @@ def SelectionRange(lspserver: dict<any>, fname: string)
   # clear the previous selection reply
   lspserver.selection = {}
 
-  var req = lspserver.createRequest('textDocument/selectionRange')
   # interface SelectionRangeParams
   # interface TextDocumentIdentifier
-  req.params->extend({textDocument: {uri: util.LspFileToUri(fname)}, positions: [GetLspPosition()]})
-  lspserver.sendMessage(req)
+  var param = {}
+  param.textDocument = {}
+  param.textDocument.uri = util.LspFileToUri(fname)
+  param.positions = [GetLspPosition()]
+  var resp = lspserver.rpc('textDocument/selectionRange', param)
 
-  lspserver.waitForResponse(req)
+  if resp->empty() || resp.result->empty()
+    return
+  endif
+
+  selection.SelectionStart(lspserver, resp.result)
 enddef
 
 # Expand the previous selection or start a new one
