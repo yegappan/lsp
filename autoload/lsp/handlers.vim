@@ -60,23 +60,6 @@ def ProcessShutdownReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
   return
 enddef
 
-# process the 'textDocument/switchSourceHeader' reply from the LSP server
-# Clangd specific extension
-# Result: URI | null
-def ProcessSwitchHeaderReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
-  if reply.result->empty()
-    return
-  endif
-  var fname = util.LspUriToFile(reply.result)
-  if (&modified && !&hidden) || &buftype != ''
-    # if the current buffer has unsaved changes and 'hidden' is not set,
-    # or if the current buffer is a special buffer, then ask to save changes
-    exe $'confirm edit {fname}'
-  else
-    exe $'edit {fname}'
-  endif
-enddef
-
 # process the 'textDocument/signatureHelp' reply from the LSP server
 # Result: SignatureHelp | null
 def ProcessSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
@@ -628,7 +611,6 @@ export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
     {
       'initialize': ProcessInitializeReply,
       'shutdown': ProcessShutdownReply,
-      'textDocument/switchSourceHeader': ProcessSwitchHeaderReply,
       'textDocument/signatureHelp': ProcessSignaturehelpReply,
       'textDocument/completion': ProcessCompletionReply,
       'textDocument/hover': ProcessHoverReply,

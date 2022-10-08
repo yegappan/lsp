@@ -538,11 +538,23 @@ enddef
 # Param: TextDocumentIdentifier
 # Clangd specific extension
 def SwitchSourceHeader(lspserver: dict<any>)
-  var req = lspserver.createRequest('textDocument/switchSourceHeader')
-  req.params->extend({uri: util.LspFileToUri(@%)})
-  lspserver.sendMessage(req)
+  var param = {}
+  param.uri = util.LspFileToUri(@%)
+  var resp = lspserver.rpc('textDocument/switchSourceHeader', param)
+  if resp->empty() || resp.result->empty()
+    return
+  endif
 
-  lspserver.waitForResponse(req)
+  # process the 'textDocument/switchSourceHeader' reply from the LSP server
+  # Result: URI | null
+  var fname = util.LspUriToFile(resp.result)
+  if (&modified && !&hidden) || &buftype != ''
+    # if the current buffer has unsaved changes and 'hidden' is not set,
+    # or if the current buffer is a special buffer, then ask to save changes
+    exe $'confirm edit {fname}'
+  else
+    exe $'edit {fname}'
+  endif
 enddef
 
 # get symbol signature help.
