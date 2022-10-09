@@ -752,6 +752,9 @@ export def Rename()
     return
   endif
 
+  # clear the input prompt
+  echo "\r"
+
   lspserver.renameSymbol(newName)
 enddef
 

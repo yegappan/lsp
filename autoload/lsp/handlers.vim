@@ -407,19 +407,6 @@ def ProcessDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>
   outline.UpdateOutlineWindow(fname, symbolTypeTable, symbolLineTable)
 enddef
 
-# Reply: 'textDocument/rename'
-# Result: Range | { range: Range, placeholder: string }
-#	        | { defaultBehavior: boolean } | null
-def ProcessRenameReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
-  if reply.result->empty()
-    # nothing to rename
-    return
-  endif
-
-  # result: WorkspaceEdit
-  textedit.ApplyWorkspaceEdit(reply.result)
-enddef
-
 # process the 'textDocument/codeAction' reply from the LSP server
 # Result: (Command | CodeAction)[] | null
 def ProcessCodeActionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
@@ -593,7 +580,6 @@ export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
       'textDocument/references': ProcessReferencesReply,
       'textDocument/documentHighlight': ProcessDocHighlightReply,
       'textDocument/documentSymbol': ProcessDocSymbolReply,
-      'textDocument/rename': ProcessRenameReply,
       'textDocument/codeAction': ProcessCodeActionReply,
       'textDocument/foldingRange': ProcessFoldingRangeReply,
       'workspace/executeCommand': ProcessWorkspaceExecuteReply,

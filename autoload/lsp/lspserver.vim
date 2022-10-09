@@ -261,7 +261,8 @@ def SendMessage(lspserver: dict<any>, content: dict<any>): void
   ch->ch_sendexpr(content)
 enddef
 
-# Send a RPC request message to LSP server
+# Send a sync RPC request message to the LSP server and return the received
+# reply.  In case of an error, an empty Dict is returned.
 def RpcCall(lspserver: dict<any>, method: string, params: any): dict<any>
   var req = {}
   req.method = method
@@ -273,7 +274,25 @@ def RpcCall(lspserver: dict<any>, method: string, params: any): dict<any>
     # LSP server has exited
     return {}
   endif
-  return ch->ch_evalexpr(req)
+
+  var reply = ch->ch_evalexpr(req)
+
+  if reply->has_key('result')
+    # successful reply
+    return reply
+  endif
+
+  if reply->has_key('error')
+    # request failed
+    var emsg: string = reply.error.message
+    emsg ..= ', code = ' .. reply.error.code
+    if reply.error->has_key('data')
+      emsg ..= ', data = ' .. reply.error.data->string()
+    endif
+    util.ErrMsg($'Error(LSP): request {method} failed ({emsg})')
+  endif
+
+  return {}
 enddef
 
 # Wait for a response message from the LSP server for the request "req"
@@ -444,8 +463,8 @@ enddef
 #
 # Result: Location | Location[] | LocationLink[] | null
 def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool)
-  var resp = lspserver.rpc(msg, GetLspTextDocPosition())
-  if resp->empty() || resp.result->empty()
+  var reply = lspserver.rpc(msg, GetLspTextDocPosition())
+  if reply->empty() || reply.result->empty()
     var emsg: string
     if msg ==# 'textDocument/declaration'
       emsg = 'Error: symbol declaration is not found'
@@ -466,10 +485,10 @@ def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool)
   endif
 
   var location: dict<any>
-  if resp.result->type() == v:t_list
-    location = resp.result[0]
+  if reply.result->type() == v:t_list
+    location = reply.result[0]
   else
-    location = resp.result
+    location = reply.result
   endif
 
   symbol.GotoSymbol(lspserver, location, peekSymbol)
@@ -541,14 +560,14 @@ enddef
 def SwitchSourceHeader(lspserver: dict<any>)
   var param = {}
   param.uri = util.LspFileToUri(@%)
-  var resp = lspserver.rpc('textDocument/switchSourceHeader', param)
-  if resp->empty() || resp.result->empty()
+  var reply = lspserver.rpc('textDocument/switchSourceHeader', param)
+  if reply->empty() || reply.result->empty()
     return
   endif
 
   # process the 'textDocument/switchSourceHeader' reply from the LSP server
   # Result: URI | null
-  var fname = util.LspUriToFile(resp.result)
+  var fname = util.LspUriToFile(reply.result)
   if (&modified && !&hidden) || &buftype != ''
     # if the current buffer has unsaved changes and 'hidden' is not set,
     # or if the current buffer is a special buffer, then ask to save changes
@@ -817,16 +836,22 @@ def RenameSymbol(lspserver: dict<any>, newName: string)
     return
   endif
 
-  var req = lspserver.createRequest('textDocument/rename')
   # interface RenameParams
   #   interface TextDocumentPositionParams
-  req.params = GetLspTextDocPosition()
-  req.params.newName = newName
-  lspserver.sendMessage(req)
-  if exists('g:LSPTest') && g:LSPTest
-    # When running LSP tests, make this a synchronous call
-    lspserver.waitForResponse(req)
+  var param: dict<any> = {}
+  param = GetLspTextDocPosition()
+  param.newName = newName
+
+  var reply = lspserver.rpc('textDocument/rename', param)
+
+  # Result: WorkspaceEdit | null
+  if reply->empty() || reply.result->empty()
+    # nothing to rename
+    return
   endif
+
+  # result: WorkspaceEdit
+  textedit.ApplyWorkspaceEdit(reply.result)
 enddef
 
 # Request: "textDocument/codeAction"
@@ -954,13 +979,13 @@ def SelectionRange(lspserver: dict<any>, fname: string)
   param.textDocument = {}
   param.textDocument.uri = util.LspFileToUri(fname)
   param.positions = [GetLspPosition()]
-  var resp = lspserver.rpc('textDocument/selectionRange', param)
+  var reply = lspserver.rpc('textDocument/selectionRange', param)
 
-  if resp->empty() || resp.result->empty()
+  if reply->empty() || reply.result->empty()
     return
   endif
 
-  selection.SelectionStart(lspserver, resp.result)
+  selection.SelectionStart(lspserver, reply.result)
 enddef
 
 # Expand the previous selection or start a new one
