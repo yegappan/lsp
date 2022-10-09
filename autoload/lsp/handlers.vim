@@ -407,30 +407,6 @@ def ProcessDocSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>
   outline.UpdateOutlineWindow(fname, symbolTypeTable, symbolLineTable)
 enddef
 
-# process the 'textDocument/formatting' reply from the LSP server
-# Result: TextEdit[] | null
-def ProcessFormatReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
-  if reply.result->empty()
-    # nothing to format
-    return
-  endif
-
-  # result: TextEdit[]
-
-  var fname: string = util.LspUriToFile(req.params.textDocument.uri)
-  var bnr: number = fname->bufnr()
-  if bnr == -1
-    # file is already removed
-    return
-  endif
-
-  # interface TextEdit
-  # Apply each of the text edit operations
-  var save_cursor: list<number> = getcurpos()
-  textedit.ApplyTextEdits(bnr, reply.result)
-  save_cursor->setpos('.')
-enddef
-
 # Reply: 'textDocument/rename'
 # Result: Range | { range: Range, placeholder: string }
 #	        | { defaultBehavior: boolean } | null
@@ -617,8 +593,6 @@ export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
       'textDocument/references': ProcessReferencesReply,
       'textDocument/documentHighlight': ProcessDocHighlightReply,
       'textDocument/documentSymbol': ProcessDocSymbolReply,
-      'textDocument/formatting': ProcessFormatReply,
-      'textDocument/rangeFormatting': ProcessFormatReply,
       'textDocument/rename': ProcessRenameReply,
       'textDocument/codeAction': ProcessCodeActionReply,
       'textDocument/foldingRange': ProcessFoldingRangeReply,

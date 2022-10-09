@@ -9,6 +9,7 @@ import './util.vim'
 import './diag.vim'
 import './selection.vim'
 import './symbol.vim'
+import './textedit.vim'
 
 # LSP server standard output handler
 def Output_cb(lspserver: dict<any>, chan: channel, msg: any): void
@@ -703,30 +704,45 @@ def TextDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
   else
     cmd = 'textDocument/formatting'
   endif
-  var req = lspserver.createRequest(cmd)
 
   # interface DocumentFormattingParams
-  # interface TextDocumentIdentifier
-  # interface FormattingOptions
+  #   interface TextDocumentIdentifier
+  #   interface FormattingOptions
+  var param = {}
+  param.textDocument = {uri: util.LspFileToUri(fname)}
   var fmtopts: dict<any> = {
     tabSize: shiftwidth(),
     insertSpaces: &expandtab ? true : false,
   }
-  #req.params->extend({textDocument: {uri: util.LspFileToUri(fname)},
-  #							options: fmtopts})
-  req.params->extend({textDocument: {uri: util.LspFileToUri(fname)}, options: fmtopts})
+  param.options = fmtopts
+
   if rangeFormat
     var r: dict<dict<number>> = {
 	start: {line: start_lnum - 1, character: 0},
-	end: {line: end_lnum, character: 0}}
-    req.params->extend({range: r})
+	end: {line: end_lnum - 1, character: 99999}}
+    param.range = r
   endif
 
-  lspserver.sendMessage(req)
-  if exists('g:LSPTest') && g:LSPTest
-    # When running LSP tests, make this a synchronous call
-    lspserver.waitForResponse(req)
+  var reply = lspserver.rpc(cmd, param)
+
+  # result: TextEdit[] | null
+
+  if reply->empty() || reply.result->empty()
+    # nothing to format
+    return
   endif
+
+  var bnr: number = fname->bufnr()
+  if bnr == -1
+    # file is already removed
+    return
+  endif
+
+  # interface TextEdit
+  # Apply each of the text edit operations
+  var save_cursor: list<number> = getcurpos()
+  textedit.ApplyTextEdits(bnr, reply.result)
+  save_cursor->setpos('.')
 enddef
 
 # Request: "textDocument/prepareCallHierarchy"
