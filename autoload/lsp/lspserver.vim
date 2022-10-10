@@ -146,9 +146,7 @@ enddef
 # Request: shutdown
 # Param: void
 def ShutdownServer(lspserver: dict<any>): void
-  var req = lspserver.createRequest('shutdown')
-  lspserver.sendMessage(req)
-  lspserver.waitForResponse(req)
+  lspserver.rpc('shutdown', {})
 enddef
 
 # Send a 'exit' notification to the LSP server
