@@ -7,7 +7,7 @@ if v:version < 900
   finish
 endif
 
-import './lspoptions.vim' as opt
+import './options.vim' as opt
 import './lspserver.vim' as lserver
 import './util.vim'
 import './buffer.vim' as buf

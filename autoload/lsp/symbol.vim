@@ -6,7 +6,7 @@ vim9script
 #   - jump to a symbol definition, declaration, type definition or
 #     implementation
 
-import './lspoptions.vim' as opt
+import './options.vim' as opt
 import './util.vim'
 
 # Handle keys pressed when the workspace symbol popup menu is displayed

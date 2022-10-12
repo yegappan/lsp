@@ -1,7 +1,7 @@
 vim9script
 
 import './util.vim'
-import './lspoptions.vim' as opt
+import './options.vim' as opt
 
 # jump to a symbol selected in the outline window
 def OutlineJumpToSymbol()

@@ -2,7 +2,7 @@ vim9script
 
 # Functions related to handling LSP symbol signature help.
 
-import './lspoptions.vim' as opt
+import './options.vim' as opt
 import './util.vim'
 import './buffer.vim' as buf
 

@@ -4,7 +4,7 @@ vim9script
 # Refer to https://microsoft.github.io/language-server-protocol/specification
 # for the Language Server Protocol (LSP) specificaiton.
 
-import './lspoptions.vim' as opt
+import './options.vim' as opt
 import './util.vim'
 import './diag.vim'
 import './outline.vim'

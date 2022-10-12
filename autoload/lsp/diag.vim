@@ -2,7 +2,7 @@ vim9script
 
 # Functions related to handling LSP diagnostics.
 
-import './lspoptions.vim' as opt
+import './options.vim' as opt
 import './util.vim'
 
 # Remove the diagnostics stored for buffer 'bnr'

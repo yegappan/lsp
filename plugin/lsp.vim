@@ -7,11 +7,11 @@ vim9script
 
 # Language Server Protocol (LSP) plugin for vim
 
-import autoload '../autoload/lsp/lspoptions.vim'
+import autoload '../autoload/lsp/options.vim'
 import autoload '../autoload/lsp/lsp.vim'
 
 def g:LspOptionsSet(opts: dict<any>)
-  lspoptions.OptionsSet(opts)
+  options.OptionsSet(opts)
 enddef
 
 def g:LspServerTraceEnable()
@@ -32,7 +32,7 @@ augroup LSPAutoCmds
   # Note that when BufWipeOut is invoked, the current buffer may be different
   # from the buffer getting wiped out.
   autocmd BufWipeOut * lsp.RemoveFile(expand('<abuf>')->str2nr())
-  if lspoptions.lspOptions.showDiagOnStatusLine
+  if options.lspOptions.showDiagOnStatusLine
     autocmd CursorMoved * lsp.LspShowCurrentDiagInStatusLine()
   endif
 augroup END
