@@ -645,18 +645,24 @@ def ShowReferences(lspserver: dict<any>, peek: bool): void
     return
   endif
 
-  var req = lspserver.createRequest('textDocument/references')
   # interface ReferenceParams
   #   interface TextDocumentPositionParams
-  req.params->extend(GetLspTextDocPosition())
-  req.params->extend({context: {includeDeclaration: true}})
+  var param: dict<any>
+  param = GetLspTextDocPosition()
+  param.context = {includeDeclaration: true}
+  var reply = lspserver.rpc('textDocument/references', param)
 
-  lspserver.peekSymbol = peek
-  lspserver.sendMessage(req)
-  if exists('g:LSPTest') && g:LSPTest
-    # When running LSP tests, make this a synchronous call
-    lspserver.waitForResponse(req)
+  # Result: Location[] | null
+  if reply->empty()
+    return
   endif
+
+  if reply.result->empty()
+    util.WarnMsg('Error: No references found')
+    return
+  endif
+
+  symbol.ShowReferences(lspserver, reply.result, peek)
 enddef
 
 # Request: "textDocument/documentHighlight"
@@ -1073,7 +1079,6 @@ export def NewLspServer(path: string, args: list<string>, isSync: bool, initiali
     diagsMap: {},
     workspaceSymbolPopup: 0,
     workspaceSymbolQuery: '',
-    peekSymbol: false,
     callHierarchyType: '',
     selection: {}
   }

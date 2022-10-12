@@ -139,10 +139,9 @@ export def ShowSymbolMenu(lspserver: dict<any>, query: string)
 enddef
 
 # Display or peek symbol references in a location list
-export def ShowReferences(lspserver: dict<any>, refs: list<dict<any>>)
+export def ShowReferences(lspserver: dict<any>, refs: list<dict<any>>, peekSymbol: bool)
   if refs->empty()
     util.WarnMsg('Error: No references found')
-    lspserver.peekSymbol = false
     return
   endif
 
@@ -166,13 +165,13 @@ export def ShowReferences(lspserver: dict<any>, refs: list<dict<any>>)
   endfor
 
   var save_winid = win_getid()
-  if lspserver.peekSymbol
+  if peekSymbol
     silent! pedit
     wincmd P
   endif
   setloclist(0, [], ' ', {title: 'Symbol Reference', items: qflist})
   var mods: string = ''
-  if lspserver.peekSymbol
+  if peekSymbol
     # When peeking the references, open the location list in a vertically
     # split window to the right and make the location list window 30% of the
     # source window width
@@ -182,7 +181,6 @@ export def ShowReferences(lspserver: dict<any>, refs: list<dict<any>>)
   if !opt.lspOptions.keepFocusInReferences
     save_winid->win_gotoid()
   endif
-  lspserver.peekSymbol = false
 enddef
 
 # Jump to the definition, declaration or implementation of a symbol.

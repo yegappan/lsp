@@ -257,18 +257,6 @@ def ProcessHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): v
   endif
 enddef
 
-# process the 'textDocument/references' reply from the LSP server
-# Result: Location[] | null
-def ProcessReferencesReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
-  if reply.result->empty()
-    util.WarnMsg('Error: No references found')
-    lspserver.peekSymbol = false
-    return
-  endif
-
-  symbol.ShowReferences(lspserver, reply.result)
-enddef
-
 # process the 'textDocument/documentHighlight' reply from the LSP server
 # Result: DocumentHighlight[] | null
 def ProcessDocHighlightReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
@@ -577,7 +565,6 @@ export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
       'textDocument/signatureHelp': ProcessSignaturehelpReply,
       'textDocument/completion': ProcessCompletionReply,
       'textDocument/hover': ProcessHoverReply,
-      'textDocument/references': ProcessReferencesReply,
       'textDocument/documentHighlight': ProcessDocHighlightReply,
       'textDocument/documentSymbol': ProcessDocSymbolReply,
       'textDocument/codeAction': ProcessCodeActionReply,
