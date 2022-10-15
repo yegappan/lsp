@@ -55,11 +55,6 @@ def ProcessInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any
   endif
 enddef
 
-# Process a 'shutdown' reply from the LSP server.
-def ProcessShutdownReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
-  return
-enddef
-
 # process the 'textDocument/signatureHelp' reply from the LSP server
 # Result: SignatureHelp | null
 def ProcessSignaturehelpReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
@@ -505,63 +500,11 @@ def ProcessWorkspaceSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dic
 				symbols->copy()->mapnew('v:val.name'))
 enddef
 
-# process the 'textDocument/prepareCallHierarchy' reply from the LSP server
-# Result: CallHierarchyItem[] | null
-def ProcessPrepareCallHierarchy(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
-  if reply.result->empty()
-    if lspserver.callHierarchyType == 'incoming'
-      util.WarnMsg('No incoming calls')
-    else
-      util.WarnMsg('No outgoing calls')
-    endif
-    return
-  endif
-
-  var choice: number = 1
-  if reply.result->len() > 1
-    var items: list<string> = ['Select a Call Hierarchy Item:']
-    for i in range(reply.result->len())
-      items->add(printf("%d. %s", i + 1, reply.result[i].name))
-    endfor
-    choice = inputlist(items)
-    if choice < 1 || choice > items->len()
-      return
-    endif
-  endif
-
-  if lspserver.callHierarchyType == 'incoming'
-    g:LspGetIncomingCalls(reply.result[choice - 1])
-  else
-    g:LspGetOutgoingCalls(reply.result[choice - 1])
-  endif
-enddef
-
-# process the 'callHierarchy/incomingCalls' reply from the LSP server
-# Result: CallHierarchyIncomingCall[] | null
-def ProcessIncomingCalls(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
-  if reply.result->empty()
-    return
-  endif
-
-  callhier.IncomingCalls(reply.result)
-enddef
-
-# process the 'callHierarchy/outgoingCalls' reply from the LSP server
-# Result: CallHierarchyOutgoingCall[] | null
-def ProcessOutgoingCalls(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
-  if reply.result->empty()
-    return
-  endif
-
-  callhier.OutgoingCalls(reply.result)
-enddef
-
 # Process various reply messages from the LSP server
 export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   var lsp_reply_handlers: dict<func> =
     {
       'initialize': ProcessInitializeReply,
-      'shutdown': ProcessShutdownReply,
       'textDocument/signatureHelp': ProcessSignaturehelpReply,
       'textDocument/completion': ProcessCompletionReply,
       'textDocument/hover': ProcessHoverReply,
@@ -571,9 +514,6 @@ export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
       'textDocument/foldingRange': ProcessFoldingRangeReply,
       'workspace/executeCommand': ProcessWorkspaceExecuteReply,
       'workspace/symbol': ProcessWorkspaceSymbolReply,
-      'textDocument/prepareCallHierarchy': ProcessPrepareCallHierarchy,
-      'callHierarchy/incomingCalls': ProcessIncomingCalls,
-      'callHierarchy/outgoingCalls': ProcessOutgoingCalls
     }
 
   if lsp_reply_handlers->has_key(req.method)

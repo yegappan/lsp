@@ -701,29 +701,8 @@ export def IncomingCalls()
     return
   endif
 
-  lspserver.callHierarchyType = 'incoming'
-  var fname: string = @%
-  lspserver.prepareCallHierarchy(fname)
+  lspserver.incomingCalls(@%)
 enddef
-
-def g:LspGetIncomingCalls(item: dict<any>)
-  var lspserver: dict<any> = CurbufGetServerChecked()
-  if lspserver->empty()
-    return
-  endif
-
-  lspserver.incomingCalls(item)
-enddef
-
-def g:LspGetOutgoingCalls(item: dict<any>)
-  var lspserver: dict<any> = CurbufGetServerChecked()
-  if lspserver->empty()
-    return
-  endif
-
-  lspserver.outgoingCalls(item)
-enddef
-
 
 # Display all the symbols used by the current symbol.
 # Uses LSP "callHierarchy/outgoingCalls" request
@@ -733,9 +712,7 @@ export def OutgoingCalls()
     return
   endif
 
-  lspserver.callHierarchyType = 'outgoing'
-  var fname: string = @%
-  lspserver.prepareCallHierarchy(fname)
+  lspserver.outgoingCalls(@%)
 enddef
 
 # Rename a symbol

@@ -7,7 +7,7 @@ jobs:
     steps:
       - name: Install packages
         run: |
-          sudo apt update && sudo apt install -y clangd-12
+          sudo apt update && sudo apt install -y clangd-14
       - name: Setup Vim
         uses: rhysd/action-setup-vim@v1
         id: vim

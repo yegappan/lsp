@@ -10,6 +10,7 @@ import './diag.vim'
 import './selection.vim'
 import './symbol.vim'
 import './textedit.vim'
+import './callhierarchy.vim' as callhier
 
 # LSP server standard output handler
 def Output_cb(lspserver: dict<any>, chan: channel, msg: any): void
@@ -769,26 +770,34 @@ def TextDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
 enddef
 
 # Request: "textDocument/prepareCallHierarchy"
-# Param: CallHierarchyPrepareParams
-def PrepareCallHierarchy(lspserver: dict<any>, fname: string)
-  # Check whether LSP server supports call hierarchy
-  if !lspserver.caps->has_key('callHierarchyProvider')
-			|| !lspserver.caps.callHierarchyProvider
-    util.ErrMsg("Error: LSP server does not support call hierarchy")
-    return
-  endif
-
-  var req = lspserver.createRequest('textDocument/prepareCallHierarchy')
-
+def PrepareCallHierarchy(lspserver: dict<any>): dict<any>
   # interface CallHierarchyPrepareParams
   #   interface TextDocumentPositionParams
-  req.params->extend(GetLspTextDocPosition())
-  lspserver.sendMessage(req)
+  var param: dict<any>
+  param = GetLspTextDocPosition()
+  var reply = lspserver.rpc('textDocument/prepareCallHierarchy', param)
+  if reply->empty() || reply.result->empty()
+    return {}
+  endif
+
+  # Result: CallHierarchyItem[] | null
+  var choice: number = 1
+  if reply.result->len() > 1
+    var items: list<string> = ['Select a Call Hierarchy Item:']
+    for i in range(reply.result->len())
+      items->add(printf("%d. %s", i + 1, reply.result[i].name))
+    endfor
+    choice = inputlist(items)
+    if choice < 1 || choice > items->len()
+      return {}
+    endif
+  endif
+
+  return reply.result[choice - 1]
 enddef
 
 # Request: "callHierarchy/incomingCalls"
-# Param: CallHierarchyItem
-def IncomingCalls(lspserver: dict<any>, hierItem: dict<any>)
+def IncomingCalls(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports call hierarchy
   if !lspserver.caps->has_key('callHierarchyProvider')
 			|| !lspserver.caps.callHierarchyProvider
@@ -796,21 +805,27 @@ def IncomingCalls(lspserver: dict<any>, hierItem: dict<any>)
     return
   endif
 
-  var req = lspserver.createRequest('callHierarchy/incomingCalls')
-
-  # interface CallHierarchyIncomingCallsParams
-  #   interface CallHierarchyItem
-  req.params->extend({item: hierItem})
-  lspserver.sendMessage(req)
-  if exists('g:LSPTest') && g:LSPTest
-    # When running LSP tests, make this a synchronous call
-    lspserver.waitForResponse(req)
+  var reply = PrepareCallHierarchy(lspserver)
+  if reply->empty()
+    util.WarnMsg('No incoming calls')
+    return
   endif
+
+  # Request: "callHierarchy/incomingCalls"
+  # Param: CallHierarchyIncomingCallsParams
+  var param = {}
+  param.item = reply
+  reply = lspserver.rpc('callHierarchy/incomingCalls', param)
+  if reply->empty() || reply.result->empty()
+    util.WarnMsg('No incoming calls')
+    return
+  endif
+
+  callhier.IncomingCalls(reply.result)
 enddef
 
 # Request: "callHierarchy/outgoingCalls"
-# Param: CallHierarchyItem
-def OutgoingCalls(lspserver: dict<any>, hierItem: dict<any>)
+def OutgoingCalls(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports call hierarchy
   if !lspserver.caps->has_key('callHierarchyProvider')
 			|| !lspserver.caps.callHierarchyProvider
@@ -818,16 +833,23 @@ def OutgoingCalls(lspserver: dict<any>, hierItem: dict<any>)
     return
   endif
 
-  var req = lspserver.createRequest('callHierarchy/outgoingCalls')
-
-  # interface CallHierarchyOutgoingCallsParams
-  #   interface CallHierarchyItem
-  req.params->extend({item: hierItem})
-  lspserver.sendMessage(req)
-  if exists('g:LSPTest') && g:LSPTest
-    # When running LSP tests, make this a synchronous call
-    lspserver.waitForResponse(req)
+  var reply = PrepareCallHierarchy(lspserver)
+  if reply->empty()
+    util.WarnMsg('No outgoing calls')
+    return
   endif
+
+  # Request: "callHierarchy/outgoingCalls"
+  # Param: CallHierarchyOutgoingCallsParams
+  var param = {}
+  param.item = reply
+  reply = lspserver.rpc('callHierarchy/outgoingCalls', param)
+  if reply->empty() || reply.result->empty()
+    util.WarnMsg('No outgoing calls')
+    return
+  endif
+
+  callhier.OutgoingCalls(reply.result)
 enddef
 
 # Request: "textDocument/rename"
@@ -1120,7 +1142,6 @@ export def NewLspServer(path: string, args: list<string>, isSync: bool, initiali
     docHighlight: function(DocHighlight, [lspserver]),
     getDocSymbols: function(GetDocSymbols, [lspserver]),
     textDocFormat: function(TextDocFormat, [lspserver]),
-    prepareCallHierarchy: function(PrepareCallHierarchy, [lspserver]),
     incomingCalls: function(IncomingCalls, [lspserver]),
     outgoingCalls: function(OutgoingCalls, [lspserver]),
     renameSymbol: function(RenameSymbol, [lspserver]),

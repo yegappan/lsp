@@ -21,7 +21,7 @@ endif
 source ../plugin/lsp.vim
 var lspServers = [{
       filetype: ['c', 'cpp'],
-      path: '/usr/bin/clangd-12',
+      path: '/usr/bin/clangd-14',
       args: ['--background-index', '--clang-tidy']
   }]
 call LspAddServer(lspServers)
@@ -669,6 +669,38 @@ def Test_LspShowSignature()
   expected.type_bufnr = bnr
   assert_equal([expected], prop_list(1, {bufnr: bnr}))
   popup_close(p[0])
+  :%bw!
+enddef
+
+# Test for :LspIncomingCalls
+def Test_LspIncomingCalls()
+  silent! edit Xtest.c
+  sleep 200m
+  var lines: list<string> =<< trim END
+    void xFunc(void)
+    {
+    }
+
+    void aFunc(void)
+    {
+      xFunc();
+    }
+
+    void bFunc(void)
+    {
+      xFunc();
+    }
+  END
+  setline(1, lines)
+  :sleep 1
+  cursor(1, 6)
+  :LspIncomingCalls
+  assert_equal(2, winnr('$'))
+  var l = getloclist(0)
+  assert_equal([7, 3], [l[0].lnum, l[0].col])
+  assert_equal('aFunc: xFunc();', l[0].text)
+  assert_equal([12, 3], [l[1].lnum, l[1].col])
+  assert_equal('bFunc: xFunc();', l[1].text)
   :%bw!
 enddef
 
