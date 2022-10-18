@@ -917,19 +917,24 @@ enddef
 # List project-wide symbols matching query string
 # Request: "workspace/symbol"
 # Param: WorkspaceSymbolParams
-def WorkspaceQuerySymbols(lspserver: dict<any>, query: string): bool
+def WorkspaceQuerySymbols(lspserver: dict<any>, query: string)
   # Check whether the LSP server supports listing workspace symbols
   if !lspserver.caps->has_key('workspaceSymbolProvider')
 				|| !lspserver.caps.workspaceSymbolProvider
     util.ErrMsg("Error: LSP server does not support listing workspace symbols")
-    return false
+    return
   endif
 
-  var req = lspserver.createRequest('workspace/symbol')
-  req.params->extend({query: query})
-  lspserver.sendMessage(req)
+  # Param: WorkspaceSymbolParams
+  var param = {}
+  param.query = query
+  var reply = lspserver.rpc('workspace/symbol', param)
+  if reply->empty() || reply.result->empty()
+    util.WarnMsg($'Error: Symbol "{query}" is not found')
+    return
+  endif
 
-  return true
+  symbol.WorkspaceSymbolPopup(lspserver, query, reply.result)
 enddef
 
 # Add a workspace folder to the LSP server.
@@ -1099,7 +1104,7 @@ export def NewLspServer(path: string, args: list<string>, isSync: bool, initiali
     completionTriggerChars: [],
     signaturePopup: -1,
     diagsMap: {},
-    workspaceSymbolPopup: 0,
+    workspaceSymbolPopup: -1,
     workspaceSymbolQuery: '',
     callHierarchyType: '',
     selection: {}

@@ -764,11 +764,7 @@ export def SymbolSearch(queryArg: string)
   endif
   redraw!
 
-  symbol.ShowSymbolMenu(lspserver, query)
-
-  if !lspserver.workspaceQuery(query)
-    lspserver.workspaceSymbolPopup->popup_close()
-  endif
+  lspserver.workspaceQuery(query)
 enddef
 
 # Display the list of workspace folders

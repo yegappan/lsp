@@ -103,6 +103,9 @@ def JumpToWorkspaceSymbol(popupID: number, result: number): void
     else
       winList[0]->win_gotoid()
     endif
+    # Set the previous cursor location mark. Instead of using setpos(), m' is
+    # used so that the current location is added to the jump list.
+    normal m'
     setcursorcharpos(symTbl[result - 1].pos.line + 1,
 			symTbl[result - 1].pos.character + 1)
   catch
@@ -111,7 +114,7 @@ def JumpToWorkspaceSymbol(popupID: number, result: number): void
 enddef
 
 # display a list of symbols from the workspace
-export def ShowSymbolMenu(lspserver: dict<any>, query: string)
+def ShowSymbolMenu(lspserver: dict<any>, query: string)
   # Create the popup menu
   var lnum = &lines - &cmdheight - 2 - 10
   var popupAttr = {
@@ -136,6 +139,83 @@ export def ShowSymbolMenu(lspserver: dict<any>, query: string)
 			{bufnr: lspserver.workspaceSymbolPopup->winbufnr(),
 			 highlight: 'Title'})
   echo $'Symbol: {query}'
+enddef
+
+# Convert a file name to <filename> (<dirname>) format.
+# Make sure the popup does't occupy the entire screen by reducing the width.
+def MakeMenuName(popupWidth: number, fname: string): string
+  var filename: string = fname->fnamemodify(':t')
+  var flen: number = filename->len()
+  var dirname: string = fname->fnamemodify(':h')
+
+  if fname->len() > popupWidth && flen < popupWidth
+    # keep the full file name and reduce directory name length
+    # keep some characters at the beginning and end (equally).
+    # 6 spaces are used for "..." and " ()"
+    var dirsz = (popupWidth - flen - 6) / 2
+    dirname = dirname[: dirsz] .. '...' .. dirname[-dirsz : ]
+  endif
+  var str: string = filename
+  if dirname != '.'
+    str ..= $' ({dirname}/)'
+  endif
+  return str
+enddef
+
+# process the 'workspace/symbol' reply from the LSP server
+# Result: SymbolInformation[] | null
+export def WorkspaceSymbolPopup(lspserver: dict<any>, query: string,
+				symInfo: list<dict<any>>)
+  var symbols: list<dict<any>> = []
+  var symbolType: string
+  var fileName: string
+  var r: dict<dict<number>>
+  var symName: string
+
+  # Create a symbol popup menu if it is not present
+  if lspserver.workspaceSymbolPopup->winbufnr() == -1
+    ShowSymbolMenu(lspserver, query)
+  endif
+
+  for symbol in symInfo
+    if !symbol->has_key('location')
+      # ignore entries without location information
+      continue
+    endif
+
+    # interface SymbolInformation
+    fileName = util.LspUriToFile(symbol.location.uri)
+    r = symbol.location.range
+
+    symName = symbol.name
+    if symbol->has_key('containerName') && symbol.containerName != ''
+      symName = $'{symbol.containerName}::{symName}'
+    endif
+    symName ..= $' [{SymbolKindToName(symbol.kind)}]'
+    symName ..= ' ' .. MakeMenuName(
+		lspserver.workspaceSymbolPopup->popup_getpos().core_width,
+		fileName)
+
+    symbols->add({name: symName,
+			file: fileName,
+			pos: r.start})
+  endfor
+  symbols->setwinvar(lspserver.workspaceSymbolPopup, 'LspSymbolTable')
+  lspserver.workspaceSymbolPopup->popup_settext(
+				symbols->copy()->mapnew('v:val.name'))
+enddef
+
+# map the LSP symbol kind number to string
+export def SymbolKindToName(symkind: number): string
+  var symbolMap: list<string> = ['', 'File', 'Module', 'Namespace', 'Package',
+	'Class', 'Method', 'Property', 'Field', 'Constructor', 'Enum',
+	'Interface', 'Function', 'Variable', 'Constant', 'String', 'Number',
+	'Boolean', 'Array', 'Object', 'Key', 'Null', 'EnumMember', 'Struct',
+	'Event', 'Operator', 'TypeParameter']
+  if symkind > 26
+    return ''
+  endif
+  return symbolMap[symkind]
 enddef
 
 # Display or peek symbol references in a location list

@@ -35,7 +35,7 @@ The following language server protocol (LSP) features are supported:
 * Display code outline
 * Rename symbol
 * Display type and documentation on hover
-* Inlay hints
+* Signature help
 * Code action
 * Formatting code
 * Folding code

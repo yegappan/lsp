@@ -672,6 +672,44 @@ def Test_LspShowSignature()
   :%bw!
 enddef
 
+# Test for :LspSymbolSearch
+def Test_LspSymbolSearch()
+  silent! edit Xtest.c
+  sleep 200m
+  var lines: list<string> =<< trim END
+    void lsptest_funcA()
+    {
+    }
+
+    void lsptest_funcB()
+    {
+    }
+
+    void lsptest_funcC()
+    {
+    }
+  END
+  setline(1, lines)
+  :sleep 1
+
+  cursor(1, 1)
+  feedkeys(":LspSymbolSearch lsptest_funcB\<CR>\<CR>", "xt")
+  assert_equal([5, 6], [line('.'), col('.')])
+
+  cursor(1, 1)
+  feedkeys(":LspSymbolSearch lsptest_func\<CR>\<Down>\<Down>\<CR>", "xt")
+  assert_equal([9, 6], [line('.'), col('.')])
+
+  cursor(1, 1)
+  feedkeys(":LspSymbolSearch lsptest_funcA\<CR>\<BS>B\<CR>", "xt")
+  assert_equal([5, 6], [line('.'), col('.')])
+
+  var output = execute(':LspSymbolSearch lsptest_nonexist')->split("\n")
+  assert_equal(['Error: Symbol "lsptest_nonexist" is not found'], output)
+
+  :%bw!
+enddef
+
 # Test for :LspIncomingCalls
 def Test_LspIncomingCalls()
   silent! edit Xtest.c

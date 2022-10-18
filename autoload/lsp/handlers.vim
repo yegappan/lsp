@@ -284,19 +284,6 @@ def ProcessDocHighlightReply(lspserver: dict<any>, req: dict<any>, reply: dict<a
   endfor
 enddef
 
-# map the LSP symbol kind number to string
-def LspSymbolKindToName(symkind: number): string
-  var symbolMap: list<string> = ['', 'File', 'Module', 'Namespace', 'Package',
-	'Class', 'Method', 'Property', 'Field', 'Constructor', 'Enum',
-	'Interface', 'Function', 'Variable', 'Constant', 'String', 'Number',
-	'Boolean', 'Array', 'Object', 'Key', 'Null', 'EnumMember', 'Struct',
-	'Event', 'Operator', 'TypeParameter']
-  if symkind > 26
-    return ''
-  endif
-  return symbolMap[symkind]
-enddef
-
 # process SymbolInformation[]
 def ProcessSymbolInfoTable(symbolInfoTable: list<dict<any>>,
 				symbolTypeTable: dict<list<dict<any>>>,
@@ -309,7 +296,7 @@ def ProcessSymbolInfoTable(symbolInfoTable: list<dict<any>>,
 
   for symbol in symbolInfoTable
     fname = util.LspUriToFile(symbol.location.uri)
-    symbolType = LspSymbolKindToName(symbol.kind)
+    symbolType = symbol.SymbolKindToName(symbol.kind)
     name = symbol.name
     if symbol->has_key('containerName')
       if symbol.containerName != ''
@@ -340,7 +327,7 @@ def ProcessDocSymbolTable(docSymbolTable: list<dict<any>>,
 
   for symbol in docSymbolTable
     name = symbol.name
-    symbolType = LspSymbolKindToName(symbol.kind)
+    symbolType = symbol.SymbolKindToName(symbol.kind)
     r = symbol.range
     if symbol->has_key('detail')
       symbolDetail = symbol.detail
@@ -438,68 +425,6 @@ def ProcessWorkspaceExecuteReply(lspserver: dict<any>, req: dict<any>, reply: di
   # Nothing to do for the reply
 enddef
 
-# Convert a file name <filename> (<dirname>) format.
-# Make sure the popup does't occupy the entire screen by reducing the width.
-def MakeMenuName(popupWidth: number, fname: string): string
-  var filename: string = fname->fnamemodify(':t')
-  var flen: number = filename->len()
-  var dirname: string = fname->fnamemodify(':h')
-
-  if fname->len() > popupWidth && flen < popupWidth
-    # keep the full file name and reduce directory name length
-    # keep some characters at the beginning and end (equally).
-    # 6 spaces are used for "..." and " ()"
-    var dirsz = (popupWidth - flen - 6) / 2
-    dirname = dirname[: dirsz] .. '...' .. dirname[-dirsz : ]
-  endif
-  var str: string = filename
-  if dirname != '.'
-    str ..= $' ({dirname}/)'
-  endif
-  return str
-enddef
-
-# process the 'workspace/symbol' reply from the LSP server
-# Result: SymbolInformation[] | null
-def ProcessWorkspaceSymbolReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>)
-  var symbols: list<dict<any>> = []
-  var symbolType: string
-  var fileName: string
-  var r: dict<dict<number>>
-  var symName: string
-
-  if reply.result->empty()
-    return
-  endif
-
-  for symbol in reply.result
-    if !symbol->has_key('location')
-      # ignore entries without location information
-      continue
-    endif
-
-    # interface SymbolInformation
-    fileName = util.LspUriToFile(symbol.location.uri)
-    r = symbol.location.range
-
-    symName = symbol.name
-    if symbol->has_key('containerName') && symbol.containerName != ''
-      symName = $'{symbol.containerName}::{symName}'
-    endif
-    symName ..= $' [{LspSymbolKindToName(symbol.kind)}]'
-    symName ..= ' ' .. MakeMenuName(
-		lspserver.workspaceSymbolPopup->popup_getpos().core_width,
-		fileName)
-
-    symbols->add({name: symName,
-			file: fileName,
-			pos: r.start})
-  endfor
-  symbols->setwinvar(lspserver.workspaceSymbolPopup, 'LspSymbolTable')
-  lspserver.workspaceSymbolPopup->popup_settext(
-				symbols->copy()->mapnew('v:val.name'))
-enddef
-
 # Process various reply messages from the LSP server
 export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
   var lsp_reply_handlers: dict<func> =
@@ -513,7 +438,6 @@ export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
       'textDocument/codeAction': ProcessCodeActionReply,
       'textDocument/foldingRange': ProcessFoldingRangeReply,
       'workspace/executeCommand': ProcessWorkspaceExecuteReply,
-      'workspace/symbol': ProcessWorkspaceSymbolReply,
     }
 
   if lsp_reply_handlers->has_key(req.method)
