@@ -45,7 +45,7 @@ The following language server protocol (LSP) features are supported:
 
 To use the plugin features with a particular file type(s), you need to first register a LSP server for that file type(s).
 
-To register a LSP server, add the following lines to your .vimrc file (use only the LSP servers that you need from the below list):
+To register a LSP server, add the following lines to your .vimrc file (use only the LSP servers that you need from the below list).  If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, the steps are described later in this section.
 ```
    let lspServers = [
 		\     #{
@@ -114,6 +114,21 @@ path|complete path to the LSP server executable (without any arguments).
 args|a list of command-line arguments passed to the LSP server. Each argument is a separate List item.
 
 The LSP servers are added using the LspAddServer() function. This function accepts a list of LSP servers with the above information.
+
+If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, then you need to use the VimEnter autocmd to initialize the LSP server and to set the LSP server options.  For example:
+```
+    let lspServers = [
+		\     #{
+		\        filetype: ['c', 'cpp'],
+		\        path: '/usr/local/bin/clangd',
+		\        args: ['--background-index']
+		\      }
+		\   ]
+    autocmd VimEnter * call LspAddServer(lspServers)
+   
+    let lspOpts = {'autoHighlightDiags': v:true}
+    autocmd VimEnter * call LspOptionsSet(lspOpts)
+```
 
 ## Supported Commands
 
