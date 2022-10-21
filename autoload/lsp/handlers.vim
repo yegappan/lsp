@@ -144,7 +144,7 @@ def ProcessCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any
     completeItems->add(d)
   endfor
 
-  if opt.lspOptions.autoComplete
+  if opt.lspOptions.autoComplete && !lspserver.omniCompletePending
     if completeItems->empty()
       # no matches
       return
@@ -185,7 +185,7 @@ def ProcessCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any
     complete(start_col, completeItems)
   else
     lspserver.completeItems = completeItems
-    lspserver.completePending = false
+    lspserver.omniCompletePending = false
   endif
 enddef
 
@@ -492,6 +492,11 @@ def ProcessUnsupportedNotif(lspserver: dict<any>, reply: dict<any>)
   util.ErrMsg($'Error: Unsupported notification message received from the LSP server ({lspserver.path}), message = {reply->string()}')
 enddef
 
+# process log trace notification messages
+def ProcessLogTraceNotif(lspserver: dict<any>, reply: dict<any>)
+  :echomsg $'Log trace notification: {reply->string()}'
+enddef
+
 # per-filetype private map inside to record if ntf once or not
 var ftypeNtfOnceMap: dict<bool> = {}
 # process unsupported notification messages but only notify once
@@ -514,6 +519,7 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       'window/logMessage': ProcessLogMsgNotif,
       'textDocument/publishDiagnostics': ProcessDiagNotif,
       '$/progress': ProcessUnsupportedNotif,
+      '$/logTrace': ProcessLogTraceNotif,
       'telemetry/event': ProcessUnsupportedNotifOnce,
       # Java language server sends the 'language/status' notification which is
       # not in the LSP specification

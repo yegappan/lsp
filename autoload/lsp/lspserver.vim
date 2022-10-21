@@ -55,7 +55,7 @@ def StartServer(lspserver: dict<any>): number
   lspserver.caps = {}
   lspserver.nextID = 1
   lspserver.requests = {}
-  lspserver.completePending = false
+  lspserver.omniCompletePending = false
   lspserver.completionTriggerChars = []
   lspserver.signaturePopup = -1
   lspserver.workspaceFolders = [getcwd()]
@@ -187,7 +187,8 @@ def StopServer(lspserver: dict<any>): number
   return 0
 enddef
 
-# set the LSP server trace level using $/setTrace notification
+# Set the LSP server trace level using the $/setTrace notification
+# Support values for "traceVal" are "off", "messages" and "verbose".
 def SetTrace(lspserver: dict<any>, traceVal: string)
   var notif: dict<any> = lspserver.createNotification('$/setTrace')
   notif.params->extend({value: traceVal})
@@ -417,7 +418,7 @@ enddef
 # Get a list of completion items.
 # Request: "textDocument/completion"
 # Param: CompletionParams
-def GetCompletion(lspserver: dict<any>, triggerKind_arg: number): void
+def GetCompletion(lspserver: dict<any>, triggerKind_arg: number, triggerChar: string): void
   # Check whether LSP server supports completion
   if !lspserver.caps->has_key('completionProvider')
     util.ErrMsg("Error: LSP server does not support completion")
@@ -435,7 +436,7 @@ def GetCompletion(lspserver: dict<any>, triggerKind_arg: number): void
   #   interface TextDocumentPositionParams
   req.params = GetLspTextDocPosition()
   #   interface CompletionContext
-  req.params.context = {triggerKind: triggerKind_arg}
+  req.params.context = {triggerKind: triggerKind_arg, triggerCharacter: triggerChar}
 
   lspserver.sendMessage(req)
   if exists('g:LSPTest') && g:LSPTest
@@ -1100,7 +1101,7 @@ export def NewLspServer(path: string, args: list<string>, isSync: bool, initiali
     nextID: 1,
     caps: {},
     requests: {},
-    completePending: false,
+    omniCompletePending: false,
     completionTriggerChars: [],
     signaturePopup: -1,
     diagsMap: {},

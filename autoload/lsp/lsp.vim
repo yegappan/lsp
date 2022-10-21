@@ -454,7 +454,7 @@ enddef
 # set the LSP server trace level for the current buffer
 # Params: SetTraceParams
 export def SetTraceServer(traceVal: string)
-  if ['off', 'message', 'verbose']->index(traceVal) == -1
+  if ['off', 'messages', 'verbose']->index(traceVal) == -1
     util.ErrMsg($'Error: Unsupported LSP server trace value {traceVal}')
     return
   endif
@@ -546,22 +546,25 @@ def g:LspComplete()
 
   # Trigger kind is 1 for 24x7 code complete or manual invocation
   var triggerKind: number = 1
+  var triggerChar: string = ''
 
   # If the character before the cursor is not a keyword character or is not
   # one of the LSP completion trigger characters, then do nothing.
   if line[cur_col - 2] !~ '\k'
-    if lspserver.completionTriggerChars->index(line[cur_col - 2]) == -1
+    var trigidx = lspserver.completionTriggerChars->index(line[cur_col - 2])
+    if trigidx == -1
       return
     endif
     # completion triggered by one of the trigger characters
     triggerKind = 2
+    triggerChar = lspserver.completionTriggerChars[trigidx]
   endif
 
   # first send all the changes in the current buffer to the LSP server
   listener_flush()
 
   # initiate a request to LSP server to get list of completions
-  lspserver.getCompletion(triggerKind)
+  lspserver.getCompletion(triggerKind, triggerChar)
 
   return
 enddef
@@ -577,10 +580,10 @@ def g:LspOmniFunc(findstart: number, base: string): any
     # first send all the changes in the current buffer to the LSP server
     listener_flush()
 
-    lspserver.completePending = v:true
+    lspserver.omniCompletePending = v:true
     lspserver.completeItems = []
     # initiate a request to LSP server to get list of completions
-    lspserver.getCompletion(1)
+    lspserver.getCompletion(1, '')
 
     # locate the start of the word
     var line = getline('.')
@@ -592,7 +595,7 @@ def g:LspOmniFunc(findstart: number, base: string): any
   else
     # Wait for the list of matches from the LSP server
     var count: number = 0
-    while lspserver.completePending && count < 1000
+    while lspserver.omniCompletePending && count < 1000
       if complete_check()
 	return v:none
       endif

@@ -26,6 +26,16 @@ def g:LspServerReady(): bool
   return lsp.ServerReady()
 enddef
 
+# Command line completion function for the LspSetTrace command.
+def LspServerTraceComplete(arglead: string, cmdline: string, cursorpos: number): list<string>
+  var l = ['off', 'messages', 'verbose']
+  if arglead->empty()
+    return l
+  else
+    return filter(l, (_, val) => val =~ arglead)
+  endif
+enddef
+
 augroup LSPAutoCmds
   au!
   autocmd BufNewFile,BufReadPost * lsp.AddFile(expand('<abuf>')->str2nr())
@@ -45,7 +55,7 @@ augroup END
 command! -nargs=0 -bar LspShowServers lsp.ShowServers()
 command! -nargs=0 -bar LspShowServerCapabilities lsp.ShowServerCapabilities()
 command! -nargs=0 -bar LspServerRestart lsp.RestartServer()
-command! -nargs=1 -bar LspSetTrace lsp.SetTraceServer(<q-args>)
+command! -nargs=1 -complete=customlist,LspServerTraceComplete -bar LspSetTrace lsp.SetTraceServer(<q-args>)
 command! -nargs=0 -bar LspGotoDefinition lsp.GotoDefinition(v:false)
 command! -nargs=0 -bar LspGotoDeclaration lsp.GotoDeclaration(v:false)
 command! -nargs=0 -bar LspGotoTypeDef lsp.GotoTypedef(v:false)

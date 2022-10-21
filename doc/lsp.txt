@@ -2,7 +2,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: Oct 7, 2022
+Last change: Oct 21, 2022
 
 ==============================================================================
 						*lsp-license*
@@ -602,6 +602,14 @@ default. The following example disables omni-completion for python: >
 		\     }
 		\   ]
 <
+If you want to use omni completion, in addition to the automatic completion,
+then you can set the 'omnifunc' option to the "LspOmniFunc" function: >
+
+	set omnifunc=LspOmniFunc
+<
+To use omni completion, press CTRL-X CTRL-O in insert mode.  Refer to
+|compl-omni| for more information.
+
 ==============================================================================
 7. Autocommands						*lsp-autocmds*
 
