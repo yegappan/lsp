@@ -240,32 +240,13 @@ def g:LspLeftInsertMode()
   diag.UpdateDiags(lspserver, bnr)
 enddef
 
-# A new buffer is opened. If LSP is supported for this buffer, then add it
-export def AddFile(bnr: number): void
-  if buf.BufHasLspServer(bnr)
-    # LSP server for this buffer is already initialized and running
-    return
-  endif
-
-  # Skip remote files
-  if util.LspUriRemote(bnr->bufname()->fnamemodify(":p"))
+def BufferInit(bnr: number): void
+  var lspserver: dict<any> = buf.BufLspServerGet(bnr)
+  if lspserver->empty() || !lspserver.running
     return
   endif
 
   var ftype: string = bnr->getbufvar('&filetype')
-  if ftype == ''
-    return
-  endif
-  var lspserver: dict<any> = LspGetServer(ftype)
-  if lspserver->empty()
-    return
-  endif
-  if !lspserver.running
-    if !lspInitializedOnce
-      LspInitOnce()
-    endif
-    lspserver.startServer()
-  endif
   lspserver.textdocDidOpen(bnr, ftype)
 
   # add a listener to track changes to this buffer
@@ -315,7 +296,44 @@ export def AddFile(bnr: number): void
     doautocmd <nomodeline> User LspAttached
   endif
 
+enddef
+
+# A new buffer is opened. If LSP is supported for this buffer, then add it
+export def AddFile(bnr: number): void
+  if buf.BufHasLspServer(bnr)
+    # LSP server for this buffer is already initialized and running
+    return
+  endif
+
+  # Skip remote files
+  if util.LspUriRemote(bnr->bufname()->fnamemodify(":p"))
+    return
+  endif
+
+  var ftype: string = bnr->getbufvar('&filetype')
+  if ftype == ''
+    return
+  endif
+  var lspserver: dict<any> = LspGetServer(ftype)
+  if lspserver->empty()
+    return
+  endif
+  if !lspserver.running
+    if !lspInitializedOnce
+      LspInitOnce()
+    endif
+    lspserver.startServer()
+  endif
   buf.BufLspServerSet(bnr, lspserver)
+
+  if lspserver.ready
+    BufferInit(bnr)
+  else
+    augroup LSPBufferAutocmds
+      exe $'autocmd User LspServerReady{lspserver.name} ++once call BufferInit({bnr})'
+    augroup END
+  endif
+
 enddef
 
 # Notify LSP server to remove a file
@@ -422,10 +440,13 @@ export def AddServer(serverList: list<dict<any>>)
 						    initializationOptions)
 
     if server.filetype->type() == v:t_string
+      lspserver.name = server.filetype->substitute('\w\+', '\L\u\0', '')
       LspAddServer(server.filetype, lspserver)
       LspOmniComplSet(server.filetype, server.omnicompl)
     elseif server.filetype->type() == v:t_list
+      lspserver.name = ''
       for ftype in server.filetype
+        lspserver.name ..= ftype->substitute('\w\+', '\L\u\0', '')
         LspAddServer(ftype, lspserver)
         LspOmniComplSet(ftype, server.omnicompl)
       endfor

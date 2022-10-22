@@ -24,29 +24,17 @@ def ProcessInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any
   var caps: dict<any> = reply.result.capabilities
   lspserver.caps = caps
 
-  # TODO: Check all the buffers with filetype corresponding to this LSP server
-  # and then setup the below mapping for those buffers.
-
-  # initialize signature help
-  signature.SignatureInit(lspserver)
-
   if opt.lspOptions.autoComplete && caps->has_key('completionProvider')
     var triggers = caps.completionProvider.triggerCharacters
     lspserver.completionTriggerChars = triggers
   endif
 
-  if opt.lspOptions.autoHighlight && caps->has_key('documentHighlightProvider')
-			      && caps.documentHighlightProvider
-    # Highlight all the occurrences of the current keyword
-    augroup LSPBufferAutocmds
-      autocmd CursorMoved <buffer> call g:LspDocHighlightClear()
-						| call g:LspDocHighlight()
-    augroup END
-  endif
-
   # send a "initialized" notification to server
   lspserver.sendInitializedNotif()
   lspserver.ready = true
+  if exists('#User#LspServerReady' .. lspserver.name)
+    exe $'doautocmd <nomodeline> User LspServerReady{lspserver.name}'
+  endif
 
   # if the outline window is opened, then request the symbols for the current
   # buffer
