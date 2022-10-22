@@ -33,7 +33,11 @@ export var lspOptions: dict<any> = {
   # Show a diagnostic message on a status line
   showDiagOnStatusLine: false,
   # Don't print message when a configured language server is missing.
-  ignoreMissingServer: false
+  ignoreMissingServer: false,
+  # Syntax highlight for complete-popup
+  markdownHighlight: true,
+  # Tidy the complete-popup documentation text returned
+  markdownCompact: true
 }
 
 # set LSP options from user provided options

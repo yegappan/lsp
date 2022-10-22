@@ -13,6 +13,7 @@ import './symbol.vim'
 import './codeaction.vim'
 import './callhierarchy.vim' as callhier
 import './signature.vim'
+import './documentation.vim' as doc
 
 # process the 'initialize' method reply from the LSP server
 # Result: InitializeResult
@@ -131,7 +132,13 @@ def ProcessCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any
         if item.documentation->type() == v:t_string && item.documentation != ''
           d.info = item.documentation
         elseif item.documentation->type() == v:t_dict
-            && item.documentation.value->type() == v:t_string
+          && item.documentation.value->type() == v:t_string
+          if item.documentation->has_key('kind') && 
+            item.documentation.kind == 'markdown'
+            if opt.lspOptions.markdownCompact
+              item.documentation.value = doc.MarkdownCompact(item.documentation.value)
+            endif
+          endif
           d.info = item.documentation.value
         endif
       endif

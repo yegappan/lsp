@@ -15,6 +15,7 @@ import './diag.vim'
 import './symbol.vim'
 import './outline.vim'
 import './signature.vim'
+import './documentation.vim' as doc
 
 # LSP server information
 var lspServers: list<dict<any>> = []
@@ -278,6 +279,9 @@ def BufferInit(bnr: number): void
 
   # Set buffer local autocmds
   augroup LSPBufferAutocmds
+    # complete popup
+    exe $'autocmd CompleteChanged <buffer={bnr}> doc.CompletePopup()'
+
     # file saved notification handler
     exe $'autocmd BufWritePost <buffer={bnr}> call LspSavedFile()'
 

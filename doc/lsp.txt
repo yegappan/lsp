@@ -258,12 +258,18 @@ outlineWinSize		Outline window size, by default this is 20.
 outlineOnRight		Open the outline window on the right side, by default
 			this is false.
 noDiagHoverOnLine	Suppress diagnostic hover from appearing when
-			the mouse is over the line instead of the signature.
-			By default this is set to true
-showDiagOnStatusLine	Show a diagnostic message on a status line.
-			By default this is set to false
+			the mouse is over the line instead of the signature
+			By default this is set to true.
+showDiagOnStatusLine	Show a diagnostic message on a status line
+			By default this is set to false.
 ignoreMissingServer	Do not print a missing language server executable.
 			By default this is set to false
+markdownHighlight       When completing with complete-popup enables syntax
+                        highlighting for documentation with markdown. By
+                        default this is set to true.
+markdownCompact         Makes the markdown syntax highlighting more compact by
+                        joining lines at the '```lang' code-fences eliminating
+                        blank lines. Also enables concealing of code-fences.
 
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file:
@@ -613,9 +619,33 @@ To use omni completion, press CTRL-X CTRL-O in insert mode.  Refer to
 ==============================================================================
 7. Autocommands						*lsp-autocmds*
 
-							*LspAttached*
-LspAttached			A |User| autocommand fired when the LSP client
-				attaches to a buffer. Can be used to configure
-				buffer-local mappings or options.
+						*LspAttached*
+LspAttached      A |User| autocommand fired when the LSP client
+			attaches to a buffer. Can be used to configure
+			buffer-local mappings or options.
+
+						*LspCompletePopup*
+LspCompletePopup A |User| autocommand fired before the LSP client
+			shows the popup (advanced). See |complete-popuphidden|.
+
+		 An example: >
+
+	def MyPopup()
+		var win_id = popup_findinfo()
+		var buf_id = winbufnr(win_id)
+	 	if buf_id < 2 || win_id == 0
+		# popup not ready yet
+		else
+			var doc: dict<any> = v:event.completed_item->
+			\ get('user_data', {})->get('documentation', {})
+			if !empty(doc)
+				popup_show(win_id)
+			endif
+		endif
+	enddef
+
+	autocmd User LspCompletePopup MyPopup()
+<
+
 
 vim:tw=78:ts=8:noet:ft=help:norl:
