@@ -606,7 +606,7 @@ def g:LspResolve()
   endif
 
   var item = v:event.completed_item
-  if item->has_key('user_data')
+  if item->has_key('user_data') && !empty(item.user_data)
     lspserver.resolveCompletion(item.user_data)
   endif
 enddef
