@@ -2,7 +2,7 @@ vim9script
 
 # Handlers for messages from the LSP server
 # Refer to https://microsoft.github.io/language-server-protocol/specification
-# for the Language Server Protocol (LSP) specificaiton.
+# for the Language Server Protocol (LSP) specification.
 
 import './options.vim' as opt
 import './util.vim'
@@ -27,8 +27,9 @@ def ProcessInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any
   if opt.lspOptions.autoComplete && caps->has_key('completionProvider')
     var triggers = caps.completionProvider.triggerCharacters
     lspserver.completionTriggerChars = triggers
-    lspserver.completionLazyDoc = lspserver.caps.completionProvider->has_key('resolveProvider')
-        && lspserver.caps.completionProvider.resolveProvider
+    lspserver.completionLazyDoc =
+		lspserver.caps.completionProvider->has_key('resolveProvider')
+		&& lspserver.caps.completionProvider.resolveProvider
   endif
 
   # send a "initialized" notification to server
@@ -231,7 +232,7 @@ def ProcessResolveReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
     elseif reply.result.documentation->type() == v:t_string
       infoText->extend(reply.result.documentation->split("\n"))
     else
-      util.ErrMsg($'Error: Unsupported documentation ({reply.result.documentation})')
+      util.ErrMsg($'Error: Unsupported documentation ({reply.result.documentation->string()})')
       return
     endif
   endif
@@ -254,9 +255,9 @@ def ProcessResolveReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
     var bufnr = id->winbufnr()
     infoKind->setbufvar(bufnr, '&ft')
     if infoKind == 'markdown'
-      3->setwinvar(id, '&cole')
+      3->setwinvar(id, '&conceallevel')
     else
-      0->setwinvar(id, '&cole')
+      0->setwinvar(id, '&conceallevel')
     endif
     id->popup_settext(infoText)
     id->popup_show()

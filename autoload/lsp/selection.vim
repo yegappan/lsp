@@ -15,7 +15,7 @@ def SelectText(bnr: number, range: dict<dict<number>>)
   :normal! gv
 enddef
 
-# Process the range selection reply from LSP server and start a new selection 
+# Process the range selection reply from LSP server and start a new selection
 export def SelectionStart(lspserver: dict<any>, sel: list<dict<any>>)
   if sel->empty()
     return

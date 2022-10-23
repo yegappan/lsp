@@ -95,7 +95,7 @@ def InitServer(lspserver: dict<any>)
       completion: {
 	completionItem: {
 	  documentationFormat: ['plaintext', 'markdown'],
-      resolveSupport: {properties: ['detail', 'documentation']},
+	  resolveSupport: {properties: ['detail', 'documentation']},
 	  snippetSupport: false
 	},
 	completionItemKind: {valueSet: range(1, 25)}
