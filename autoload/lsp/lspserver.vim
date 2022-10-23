@@ -56,6 +56,7 @@ def StartServer(lspserver: dict<any>): number
   lspserver.nextID = 1
   lspserver.requests = {}
   lspserver.omniCompletePending = false
+  lspserver.completionLazyDoc = false
   lspserver.completionTriggerChars = []
   lspserver.signaturePopup = -1
   lspserver.workspaceFolders = [getcwd()]
@@ -94,6 +95,7 @@ def InitServer(lspserver: dict<any>)
       completion: {
 	completionItem: {
 	  documentationFormat: ['plaintext', 'markdown'],
+      resolveSupport: {properties: ['detail', 'documentation']},
 	  snippetSupport: false
 	},
 	completionItemKind: {valueSet: range(1, 25)}
@@ -437,6 +439,30 @@ def GetCompletion(lspserver: dict<any>, triggerKind_arg: number, triggerChar: st
   req.params = GetLspTextDocPosition()
   #   interface CompletionContext
   req.params.context = {triggerKind: triggerKind_arg, triggerCharacter: triggerChar}
+
+  lspserver.sendMessage(req)
+  if exists('g:LSPTest') && g:LSPTest
+    # When running LSP tests, make this a synchronous call
+    lspserver.waitForResponse(req)
+  endif
+enddef
+
+# Get lazy properties for a completion item.
+# Request: "completionItem/resolve"
+# Param: CompletionItem
+def ResolveCompletion(lspserver: dict<any>, item: dict<any>): void
+  # Check whether LSP server supports completion item resolve
+  if !lspserver.caps->has_key('completionProvider')
+      || !lspserver.caps.completionProvider->has_key('resolveProvider')
+      || !lspserver.caps.completionProvider.resolveProvider
+    util.ErrMsg("Error: LSP server does not support completion item resolve")
+    return
+  endif
+
+  var req = lspserver.createRequest('completionItem/resolve')
+
+  # interface CompletionItem
+  req.params = item
 
   lspserver.sendMessage(req)
   if exists('g:LSPTest') && g:LSPTest
@@ -1136,6 +1162,7 @@ export def NewLspServer(path: string, args: list<string>, isSync: bool, initiali
     textdocDidChange: function(TextdocDidChange, [lspserver]),
     sendInitializedNotif: function(SendInitializedNotif, [lspserver]),
     getCompletion: function(GetCompletion, [lspserver]),
+    resolveCompletion: function(ResolveCompletion, [lspserver]),
     gotoDefinition: function(GotoDefinition, [lspserver]),
     switchSourceHeader: function(SwitchSourceHeader, [lspserver]),
     gotoDeclaration: function(GotoDeclaration, [lspserver]),

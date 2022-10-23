@@ -27,6 +27,8 @@ def ProcessInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any
   if opt.lspOptions.autoComplete && caps->has_key('completionProvider')
     var triggers = caps.completionProvider.triggerCharacters
     lspserver.completionTriggerChars = triggers
+    lspserver.completionLazyDoc = lspserver.caps.completionProvider->has_key('resolveProvider')
+        && lspserver.caps.completionProvider.resolveProvider
   endif
 
   # send a "initialized" notification to server
@@ -112,20 +114,25 @@ def ProcessCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any
       d.word = item.label
     endif
     d.abbr = item.label
+    d.dup = 1
     if item->has_key('kind')
       # namespace CompletionItemKind
       # map LSP kind to complete-item-kind
       d.kind = LspCompleteItemKindChar(item.kind)
     endif
-    if item->has_key('detail')
-      d.menu = item.detail
-    endif
-    if item->has_key('documentation')
-      if item.documentation->type() == v:t_string && item.documentation != ''
-	d.info = item.documentation
-      elseif item.documentation->type() == v:t_dict
-			&& item.documentation.value->type() == v:t_string
-	d.info = item.documentation.value
+    if lspserver.completionLazyDoc
+      d.info = 'Lazy doc'
+    else
+      if item->has_key('detail')
+        d.menu = item.detail
+      endif
+      if item->has_key('documentation')
+        if item.documentation->type() == v:t_string && item.documentation != ''
+          d.info = item.documentation
+        elseif item.documentation->type() == v:t_dict
+            && item.documentation.value->type() == v:t_string
+          d.info = item.documentation.value
+        endif
       endif
     endif
     d.user_data = item
@@ -179,6 +186,80 @@ def ProcessCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any
   else
     lspserver.completeItems = completeItems
     lspserver.omniCompletePending = false
+  endif
+enddef
+
+# process the 'completionItem/resolve' reply from the LSP server
+# Result: CompletionItem
+def ProcessResolveReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
+  if reply.result->empty()
+    return
+  endif
+
+  # check if completion item is still selected
+  var cInfo = complete_info()
+  if cInfo->empty()
+      || !cInfo.pum_visible
+      || cInfo.selected == -1
+      || cInfo.items[cInfo.selected].user_data.label != reply.result.label
+    return
+  endif
+
+  var infoText: list<string>
+  var infoKind: string
+
+  if reply.result->has_key('detail')
+    infoText->extend([reply.result.detail])
+  endif
+
+  if reply.result->has_key('documentation')
+    if !infoText->empty()
+      infoText->extend(['- - -'])
+    endif
+    if reply.result.documentation->type() == v:t_dict
+      # MarkupContent
+      if reply.result.documentation.kind == 'plaintext'
+        infoText->extend(reply.result.documentation.value->split("\n"))
+        infoKind = 'text'
+      elseif reply.result.documentation.kind == 'markdown'
+        infoText->extend(reply.result.documentation.value->split("\n"))
+        infoKind = 'markdown'
+      else
+        util.ErrMsg($'Error: Unsupported documentation type ({reply.result.documentation.kind})')
+        return
+      endif
+    elseif reply.result.documentation->type() == v:t_string
+      infoText->extend(reply.result.documentation->split("\n"))
+    else
+      util.ErrMsg($'Error: Unsupported documentation ({reply.result.documentation})')
+      return
+    endif
+  endif
+
+  if infoText->empty()
+    return
+  endif
+
+  # check if completion item is changed in meantime
+  cInfo = complete_info()
+  if cInfo->empty()
+      || !cInfo.pum_visible
+      || cInfo.selected == -1
+      || cInfo.items[cInfo.selected].user_data.label != reply.result.label
+    return
+  endif
+
+  var id = popup_findinfo()
+  if id > 0
+    var bufnr = id->winbufnr()
+    infoKind->setbufvar(bufnr, '&ft')
+    if infoKind == 'markdown'
+      3->setwinvar(id, '&cole')
+    else
+      0->setwinvar(id, '&cole')
+    endif
+    id->popup_settext(infoText)
+    id->popup_show()
   endif
 enddef
 
@@ -425,6 +506,7 @@ export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
       'initialize': ProcessInitializeReply,
       'textDocument/signatureHelp': ProcessSignaturehelpReply,
       'textDocument/completion': ProcessCompletionReply,
+      'completionItem/resolve': ProcessResolveReply,
       'textDocument/hover': ProcessHoverReply,
       'textDocument/documentHighlight': ProcessDocHighlightReply,
       'textDocument/documentSymbol': ProcessDocSymbolReply,

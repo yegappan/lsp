@@ -254,8 +254,13 @@ def BufferInit(bnr: number): void
 
   # set options for insert mode completion
   if opt.lspOptions.autoComplete
-    setbufvar(bnr, '&completeopt', 'menuone,popup,noinsert,noselect')
-    setbufvar(bnr, '&completepopup', 'border:off')
+    if lspserver.completionLazyDoc
+      setbufvar(bnr, '&completeopt', 'menuone,popuphidden,noinsert,noselect')
+      setbufvar(bnr, '&completepopup', 'width:80,highlight:Pmenu,align:menu,border:off')
+    else
+      setbufvar(bnr, '&completeopt', 'menuone,popup,noinsert,noselect')
+      setbufvar(bnr, '&completepopup', 'border:off')
+    endif
     # <Enter> in insert mode stops completion and inserts a <Enter>
     if !opt.lspOptions.noNewlineInCompletion
       inoremap <expr> <buffer> <CR> pumvisible() ? "\<C-Y>\<CR>" : "\<CR>"
@@ -279,6 +284,9 @@ def BufferInit(bnr: number): void
     if opt.lspOptions.autoComplete
       # Trigger 24x7 insert mode completion when text is changed
       exe $'autocmd TextChangedI <buffer={bnr}> call LspComplete()'
+      if lspserver.completionLazyDoc
+        exe $'autocmd CompleteChanged <buffer={bnr}> call LspResolve()'
+      endif
     endif
 
     # Update the diagnostics when insert mode is stopped
@@ -588,6 +596,19 @@ def g:LspComplete()
   lspserver.getCompletion(triggerKind, triggerChar)
 
   return
+enddef
+
+# Lazy complete documentation handler
+def g:LspResolve()
+  var lspserver: dict<any> = CurbufGetServerChecked()
+  if lspserver->empty()
+    return
+  endif
+
+  var item = v:event.completed_item
+  if item->has_key('user_data')
+    lspserver.resolveCompletion(item.user_data)
+  endif
 enddef
 
 # omni complete handler
