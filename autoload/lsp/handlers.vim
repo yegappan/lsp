@@ -287,16 +287,16 @@ def ProcessSymbolInfoTable(symbolInfoTable: list<dict<any>>,
   var r: dict<dict<number>>
   var symInfo: dict<any>
 
-  for symbol in symbolInfoTable
-    fname = util.LspUriToFile(symbol.location.uri)
-    symbolType = symbol.SymbolKindToName(symbol.kind)
-    name = symbol.name
-    if symbol->has_key('containerName')
-      if symbol.containerName != ''
-	name ..= $' [{symbol.containerName}]'
+  for syminfo in symbolInfoTable
+    fname = util.LspUriToFile(syminfo.location.uri)
+    symbolType = symbol.SymbolKindToName(syminfo.kind)
+    name = syminfo.name
+    if syminfo->has_key('containerName')
+      if syminfo.containerName != ''
+	name ..= $' [{syminfo.containerName}]'
       endif
     endif
-    r = symbol.location.range
+    r = syminfo.location.range
 
     if !symbolTypeTable->has_key(symbolType)
       symbolTypeTable[symbolType] = []
@@ -318,19 +318,19 @@ def ProcessDocSymbolTable(docSymbolTable: list<dict<any>>,
   var symbolDetail: string
   var childSymbols: dict<list<dict<any>>>
 
-  for symbol in docSymbolTable
-    name = symbol.name
-    symbolType = symbol.SymbolKindToName(symbol.kind)
-    r = symbol.range
-    if symbol->has_key('detail')
-      symbolDetail = symbol.detail
+  for syminfo in docSymbolTable
+    name = syminfo.name
+    symbolType = symbol.SymbolKindToName(syminfo.kind)
+    r = syminfo.range
+    if syminfo->has_key('detail')
+      symbolDetail = syminfo.detail
     endif
     if !symbolTypeTable->has_key(symbolType)
       symbolTypeTable[symbolType] = []
     endif
     childSymbols = {}
-    if symbol->has_key('children')
-      ProcessDocSymbolTable(symbol.children, childSymbols, symbolLineTable)
+    if syminfo->has_key('children')
+      ProcessDocSymbolTable(syminfo.children, childSymbols, symbolLineTable)
     endif
     symInfo = {name: name, range: r, detail: symbolDetail,
 						children: childSymbols}
