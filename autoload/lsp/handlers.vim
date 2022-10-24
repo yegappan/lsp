@@ -25,8 +25,7 @@ def ProcessInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any
   lspserver.caps = caps
 
   if opt.lspOptions.autoComplete && caps->has_key('completionProvider')
-    var triggers = caps.completionProvider.triggerCharacters
-    lspserver.completionTriggerChars = triggers
+    lspserver.completionTriggerChars = caps.completionProvider->get('triggerCharacters', [])
     lspserver.completionLazyDoc =
 		lspserver.caps.completionProvider->has_key('resolveProvider')
 		&& lspserver.caps.completionProvider.resolveProvider
