@@ -743,6 +743,29 @@ def Test_LspIncomingCalls()
   :%bw!
 enddef
 
+# Test for :LspOutline
+def Test_LspOutline()
+  silent! edit Xtest.c
+  sleep 200m
+  var lines: list<string> =<< trim END
+    void aFunc(void)
+    {
+    }
+
+    void bFunc(void)
+    {
+    }
+  END
+  setline(1, lines)
+  :sleep 1
+  :LspOutline
+  assert_equal(2, winnr('$'))
+  var bnum = winbufnr(1)
+  assert_equal('LSP-Outline', bufname(bnum))
+  assert_equal(['Function', '  aFunc', '  bFunc'], getbufline(bnum, 4, '$'))
+  :%bw!
+enddef
+
 def LspRunTests()
   :set nomore
   :set debug=beep
