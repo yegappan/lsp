@@ -175,7 +175,9 @@ def DiagsUpdateLocList(lspserver: dict<any>, bnr: number): bool
     props.id = LspQfId
   endif
   setloclist(0, [], op, props)
-  b:LspQfId = getloclist(0, {id: 0}).id
+  if LspQfId == 0
+    b:LspQfId = getloclist(0, {id: 0}).id
+  endif
 
   return true
 enddef

@@ -207,19 +207,19 @@ def g:LspDiagExpr(): string
     return ''
   endif
 
+  # Display the diagnostic message only if the mouse is over the gutter for
+  # the signs.
+  if opt.lspOptions.noDiagHoverOnLine
+    if v:beval_col >= 2
+      return ''
+    endif
+  endif
+
   var diagInfo: dict<any> = lspserver.getDiagByLine(v:beval_bufnr,
 								v:beval_lnum)
   if diagInfo->empty()
     # No diagnostic for the current cursor location
     return ''
-  endif
-
-  # Display the diagnostic message only if the mouse is over the first two
-  # columns
-  if opt.lspOptions.noDiagHoverOnLine
-    if v:beval_col >= 3
-      return ''
-    endif
   endif
 
   return diagInfo.message

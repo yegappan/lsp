@@ -2,7 +2,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: Oct 21, 2022
+Last change: Oct 24, 2022
 
 ==============================================================================
 						*lsp-license*
@@ -259,17 +259,17 @@ outlineOnRight		Open the outline window on the right side, by default
 			this is false.
 noDiagHoverOnLine	Suppress diagnostic hover from appearing when
 			the mouse is over the line instead of the signature.
-			By default this is set to true
+			By default this is set to true.
 showDiagOnStatusLine	Show a diagnostic message on a status line.
-			By default this is set to false
+			By default this is set to false.
 ignoreMissingServer	Do not print a missing language server executable.
-			By default this is set to false
+			By default this is set to false.
 
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file:
-
+>
 	call LspOptionsSet({'autoHighlightDiags': v:false})
-
+<
 ==============================================================================
 5. Commands						*lsp-commands*
 
@@ -611,7 +611,61 @@ To use omni completion, press CTRL-X CTRL-O in insert mode.  Refer to
 |compl-omni| for more information.
 
 ==============================================================================
-7. Autocommands						*lsp-autocmds*
+7. Diagnostics
+
+When a source file has syntax errors or warnings or static analysis warnings,
+the LSP plugin highlights them by placing |signs| in the |sign-column|.  You
+can use the |:LspDiagShow| command to display all the diagnostic messages for
+the current file in a |location-list-window|.  You can use the |:LspDiagFirst|
+command to jump to the line with the first diagnostic message, the
+|:LspDiagNext| command to jump to the next nearest line with the diagnostic
+message, the |:LspDiagPrev| command to jump to the previous nearest line with
+the diagnostic message.  You can use the |:LspDiagCurrent| command to display
+the entire diagnostic message from the language server for the current line.
+
+By default, the lines with a diagnostic message have a sign placed on them and
+are highlighted.  You can temporarily disable them for the current Vim session
+using the |:LspDiagHighlightDisable| command and re-enable them using the
+|:LspDiagHighlightEnable| command.
+
+To disable the automatic placement of signs on the lines with a diagnostic
+message, you can set the 'autoHighlightDiags' option to v:false:
+>
+	call LspOptionsSet({'autoHighlightDiags': v:false})
+<
+By default the 'autoHighlightDiags' option is set to v:true.
+
+The function lsp#lsp#Errorcount() function can be used to get the count of the
+diagnostic messages in the current buffer by type.  This function returns a
+Dictionary with the following keys: Info, Hint, Warn and Error.  The value for
+these keys is the number of diagnostic messages of the corresponding type.
+This function can be used to display the number of diagnostics in the current
+buffer in a 'statusline'.
+
+For some diagnostic errors/warnings, the language server may provide an
+automatic fix.  To apply this fix, you can use the |:LspCodeAction| command.
+This command applies the action provided by the language server (if any) for
+the current line.
+
+The |:LspDiagShow| command creates a new location list with the current list
+of diagnostics for the current buffer.  To automatically add the diagnostics
+messages to the location list, you can set the 'autoPopulateDiags' option to
+v:true.  By default this option is set to v:false.
+
+When using GUI Vim or in a terminal Vim with 'ballooneval' option set, when
+the mouse is moved over the diagnostic sign displayed in the sign column, then
+the diagnostic message is displayed in a popup.  By default, the diagnostic
+message popup is not displayed when the mouse is moved over the text in the
+line. To display the diagnostic message when hovering the mouse over the text
+of the line, you can set the 'noDiagHoverOnLine' option to v:false.  By
+default, this option is set to v:true.
+
+To display the diagnostic message for the current line in the status area, you
+can set the 'showDiagOnStatusLine' option to v:true.  By default, this option
+is set to v:false.
+
+==============================================================================
+8. Autocommands						*lsp-autocmds*
 
 							*LspAttached*
 LspAttached			A |User| autocommand fired when the LSP client

@@ -247,6 +247,15 @@ def Test_LspDiag()
   END
   setline(1, lines)
   :sleep 1
+  var retries = 0
+  while retries < 3
+    var d = lsp#lsp#ErrorCount()
+    if d.Error
+      break
+    endif
+    retries += 1
+    :sleep 1
+  endwhile
   var bnr: number = bufnr()
   :redraw!
   :LspDiagShow
