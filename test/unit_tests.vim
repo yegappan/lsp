@@ -231,6 +231,19 @@ def Test_LspShowReferences()
   :%bw!
 enddef
 
+# Wait for diagnostic messages from the LSP server
+def WaitForDiags(errCount: number)
+  var retries = 0
+  while retries < 30
+    var d = lsp#lsp#ErrorCount()
+    if d.Error  == errCount
+      break
+    endif
+    retries += 1
+    :sleep 100m
+  endwhile
+enddef
+
 # Test for LSP diagnostics
 def Test_LspDiag()
   :silent! edit Xtest.c
@@ -247,15 +260,7 @@ def Test_LspDiag()
   END
   setline(1, lines)
   :sleep 1
-  var retries = 0
-  while retries < 3
-    var d = lsp#lsp#ErrorCount()
-    if d.Error
-      break
-    endif
-    retries += 1
-    :sleep 1
-  endwhile
+  WaitForDiags(1)
   var bnr: number = bufnr()
   :redraw!
   :LspDiagShow
@@ -287,7 +292,7 @@ def Test_LspDiag()
   assert_equal('Error: No more diagnostics found', output[0])
   :%d
   setline(1, ['void blueFunc()', '{', '}'])
-  sleep 500m
+  WaitForDiags(0)
   output = execute('LspDiagShow')->split("\n")
   assert_match('No diagnostic messages found for', output[0])
 
