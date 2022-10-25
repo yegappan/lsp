@@ -3,6 +3,7 @@ vim9script
 # Functions related to handling LSP diagnostics.
 
 import './options.vim' as opt
+import './buffer.vim' as buf
 import './util.vim'
 
 # Remove the diagnostics stored for buffer 'bnr'
@@ -19,6 +20,25 @@ def DiagSevToSignName(severity: number): string
     return 'LspDiagHint'
   endif
   return typeMap[severity - 1]
+enddef
+
+# Refresh the signs placed in buffer 'bnr' on lines with a diagnostic message.
+def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
+  # Remove all the existing diagnostic signs
+  sign_unplace('LSPDiag', {buffer: bnr})
+
+  if lspserver.diagsMap[bnr]->empty()
+    return
+  endif
+
+  var signs: list<dict<any>> = []
+  for [lnum, diag] in lspserver.diagsMap[bnr]->items()
+    signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
+				lnum: str2nr(lnum),
+				name: DiagSevToSignName(diag.severity)})
+  endfor
+
+  signs->sign_placelist()
 enddef
 
 # New LSP diagnostic messages received from the server for a file.
@@ -44,21 +64,7 @@ def ProcessNewDiags(lspserver: dict<any>, bnr: number)
     return
   endif
 
-  # Remove all the existing diagnostic signs
-  sign_unplace('LSPDiag', {buffer: bnr})
-
-  if lspserver.diagsMap[bnr]->empty()
-    return
-  endif
-
-  var signs: list<dict<any>> = []
-  for [lnum, diag] in lspserver.diagsMap[bnr]->items()
-    signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
-				lnum: str2nr(lnum),
-				name: DiagSevToSignName(diag.severity)})
-  endfor
-
-  signs->sign_placelist()
+  DiagsRefreshSigns(lspserver, bnr)
 enddef
 
 # FIXME: Remove this function once the Vim bug (calling one exported function
@@ -284,8 +290,13 @@ enddef
 
 # Enable the LSP diagnostics highlighting
 export def DiagsHighlightEnable()
-  # Remove all the existing diagnostic signs in all the buffers
   opt.lspOptions.autoHighlightDiags = true
+  for binfo in getbufinfo({bufloaded: true})
+    var lspserver: dict<any> = buf.BufLspServerGet(binfo.bufnr)
+    if !lspserver->empty() && lspserver.running
+      DiagsRefreshSigns(lspserver, binfo.bufnr)
+    endif
+  endfor
 enddef
 
 # vim: shiftwidth=2 softtabstop=2
