@@ -103,13 +103,16 @@ def JumpToWorkspaceSymbol(popupID: number, result: number): void
     else
       var wid = fname->bufwinid()
       if wid != -1
+        # if had one in cur tab
+        # and cur win is same buf
         if bufwinid(bufnr()) == wid
-          # do nothing if cur one is
+          # do nothing
         else
-          # jump to one in cur tab
+          # or pick up one in cur tab
           wid->win_gotoid()
         endif
       else
+        # or pick up one in one tab
         winList[0]->win_gotoid()
       endif
     endif
@@ -301,7 +304,10 @@ export def GotoSymbol(lspserver: dict<any>, location: dict<any>, peekSymbol: boo
     # jump to the file and line containing the symbol
     var wid = fname->bufwinid()
     if wid != -1
-      # do not jump if cur one is same buf
+      # `wid` maybe just is one of windows in cur tab which had same buf
+      # jump to `wid` only if cur one is not same buf or maybe a bit mess
+      # which should always try to re-use cur one firstly (if it is same)
+      # otherwise cursor perhaps dumbly jumpped to `wid` though same buf
       if bufwinid(bufnr()) != wid
         wid->win_gotoid()
       endif
