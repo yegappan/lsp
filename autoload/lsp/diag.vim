@@ -207,7 +207,15 @@ export def ShowCurrentDiag(lspserver: dict<any>)
   if diag->empty()
     util.WarnMsg('No diagnostic messages found for current line')
   else
-    echo diag.message
+    if opt.lspOptions.showDiagInPopup
+      popup_atcursor(
+        diag.message,
+        {
+          moved: 'any'
+        })
+    else
+      echo diag.message
+    endif
   endif
 enddef
 
