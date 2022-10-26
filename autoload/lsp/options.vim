@@ -35,7 +35,7 @@ export var lspOptions: dict<any> = {
   # Don't print message when a configured language server is missing.
   ignoreMissingServer: false,
   # Make diagnostics show in a popup instead of echoing
-  showDiagInPopup: true
+  showDiagInPopup: false
 }
 
 # set LSP options from user provided options
