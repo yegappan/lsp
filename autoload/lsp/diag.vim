@@ -199,6 +199,33 @@ export def ShowAllDiags(lspserver: dict<any>): void
   :lopen
 enddef
 
+# Display the message of 'diag' in a popup window right below the position in
+# the diagnostic message.
+def ShowDiagInPopup(diag: dict<any>)
+  var dlnum = diag.range.start.line + 1
+  var ltext = getline(dlnum)
+  var dlcol = byteidx(ltext, diag.range.start.character + 1)
+  if dlcol < 1
+    # The column is outside the last character in line.
+    dlcol = ltext->len() + 1
+  endif
+  var d = screenpos(0, dlnum, dlcol)
+  if d->empty()
+    # If the diag position cannot be converted to Vim lnum/col, then use
+    # the current cursor position
+    d = {row: line('.'), col: col('.')}
+  endif
+
+  # Display a popup right below the diagnostics position
+  var ppopts = {}
+  ppopts.pos = 'topleft'
+  ppopts.line = d.row + 1
+  ppopts.col = d.col
+  ppopts.moved = 'any'
+  ppopts.wrap = false
+  popup_create(diag.message->split("\n"), ppopts)
+enddef
+
 # Show the diagnostic message for the current line
 export def ShowCurrentDiag(lspserver: dict<any>)
   var bnr: number = bufnr()
@@ -208,12 +235,10 @@ export def ShowCurrentDiag(lspserver: dict<any>)
     util.WarnMsg('No diagnostic messages found for current line')
   else
     if opt.lspOptions.showDiagInPopup
-      popup_atcursor(
-        diag.message,
-        {
-          moved: 'any'
-        })
+      # Display the diagnostic message in a popup window.
+      ShowDiagInPopup(diag)
     else
+      # Display the diagnostic message in the status message area
       echo diag.message
     endif
   endif

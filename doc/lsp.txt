@@ -2,7 +2,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: Oct 24, 2022
+Last change: Oct 26, 2022
 
 ==============================================================================
 						*lsp-license*
@@ -262,10 +262,12 @@ noDiagHoverOnLine	Suppress diagnostic hover from appearing when
 			By default this is set to true.
 showDiagOnStatusLine	Show a diagnostic message on a status line.
 			By default this is set to false.
+showDiagInPopup		When using the |:LspDiagCurrent| command to display
+			the diagnostic message for the current line, use a
+			popup window to display the message instead of
+			echoing in the status area.  By default this is set to
+			true.
 ignoreMissingServer	Do not print a missing language server executable.
-			By default this is set to false.
-showDiagInPopup		Use a popup to display server diagnostics instead of
-			echoing.
 			By default this is set to false.
 
 For example, to disable the automatic placement of signs for the LSP
@@ -395,7 +397,10 @@ diagnostic messages, you can add the following line to your .vimrc file:
 
 						*:LspDiagCurrent*
 :LspDiagCurrent		Displays the diagnostic message (if any) for the
-			current line.
+			current line.  If the option 'showDiagInPopup' is set
+			to v:true (default), then the message is displayed in
+			a popup window.  Otherwise the message is displayed in
+			the status message area.
 
 						*:LspDiagHighlightEnable*
 :LspDiagHighlightEnable	Enable highlighting lines with a diagnostic message
@@ -666,6 +671,11 @@ default, this option is set to v:true.
 To display the diagnostic message for the current line in the status area, you
 can set the 'showDiagOnStatusLine' option to v:true.  By default, this option
 is set to v:false.
+
+By default, the |:LspDiagCurrent| command displays the diagnostic message for
+the current line in a popup window.  To display the message in the status
+message area instead, you can set the 'showDiagInPopup' option to false.  By
+default this is set to true.
 
 ==============================================================================
 8. Autocommands						*lsp-autocmds*

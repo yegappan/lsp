@@ -32,10 +32,10 @@ export var lspOptions: dict<any> = {
   noDiagHoverOnLine: true,
   # Show a diagnostic message on a status line
   showDiagOnStatusLine: false,
-  # Don't print message when a configured language server is missing.
-  ignoreMissingServer: false,
   # Make diagnostics show in a popup instead of echoing
-  showDiagInPopup: false
+  showDiagInPopup: true,
+  # Don't print message when a configured language server is missing.
+  ignoreMissingServer: false
 }
 
 # set LSP options from user provided options
