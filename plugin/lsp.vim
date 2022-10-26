@@ -26,8 +26,8 @@ def g:LspServerReady(): bool
   return lsp.ServerReady()
 enddef
 
-def g:LspServerStatus(ftype: string): bool
-  return lsp.ServerStatus(ftype)
+def g:LspServerRunning(ftype: string): bool
+  return lsp.ServerRunning(ftype)
 enddef
 
 # Command line completion function for the LspSetTrace command.
