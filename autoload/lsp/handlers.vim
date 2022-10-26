@@ -124,7 +124,12 @@ def ProcessCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any
       d.info = 'Lazy doc'
     else
       if item->has_key('detail')
-        d.menu = item.detail
+        # Solve a issue where if a server send a detail field
+        # with a "\n", on the menu will be everything joined with
+        # a "^@" separating it. (example: clangd)
+        var splitted_detail = split(item.detail, "\n")
+
+        d.menu = splitted_detail[0]
       endif
       if item->has_key('documentation')
         if item.documentation->type() == v:t_string && item.documentation != ''
@@ -209,7 +214,10 @@ def ProcessResolveReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
   var infoKind: string
 
   if reply.result->has_key('detail')
-    infoText->extend([reply.result.detail])
+    # Solve a issue where if a server send the detail field with "\n",
+    # on the completion popup, everything will be joined with "^@"
+    # (example: typescript-language-server)
+    infoText->extend(split(reply.result.detail, "\n"))
   endif
 
   if reply.result->has_key('documentation')
