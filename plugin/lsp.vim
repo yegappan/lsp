@@ -26,6 +26,10 @@ def g:LspServerReady(): bool
   return lsp.ServerReady()
 enddef
 
+def g:LspServerRunning(ftype: string): bool
+  return lsp.ServerRunning(ftype)
+enddef
+
 # Command line completion function for the LspSetTrace command.
 def LspServerTraceComplete(arglead: string, cmdline: string, cursorpos: number): list<string>
   var l = ['off', 'messages', 'verbose']

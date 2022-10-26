@@ -111,6 +111,17 @@ export def ShowServers()
   endfor
 enddef
 
+# Get LSP server running status for filetype 'ftype'
+# Return true if running, or false if not found or not running
+export def ServerRunning(ftype: string): bool
+  for [ft, lspserver] in ftypeServerMap->items()
+    if ftype ==# ft
+      return lspserver.running
+    endif
+  endfor
+  return v:false
+enddef
+
 # Go to a definition using "textDocument/definition" LSP request
 export def GotoDefinition(peek: bool)
   var lspserver: dict<any> = CurbufGetServerChecked()
