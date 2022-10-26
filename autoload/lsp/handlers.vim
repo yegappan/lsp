@@ -127,9 +127,7 @@ def ProcessCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any
         # Solve a issue where if a server send a detail field
         # with a "\n", on the menu will be everything joined with
         # a "^@" separating it. (example: clangd)
-        var splitted_detail = split(item.detail, "\n")
-
-        d.menu = splitted_detail[0]
+        d.menu = item.detail->split("\n")[0]
       endif
       if item->has_key('documentation')
         if item.documentation->type() == v:t_string && item.documentation != ''
