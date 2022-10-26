@@ -1114,6 +1114,35 @@ def ShowCapabilities(lspserver: dict<any>)
   endfor
 enddef
 
+# Send a 'textDocument/definition' request to the LSP server to get the
+# location where the symbol under the cursor is defined and return a list of
+# Dicts in a format accepted by the 'tagfunc' option.
+# Returns null if the LSP server doesn't support getting the location of a
+# symbol definition or the symbol is not defined.
+def TagFunc(lspserver: dict<any>, pat: string, flags: string, info: dict<any>): any
+  # Check whether LSP server supports getting the location of a definition
+  if !lspserver.caps->has_key('definitionProvider')
+				|| !lspserver.caps.definitionProvider
+    return null
+  endif
+
+  # interface DefinitionParams
+  #   interface TextDocumentPositionParams
+  var reply = lspserver.rpc('textDocument/definition', GetLspTextDocPosition())
+  if reply->empty() || reply.result->empty()
+    return null
+  endif
+
+  var taglocations: list<dict<any>>
+  if reply.result->type() == v:t_list
+    taglocations = reply.result
+  else
+    taglocations = [reply.result]
+  endif
+
+  return symbol.TagFunc(lspserver, taglocations, pat)
+enddef
+
 export def NewLspServer(path: string, args: list<string>, isSync: bool, initializationOptions: dict<any>): dict<any>
   var lspserver: dict<any> = {
     path: path,
@@ -1164,10 +1193,11 @@ export def NewLspServer(path: string, args: list<string>, isSync: bool, initiali
     getCompletion: function(GetCompletion, [lspserver]),
     resolveCompletion: function(ResolveCompletion, [lspserver]),
     gotoDefinition: function(GotoDefinition, [lspserver]),
-    switchSourceHeader: function(SwitchSourceHeader, [lspserver]),
     gotoDeclaration: function(GotoDeclaration, [lspserver]),
     gotoTypeDef: function(GotoTypeDef, [lspserver]),
     gotoImplementation: function(GotoImplementation, [lspserver]),
+    tagFunc: function(TagFunc, [lspserver]),
+    switchSourceHeader: function(SwitchSourceHeader, [lspserver]),
     showSignature: function(ShowSignature, [lspserver]),
     didSaveFile: function(DidSaveFile, [lspserver]),
     hover: function(ShowHoverInfo, [lspserver]),

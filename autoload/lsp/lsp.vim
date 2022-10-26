@@ -201,7 +201,7 @@ enddef
 # display in a balloon
 var lspDiagPopupID: number = 0
 var lspDiagPopupInfo: dict<any> = {}
-def g:LspDiagExpr(): string
+def g:LspDiagExpr(): any
   var lspserver: dict<any> = buf.BufLspServerGet(v:beval_bufnr)
   if lspserver->empty() || !lspserver.running
     return ''
@@ -209,10 +209,8 @@ def g:LspDiagExpr(): string
 
   # Display the diagnostic message only if the mouse is over the gutter for
   # the signs.
-  if opt.lspOptions.noDiagHoverOnLine
-    if v:beval_col >= 2
-      return ''
-    endif
+  if opt.lspOptions.noDiagHoverOnLine && v:beval_col >= 2
+    return ''
   endif
 
   var diagInfo: dict<any> = lspserver.getDiagByLine(v:beval_bufnr,
@@ -222,7 +220,7 @@ def g:LspDiagExpr(): string
     return ''
   endif
 
-  return diagInfo.message
+  return diagInfo.message->split("\n")
 enddef
 
 # Called after leaving insert mode. Used to process diag messages (if any)
@@ -922,6 +920,16 @@ export def ShowServerCapabilities()
   endif
 
   lspserver.showCapabilities()
+enddef
+
+# Function to use with the 'tagfunc' option.
+export def TagFunc(pat: string, flags: string, info: dict<any>): any
+  var lspserver: dict<any> = CurbufGetServerChecked()
+  if lspserver->empty()
+    return v:null
+  endif
+
+  return lspserver.tagFunc(pat, flags, info)
 enddef
 
 # vim: shiftwidth=2 softtabstop=2

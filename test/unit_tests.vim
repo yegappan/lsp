@@ -272,6 +272,7 @@ def Test_LspDiag()
   assert_equal([5, 2, 'W'], [qfl[1].lnum, qfl[1].col, qfl[1].type])
   assert_equal([7, 2, 'W'], [qfl[2].lnum, qfl[2].col, qfl[2].type])
   close
+  g:LspOptionsSet({showDiagInPopup: false})
   normal gg
   var output = execute('LspDiagCurrent')->split("\n")
   assert_equal('No diagnostic messages found for current line', output[0])
@@ -295,6 +296,7 @@ def Test_LspDiag()
   WaitForDiags(0)
   output = execute('LspDiagShow')->split("\n")
   assert_match('No diagnostic messages found for', output[0])
+  g:LspOptionsSet({showDiagInPopup: true})
 
   :%bw!
 enddef
@@ -778,6 +780,38 @@ def Test_LspOutline()
   assert_equal('LSP-Outline', bufname(bnum))
   assert_equal(['Function', '  aFunc', '  bFunc'], getbufline(bnum, 4, '$'))
   :%bw!
+enddef
+
+# Test for setting the 'tagfunc'
+def Test_LspTagFunc()
+  var lines: list<string> =<< trim END
+    void aFunc(void)
+    {
+      xFunc();
+    }
+
+    void bFunc(void)
+    {
+      xFunc();
+    }
+
+    void xFunc(void)
+    {
+    }
+  END
+  writefile(lines, 'Xtest.c')
+  :silent! edit Xtest.c
+  :sleep 1
+  :setlocal tagfunc=lsp#lsp#TagFunc
+  cursor(3, 4)
+  :exe "normal \<C-]>"
+  assert_equal([11, 1], [line('.'), col('.')])
+  cursor(1, 1)
+  assert_fails('exe "normal \<C-]>"', 'E433: No tags file')
+
+  :set tagfunc&
+  :%bw!
+  delete('Xtest.c')
 enddef
 
 def LspRunTests()

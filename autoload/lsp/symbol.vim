@@ -323,4 +323,22 @@ export def GotoSymbol(lspserver: dict<any>, location: dict<any>, peekSymbol: boo
   redraw!
 enddef
 
+# Process the LSP server reply message for a 'textDocument/definition' request
+# and return a list of Dicts in a format accepted by the 'tagfunc' option.
+export def TagFunc(lspserver: dict<any>,
+			taglocations: list<dict<any>>,
+			pat: string): list<dict<any>>
+  var retval: list<dict<any>>
+
+  for tagloc in taglocations
+    var tagitem = {}
+    tagitem.name = pat
+    tagitem.filename = util.LspUriToFile(tagloc.uri)
+    tagitem.cmd = (tagloc.range.start.line + 1)->string()
+    retval->add(tagitem)
+  endfor
+
+  return retval
+enddef
+
 # vim: shiftwidth=2 softtabstop=2

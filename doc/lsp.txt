@@ -678,7 +678,23 @@ message area instead, you can set the 'showDiagInPopup' option to false.  By
 default this is set to true.
 
 ==============================================================================
-8. Autocommands						*lsp-autocmds*
+8. Tag Function
+
+The |:LspGotoDefinition| command can be used jump to the location where a
+symbol is defined.  To jump to the symbol definition using the Vim
+|tag-commands|, you can set the 'tagfunc' option to the 'lsp#lsp#TagFunc'
+function: >
+
+	setlocal tagfunc=lsp#lsp#TagFunc
+<
+After setting the above option, you can use |Ctrl-]| and other tag related
+commands to jump to the symbol definition.
+
+Note that most of the language servers return only one symbol location even if
+the symbol is defined in multiple places in the code.
+
+==============================================================================
+9. Autocommands						*lsp-autocmds*
 
 							*LspAttached*
 LspAttached			A |User| autocommand fired when the LSP client
