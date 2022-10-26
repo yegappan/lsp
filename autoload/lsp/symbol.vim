@@ -341,4 +341,4 @@ export def TagFunc(lspserver: dict<any>,
   return retval
 enddef
 
-# vim: shiftwidth=2 softtabstop=2
+# vim: tabstop=8 shiftwidth=2 softtabstop=2

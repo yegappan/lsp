@@ -1223,4 +1223,4 @@ export def NewLspServer(path: string, args: list<string>, isSync: bool, initiali
   return lspserver
 enddef
 
-# vim: shiftwidth=2 softtabstop=2
+# vim: tabstop=8 shiftwidth=2 softtabstop=2

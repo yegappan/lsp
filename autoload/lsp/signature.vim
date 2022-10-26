@@ -90,4 +90,4 @@ export def SignatureDisplay(lspserver: dict<any>, sighelp: dict<any>): void
   endif
 enddef
 
-# vim: shiftwidth=2 softtabstop=2
+# vim: tabstop=8 shiftwidth=2 softtabstop=2

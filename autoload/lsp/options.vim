@@ -45,4 +45,4 @@ export def OptionsSet(opts: dict<any>)
   endfor
 enddef
 
-# vim: shiftwidth=2 softtabstop=2
+# vim: tabstop=8 shiftwidth=2 softtabstop=2
