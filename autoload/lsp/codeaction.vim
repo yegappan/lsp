@@ -23,10 +23,6 @@ export def HandleCodeAction(lspserver: dict<any>, selAction: dict<any>)
   endif
 enddef
 
-def Print(a: any)
-  echo string(a)
-enddef
-
 export def ApplyCodeAction(lspserver: dict<any>, actions: list<dict<any>>): void
   if actions->empty()
     # no action can be performed

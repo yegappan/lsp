@@ -36,9 +36,48 @@ export var lspOptions: dict<any> = {
   showDiagInPopup: true,
   # Don't print message when a configured language server is missing.
   ignoreMissingServer: false,
+  # Customize all LSP kinds from the completion popup
+  lspKinds: {},
   # Use a floating menu to show the code action menu instead of asking for input
   usePopupInCodeAction: false
 }
+
+export var defaultLspKinds: dict<string> = {
+  text: 't',
+  method: 'm',
+  function: 'f',
+  constructor: 'C',
+  field: 'F',
+  variable: 'v',
+  class: 'c',
+  interface: 'i',
+  module: 'M',
+  property: 'p',
+  unit: 'u',
+  value: 'V',
+  enum: 'e',
+  keyword: 'k',
+  snippet: 'S',
+  color: 'C',
+  file: 'f',
+  reference: 'r',
+  folder: 'F',
+  enumMember: 'E',
+  constant: 'd',
+  struct: 's',
+  event: 'E',
+  operator: 'o',
+  typeParameter: 'T'
+}
+
+# get a custom LSP kind to use in the completion
+export def GetLspKind(name: string): string
+  if has_key(lspOptions.lspKinds, name)
+    return lspOptions.lspKinds[name]
+  endif
+
+  return defaultLspKinds[name]
+enddef
 
 # set LSP options from user provided options
 export def OptionsSet(opts: dict<any>)
