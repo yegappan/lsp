@@ -103,6 +103,11 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags: list<dict<
 
   lspserver.diagsMap->extend({[$'{bnr}']: diag_by_lnum})
   ProcessNewDiags(lspserver, bnr)
+
+  # Notify user scripts that diags has been updated
+  if exists('#User#LspDiagsUpdated')
+    doautocmd <nomodeline> User LspDiagsUpdated
+  endif
 enddef
 
 # get the count of error in the current buffer
