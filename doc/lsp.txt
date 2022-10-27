@@ -267,6 +267,10 @@ showDiagInPopup		When using the |:LspDiagCurrent| command to display
 			popup window to display the message instead of
 			echoing in the status area.  By default this is set to
 			true.
+usePopupInCodeAction    When using the |:LspCodeAction| command to display the
+			code action for the current line, use a popup menu
+			instead of echoing.
+			By default this is set to false.
 ignoreMissingServer	Do not print a missing language server executable.
 			By default this is set to false.
 
