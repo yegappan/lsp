@@ -34,7 +34,7 @@ def ProcessInitializeReply(lspserver: dict<any>, req: dict<any>, reply: dict<any
   # send a "initialized" notification to server
   lspserver.sendInitializedNotif()
   lspserver.ready = true
-  if exists('#User#LspServerReady' .. lspserver.name)
+  if exists($'#User#LspServerReady{lspserver.name}')
     exe $'doautocmd <nomodeline> User LspServerReady{lspserver.name}'
   endif
 
@@ -148,13 +148,14 @@ def ProcessCompletionReply(lspserver: dict<any>, req: dict<any>, reply: dict<any
       return
     endif
 
-    if mode() != 'i' && mode() != 'R' && mode() != 'Rv'
+    var m = mode()
+    if m != 'i' && m != 'R' && m != 'Rv'
       # If not in insert or replace mode, then don't start the completion
       return
     endif
 
     if completeItems->len() == 1
-	&& matchstr(getline('.'), completeItems[0].word .. '\>') != ''
+	&& getline('.')->matchstr(completeItems[0].word .. '\>') != ''
       # only one complete match. No need to show the completion popup
       return
     endif
@@ -215,7 +216,7 @@ def ProcessResolveReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>):
     # Solve a issue where if a server send the detail field with "\n",
     # on the completion popup, everything will be joined with "^@"
     # (example: typescript-language-server)
-    infoText->extend(split(reply.result.detail, "\n"))
+    infoText->extend(reply.result.detail->split("\n"))
   endif
 
   if reply.result->has_key('documentation')
@@ -323,7 +324,7 @@ def ProcessHoverReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): v
     setlocal buftype=nofile
     setlocal bufhidden=delete
     exe $'setlocal ft={hoverKind}'
-    deletebufline(bufnr(), 1, '$')
+    bufnr()->deletebufline(1, '$')
     append(0, hoverText)
     cursor(1, 1)
     wincmd p

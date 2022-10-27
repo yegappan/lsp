@@ -90,7 +90,8 @@ def JumpToWorkspaceSymbol(popupID: number, result: number): void
 
     # if the selected file is already present in a window, then jump to it
     var fname: string = symTbl[result - 1].file
-    var winList: list<number> = fname->bufnr()->win_findbuf()
+    var bufnum = fname->bufnr()
+    var winList: list<number> = bufnum->win_findbuf()
     if winList->len() == 0
       # Not present in any window
       if &modified || &buftype != ''
@@ -101,19 +102,13 @@ def JumpToWorkspaceSymbol(popupID: number, result: number): void
 	exe $'confirm edit {symTbl[result - 1].file}'
       endif
     else
-      var wid = fname->bufwinid()
-      if wid != -1
-        # if had one in cur tab
-        # and cur win is same buf
-        if bufwinid(bufnr()) == wid
-          # do nothing
-        else
-          # or pick up one in cur tab
-          wid->win_gotoid()
-        endif
-      else
-        # or pick up one in one tab
-        winList[0]->win_gotoid()
+      if bufnr() != bufnum
+	var winID = fname->bufwinid()
+	if winID == -1
+	  # not present in the current tab page
+	  winID = winList[0]
+	endif
+	winID->win_gotoid()
       endif
     endif
     # Set the previous cursor location mark. Instead of using setpos(), m' is
@@ -302,35 +297,31 @@ export def GotoSymbol(lspserver: dict<any>, location: dict<any>, peekSymbol: boo
     win_gotoid(cur_wid)
   else
     # jump to the file and line containing the symbol
-    var wid = fname->bufwinid()
-    if wid != -1
-      # `wid` maybe just is one of windows in cur tab which had same buf
-      # jump to `wid` only if cur one is not same buf or maybe a bit mess
-      # which should always try to re-use cur one firstly (if it is same)
-      # otherwise cursor perhaps dumbly jumpped to `wid` though same buf
-      if bufwinid(bufnr()) != wid
-        wid->win_gotoid()
-      endif
-    else
-      var bnr: number = fname->bufnr()
-      if bnr != -1
-	# Reuse an existing buffer. If the current buffer has unsaved changes
-	# and 'hidden' is not set or if the current buffer is a special
-	# buffer, then open the buffer in a new window.
-        if (&modified && !&hidden) || &buftype != ''
-          exe $'sbuffer {bnr}'
-        else
-          exe $'buf {bnr}'
-        endif
+    var bnr: number = fname->bufnr()
+    if bnr != bufnr()
+      var wid = fname->bufwinid()
+      if wid != -1
+	wid->win_gotoid()
       else
-        if (&modified && !&hidden) || &buftype != ''
-	  # if the current buffer has unsaved changes and 'hidden' is not set,
-	  # or if the current buffer is a special buffer, then open the file
-	  # in a new window
-          exe $'split {fname}'
-        else
-          exe $'edit {fname}'
-        endif
+	if bnr != -1
+	  # Reuse an existing buffer. If the current buffer has unsaved changes
+	  # and 'hidden' is not set or if the current buffer is a special
+	  # buffer, then open the buffer in a new window.
+	  if (&modified && !&hidden) || &buftype != ''
+	    exe $'sbuffer {bnr}'
+	  else
+	    exe $'buf {bnr}'
+	  endif
+	else
+	  if (&modified && !&hidden) || &buftype != ''
+	    # if the current buffer has unsaved changes and 'hidden' is not set,
+	    # or if the current buffer is a special buffer, then open the file
+	    # in a new window
+	    exe $'split {fname}'
+	  else
+	    exe $'edit {fname}'
+	  endif
+	endif
       endif
     endif
     # Set the previous cursor location mark. Instead of using setpos(), m' is
