@@ -101,7 +101,20 @@ def JumpToWorkspaceSymbol(popupID: number, result: number): void
 	exe $'confirm edit {symTbl[result - 1].file}'
       endif
     else
-      winList[0]->win_gotoid()
+      var wid = fname->bufwinid()
+      if wid != -1
+        # if had one in cur tab
+        # and cur win is same buf
+        if bufwinid(bufnr()) == wid
+          # do nothing
+        else
+          # or pick up one in cur tab
+          wid->win_gotoid()
+        endif
+      else
+        # or pick up one in one tab
+        winList[0]->win_gotoid()
+      endif
     endif
     # Set the previous cursor location mark. Instead of using setpos(), m' is
     # used so that the current location is added to the jump list.
@@ -291,7 +304,13 @@ export def GotoSymbol(lspserver: dict<any>, location: dict<any>, peekSymbol: boo
     # jump to the file and line containing the symbol
     var wid = fname->bufwinid()
     if wid != -1
-      wid->win_gotoid()
+      # `wid` maybe just is one of windows in cur tab which had same buf
+      # jump to `wid` only if cur one is not same buf or maybe a bit mess
+      # which should always try to re-use cur one firstly (if it is same)
+      # otherwise cursor perhaps dumbly jumpped to `wid` though same buf
+      if bufwinid(bufnr()) != wid
+        wid->win_gotoid()
+      endif
     else
       var bnr: number = fname->bufnr()
       if bnr != -1
