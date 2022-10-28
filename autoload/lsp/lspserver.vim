@@ -17,7 +17,7 @@ import './callhierarchy.vim' as callhier
 
 # LSP server standard output handler
 def Output_cb(lspserver: dict<any>, chan: channel, msg: any): void
-  util.TraceLog(false, $'Received: {msg->string()}')
+  util.TraceLog(false, $'Received [{strftime("%m/%d/%y %T")}]: {msg->string()}')
   lspserver.data = msg
   lspserver.processMessages()
 enddef
@@ -99,7 +99,7 @@ def InitServer(lspserver: dict<any>)
 	completionItem: {
 	  documentationFormat: ['plaintext', 'markdown'],
 	  resolveSupport: {properties: ['detail', 'documentation']},
-	  snippetSupport: true
+	  snippetSupport: false
 	},
 	completionItemKind: {valueSet: range(1, 25)}
       },
@@ -265,7 +265,7 @@ def SendMessage(lspserver: dict<any>, content: dict<any>): void
   endif
   ch->ch_sendexpr(content)
   if content->has_key('id')
-    util.TraceLog(false, $'Sent: {content->string()}')
+    util.TraceLog(false, $'Sent [{strftime("%m/%d/%y %T")}]: {content->string()}')
   endif
 enddef
 
@@ -283,7 +283,12 @@ def Rpc(lspserver: dict<any>, method: string, params: any): dict<any>
     return {}
   endif
 
+  util.TraceLog(false, $'Sent [{strftime("%m/%d/%y %T")}]: {req->string()}')
+
+  # Do the synchronous RPC call
   var reply = ch->ch_evalexpr(req)
+
+  util.TraceLog(false, $'Received [{strftime("%m/%d/%y %T")}]: {reply->string()}')
 
   if reply->has_key('result')
     # successful reply
@@ -303,7 +308,31 @@ def Rpc(lspserver: dict<any>, method: string, params: any): dict<any>
   return {}
 enddef
 
+# LSP server asynchronous RPC callback
+def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel, reply: dict<any>)
+  util.TraceLog(false, $'Received [{strftime("%m/%d/%y %T")}]: {reply->string()}')
+
+  if reply->empty()
+    return
+  endif
+
+  if reply->has_key('error')
+    # request failed
+    var emsg: string
+    emsg = $'{reply.error.message}, code = {reply.error.code}'
+    if reply.error->has_key('data')
+      emsg ..= $', data = {reply.error.data->string()}'
+    endif
+    util.ErrMsg($'Error(LSP): request {method} failed ({emsg})')
+    return
+  endif
+
+  RpcCb(lspserver, reply.result)
+enddef
+
 # Send a async RPC request message to the LSP server with a callback function.
+# Returns the LSP message id.  This id can be used to cancel the RPC request
+# (if needed).  Returns -1 on error.
 def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func): number
   var req = {}
   req.method = method
@@ -316,7 +345,20 @@ def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func): n
     return -1
   endif
 
-  var reply = ch->ch_sendexpr(req, {callback: Cbfunc})
+  util.TraceLog(false, $'Sent [{strftime("%m/%d/%y %T")}]: {req->string()}')
+
+  # Do the asynchronous RPC call
+  var Fn = function('AsyncRpcCb', [lspserver, method, Cbfunc])
+
+  var reply: dict<any>
+  if get(g:, 'LSPTest')
+    # When running LSP tests, make this a synchronous RPC call
+    reply = Rpc(lspserver, method, params)
+    Fn(test_null_channel(), reply)
+  else
+    # Otherwise, make an asynchronous RPC call
+    reply = ch->ch_sendexpr(req, {callback: Fn})
+  endif
   if reply->empty()
     return -1
   endif
@@ -643,14 +685,8 @@ def ShowSignature(lspserver: dict<any>): void
   # interface SignatureHelpParams
   #   interface TextDocumentPositionParams
   var params = GetLspTextDocPosition()
-  if get(g:, 'LSPTest')
-    # When running LSP tests, make this a synchronous call
-    var reply = lspserver.rpc('textDocument/signatureHelp', params)
-    signature.SignatureHelp(lspserver, 0, reply)
-  else
-    lspserver.rpc_a('textDocument/signatureHelp', params,
-		    function(signature.SignatureHelp, [lspserver]))
-  endif
+  lspserver.rpc_a('textDocument/signatureHelp', params,
+			signature.SignatureHelp)
 enddef
 
 def DidSaveFile(lspserver: dict<any>, bnr: number): void
@@ -682,14 +718,7 @@ def ShowHoverInfo(lspserver: dict<any>): void
   # interface HoverParams
   #   interface TextDocumentPositionParams
   var params = GetLspTextDocPosition()
-  if get(g:, 'LSPTest')
-    # When running LSP tests, make this a synchronous call
-    var reply = lspserver.rpc('textDocument/hover', params)
-    hover.HoverReply(lspserver, 0, reply)
-  else
-    lspserver.rpc_a('textDocument/hover', params,
-		    function(hover.HoverReply, [lspserver]))
-  endif
+  lspserver.rpc_a('textDocument/hover', params, hover.HoverReply)
 enddef
 
 # Request: "textDocument/references"

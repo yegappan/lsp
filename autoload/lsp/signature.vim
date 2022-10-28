@@ -41,12 +41,7 @@ enddef
 # process the 'textDocument/signatureHelp' reply from the LSP server and
 # display the symbol signature help.
 # Result: SignatureHelp | null
-export def SignatureHelp(lspserver: dict<any>, _: any, reply: dict<any>): void
-  if !util.SanitizeReply('textDocument/signatureHelp', reply)
-    return
-  endif
-
-  var sighelp: dict<any> = reply.result
+export def SignatureHelp(lspserver: dict<any>, sighelp: any): void
   if sighelp->empty()
     CloseSignaturePopup(lspserver)
     return

@@ -92,9 +92,19 @@ def LspOmniComplSet(ftype: string, enabled: bool)
   ftypeOmniCtrlMap->extend({[ftype]: enabled})
 enddef
 
-export def EnableServerTrace()
-  util.ClearTraceLogs()
-  util.ServerTrace(true)
+# Enable/disable the logging of the language server protocol messages
+export def ServerDebug(arg: string)
+  if arg !=? 'on' && arg !=? 'off'
+    util.ErrMsg($'Error: Invalid argument ("{arg}") for LSP server debug')
+    return
+  endif
+
+  if arg ==? 'on'
+    util.ClearTraceLogs()
+    util.ServerTrace(true)
+  else
+    util.ServerTrace(false)
+  endif
 enddef
 
 # Show information about all the LSP servers
@@ -491,7 +501,7 @@ enddef
 
 # set the LSP server trace level for the current buffer
 # Params: SetTraceParams
-export def SetTraceServer(traceVal: string)
+export def ServerTraceSet(traceVal: string)
   if ['off', 'messages', 'verbose']->index(traceVal) == -1
     util.ErrMsg($'Error: Unsupported LSP server trace value {traceVal}')
     return

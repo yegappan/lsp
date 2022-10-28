@@ -14,10 +14,6 @@ def g:LspOptionsSet(opts: dict<any>)
   options.OptionsSet(opts)
 enddef
 
-def g:LspServerTraceEnable()
-  lsp.EnableServerTrace()
-enddef
-
 def g:LspAddServer(serverList: list<dict<any>>)
   lsp.AddServer(serverList)
 enddef
@@ -33,6 +29,16 @@ enddef
 # Command line completion function for the LspSetTrace command.
 def LspServerTraceComplete(arglead: string, cmdline: string, cursorpos: number): list<string>
   var l = ['off', 'messages', 'verbose']
+  if arglead->empty()
+    return l
+  else
+    return filter(l, (_, val) => val =~ arglead)
+  endif
+enddef
+
+# Command line completion function for the LspSetTrace command.
+def LspServerDebugComplete(arglead: string, cmdline: string, cursorpos: number): list<string>
+  var l = ['off', 'on']
   if arglead->empty()
     return l
   else
@@ -59,7 +65,8 @@ augroup END
 command! -nargs=0 -bar LspShowServers lsp.ShowServers()
 command! -nargs=0 -bar LspShowServerCapabilities lsp.ShowServerCapabilities()
 command! -nargs=0 -bar LspServerRestart lsp.RestartServer()
-command! -nargs=1 -complete=customlist,LspServerTraceComplete -bar LspSetTrace lsp.SetTraceServer(<q-args>)
+command! -nargs=1 -complete=customlist,LspServerTraceComplete -bar LspServerTrace lsp.ServerTraceSet(<q-args>)
+command! -nargs=1 -complete=customlist,LspServerDebugComplete -bar LspServerDebug lsp.ServerDebug(<q-args>)
 command! -nargs=0 -bar LspGotoDefinition lsp.GotoDefinition(v:false)
 command! -nargs=0 -bar LspGotoDeclaration lsp.GotoDeclaration(v:false)
 command! -nargs=0 -bar LspGotoTypeDef lsp.GotoTypedef(v:false)

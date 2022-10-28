@@ -711,4 +711,36 @@ LspDiagsUpdated			A |User| autocommand invoked when new
 				server.  This is invoked after the LSP client
 				has processed the diagnostics.
 
+==============================================================================
+10. Debugging						*lsp-debug*
+
+To debug this plugin, you can log the language server protocol messages sent
+and received by the plugin from the language server.  The following command
+enables the logging of the messages: >
+
+    :LspServerDebug on
+<
+This command also clears the log files.  The following command disables the
+logging of the messages: >
+
+    :LspServerDebug off
+<
+By default, the messages are not logged.
+
+The messages printed by the LSP server in the stdout are logged to the
+lsp_server.out file and the messages printed in the stderr are logged to the
+lsp_server.err file.  On a Unix-like system, these files are created in the
+/tmp directory.  On MS-Windows, these files are created in the %TEMP%
+directory.
+
+The language servers typically support command line options to enable debug
+messages and to increase the verbosity of the messages.  You can refer to the
+language server documentation for information about this.  You can include
+these options when registering the LSP server with this plugin.
+
+If a language server supports the "$/logTrace" LSP notification, then you can
+use the :LspServerTrace command to set the trace value: >
+
+    :LspServerTrace { off | messages | verbose }
+<
 vim:tw=78:ts=8:noet:ft=help:norl:

@@ -35,9 +35,9 @@ export def TraceLog(stderr: bool, msg: string)
     return
   endif
   if stderr
-    writefile(split(msg, "\n"), $'{lsp_log_dir}lsp_server.err', 'a')
+    writefile(msg->split("\n"), $'{lsp_log_dir}lsp_server.err', 'a')
   else
-    writefile(split(msg, "\n"), $'{lsp_log_dir}lsp_server.out', 'a')
+    writefile([msg], $'{lsp_log_dir}lsp_server.out', 'a')
   endif
 enddef
 
@@ -149,29 +149,6 @@ export def PushCursorToTagStack()
 			   matchnr: 1,
 			   tagname: expand('<cword>')
 			 }]}, 't')
-enddef
-
-export def SanitizeReply(reqmsg: string, reply: dict<any>): bool
-  if reply->empty()
-    return false
-  endif
-
-  if reply->has_key('error')
-    # request failed
-    var emsg: string
-    emsg = $'{reply.error.message}, code = {reply.error.code}'
-    if reply.error->has_key('data')
-      emsg ..= $', data = {reply.error.data->string()}'
-    endif
-    ErrMsg($'Error(LSP): request {reqmsg} failed ({emsg})')
-    return false
-  endif
-
-  if reply.result->empty()
-    return false
-  endif
-
-  return true
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2
