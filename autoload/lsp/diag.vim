@@ -210,6 +210,12 @@ def ShowDiagInPopup(diag: dict<any>)
   var dlnum = diag.range.start.line + 1
   var ltext = getline(dlnum)
   var dlcol = byteidx(ltext, diag.range.start.character + 1)
+
+  var lastline = line('$')
+  if dlnum > lastline
+    # The line number is outside the last line in the file.
+    dlnum = lastline
+  endif
   if dlcol < 1
     # The column is outside the last character in line.
     dlcol = ltext->len() + 1

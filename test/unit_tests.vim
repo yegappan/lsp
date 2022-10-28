@@ -814,6 +814,30 @@ def Test_LspTagFunc()
   delete('Xtest.c')
 enddef
 
+# Test for the LspDiagsUpdated autocmd
+def Test_LspDiagsUpdated_Autocmd()
+  g:LspAutoCmd = 0
+  autocmd_add([{event: 'User', pattern: 'LspDiagsUpdated', cmd: 'g:LspAutoCmd = g:LspAutoCmd + 1'}])
+  silent! edit Xtest.c
+  sleep 200m
+  var lines: list<string> =<< trim END
+    void aFunc(void)
+    {
+	return;
+    }
+  END
+  setline(1, lines)
+  :sleep 1
+  WaitForDiags(0)
+  setline(3, '    return:')
+  WaitForDiags(1)
+  setline(3, '    return;')
+  WaitForDiags(0)
+  :%bw!
+  autocmd_delete([{event: 'User', pattern: 'LspDiagsUpdated'}])
+  assert_equal(3, g:LspAutoCmd)
+enddef
+
 def LspRunTests()
   :set nomore
   :set debug=beep
