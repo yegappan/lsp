@@ -4,12 +4,15 @@ vim9script
 # Refer to https://microsoft.github.io/language-server-protocol/specification
 # for the Language Server Protocol (LSP) specificaiton.
 
+import './options.vim' as opt
 import './handlers.vim'
 import './util.vim'
 import './diag.vim'
 import './selection.vim'
 import './symbol.vim'
 import './textedit.vim'
+import './hover.vim'
+import './signature.vim'
 import './callhierarchy.vim' as callhier
 
 # LSP server standard output handler
@@ -96,7 +99,7 @@ def InitServer(lspserver: dict<any>)
 	completionItem: {
 	  documentationFormat: ['plaintext', 'markdown'],
 	  resolveSupport: {properties: ['detail', 'documentation']},
-	  snippetSupport: false
+	  snippetSupport: true
 	},
 	completionItemKind: {valueSet: range(1, 25)}
       },
@@ -265,7 +268,7 @@ enddef
 
 # Send a sync RPC request message to the LSP server and return the received
 # reply.  In case of an error, an empty Dict is returned.
-def RpcCall(lspserver: dict<any>, method: string, params: any): dict<any>
+def Rpc(lspserver: dict<any>, method: string, params: any): dict<any>
   var req = {}
   req.method = method
   req.params = {}
@@ -295,6 +298,27 @@ def RpcCall(lspserver: dict<any>, method: string, params: any): dict<any>
   endif
 
   return {}
+enddef
+
+# Send a async RPC request message to the LSP server with a callback function.
+def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func): number
+  var req = {}
+  req.method = method
+  req.params = {}
+  req.params->extend(params)
+
+  var ch = lspserver.job->job_getchannel()
+  if ch_status(ch) != 'open'
+    # LSP server has exited
+    return -1
+  endif
+
+  var reply = ch->ch_sendexpr(req, {callback: Cbfunc})
+  if reply->empty()
+    return -1
+  endif
+
+  return reply.id
 enddef
 
 # Wait for a response message from the LSP server for the request "req"
@@ -441,7 +465,7 @@ def GetCompletion(lspserver: dict<any>, triggerKind_arg: number, triggerChar: st
   req.params.context = {triggerKind: triggerKind_arg, triggerCharacter: triggerChar}
 
   lspserver.sendMessage(req)
-  if exists('g:LSPTest') && g:LSPTest
+  if get(g:, 'LSPTest')
     # When running LSP tests, make this a synchronous call
     lspserver.waitForResponse(req)
   endif
@@ -465,7 +489,7 @@ def ResolveCompletion(lspserver: dict<any>, item: dict<any>): void
   req.params = item
 
   lspserver.sendMessage(req)
-  if exists('g:LSPTest') && g:LSPTest
+  if get(g:, 'LSPTest')
     # When running LSP tests, make this a synchronous call
     lspserver.waitForResponse(req)
   endif
@@ -613,16 +637,16 @@ def ShowSignature(lspserver: dict<any>): void
     return
   endif
 
-  var req = lspserver.createRequest('textDocument/signatureHelp')
   # interface SignatureHelpParams
   #   interface TextDocumentPositionParams
-  req.params->extend(GetLspTextDocPosition())
-
-  lspserver.sendMessage(req)
-
-  if exists('g:LSPTest') && g:LSPTest
+  var params = GetLspTextDocPosition()
+  if get(g:, 'LSPTest')
     # When running LSP tests, make this a synchronous call
-    lspserver.waitForResponse(req)
+    var reply = lspserver.rpc('textDocument/signatureHelp', params)
+    signature.SignatureHelp(lspserver, 0, reply)
+  else
+    lspserver.rpc_a('textDocument/signatureHelp', params,
+		    function(signature.SignatureHelp, [lspserver]))
   endif
 enddef
 
@@ -652,14 +676,16 @@ def ShowHoverInfo(lspserver: dict<any>): void
     return
   endif
 
-  var req = lspserver.createRequest('textDocument/hover')
   # interface HoverParams
   #   interface TextDocumentPositionParams
-  req.params->extend(GetLspTextDocPosition())
-  lspserver.sendMessage(req)
-  if exists('g:LSPTest') && g:LSPTest
+  var params = GetLspTextDocPosition()
+  if get(g:, 'LSPTest')
     # When running LSP tests, make this a synchronous call
-    lspserver.waitForResponse(req)
+    var reply = lspserver.rpc('textDocument/hover', params)
+    hover.HoverReply(lspserver, 0, reply)
+  else
+    lspserver.rpc_a('textDocument/hover', params,
+		    function(hover.HoverReply, [lspserver]))
   endif
 enddef
 
@@ -708,7 +734,7 @@ def DocHighlight(lspserver: dict<any>): void
   #   interface TextDocumentPositionParams
   req.params->extend(GetLspTextDocPosition())
   lspserver.sendMessage(req)
-  if exists('g:LSPTest') && g:LSPTest
+  if get(g:, 'LSPTest')
     # When running LSP tests, make this a synchronous call
     lspserver.waitForResponse(req)
   endif
@@ -729,7 +755,7 @@ def GetDocSymbols(lspserver: dict<any>, fname: string): void
   # interface TextDocumentIdentifier
   req.params->extend({textDocument: {uri: util.LspFileToUri(fname)}})
   lspserver.sendMessage(req)
-  if exists('g:LSPTest') && g:LSPTest
+  if get(g:, 'LSPTest')
     # When running LSP tests, make this a synchronous call
     lspserver.waitForResponse(req)
   endif
@@ -935,7 +961,7 @@ def CodeAction(lspserver: dict<any>, fname_arg: string)
   req.params->extend({context: {diagnostics: d}})
 
   lspserver.sendMessage(req)
-  if exists('g:LSPTest') && g:LSPTest
+  if get(g:, 'LSPTest')
     # When running LSP tests, make this a synchronous call
     lspserver.waitForResponse(req)
   endif
@@ -1086,7 +1112,7 @@ def FoldRange(lspserver: dict<any>, fname: string)
   # interface TextDocumentIdentifier
   req.params->extend({textDocument: {uri: util.LspFileToUri(fname)}})
   lspserver.sendMessage(req)
-  if exists('g:LSPTest') && g:LSPTest
+  if get(g:, 'LSPTest')
     # When running LSP tests, make this a synchronous call
     lspserver.waitForResponse(req)
   endif
@@ -1099,7 +1125,7 @@ def ExecuteCommand(lspserver: dict<any>, cmd: dict<any>)
   var req = lspserver.createRequest('workspace/executeCommand')
   req.params->extend(cmd)
   lspserver.sendMessage(req)
-  if exists('g:LSPTest') && g:LSPTest
+  if get(g:, 'LSPTest')
     # When running LSP tests, make this a synchronous call
     lspserver.waitForResponse(req)
   endif
@@ -1179,7 +1205,8 @@ export def NewLspServer(path: string, args: list<string>, isSync: bool, initiali
     createNotification: function(CreateNotification, [lspserver]),
     sendResponse: function(SendResponse, [lspserver]),
     sendMessage: function(SendMessage, [lspserver]),
-    rpc: function(RpcCall, [lspserver]),
+    rpc: function(Rpc, [lspserver]),
+    rpc_a: function(AsyncRpc, [lspserver]),
     waitForResponse: function(WaitForResponse, [lspserver]),
     processReply: function(handlers.ProcessReply, [lspserver]),
     processNotif: function(handlers.ProcessNotif, [lspserver]),

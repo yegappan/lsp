@@ -151,4 +151,27 @@ export def PushCursorToTagStack()
 			 }]}, 't')
 enddef
 
+export def SanitizeReply(reqmsg: string, reply: dict<any>): bool
+  if reply->empty()
+    return false
+  endif
+
+  if reply->has_key('error')
+    # request failed
+    var emsg: string
+    emsg = $'{reply.error.message}, code = {reply.error.code}'
+    if reply.error->has_key('data')
+      emsg ..= $', data = {reply.error.data->string()}'
+    endif
+    ErrMsg($'Error(LSP): request {reqmsg} failed ({emsg})')
+    return false
+  endif
+
+  if reply.result->empty()
+    return false
+  endif
+
+  return true
+enddef
+
 # vim: tabstop=8 shiftwidth=2 softtabstop=2

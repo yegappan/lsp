@@ -38,8 +38,15 @@ export def SignatureInit(lspserver: dict<any>)
   autocmd InsertLeave <buffer> call CloseCurBufSignaturePopup()
 enddef
 
-# Display the symbol signature help
-export def SignatureDisplay(lspserver: dict<any>, sighelp: dict<any>): void
+# process the 'textDocument/signatureHelp' reply from the LSP server and
+# display the symbol signature help.
+# Result: SignatureHelp | null
+export def SignatureHelp(lspserver: dict<any>, _: any, reply: dict<any>): void
+  if !util.SanitizeReply('textDocument/signatureHelp', reply)
+    return
+  endif
+
+  var sighelp: dict<any> = reply.result
   if sighelp->empty()
     CloseSignaturePopup(lspserver)
     return
