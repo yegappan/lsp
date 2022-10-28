@@ -17,7 +17,7 @@ import './callhierarchy.vim' as callhier
 
 # LSP server standard output handler
 def Output_cb(lspserver: dict<any>, chan: channel, msg: any): void
-  util.TraceLog(false, msg->string())
+  util.TraceLog(false, $'Received: {msg->string()}')
   lspserver.data = msg
   lspserver.processMessages()
 enddef
@@ -264,6 +264,9 @@ def SendMessage(lspserver: dict<any>, content: dict<any>): void
     return
   endif
   ch->ch_sendexpr(content)
+  if content->has_key('id')
+    util.TraceLog(false, $'Sent: {content->string()}')
+  endif
 enddef
 
 # Send a sync RPC request message to the LSP server and return the received
