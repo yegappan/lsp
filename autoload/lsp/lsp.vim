@@ -29,13 +29,13 @@ var lspInitializedOnce = false
 
 def LspInitOnce()
   # Signs used for LSP diagnostics
-  sign_define([{name: 'LspDiagError', text: 'E ', texthl: 'ErrorMsg',
+  sign_define([{name: 'LspDiagError', text: 'E>', texthl: 'ErrorMsg',
 						linehl: 'MatchParen'},
-		{name: 'LspDiagWarning', text: 'W ', texthl: 'Search',
+		{name: 'LspDiagWarning', text: 'W>', texthl: 'Search',
 						linehl: 'MatchParen'},
-		{name: 'LspDiagInfo', text: 'I ', texthl: 'Pmenu',
+		{name: 'LspDiagInfo', text: 'I>', texthl: 'Pmenu',
 						linehl: 'MatchParen'},
-		{name: 'LspDiagHint', text: 'H ', texthl: 'Question',
+		{name: 'LspDiagHint', text: 'H>', texthl: 'Question',
 						linehl: 'MatchParen'}])
 
   prop_type_add('LspTextRef', {'highlight': 'Search'})
