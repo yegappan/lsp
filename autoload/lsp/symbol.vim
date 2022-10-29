@@ -8,6 +8,7 @@ vim9script
 
 import './options.vim' as opt
 import './util.vim'
+import './outline.vim'
 
 # Handle keys pressed when the workspace symbol popup menu is displayed
 def FilterSymbols(lspserver: dict<any>, popupID: number, key: string): bool
@@ -349,6 +350,94 @@ export def TagFunc(lspserver: dict<any>,
   endfor
 
   return retval
+enddef
+
+# process SymbolInformation[]
+def ProcessSymbolInfoTable(symbolInfoTable: list<dict<any>>,
+				symbolTypeTable: dict<list<dict<any>>>,
+				symbolLineTable: list<dict<any>>)
+  var fname: string
+  var symbolType: string
+  var name: string
+  var r: dict<dict<number>>
+  var symInfo: dict<any>
+
+  for syminfo in symbolInfoTable
+    fname = util.LspUriToFile(syminfo.location.uri)
+    symbolType = SymbolKindToName(syminfo.kind)
+    name = syminfo.name
+    if syminfo->has_key('containerName')
+      if syminfo.containerName != ''
+	name ..= $' [{syminfo.containerName}]'
+      endif
+    endif
+    r = syminfo.location.range
+
+    if !symbolTypeTable->has_key(symbolType)
+      symbolTypeTable[symbolType] = []
+    endif
+    symInfo = {name: name, range: r}
+    symbolTypeTable[symbolType]->add(symInfo)
+    symbolLineTable->add(symInfo)
+  endfor
+enddef
+
+# process DocumentSymbol[]
+def ProcessDocSymbolTable(docSymbolTable: list<dict<any>>,
+				symbolTypeTable: dict<list<dict<any>>>,
+				symbolLineTable: list<dict<any>>)
+  var symbolType: string
+  var name: string
+  var r: dict<dict<number>>
+  var symInfo: dict<any>
+  var symbolDetail: string
+  var childSymbols: dict<list<dict<any>>>
+
+  for syminfo in docSymbolTable
+    name = syminfo.name
+    symbolType = SymbolKindToName(syminfo.kind)
+    r = syminfo.range
+    if syminfo->has_key('detail')
+      symbolDetail = syminfo.detail
+    endif
+    if !symbolTypeTable->has_key(symbolType)
+      symbolTypeTable[symbolType] = []
+    endif
+    childSymbols = {}
+    if syminfo->has_key('children')
+      ProcessDocSymbolTable(syminfo.children, childSymbols, symbolLineTable)
+    endif
+    symInfo = {name: name, range: r, detail: symbolDetail,
+						children: childSymbols}
+    symbolTypeTable[symbolType]->add(symInfo)
+    symbolLineTable->add(symInfo)
+  endfor
+enddef
+
+# process the 'textDocument/documentSymbol' reply from the LSP server
+# Open a symbols window and display the symbols as a tree
+# Result: DocumentSymbol[] | SymbolInformation[] | null
+export def DocSymbolReply(fname: string, lspserver: dict<any>, docsymbol: any)
+  var symbolTypeTable: dict<list<dict<any>>> = {}
+  var symbolLineTable: list<dict<any>> = []
+
+  if docsymbol->empty()
+    # No symbols defined for this file. Clear the outline window.
+    outline.UpdateOutlineWindow(fname, symbolTypeTable, symbolLineTable)
+    return
+  endif
+
+  if docsymbol[0]->has_key('location')
+    # SymbolInformation[]
+    ProcessSymbolInfoTable(docsymbol, symbolTypeTable, symbolLineTable)
+  else
+    # DocumentSymbol[]
+    ProcessDocSymbolTable(docsymbol, symbolTypeTable, symbolLineTable)
+  endif
+
+  # sort the symbols by line number
+  symbolLineTable->sort((a, b) => a.range.start.line - b.range.start.line)
+  outline.UpdateOutlineWindow(fname, symbolTypeTable, symbolLineTable)
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2

@@ -18,10 +18,13 @@ def g:LspAddServer(serverList: list<dict<any>>)
   lsp.AddServer(serverList)
 enddef
 
+# Returns true if the language server for the current buffer is initialized
+# and ready to accept requests.
 def g:LspServerReady(): bool
   return lsp.ServerReady()
 enddef
 
+# Returns true if the language server for 'ftype' file type is running
 def g:LspServerRunning(ftype: string): bool
   return lsp.ServerRunning(ftype)
 enddef

@@ -112,26 +112,28 @@ enddef
 
 # get the count of error in the current buffer
 export def DiagsGetErrorCount(lspserver: dict<any>): dict<number>
-  var res = {'Error': 0, 'Warn': 0, 'Info': 0, 'Hint': 0}
+  var errCount = 0
+  var warnCount = 0
+  var infoCount = 0
+  var hintCount = 0
 
   var bnr: number = bufnr()
   if lspserver.diagsMap->has_key(bnr)
-      for item in lspserver.diagsMap[bnr]->values()
-          if item->has_key('severity')
-              if item.severity == 1
-                  res.Error = res.Error + 1
-              elseif item.severity == 2
-                  res.Warn = res.Warn + 1
-              elseif item.severity == 3
-                  res.Info = res.Info + 1
-              elseif item.severity == 4
-                  res.Hint = res.Hint + 1
-              endif
-          endif
-      endfor
+    for item in lspserver.diagsMap[bnr]->values()
+      var severity = item->get('severity', -1)
+      if severity == 1
+	errCount += 1
+      elseif severity == 2
+	warnCount += 1
+      elseif severity == 3
+	infoCount += 1
+      elseif severity == 4
+	hintCount += 1
+      endif
+    endfor
   endif
 
-  return res
+  return {'Error': errCount, 'Warn': warnCount, 'Info': infoCount, 'Hint': hintCount}
 enddef
 
 # Map the LSP DiagnosticSeverity to a quickfix type character

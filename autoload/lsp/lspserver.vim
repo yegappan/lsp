@@ -13,6 +13,7 @@ import './symbol.vim'
 import './textedit.vim'
 import './hover.vim'
 import './signature.vim'
+import './codeaction.vim'
 import './callhierarchy.vim' as callhier
 
 # LSP server standard output handler
@@ -81,12 +82,39 @@ def StartServer(lspserver: dict<any>): number
   return 0
 enddef
 
+# process the 'initialize' method reply from the LSP server
+# Result: InitializeResult
+def ServerInitReply(lspserver: dict<any>, initResult: dict<any>): void
+  if initResult->empty()
+    return
+  endif
+
+  var caps: dict<any> = initResult.capabilities
+  lspserver.caps = caps
+
+  if opt.lspOptions.autoComplete && caps->has_key('completionProvider')
+    lspserver.completionTriggerChars = caps.completionProvider->get('triggerCharacters', [])
+    lspserver.completionLazyDoc =
+		lspserver.caps.completionProvider->get('resolveProvider', false)
+  endif
+
+  # send a "initialized" notification to server
+  lspserver.sendInitializedNotif()
+  lspserver.ready = true
+  if exists($'#User#LspServerReady{lspserver.name}')
+    exe $'doautocmd <nomodeline> User LspServerReady{lspserver.name}'
+  endif
+
+  # if the outline window is opened, then request the symbols for the current
+  # buffer
+  if bufwinid('LSP-Outline') != -1
+    lspserver.getDocSymbols(@%)
+  endif
+enddef
+
 # Request: 'initialize'
 # Param: InitializeParams
-#
 def InitServer(lspserver: dict<any>)
-  var req = lspserver.createRequest('initialize')
-
   # client capabilities (ClientCapabilities)
   var clientCaps: dict<any> = {
     workspace: {
@@ -134,12 +162,8 @@ def InitServer(lspserver: dict<any>)
   if !empty(lspserver.initializationOptions)
     initparams.initializationOptions = lspserver.initializationOptions
   endif
-  req.params->extend(initparams)
 
-  lspserver.sendMessage(req)
-  if lspserver.syncInit
-    lspserver.waitForResponse(req)
-  endif
+  lspserver.rpc_a('initialize', initparams, ServerInitReply)
 enddef
 
 # Send a "initialized" LSP notification
@@ -486,12 +510,151 @@ def GetLspTextDocPosition(): dict<dict<any>>
 	  position: GetLspPosition()}
 enddef
 
+# Map LSP complete item kind to a character
+def LspCompleteItemKindChar(kind: number): string
+  var kindMap: list<string> = ['',
+		't', # Text
+		'm', # Method
+		'f', # Function
+		'C', # Constructor
+		'F', # Field
+		'v', # Variable
+		'c', # Class
+		'i', # Interface
+		'M', # Module
+		'p', # Property
+		'u', # Unit
+		'V', # Value
+		'e', # Enum
+		'k', # Keyword
+		'S', # Snippet
+		'C', # Color
+		'f', # File
+		'r', # Reference
+		'F', # Folder
+		'E', # EnumMember
+		'd', # Contant
+		's', # Struct
+		'E', # Event
+		'o', # Operator
+		'T'  # TypeParameter
+	]
+  if kind > 25
+    return ''
+  endif
+  return kindMap[kind]
+enddef
+
+# process the 'textDocument/completion' reply from the LSP server
+# Result: CompletionItem[] | CompletionList | null
+def CompletionReply(lspserver: dict<any>, cItems: any)
+  if cItems->empty()
+    return
+  endif
+
+  var items: list<dict<any>>
+  if cItems->type() == v:t_list
+    items = cItems
+  else
+    items = cItems.items
+  endif
+
+  var completeItems: list<dict<any>> = []
+  for item in items
+    var d: dict<any> = {}
+    if item->has_key('textEdit') && item.textEdit->has_key('newText')
+      d.word = item.textEdit.newText
+    elseif item->has_key('insertText')
+      d.word = item.insertText
+    else
+      d.word = item.label
+    endif
+    d.abbr = item.label
+    d.dup = 1
+    if item->has_key('kind')
+      # namespace CompletionItemKind
+      # map LSP kind to complete-item-kind
+      d.kind = LspCompleteItemKindChar(item.kind)
+    endif
+    if lspserver.completionLazyDoc
+      d.info = 'Lazy doc'
+    else
+      if item->has_key('detail')
+        # Solve a issue where if a server send a detail field
+        # with a "\n", on the menu will be everything joined with
+        # a "^@" separating it. (example: clangd)
+        d.menu = item.detail->split("\n")[0]
+      endif
+      if item->has_key('documentation')
+        if item.documentation->type() == v:t_string && item.documentation != ''
+          d.info = item.documentation
+        elseif item.documentation->type() == v:t_dict
+            && item.documentation.value->type() == v:t_string
+          d.info = item.documentation.value
+        endif
+      endif
+    endif
+    d.user_data = item
+    completeItems->add(d)
+  endfor
+
+  if opt.lspOptions.autoComplete && !lspserver.omniCompletePending
+    if completeItems->empty()
+      # no matches
+      return
+    endif
+
+    var m = mode()
+    if m != 'i' && m != 'R' && m != 'Rv'
+      # If not in insert or replace mode, then don't start the completion
+      return
+    endif
+
+    if completeItems->len() == 1
+	&& getline('.')->matchstr(completeItems[0].word .. '\>') != ''
+      # only one complete match. No need to show the completion popup
+      return
+    endif
+
+    var start_col: number = 0
+
+    # FIXME: The following doesn't work with typescript as one of the
+    # completion item has a start column that is before the special character.
+    # For example, when completing the methods for "str.", the dot is removed.
+    #
+    # # Find the start column for the completion.  If any of the entries
+    # # returned by the LSP server has a starting position, then use that.
+    # for item in items
+    #   if item->has_key('textEdit')
+    #     start_col = item.textEdit.range.start.character + 1
+    #     break
+    #   endif
+    # endfor
+
+    # LSP server didn't return a starting position for completion, search
+    # backwards from the current cursor position for a non-keyword character.
+    if start_col == 0
+      var line: string = getline('.')
+      var start = col('.') - 1
+      while start > 0 && line[start - 1] =~ '\k'
+	start -= 1
+      endwhile
+      start_col = start + 1
+    endif
+
+    complete(start_col, completeItems)
+  else
+    lspserver.completeItems = completeItems
+    lspserver.omniCompletePending = false
+  endif
+enddef
+
 # Get a list of completion items.
 # Request: "textDocument/completion"
 # Param: CompletionParams
 def GetCompletion(lspserver: dict<any>, triggerKind_arg: number, triggerChar: string): void
   # Check whether LSP server supports completion
-  if !lspserver.caps->has_key('completionProvider')
+  if !lspserver.caps->get('completionProvider', false)
     util.ErrMsg("Error: LSP server does not support completion")
     return
   endif
@@ -501,18 +664,89 @@ def GetCompletion(lspserver: dict<any>, triggerKind_arg: number, triggerChar: st
     return
   endif
 
-  var req = lspserver.createRequest('textDocument/completion')
-
   # interface CompletionParams
   #   interface TextDocumentPositionParams
-  req.params = GetLspTextDocPosition()
+  var params = GetLspTextDocPosition()
   #   interface CompletionContext
-  req.params.context = {triggerKind: triggerKind_arg, triggerCharacter: triggerChar}
+  params.context = {triggerKind: triggerKind_arg, triggerCharacter: triggerChar}
 
-  lspserver.sendMessage(req)
-  if get(g:, 'LSPTest')
-    # When running LSP tests, make this a synchronous call
-    lspserver.waitForResponse(req)
+  lspserver.rpc_a('textDocument/completion', params, CompletionReply)
+enddef
+
+# process the 'completionItem/resolve' reply from the LSP server
+# Result: CompletionItem
+def CompletionResolveReply(lspserver: dict<any>, cItem: dict<any>)
+  if cItem->empty()
+    return
+  endif
+
+  # check if completion item is still selected
+  var cInfo = complete_info()
+  if cInfo->empty()
+      || !cInfo.pum_visible
+      || cInfo.selected == -1
+      || cInfo.items[cInfo.selected].user_data.label != cItem.label
+    return
+  endif
+
+  var infoText: list<string>
+  var infoKind: string
+
+  if cItem->has_key('detail')
+    # Solve a issue where if a server send the detail field with "\n",
+    # on the completion popup, everything will be joined with "^@"
+    # (example: typescript-language-server)
+    infoText->extend(cItem.detail->split("\n"))
+  endif
+
+  if cItem->has_key('documentation')
+    if !infoText->empty()
+      infoText->extend(['- - -'])
+    endif
+    if cItem.documentation->type() == v:t_dict
+      # MarkupContent
+      if cItem.documentation.kind == 'plaintext'
+        infoText->extend(cItem.documentation.value->split("\n"))
+        infoKind = 'text'
+      elseif cItem.documentation.kind == 'markdown'
+        infoText->extend(cItem.documentation.value->split("\n"))
+        infoKind = 'markdown'
+      else
+        util.ErrMsg($'Error: Unsupported documentation type ({cItem.documentation.kind})')
+        return
+      endif
+    elseif cItem.documentation->type() == v:t_string
+      infoText->extend(cItem.documentation->split("\n"))
+    else
+      util.ErrMsg($'Error: Unsupported documentation ({cItem.documentation->string()})')
+      return
+    endif
+  endif
+
+  if infoText->empty()
+    return
+  endif
+
+  # check if completion item is changed in meantime
+  cInfo = complete_info()
+  if cInfo->empty()
+      || !cInfo.pum_visible
+      || cInfo.selected == -1
+      || cInfo.items[cInfo.selected].user_data.label != cItem.label
+    return
+  endif
+
+  var id = popup_findinfo()
+  if id > 0
+    var bufnr = id->winbufnr()
+    infoKind->setbufvar(bufnr, '&ft')
+    if infoKind == 'markdown'
+      3->setwinvar(id, '&conceallevel')
+    else
+      0->setwinvar(id, '&conceallevel')
+    endif
+    id->popup_settext(infoText)
+    id->popup_show()
   endif
 enddef
 
@@ -521,23 +755,16 @@ enddef
 # Param: CompletionItem
 def ResolveCompletion(lspserver: dict<any>, item: dict<any>): void
   # Check whether LSP server supports completion item resolve
-  if !lspserver.caps->has_key('completionProvider')
-      || !lspserver.caps.completionProvider->has_key('resolveProvider')
-      || !lspserver.caps.completionProvider.resolveProvider
+  if !lspserver.caps->get('completionProvider', false)
+      || !lspserver.caps.completionProvider->get('resolveProvider', false)
     util.ErrMsg("Error: LSP server does not support completion item resolve")
     return
   endif
 
-  var req = lspserver.createRequest('completionItem/resolve')
-
   # interface CompletionItem
-  req.params = item
+  var params = item
 
-  lspserver.sendMessage(req)
-  if get(g:, 'LSPTest')
-    # When running LSP tests, make this a synchronous call
-    lspserver.waitForResponse(req)
-  endif
+  lspserver.rpc_a('completionItem/resolve', params, CompletionResolveReply)
 enddef
 
 # Jump to or peek a symbol location.
@@ -593,8 +820,7 @@ enddef
 # Param: DefinitionParams
 def GotoDefinition(lspserver: dict<any>, peek: bool)
   # Check whether LSP server supports jumping to a definition
-  if !lspserver.caps->has_key('definitionProvider')
-				|| !lspserver.caps.definitionProvider
+  if !lspserver.caps->get('definitionProvider', false)
     util.ErrMsg("Error: Jumping to a symbol definition is not supported")
     return
   endif
@@ -608,8 +834,7 @@ enddef
 # Param: DeclarationParams
 def GotoDeclaration(lspserver: dict<any>, peek: bool): void
   # Check whether LSP server supports jumping to a declaration
-  if !lspserver.caps->has_key('declarationProvider')
-			|| !lspserver.caps.declarationProvider
+  if !lspserver.caps->get('declarationProvider', false)
     util.ErrMsg("Error: Jumping to a symbol declaration is not supported")
     return
   endif
@@ -623,8 +848,7 @@ enddef
 # Param: TypeDefinitionParams
 def GotoTypeDef(lspserver: dict<any>, peek: bool): void
   # Check whether LSP server supports jumping to a type definition
-  if !lspserver.caps->has_key('typeDefinitionProvider')
-			|| !lspserver.caps.typeDefinitionProvider
+  if !lspserver.caps->get('typeDefinitionProvider', false)
     util.ErrMsg("Error: Jumping to a symbol type definition is not supported")
     return
   endif
@@ -638,8 +862,7 @@ enddef
 # Param: ImplementationParams
 def GotoImplementation(lspserver: dict<any>, peek: bool): void
   # Check whether LSP server supports jumping to a implementation
-  if !lspserver.caps->has_key('implementationProvider')
-			|| !lspserver.caps.implementationProvider
+  if !lspserver.caps->get('implementationProvider', false)
     util.ErrMsg("Error: Jumping to a symbol implementation is not supported")
     return
   endif
@@ -677,7 +900,7 @@ enddef
 # Param: SignatureHelpParams
 def ShowSignature(lspserver: dict<any>): void
   # Check whether LSP server supports signature help
-  if !lspserver.caps->has_key('signatureHelpProvider')
+  if !lspserver.caps->get('signatureHelpProvider', false)
     util.ErrMsg("Error: LSP server does not support signature help")
     return
   endif
@@ -710,8 +933,7 @@ enddef
 # Param: HoverParams
 def ShowHoverInfo(lspserver: dict<any>): void
   # Check whether LSP server supports getting hover information
-  if !lspserver.caps->has_key('hoverProvider')
-			|| !lspserver.caps.hoverProvider
+  if !lspserver.caps->get('hoverProvider', false)
     return
   endif
 
@@ -725,8 +947,7 @@ enddef
 # Param: ReferenceParams
 def ShowReferences(lspserver: dict<any>, peek: bool): void
   # Check whether LSP server supports getting reference information
-  if !lspserver.caps->has_key('referencesProvider')
-			|| !lspserver.caps.referencesProvider
+  if !lspserver.caps->get('referencesProvider', false)
     util.ErrMsg("Error: LSP server does not support showing references")
     return
   endif
@@ -751,46 +972,65 @@ def ShowReferences(lspserver: dict<any>, peek: bool): void
   symbol.ShowReferences(lspserver, reply.result, peek)
 enddef
 
+# process the 'textDocument/documentHighlight' reply from the LSP server
+# Result: DocumentHighlight[] | null
+def DocHighlightReply(bnr: number, lspserver: dict<any>, docHighlightReply: any): void
+  if docHighlightReply->empty()
+    return
+  endif
+
+  for docHL in docHighlightReply
+    var kind: number = docHL->get('kind', 1)
+    var propName: string
+    if kind == 2
+      # Read-access
+      propName = 'LspReadRef'
+    elseif kind == 3
+      # Write-access
+      propName = 'LspWriteRef'
+    else
+      # textual reference
+      propName = 'LspTextRef'
+    endif
+    prop_add(docHL.range.start.line + 1,
+		util.GetLineByteFromPos(bnr, docHL.range.start) + 1,
+		{end_lnum: docHL.range.end.line + 1,
+		  end_col: util.GetLineByteFromPos(bnr, docHL.range.end) + 1,
+		  bufnr: bnr,
+		  type: propName})
+  endfor
+enddef
+
 # Request: "textDocument/documentHighlight"
 # Param: DocumentHighlightParams
 def DocHighlight(lspserver: dict<any>): void
   # Check whether LSP server supports getting highlight information
-  if !lspserver.caps->has_key('documentHighlightProvider')
-			|| !lspserver.caps.documentHighlightProvider
+  if !lspserver.caps->get('documentHighlightProvider', false)
     util.ErrMsg("Error: LSP server does not support document highlight")
     return
   endif
 
-  var req = lspserver.createRequest('textDocument/documentHighlight')
   # interface DocumentHighlightParams
   #   interface TextDocumentPositionParams
-  req.params->extend(GetLspTextDocPosition())
-  lspserver.sendMessage(req)
-  if get(g:, 'LSPTest')
-    # When running LSP tests, make this a synchronous call
-    lspserver.waitForResponse(req)
-  endif
+  var params = GetLspTextDocPosition()
+  lspserver.rpc_a('textDocument/documentHighlight', params,
+			function('DocHighlightReply', [bufnr()]))
 enddef
 
 # Request: "textDocument/documentSymbol"
 # Param: DocumentSymbolParams
 def GetDocSymbols(lspserver: dict<any>, fname: string): void
   # Check whether LSP server supports getting document symbol information
-  if !lspserver.caps->has_key('documentSymbolProvider')
-			|| !lspserver.caps.documentSymbolProvider
+  if !lspserver.caps->get('documentSymbolProvider', false)
     util.ErrMsg("Error: LSP server does not support getting list of symbols")
     return
   endif
 
-  var req = lspserver.createRequest('textDocument/documentSymbol')
   # interface DocumentSymbolParams
   # interface TextDocumentIdentifier
-  req.params->extend({textDocument: {uri: util.LspFileToUri(fname)}})
-  lspserver.sendMessage(req)
-  if get(g:, 'LSPTest')
-    # When running LSP tests, make this a synchronous call
-    lspserver.waitForResponse(req)
-  endif
+  var params = {textDocument: {uri: util.LspFileToUri(fname)}}
+  lspserver.rpc_a('textDocument/documentSymbol', params,
+			function(symbol.DocSymbolReply, [fname]))
 enddef
 
 # Request: "textDocument/formatting"
@@ -801,8 +1041,7 @@ enddef
 def TextDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
 				start_lnum: number, end_lnum: number)
   # Check whether LSP server supports formatting documents
-  if !lspserver.caps->has_key('documentFormattingProvider')
-			|| !lspserver.caps.documentFormattingProvider
+  if !lspserver.caps->get('documentFormattingProvider', false)
     util.ErrMsg("Error: LSP server does not support formatting documents")
     return
   endif
@@ -884,8 +1123,7 @@ enddef
 # Request: "callHierarchy/incomingCalls"
 def IncomingCalls(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports call hierarchy
-  if !lspserver.caps->has_key('callHierarchyProvider')
-			|| !lspserver.caps.callHierarchyProvider
+  if !lspserver.caps->get('callHierarchyProvider', false)
     util.ErrMsg("Error: LSP server does not support call hierarchy")
     return
   endif
@@ -912,8 +1150,7 @@ enddef
 # Request: "callHierarchy/outgoingCalls"
 def OutgoingCalls(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports call hierarchy
-  if !lspserver.caps->has_key('callHierarchyProvider')
-			|| !lspserver.caps.callHierarchyProvider
+  if !lspserver.caps->get('callHierarchyProvider', false)
     util.ErrMsg("Error: LSP server does not support call hierarchy")
     return
   endif
@@ -941,8 +1178,7 @@ enddef
 # Param: RenameParams
 def RenameSymbol(lspserver: dict<any>, newName: string)
   # Check whether LSP server supports rename operation
-  if !lspserver.caps->has_key('renameProvider')
-			|| !lspserver.caps.renameProvider
+  if !lspserver.caps->get('renameProvider', false)
     util.ErrMsg("Error: LSP server does not support rename operation")
     return
   endif
@@ -969,34 +1205,37 @@ enddef
 # Param: CodeActionParams
 def CodeAction(lspserver: dict<any>, fname_arg: string)
   # Check whether LSP server supports code action operation
-  if !lspserver.caps->has_key('codeActionProvider')
-			|| !lspserver.caps.codeActionProvider
+  if !lspserver.caps->get('codeActionProvider', false)
     util.ErrMsg("Error: LSP server does not support code action operation")
     return
   endif
 
-  var req = lspserver.createRequest('textDocument/codeAction')
-
   # interface CodeActionParams
+  var params: dict<any> = {}
   var fname: string = fnamemodify(fname_arg, ':p')
   var bnr: number = fname_arg->bufnr()
   var r: dict<dict<number>> = {
 		  start: {line: line('.') - 1, character: charcol('.') - 1},
 		  end: {line: line('.') - 1, character: charcol('.') - 1}}
-  req.params->extend({textDocument: {uri: util.LspFileToUri(fname)}, range: r})
+  params->extend({textDocument: {uri: util.LspFileToUri(fname)}, range: r})
   var d: list<dict<any>> = []
   var lnum = line('.')
   var diagInfo: dict<any> = diag.GetDiagByLine(lspserver, bnr, lnum)
   if !diagInfo->empty()
     d->add(diagInfo)
   endif
-  req.params->extend({context: {diagnostics: d}})
+  params->extend({context: {diagnostics: d}})
 
-  lspserver.sendMessage(req)
-  if get(g:, 'LSPTest')
-    # When running LSP tests, make this a synchronous call
-    lspserver.waitForResponse(req)
+  var reply = lspserver.rpc('textDocument/codeAction', params)
+
+  # Result: (Command | CodeAction)[] | null
+  if reply->empty() || reply.result->empty()
+    # no action can be performed
+    util.WarnMsg('No code action is available')
+    return
   endif
+
+  codeaction.ApplyCodeAction(lspserver, reply.result)
 enddef
 
 # List project-wide symbols matching query string
@@ -1004,8 +1243,7 @@ enddef
 # Param: WorkspaceSymbolParams
 def WorkspaceQuerySymbols(lspserver: dict<any>, query: string)
   # Check whether the LSP server supports listing workspace symbols
-  if !lspserver.caps->has_key('workspaceSymbolProvider')
-				|| !lspserver.caps.workspaceSymbolProvider
+  if !lspserver.caps->get('workspaceSymbolProvider', false)
     util.ErrMsg("Error: LSP server does not support listing workspace symbols")
     return
   endif
@@ -1080,8 +1318,7 @@ enddef
 # Param: SelectionRangeParams
 def SelectionRange(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports selection ranges
-  if !lspserver.caps->has_key('selectionRangeProvider')
-			|| !lspserver.caps.selectionRangeProvider
+  if !lspserver.caps->get('selectionRangeProvider', false)
     util.ErrMsg("Error: LSP server does not support selection ranges")
     return
   endif
@@ -1107,8 +1344,7 @@ enddef
 # Expand the previous selection or start a new one
 def SelectionExpand(lspserver: dict<any>)
   # Check whether LSP server supports selection ranges
-  if !lspserver.caps->has_key('selectionRangeProvider')
-			|| !lspserver.caps.selectionRangeProvider
+  if !lspserver.caps->get('selectionRangeProvider', false)
     util.ErrMsg("Error: LSP server does not support selection ranges")
     return
   endif
@@ -1119,8 +1355,7 @@ enddef
 # Shrink the previous selection or start a new one
 def SelectionShrink(lspserver: dict<any>)
   # Check whether LSP server supports selection ranges
-  if !lspserver.caps->has_key('selectionRangeProvider')
-			|| !lspserver.caps.selectionRangeProvider
+  if !lspserver.caps->get('selectionRangeProvider', false)
     util.ErrMsg("Error: LSP server does not support selection ranges")
     return
   endif
@@ -1133,34 +1368,50 @@ enddef
 # Param: FoldingRangeParams
 def FoldRange(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports fold ranges
-  if !lspserver.caps->has_key('foldingRangeProvider')
-			|| !lspserver.caps.foldingRangeProvider
+  if !lspserver.caps->get('foldingRangeProvider', false)
     util.ErrMsg("Error: LSP server does not support folding")
     return
   endif
 
-  var req = lspserver.createRequest('textDocument/foldingRange')
   # interface FoldingRangeParams
   # interface TextDocumentIdentifier
-  req.params->extend({textDocument: {uri: util.LspFileToUri(fname)}})
-  lspserver.sendMessage(req)
-  if get(g:, 'LSPTest')
-    # When running LSP tests, make this a synchronous call
-    lspserver.waitForResponse(req)
+  var params = {textDocument: {uri: util.LspFileToUri(fname)}}
+  var reply = lspserver.rpc('textDocument/foldingRange', params)
+  if reply->empty() || reply.result->empty()
+    return
   endif
+
+  # result: FoldingRange[]
+  var end_lnum: number
+  var last_lnum: number = line('$')
+  for foldRange in reply.result
+    end_lnum = foldRange.endLine + 1
+    if end_lnum < foldRange.startLine + 2
+      end_lnum = foldRange.startLine + 2
+    endif
+    exe $':{foldRange.startLine + 2}, {end_lnum}fold'
+    # Open all the folds, otherwise the subsequently created folds are not
+    # correct.
+    :silent! foldopen!
+  endfor
+
+  if &foldcolumn == 0
+    :setlocal foldcolumn=2
+  endif
+enddef
+
+# process the 'workspace/executeCommand' reply from the LSP server
+# Result: any | null
+def WorkspaceExecuteReply(lspserver: dict<any>, execReply: any)
+  # Nothing to do for the reply
 enddef
 
 # Request the LSP server to execute a command
 # Request: workspace/executeCommand
 # Params: ExecuteCommandParams
 def ExecuteCommand(lspserver: dict<any>, cmd: dict<any>)
-  var req = lspserver.createRequest('workspace/executeCommand')
-  req.params->extend(cmd)
-  lspserver.sendMessage(req)
-  if get(g:, 'LSPTest')
-    # When running LSP tests, make this a synchronous call
-    lspserver.waitForResponse(req)
-  endif
+  var params = cmd
+  lspserver.rpc_a('workspace/executeCommand', params, WorkspaceExecuteReply)
 enddef
 
 # Display the LSP server capabilities (received during the initialization
@@ -1179,8 +1430,7 @@ enddef
 # symbol definition or the symbol is not defined.
 def TagFunc(lspserver: dict<any>, pat: string, flags: string, info: dict<any>): any
   # Check whether LSP server supports getting the location of a definition
-  if !lspserver.caps->has_key('definitionProvider')
-				|| !lspserver.caps.definitionProvider
+  if !lspserver.caps->get('definitionProvider', false)
     return null
   endif
 

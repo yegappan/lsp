@@ -61,15 +61,15 @@ def CurbufGetServerChecked(): dict<any>
 
   var lspserver: dict<any> = buf.CurbufGetServer()
   if lspserver->empty()
-    util.ErrMsg($'Error: LSP server for "{fname}" is not found')
+    util.ErrMsg($'Error: Language server not found for "{&filetype}" file type')
     return {}
   endif
   if !lspserver.running
-    util.ErrMsg($'Error: LSP server for "{fname}" is not running')
+    util.ErrMsg($'Error: Language server not running for "{&filetype}" file type')
     return {}
   endif
   if !lspserver.ready
-    util.ErrMsg($'Error: LSP server for "{fname}" is not ready')
+    util.ErrMsg($'Error: Language server not ready for "{&filetype}" file type')
     return {}
   endif
 
@@ -312,8 +312,7 @@ def BufferInit(bnr: number): void
     exe $'autocmd InsertLeave <buffer={bnr}> call LspLeftInsertMode()'
 
     if opt.lspOptions.autoHighlight &&
-			lspserver.caps->has_key('documentHighlightProvider')
-			&& lspserver.caps.documentHighlightProvider
+			lspserver.caps->get('documentHighlightProvider', false)
       # Highlight all the occurrences of the current keyword
       exe $'autocmd CursorMoved <buffer={bnr}> call LspDocHighlightClear() | call LspDocHighlight()'
     endif
