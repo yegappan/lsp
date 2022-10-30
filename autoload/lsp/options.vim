@@ -37,7 +37,9 @@ export var lspOptions: dict<any> = {
   # Don't print message when a configured language server is missing.
   ignoreMissingServer: false,
   # Use a floating menu to show the code action menu instead of asking for input
-  usePopupInCodeAction: false
+  usePopupInCodeAction: false,
+  # enable snippet completion support
+  snippetSupport: false
 }
 
 # set LSP options from user provided options

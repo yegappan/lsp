@@ -127,7 +127,7 @@ def InitServer(lspserver: dict<any>)
 	completionItem: {
 	  documentationFormat: ['plaintext', 'markdown'],
 	  resolveSupport: {properties: ['detail', 'documentation']},
-	  snippetSupport: false
+	  snippetSupport: opt.lspOptions.snippetSupport
 	},
 	completionItemKind: {valueSet: range(1, 25)}
       },
@@ -545,6 +545,21 @@ def LspCompleteItemKindChar(kind: number): string
   return kindMap[kind]
 enddef
 
+# Remove all the snippet placeholders from 'str' and return the value.
+# Based on a similar function in the vim-lsp plugin.
+def MakeValidWord(str_arg: string): string
+  var str = substitute(str_arg, '\$[0-9]\+\|\${\%(\\.\|[^}]\)\+}', '', 'g')
+  str = substitute(str, '\\\(.\)', '\1', 'g')
+  var valid = matchstr(str, '^[^"'' (<{\[\t\r\n]\+')
+  if empty(valid)
+    return str
+  endif
+  if valid =~# ':$'
+    return valid[: -2]
+  endif
+  return valid
+enddef
+
 # process the 'textDocument/completion' reply from the LSP server
 # Result: CompletionItem[] | CompletionList | null
 def CompletionReply(lspserver: dict<any>, cItems: any)
@@ -568,6 +583,11 @@ def CompletionReply(lspserver: dict<any>, cItems: any)
       d.word = item.insertText
     else
       d.word = item.label
+    endif
+    if item->get('insertTextFormat', 1) == 2
+      # snippet completion.  Needs a snippet plugin to expand the snippet.
+      # Remove all the snippet placeholders
+      d.word = MakeValidWord(d.word)
     endif
     d.abbr = item.label
     d.dup = 1
