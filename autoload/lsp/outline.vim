@@ -212,7 +212,7 @@ enddef
 # when the outline window is closed, do the cleanup
 def OutlineCleanup()
   # Remove the outline autocommands
-  :silent! autocmd! LSPOutline
+  silent! autocmd_delete([{group: 'LSPOutline'}])
 
   :silent! syntax clear LSPTitle
 enddef
@@ -261,13 +261,31 @@ export def OpenOutlineWindow()
 
   prop_type_add('LspOutlineHighlight', {bufnr: bufnr(), highlight: 'Search'})
 
-  augroup LSPOutline
-    au!
-    autocmd BufEnter * call g:LspRequestDocSymbols()
-    # when the outline window is closed, do the cleanup
-    autocmd BufUnload LSP-Outline call OutlineCleanup()
-    autocmd CursorHold * call OutlineHighlightCurrentSymbol()
-  augroup END
+  try
+    autocmd_delete([{group: 'LSPOutline', event: '*'}])
+  catch /E367:/
+  endtry
+  var acmds: list<dict<any>>
+
+  # Refresh or add the symbols in a buffer to the outline window
+  acmds->add({event: 'BufEnter',
+	      group: 'LSPOutline',
+	      pattern: '*',
+	      cmd: 'call g:LspRequestDocSymbols()'})
+
+  # when the outline window is closed, do the cleanup
+  acmds->add({event: 'BufUnload',
+	      group: 'LSPOutline',
+	      pattern: 'LSP-Outline',
+	      cmd: 'OutlineCleanup()'})
+
+  # Highlight the current symbol when the cursor is not moved for sometime
+  acmds->add({event: 'CursorHold',
+	      group: 'LSPOutline',
+	      pattern: '*',
+	      cmd: 'OutlineHighlightCurrentSymbol()'})
+
+  autocmd_add(acmds)
 
   prevWinID->win_gotoid()
 enddef

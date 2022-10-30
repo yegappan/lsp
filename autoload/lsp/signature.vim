@@ -35,7 +35,9 @@ export def SignatureInit(lspserver: dict<any>)
     exe $"inoremap <buffer> <silent> {ch} {ch}<C-R>=LspShowSignature()<CR>"
   endfor
   # close the signature popup when leaving insert mode
-  autocmd InsertLeave <buffer> call CloseCurBufSignaturePopup()
+  autocmd_add([{bufnr: bufnr(),
+		event: 'InsertLeave',
+		cmd: 'CloseCurBufSignaturePopup()'}])
 enddef
 
 # process the 'textDocument/signatureHelp' reply from the LSP server and

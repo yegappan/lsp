@@ -245,7 +245,7 @@ def g:LspDiagExpr(): any
 enddef
 
 # Called after leaving insert mode. Used to process diag messages (if any)
-def g:LspLeftInsertMode()
+def LspLeftInsertMode()
   if !exists('b:LspDiagsUpdatePending')
     return
   endif
@@ -257,6 +257,51 @@ def g:LspLeftInsertMode()
     return
   endif
   diag.UpdateDiags(lspserver, bnr)
+enddef
+
+# Add buffer-local autocmds when attaching a LSP server to a buffer
+def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
+  var acmds: list<dict<any>> = []
+
+  # file saved notification handler
+  acmds->add({bufnr: bnr,
+	      event: 'BufWritePost',
+	      group: 'LSPBufferAutocmds',
+	      cmd: 'LspSavedFile()'})
+
+  # Update the diagnostics when insert mode is stopped
+  acmds->add({bufnr: bnr,
+	      event: 'InsertLeave',
+	      group: 'LSPBufferAutocmds',
+	      cmd: 'LspLeftInsertMode()'})
+
+  # Insert-mode completion autocmds (if configured)
+  if opt.lspOptions.autoComplete
+    # Trigger 24x7 insert mode completion when text is changed
+    acmds->add({bufnr: bnr,
+		event: 'TextChangedI',
+		group: 'LSPBufferAutocmds',
+		cmd: 'LspComplete()'})
+    if lspserver.completionLazyDoc
+      # resolve additional documentation for a selected item
+      acmds->add({bufnr: bnr,
+		  event: 'CompleteChanged',
+		  group: 'LSPBufferAutocmds',
+		  cmd: 'LspResolve()'})
+    endif
+  endif
+
+  # Auto highlight all the occurrences of the current keyword
+  if opt.lspOptions.autoHighlight &&
+			lspserver.caps->get('documentHighlightProvider', false)
+      acmds->add({bufnr: bnr,
+		  event: 'CursorMoved',
+		  group: 'LSPBufferAutocmds',
+		  cmd: 'call LspDocHighlightClear() | call LspDocHighlight()'})
+  endif
+
+  autocmd_add(acmds)
+
 enddef
 
 def BufferInit(bnr: number): void
@@ -295,33 +340,11 @@ def BufferInit(bnr: number): void
   # initialize signature help
   signature.SignatureInit(lspserver)
 
-  # Set buffer local autocmds
-  augroup LSPBufferAutocmds
-    # file saved notification handler
-    exe $'autocmd BufWritePost <buffer={bnr}> call LspSavedFile()'
-
-    if opt.lspOptions.autoComplete
-      # Trigger 24x7 insert mode completion when text is changed
-      exe $'autocmd TextChangedI <buffer={bnr}> call LspComplete()'
-      if lspserver.completionLazyDoc
-        exe $'autocmd CompleteChanged <buffer={bnr}> call LspResolve()'
-      endif
-    endif
-
-    # Update the diagnostics when insert mode is stopped
-    exe $'autocmd InsertLeave <buffer={bnr}> call LspLeftInsertMode()'
-
-    if opt.lspOptions.autoHighlight &&
-			lspserver.caps->get('documentHighlightProvider', false)
-      # Highlight all the occurrences of the current keyword
-      exe $'autocmd CursorMoved <buffer={bnr}> call LspDocHighlightClear() | call LspDocHighlight()'
-    endif
-  augroup END
+  AddBufLocalAutocmds(lspserver, bnr)
 
   if exists('#User#LspAttached')
     doautocmd <nomodeline> User LspAttached
   endif
-
 enddef
 
 # A new buffer is opened. If LSP is supported for this buffer, then add it
@@ -356,7 +379,7 @@ export def AddFile(bnr: number): void
     BufferInit(bnr)
   else
     augroup LSPBufferAutocmds
-      exe $'autocmd User LspServerReady{lspserver.name} ++once call BufferInit({bnr})'
+      exe $'autocmd User LspServerReady{lspserver.name} ++once BufferInit({bnr})'
     augroup END
   endif
 
@@ -578,7 +601,7 @@ enddef
 
 # Insert mode completion handler. Used when 24x7 completion is enabled
 # (default).
-def g:LspComplete()
+def LspComplete()
   var lspserver: dict<any> = buf.CurbufGetServer()
   if lspserver->empty() || !lspserver.running || !lspserver.ready
     return
@@ -617,7 +640,7 @@ def g:LspComplete()
 enddef
 
 # Lazy complete documentation handler
-def g:LspResolve()
+def LspResolve()
   var lspserver: dict<any> = CurbufGetServerChecked()
   if lspserver->empty()
     return
