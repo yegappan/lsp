@@ -2,7 +2,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: Oct 26, 2022
+Last change: Oct 30, 2022
 
 ==============================================================================
 						*lsp-license*
@@ -238,40 +238,43 @@ autoComplete		In insert mode, automatically complete the current
 autoHighlight		In normal mode, automatically highlight all the
 			occurrences of the symbol under the cursor. By default
 			this is set to false.
-showSignature		In insert mode, automatically show the current symbol
-			signature in a popup. By default this is set to true.
-echoSignature		In insert mode, echo the current symbol signature
-			instead of showing it in a popup. By default this is
-			set to false.
 autoHighlightDiags	Automatically place signs on the lines with a
 			diagnostic message from the LSP server. By default
 			this is set to true.
 autoPopulateDiags	Automatically populate the location list with
 			diagnostics from the LSP server. By default this is
 			set to false.
+echoSignature		In insert mode, echo the current symbol signature
+			instead of showing it in a popup. By default this is
+			set to false.
+ignoreMissingServer	Do not print a missing language server executable.
+			By default this is set to false.
 keepFocusInReferences	Focus on the location list window after
 			LspShowReferences.  By default this is set to false.
-noNewlineInCompletion	Suppress adding a new line on completion selection
-			with <CR>.
-			By default this is set to false.
-outlineWinSize		Outline window size, by default this is 20.
-outlineOnRight		Open the outline window on the right side, by default
-			this is false.
 noDiagHoverOnLine	Suppress diagnostic hover from appearing when
 			the mouse is over the line instead of the signature.
 			By default this is set to true.
-showDiagOnStatusLine	Show a diagnostic message on a status line.
+noNewlineInCompletion	Suppress adding a new line on completion selection
+			with <CR>.
 			By default this is set to false.
+outlineOnRight		Open the outline window on the right side, by default
+			this is false.
+outlineWinSize		Outline window size, by default this is 20.
 showDiagInPopup		When using the |:LspDiagCurrent| command to display
 			the diagnostic message for the current line, use a
 			popup window to display the message instead of
 			echoing in the status area.  By default this is set to
 			true.
+showDiagOnStatusLine	Show a diagnostic message on a status line.
+			By default this is set to false.
+showSignature		In insert mode, automatically show the current symbol
+			signature in a popup. By default this is set to true.
+snippetSupport		Enable snippet completion support.  Need a snippet
+			completion plugin like vim-vsnip. By default this is
+			set to false.
 usePopupInCodeAction    When using the |:LspCodeAction| command to display the
 			code action for the current line, use a popup menu
 			instead of echoing.
-			By default this is set to false.
-ignoreMissingServer	Do not print a missing language server executable.
 			By default this is set to false.
 
 For example, to disable the automatic placement of signs for the LSP
