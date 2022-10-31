@@ -280,7 +280,13 @@ export def GotoSymbol(lspserver: dict<any>, location: dict<any>, peekSymbol: boo
   if peekSymbol
     # open the definition/declaration in the preview window and highlight the
     # matching symbol
-    exe $'pedit {fname}'
+    if fname->bufnr() == bufnr()
+      # a workaround for https://github.com/yegappan/lsp/issues/41
+      # make the changelist not be unexpectedly changed after pedit
+      exe $'psearch /.'
+    else
+      exe $'pedit {fname}'
+    endif
     var cur_wid = win_getid()
     wincmd P
     var pvwbuf = bufnr()
