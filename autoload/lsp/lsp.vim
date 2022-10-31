@@ -11,6 +11,7 @@ import './options.vim' as opt
 import './lspserver.vim' as lserver
 import './util.vim'
 import './buffer.vim' as buf
+import './textedit.vim'
 import './diag.vim'
 import './symbol.vim'
 import './outline.vim'
@@ -290,6 +291,12 @@ def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
 		  cmd: 'LspResolve()'})
     endif
   endif
+
+  # Execute LSP server initiated text edits after completion
+  acmds->add({bufnr: bnr,
+	      event: 'CompleteDone',
+	      group: 'LSPBufferAutocmds',
+	      cmd: 'LspCompleteDone()'})
 
   # Auto highlight all the occurrences of the current keyword
   if opt.lspOptions.autoHighlight &&
@@ -688,6 +695,27 @@ def g:LspOmniFunc(findstart: number, base: string): any
     endfor
     return res->empty() ? v:none : res
   endif
+enddef
+
+# complete done handler (LSP server-initiated actions after completion)
+def LspCompleteDone()
+  var lspserver: dict<any> = CurbufGetServerChecked()
+  if lspserver->empty()
+    return
+  endif
+
+  if v:completed_item->type() != v:t_dict
+    return
+  endif
+
+  var completionData: any = v:completed_item->get('user_data', '')
+  if completionData->type() != v:t_dict
+      || !completionData->has_key('additionalTextEdits')
+    return
+  endif
+
+  var bnr: number = bufnr()
+  textedit.ApplyTextEdits(bnr, completionData.additionalTextEdits)
 enddef
 
 # Display the hover message from the LSP server for the current cursor
