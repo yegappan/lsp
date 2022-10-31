@@ -166,11 +166,11 @@ def InitServer(lspserver: dict<any>)
   lspserver.rpc_a('initialize', initparams, ServerInitReply)
 enddef
 
-# Send a "initialized" LSP notification
-# Params: InitializedParams
+# Send a "initialized" notification to the language server
 def SendInitializedNotif(lspserver: dict<any>)
-  var notif: dict<any> = lspserver.createNotification('initialized')
-  lspserver.sendMessage(notif)
+  # Notification: 'initialized'
+  # Params: InitializedParams
+  lspserver.sendNotification('initialized')
 enddef
 
 # Request: shutdown
@@ -179,11 +179,11 @@ def ShutdownServer(lspserver: dict<any>): void
   lspserver.rpc('shutdown', {})
 enddef
 
-# Send a 'exit' notification to the LSP server
-# Params: void
+# Send a 'exit' notification to the language server
 def ExitServer(lspserver: dict<any>): void
-  var notif: dict<any> = lspserver.createNotification('exit')
-  lspserver.sendMessage(notif)
+  # Notification: 'exit'
+  # Params: void
+  lspserver.sendNotification('exit')
 enddef
 
 # Stop a LSP server
@@ -216,12 +216,13 @@ def StopServer(lspserver: dict<any>): number
   return 0
 enddef
 
-# Set the LSP server trace level using the $/setTrace notification
-# Support values for "traceVal" are "off", "messages" and "verbose".
+# Set the language server trace level using the '$/setTrace' notification.
+# Supported values for "traceVal" are "off", "messages" and "verbose".
 def SetTrace(lspserver: dict<any>, traceVal: string)
-  var notif: dict<any> = lspserver.createNotification('$/setTrace')
-  notif.params->extend({value: traceVal})
-  lspserver.sendMessage(notif)
+  # Notification: '$/setTrace'
+  # Params: SetTraceParams
+  var params = {value: traceVal}
+  lspserver.sendNotification('$/setTrace', params)
 enddef
 
 # Return the next id for a LSP server request message
@@ -291,6 +292,13 @@ def SendMessage(lspserver: dict<any>, content: dict<any>): void
   if content->has_key('id')
     util.TraceLog(false, $'Sent [{strftime("%m/%d/%y %T")}]: {content->string()}')
   endif
+enddef
+
+# Send a notification message to the language server
+def SendNotification(lspserver: dict<any>, method: string, params: any = {})
+  var notif: dict<any> = CreateNotification(lspserver, method)
+  notif.params->extend(params)
+  lspserver.sendMessage(notif)
 enddef
 
 # Send a sync RPC request message to the LSP server and return the received
@@ -402,51 +410,41 @@ def WaitForResponse(lspserver: dict<any>, req: dict<any>)
   endwhile
 enddef
 
-# Send a LSP "textDocument/didOpen" notification
-# Params: DidOpenTextDocumentParams
+# Send a file/document opened notification to the language server.
 def TextdocDidOpen(lspserver: dict<any>, bnr: number, ftype: string): void
-  var notif: dict<any> = lspserver.createNotification('textDocument/didOpen')
-
-  # interface DidOpenTextDocumentParams
-  # interface TextDocumentItem
+  # Notification: 'textDocument/didOpen'
+  # Params: DidOpenTextDocumentParams
   var tdi = {}
   tdi.uri = util.LspBufnrToUri(bnr)
   tdi.languageId = ftype
   tdi.version = 1
   tdi.text = getbufline(bnr, 1, '$')->join("\n") .. "\n"
-  notif.params->extend({textDocument: tdi})
-
-  lspserver.sendMessage(notif)
+  var params = {textDocument: tdi}
+  lspserver.sendNotification('textDocument/didOpen', params)
 enddef
 
-# Send a LSP "textDocument/didClose" notification
+# Send a file/document closed notification to the language server.
 def TextdocDidClose(lspserver: dict<any>, bnr: number): void
-  var notif: dict<any> = lspserver.createNotification('textDocument/didClose')
-
-  # interface DidCloseTextDocumentParams
-  #   interface TextDocumentIdentifier
+  # Notification: 'textDocument/didClose'
+  # Params: DidCloseTextDocumentParams
   var tdid = {}
   tdid.uri = util.LspBufnrToUri(bnr)
-  notif.params->extend({textDocument: tdid})
-
-  lspserver.sendMessage(notif)
+  var params = {textDocument: tdid}
+  lspserver.sendNotification('textDocument/didClose', params)
 enddef
 
-# Send a LSP "textDocument/didChange" notification
+# Send a file/document change notification to the language server.
 # Params: DidChangeTextDocumentParams
 def TextdocDidChange(lspserver: dict<any>, bnr: number, start: number,
 			end: number, added: number,
 			changes: list<dict<number>>): void
-  var notif: dict<any> = lspserver.createNotification('textDocument/didChange')
-
-  # interface DidChangeTextDocumentParams
-  #   interface VersionedTextDocumentIdentifier
+  # Notification: 'textDocument/didChange'
+  # Params: DidChangeTextDocumentParams
   var vtdid: dict<any> = {}
   vtdid.uri = util.LspBufnrToUri(bnr)
   # Use Vim 'changedtick' as the LSP document version number
   vtdid.version = bnr->getbufvar('changedtick')
 
-  #   interface TextDocumentContentChangeEvent
   var changeset: list<dict<any>>
 
   ##### FIXME: Sending specific buffer changes to the LSP server doesn't
@@ -486,9 +484,8 @@ def TextdocDidChange(lspserver: dict<any>, bnr: number, start: number,
   # endfor
 
   changeset->add({text: getbufline(bnr, 1, '$')->join("\n") .. "\n"})
-  notif.params->extend({textDocument: vtdid, contentChanges: changeset})
-
-  lspserver.sendMessage(notif)
+  var params = {textDocument: vtdid, contentChanges: changeset}
+  lspserver.sendNotification('textDocument/didChange', params)
 enddef
 
 # Return the current cursor position as a LSP position.
@@ -599,7 +596,7 @@ def CompletionReply(lspserver: dict<any>, cItems: any)
     if lspserver.completionLazyDoc
       d.info = 'Lazy doc'
     else
-      if item->has_key('detail')
+      if item->has_key('detail') && item.detail != ''
         # Solve a issue where if a server send a detail field
         # with a "\n", on the menu will be everything joined with
         # a "^@" separating it. (example: clangd)
@@ -932,6 +929,7 @@ def ShowSignature(lspserver: dict<any>): void
 			signature.SignatureHelp)
 enddef
 
+# Send a file/document saved notification to the language server
 def DidSaveFile(lspserver: dict<any>, bnr: number): void
   # Check whether the LSP server supports the didSave notification
   if !lspserver.caps->has_key('textDocumentSync')
@@ -942,10 +940,10 @@ def DidSaveFile(lspserver: dict<any>, bnr: number): void
     return
   endif
 
-  var notif: dict<any> = lspserver.createNotification('textDocument/didSave')
-  # interface: DidSaveTextDocumentParams
-  notif.params->extend({textDocument: {uri: util.LspBufnrToUri(bnr)}})
-  lspserver.sendMessage(notif)
+  # Notification: 'textDocument/didSave'
+  # Params: DidSaveTextDocumentParams
+  var params = {textDocument: {uri: util.LspBufnrToUri(bnr)}}
+  lspserver.sendNotification('textDocument/didSave', params)
 enddef
 
 # get the hover information
@@ -1280,9 +1278,7 @@ def WorkspaceQuerySymbols(lspserver: dict<any>, query: string)
   symbol.WorkspaceSymbolPopup(lspserver, query, reply.result)
 enddef
 
-# Add a workspace folder to the LSP server.
-# Request: "workspace/didChangeWorkspaceFolders"
-# Param: DidChangeWorkspaceFoldersParams
+# Add a workspace folder to the language server.
 def AddWorkspaceFolder(lspserver: dict<any>, dirName: string): void
   if !lspserver.caps->has_key('workspace')
 	  || !lspserver.caps.workspace->has_key('workspaceFolders')
@@ -1297,18 +1293,15 @@ def AddWorkspaceFolder(lspserver: dict<any>, dirName: string): void
     return
   endif
 
-  var notif: dict<any> =
-	lspserver.createNotification('workspace/didChangeWorkspaceFolders')
-  # interface DidChangeWorkspaceFoldersParams
-  notif.params->extend({event: {added: [dirName], removed: []}})
-  lspserver.sendMessage(notif)
+  # Notification: 'workspace/didChangeWorkspaceFolders'
+  # Params: DidChangeWorkspaceFoldersParams
+  var params = {event: {added: [dirName], removed: []}}
+  lspserver.sendNotification('workspace/didChangeWorkspaceFolders', params)
 
   lspserver.workspaceFolders->add(dirName)
 enddef
 
-# Remove a workspace folder from the LSP server.
-# Request: "workspace/didChangeWorkspaceFolders"
-# Param: DidChangeWorkspaceFoldersParams
+# Remove a workspace folder from the language server.
 def RemoveWorkspaceFolder(lspserver: dict<any>, dirName: string): void
   if !lspserver.caps->has_key('workspace')
 	  || !lspserver.caps.workspace->has_key('workspaceFolders')
@@ -1324,11 +1317,10 @@ def RemoveWorkspaceFolder(lspserver: dict<any>, dirName: string): void
     return
   endif
 
-  var notif: dict<any> =
-	lspserver.createNotification('workspace/didChangeWorkspaceFolders')
-  # interface DidChangeWorkspaceFoldersParams
-  notif.params->extend({event: {added: [], removed: [dirName]}})
-  lspserver.sendMessage(notif)
+  # Notification: "workspace/didChangeWorkspaceFolders"
+  # Param: DidChangeWorkspaceFoldersParams
+  var params = {event: {added: [], removed: [dirName]}}
+  lspserver.sendNotification('workspace/didChangeWorkspaceFolders', params)
 
   lspserver.workspaceFolders->remove(idx)
 enddef
@@ -1504,9 +1496,9 @@ export def NewLspServer(path: string, args: list<string>, isSync: bool, initiali
     nextReqID: function(NextReqID, [lspserver]),
     createRequest: function(CreateRequest, [lspserver]),
     createResponse: function(CreateResponse, [lspserver]),
-    createNotification: function(CreateNotification, [lspserver]),
     sendResponse: function(SendResponse, [lspserver]),
     sendMessage: function(SendMessage, [lspserver]),
+    sendNotification: function(SendNotification, [lspserver]),
     rpc: function(Rpc, [lspserver]),
     rpc_a: function(AsyncRpc, [lspserver]),
     waitForResponse: function(WaitForResponse, [lspserver]),
