@@ -96,14 +96,14 @@ To register a LSP server, add the following lines to your .vimrc file (use only 
 		\        args: ['--stdio'],
 		\        syncInit: v:true,
 		\        initializationOptions: {
-		\          licenceKey: 'xxxxxxxxxxxxxxx'
+		\          licenceKey: 'absolute path to file with key or key itself'
 		\        }
 		\      }
 		\   ]
    call LspAddServer(lspServers)
 ```
 
-The above lines add the LSP servers for C, C++, Javascript, Typescript, Shell script, Vim script, Go, Rust, Python and Fortran file types.  In addition to the above listed file types, this plugin also supports other file types.
+The above lines add the LSP servers for C, C++, Javascript, Typescript, Shell script, Vim script, Go, Rust, Python, Fortran and PHP file types.  In addition to the above listed file types, this plugin also supports other file types.
 
 To add a LSP server, the following information is needed:
 
@@ -112,6 +112,7 @@ Field|Description
 filetype|One or more file types supported by the LSP server.  This can be a String or a List. To specify multiple multiple file types, use a List.
 path|complete path to the LSP server executable (without any arguments).
 args|a list of command-line arguments passed to the LSP server. Each argument is a separate List item.
+initializationOptions|User provided initialization options. May be of any type. For example the *intelephense* PHP language server accept several options here with the License Key among others. 
 
 The LSP servers are added using the LspAddServer() function. This function accepts a list of LSP servers with the above information.
 
@@ -156,7 +157,7 @@ Command|Description
 :LspHighlight|Highlight all the matches for the keyword under cursor
 :LspHighlightClear|Clear all the matches highlighted by :LspHighlight
 :LspOutline|Show the list of symbols defined in the current file in a separate window.
-:LspFormat|Format the current file using the LSP server.
+:LspFormat|Format the current file using the LSP server. The **shiftwidth** and **expandtab** values set for the current buffer are used when format is applied.
 :{range}LspFormat|Format the specified range of lines.
 :LspIncomingCalls|Display the list of symbols calling the current symbol.
 :LspOutgoingCalls|Display the list of symbols called by the current symbol.

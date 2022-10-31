@@ -453,7 +453,9 @@ diagnostic messages, you can add the following line to your .vimrc file:
 			outline window for the various group of symbols.
 
 						*:LspFormat*
-:LspFormat		Format the current file using the LSP server.
+:LspFormat		Format the current file using the LSP server. The
+			*shiftwidth* and *expandtab* values set for the current
+			buffer are used when format is applied.
 
 :{range}LspFormat	Format the specified range of lines in the current
 			file using the LSP server.

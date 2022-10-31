@@ -467,10 +467,6 @@ export def AddServer(serverList: list<dict<any>>)
 
     var initializationOptions: dict<any> = {}
     if server->has_key('initializationOptions')
-      if server.initializationOptions->type() != v:t_dict
-        util.ErrMsg($'Error: initializationOptions for LSP server {server.initializationOptions} is not a Dictionary')
-        return
-      endif
       initializationOptions = server.initializationOptions
     endif
 

@@ -1463,7 +1463,7 @@ def TagFunc(lspserver: dict<any>, pat: string, flags: string, info: dict<any>): 
   return symbol.TagFunc(lspserver, taglocations, pat)
 enddef
 
-export def NewLspServer(path: string, args: list<string>, isSync: bool, initializationOptions: dict<any>): dict<any>
+export def NewLspServer(path: string, args: list<string>, isSync: bool, initializationOptions: any): dict<any>
   var lspserver: dict<any> = {
     path: path,
     args: args,
