@@ -218,6 +218,20 @@ def Test_LspShowReferences()
   assert_equal(1, getloclist(0)->len())
   qfl = getloclist(0)
   assert_equal([1, 5], [qfl[0].lnum, qfl[0].col])
+  :lclose
+
+  # Test for LspPeekReferences
+
+  # Opening the preview window with an unsaved buffer displays the "E37: No
+  # write since last change" error message.  To disable this message, mark the
+  # buffer as not modified.
+  setlocal nomodified
+  cursor(1, 5)
+  :LspPeekReferences
+  assert_equal([3, 3], [winnr('$'), winnr()])
+  assert_equal('preview', win_gettype(1))
+  assert_equal('loclist', win_gettype(2))
+
   bw!
 
   # empty file
@@ -501,7 +515,7 @@ def Test_LspSelection()
 enddef
 
 # Test for :LspGotoDefinition, :LspGotoDeclaration and :LspGotoImpl
-def Test_LspGotoDefinition()
+def Test_LspGotoSymbol()
   silent! edit Xtest.cpp
   sleep 200m
   var lines: list<string> =<< trim END
@@ -565,7 +579,30 @@ def Test_LspGotoDefinition()
   m = execute('messages')->split("\n")
   assert_equal('Error: implementation is not found', m[1])
   endif
-  bw!
+
+  # Test for LspPeekDeclaration
+  cursor(24, 6)
+  var bnum = bufnr()
+  :LspPeekDeclaration
+  var plist = popup_list()
+  assert_true(1, plist->len())
+  assert_equal(bnum, plist[0]->winbufnr())
+  assert_equal(6, line('.', plist[0]))
+  popup_clear()
+  # tag stack should not be changed
+  assert_fails("normal! \<C-t>", 'E555:')
+
+  # Test for LspPeekDefinition
+  :LspPeekDefinition
+  plist = popup_list()
+  assert_true(1, plist->len())
+  assert_equal(bnum, plist[0]->winbufnr())
+  assert_equal(9, line('.', plist[0]))
+  popup_clear()
+  # tag stack should not be changed
+  assert_fails("normal! \<C-t>", 'E555:')
+
+  :%bw!
 
   # empty file
   assert_equal('', execute('LspGotoDefinition'))

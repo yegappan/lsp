@@ -4,12 +4,9 @@ vim9script
 # Refer to https://microsoft.github.io/language-server-protocol/specification
 # for the Language Server Protocol (LSP) specification.
 
-import './options.vim' as opt
 import './util.vim'
 import './diag.vim'
-import './outline.vim'
 import './textedit.vim'
-import './symbol.vim'
 
 # Process various reply messages from the LSP server
 export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void

@@ -280,22 +280,43 @@ export def GotoSymbol(lspserver: dict<any>, location: dict<any>, peekSymbol: boo
   if peekSymbol
     # open the definition/declaration in the preview window and highlight the
     # matching symbol
-    exe $'pedit {fname}'
-    var cur_wid = win_getid()
-    wincmd P
-    var pvwbuf = bufnr()
-    setcursorcharpos(location.range.start.line + 1,
-			location.range.start.character + 1)
-    silent! matchdelete(101)
+
+    var bnum = bufadd(fname)
+    if bnum == 0
+      # Failed to create or find a buffer
+      return
+    endif
+
+    if lspserver.peekSymbolPopup->winbufnr() != -1
+      # If the symbol popup window is already present, close it.
+      lspserver.peekSymbolPopup->popup_close()
+    endif
+    var ptitle = $"{fnamemodify(fname, ':t')} ({fnamemodify(fname, ':h')})"
+    lspserver.peekSymbolPopup = popup_atcursor(bnum, {moved: 'any',
+				     title: ptitle,
+				     minwidth: 10,
+				     maxwidth: 60,
+				     minheight: 10,
+				     maxheight: 10,
+				     mapping: false,
+				     wrap: false})
+
+    # Highlight the symbol name and center the line in the popup
+    var pwid = lspserver.peekSymbolPopup
+    var pwbuf = winbufnr(pwid)
     var pos: list<number> = []
     var start_col: number
     var end_col: number
-    start_col = util.GetLineByteFromPos(pvwbuf, location.range.start) + 1
-    end_col = util.GetLineByteFromPos(pvwbuf, location.range.end) + 1
+    start_col = util.GetLineByteFromPos(pwbuf, location.range.start) + 1
+    end_col = util.GetLineByteFromPos(pwbuf, location.range.end) + 1
     pos->add(location.range.start.line + 1)
     pos->extend([start_col, end_col - start_col])
-    matchaddpos('Search', [pos], 10, 101)
-    win_gotoid(cur_wid)
+    matchaddpos('Search', [pos], 10, 101, {window: pwid})
+    var cmds =<< trim eval END
+      cursor({location.range.start.line + 1}, 1)
+      normal! z.
+    END
+    win_execute(pwid, cmds, 'silent!')
   else
     # jump to the file and line containing the symbol
     var bnr: number = fname->bufnr()
@@ -331,7 +352,6 @@ export def GotoSymbol(lspserver: dict<any>, location: dict<any>, peekSymbol: boo
     setcursorcharpos(location.range.start.line + 1,
 			location.range.start.character + 1)
   endif
-  redraw!
 enddef
 
 # Process the LSP server reply message for a 'textDocument/definition' request

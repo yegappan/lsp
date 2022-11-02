@@ -1482,6 +1482,7 @@ export def NewLspServer(path: string, args: list<string>, isSync: bool, initiali
     diagsMap: {},
     workspaceSymbolPopup: -1,
     workspaceSymbolQuery: '',
+    peekSymbolPopup: -1,
     callHierarchyType: '',
     selection: {}
   }
