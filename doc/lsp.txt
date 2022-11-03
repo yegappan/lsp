@@ -304,9 +304,21 @@ diagnostic messages, you can add the following line to your .vimrc file:
 			can be used to go back up the tag stack.  Also the
 			|``| mark is set to the position before the jump.
 
+			This command supports |:command-modifiers|.  You can
+			use the modifiers to specify whether a new window or
+			a new tab page is used and where the window is opened.
+			Example(s): >
+			    # Open a horizontally split window
+			    :topleft LspGotoDefinition
+			    # Open a vertically split window
+			    :vert LspGotoDefinition
+			    # Open a new tab page
+			    :tab LspGotoDefinition
+<
 			You may want to map a key to invoke this command: >
 
 			    nnoremap <buffer> gd <Cmd>LspGotoDefinition<CR>
+			    nnoremap <buffer> <C-W>gd <Cmd>topleft LspGotoDefinition<CR>
 <
 						*:LspGotoDeclaration*
 :LspGotoDeclaration	Jumps to the declaration of the symbol under the

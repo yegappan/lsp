@@ -272,85 +272,103 @@ export def ShowReferences(lspserver: dict<any>, refs: list<dict<any>>, peekSymbo
   endif
 enddef
 
-# Jump to the definition, declaration or implementation of a symbol.
-# Also, used to peek at the definition, declaration or implementation of a
-# symbol.
-export def GotoSymbol(lspserver: dict<any>, location: dict<any>, peekSymbol: bool)
-  var fname = util.LspUriToFile(location.uri)
-  if peekSymbol
-    # open the definition/declaration in the preview window and highlight the
-    # matching symbol
+# Display the symbol in file 'fname' at 'location' in a popup window.
+def PeekSymbolLocation(lspserver: dict<any>, fname: string,
+		       location: dict<any>)
+  var bnum = fname->bufadd()
+  if bnum == 0
+    # Failed to create or find a buffer
+    return
+  endif
+  silent! bnum->bufload()
 
-    var bnum = bufadd(fname)
-    if bnum == 0
-      # Failed to create or find a buffer
-      return
-    endif
+  if lspserver.peekSymbolPopup->winbufnr() != -1
+    # If the symbol popup window is already present, close it.
+    lspserver.peekSymbolPopup->popup_close()
+  endif
+  var ptitle = $"{fnamemodify(fname, ':t')} ({fnamemodify(fname, ':h')})"
+  lspserver.peekSymbolPopup = popup_atcursor(bnum, {moved: 'any',
+					title: ptitle,
+					minwidth: 10,
+					maxwidth: 60,
+					minheight: 10,
+					maxheight: 10,
+					mapping: false,
+					wrap: false})
 
-    if lspserver.peekSymbolPopup->winbufnr() != -1
-      # If the symbol popup window is already present, close it.
-      lspserver.peekSymbolPopup->popup_close()
-    endif
-    var ptitle = $"{fnamemodify(fname, ':t')} ({fnamemodify(fname, ':h')})"
-    lspserver.peekSymbolPopup = popup_atcursor(bnum, {moved: 'any',
-				     title: ptitle,
-				     minwidth: 10,
-				     maxwidth: 60,
-				     minheight: 10,
-				     maxheight: 10,
-				     mapping: false,
-				     wrap: false})
+  # Highlight the symbol name and center the line in the popup
+  var pwid = lspserver.peekSymbolPopup
+  var pwbuf = winbufnr(pwid)
+  var pos: list<number> = []
+  var start_col: number
+  var end_col: number
+  start_col = util.GetLineByteFromPos(pwbuf, location.range.start) + 1
+  end_col = util.GetLineByteFromPos(pwbuf, location.range.end) + 1
+  pos->add(location.range.start.line + 1)
+  pos->extend([start_col, end_col - start_col])
+  matchaddpos('Search', [pos], 10, 101, {window: pwid})
+  var cmds =<< trim eval END
+    cursor({location.range.start.line + 1}, 1)
+    normal! z.
+  END
+  win_execute(pwid, cmds, 'silent!')
+enddef
 
-    # Highlight the symbol name and center the line in the popup
-    var pwid = lspserver.peekSymbolPopup
-    var pwbuf = winbufnr(pwid)
-    var pos: list<number> = []
-    var start_col: number
-    var end_col: number
-    start_col = util.GetLineByteFromPos(pwbuf, location.range.start) + 1
-    end_col = util.GetLineByteFromPos(pwbuf, location.range.end) + 1
-    pos->add(location.range.start.line + 1)
-    pos->extend([start_col, end_col - start_col])
-    matchaddpos('Search', [pos], 10, 101, {window: pwid})
-    var cmds =<< trim eval END
-      cursor({location.range.start.line + 1}, 1)
-      normal! z.
-    END
-    win_execute(pwid, cmds, 'silent!')
-  else
-    # jump to the file and line containing the symbol
+# Jump to the symbol in file 'fname' at 'location'.  The user specified
+# window command modifiers (e.g. topleft) are in 'cmdmods'.
+def JumpToSymbolLocation(lspserver: dict<any>, fname: string,
+			 location: dict<any>, cmdmods: string)
+  # jump to the file and line containing the symbol
+  if cmdmods == ''
     var bnr: number = fname->bufnr()
     if bnr != bufnr()
       var wid = fname->bufwinid()
       if wid != -1
-	wid->win_gotoid()
+        wid->win_gotoid()
       else
-	if bnr != -1
-	  # Reuse an existing buffer. If the current buffer has unsaved changes
-	  # and 'hidden' is not set or if the current buffer is a special
-	  # buffer, then open the buffer in a new window.
-	  if (&modified && !&hidden) || &buftype != ''
-	    exe $'sbuffer {bnr}'
-	  else
-	    exe $'buf {bnr}'
-	  endif
-	else
-	  if (&modified && !&hidden) || &buftype != ''
-	    # if the current buffer has unsaved changes and 'hidden' is not set,
-	    # or if the current buffer is a special buffer, then open the file
-	    # in a new window
-	    exe $'split {fname}'
-	  else
-	    exe $'edit {fname}'
-	  endif
-	endif
+        if bnr != -1
+          # Reuse an existing buffer. If the current buffer has unsaved changes
+          # and 'hidden' is not set or if the current buffer is a special
+          # buffer, then open the buffer in a new window.
+          if (&modified && !&hidden) || &buftype != ''
+            exe $'sbuffer {bnr}'
+          else
+            exe $'buf {bnr}'
+          endif
+        else
+          if (&modified && !&hidden) || &buftype != ''
+            # if the current buffer has unsaved changes and 'hidden' is not set,
+            # or if the current buffer is a special buffer, then open the file
+            # in a new window
+            exe $'split {fname}'
+          else
+            exe $'edit {fname}'
+          endif
+        endif
       endif
     endif
-    # Set the previous cursor location mark. Instead of using setpos(), m' is
-    # used so that the current location is added to the jump list.
-    normal m'
-    setcursorcharpos(location.range.start.line + 1,
+  else
+    exe $'{cmdmods} split {fname}'
+  endif
+  # Set the previous cursor location mark. Instead of using setpos(), m' is
+  # used so that the current location is added to the jump list.
+  normal m'
+  setcursorcharpos(location.range.start.line + 1,
 			location.range.start.character + 1)
+enddef
+
+# Jump to the definition, declaration or implementation of a symbol.
+# Also, used to peek at the definition, declaration or implementation of a
+# symbol.
+export def GotoSymbol(lspserver: dict<any>, location: dict<any>,
+		      peekSymbol: bool, cmdmods: string)
+  var fname = util.LspUriToFile(location.uri)
+  if peekSymbol
+    PeekSymbolLocation(lspserver, fname, location)
+  else
+    # Save the current cursor location in the tag stack.
+    util.PushCursorToTagStack()
+    JumpToSymbolLocation(lspserver, fname, location, cmdmods)
   endif
 enddef
 

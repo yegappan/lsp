@@ -547,20 +547,37 @@ def Test_LspGotoSymbol()
   END
   setline(1, lines)
   :sleep 1
+
   cursor(24, 6)
   :LspGotoDeclaration
   assert_equal([6, 19], [line('.'), col('.')])
   exe "normal! \<C-t>"
   assert_equal([24, 6], [line('.'), col('.')])
+  assert_equal(1, winnr('$'))
+
   :LspGotoDefinition
   assert_equal([9, 12], [line('.'), col('.')])
   exe "normal! \<C-t>"
   assert_equal([24, 6], [line('.'), col('.')])
-  # FIXME: The following test is failing in Github CI
-  # :LspGotoImpl
-  # assert_equal([15, 11], [line('.'), col('.')])
-  # exe "normal! \<C-t>"
-  # assert_equal([24, 6], [line('.'), col('.')])
+  assert_equal(1, winnr('$'))
+
+  # Command modifiers
+  :topleft LspGotoDefinition
+  assert_equal([9, 12], [line('.'), col('.')])
+  assert_equal([1, 2], [winnr(), winnr('$')])
+  close
+  exe "normal! \<C-t>"
+  assert_equal([24, 6], [line('.'), col('.')])
+
+  :tab LspGotoDefinition
+  assert_equal([9, 12], [line('.'), col('.')])
+  assert_equal([2, 2, 1], [tabpagenr(), tabpagenr('$'), winnr('$')])
+  tabclose
+  exe "normal! \<C-t>"
+  assert_equal([24, 6], [line('.'), col('.')])
+
+  # FIXME: :LspGotoTypeDef and :LspGotoImpl are supported only with clang-14.
+  # This clangd version is not available in Github CI.
 
   # Error cases
   # FIXME: The following tests are failing in Github CI. Comment out for now.
@@ -601,6 +618,9 @@ def Test_LspGotoSymbol()
   popup_clear()
   # tag stack should not be changed
   assert_fails("normal! \<C-t>", 'E555:')
+
+  # FIXME: :LspPeekTypeDef and :LspPeekImpl are supported only with clang-14.
+  # This clangd version is not available in Github CI.
 
   :%bw!
 

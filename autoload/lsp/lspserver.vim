@@ -801,7 +801,8 @@ enddef
 # window but don't jump to the symbol location.
 #
 # Result: Location | Location[] | LocationLink[] | null
-def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool)
+def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
+		  cmdmods: string)
   var reply = lspserver.rpc(msg, GetLspTextDocPosition())
   if reply->empty() || reply.result->empty()
     var emsg: string
@@ -819,10 +820,6 @@ def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool)
     return
   endif
 
-  if !peekSymbol
-    util.PushCursorToTagStack()
-  endif
-
   var location: dict<any>
   if reply.result->type() == v:t_list
     location = reply.result[0]
@@ -830,12 +827,12 @@ def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool)
     location = reply.result
   endif
 
-  symbol.GotoSymbol(lspserver, location, peekSymbol)
+  symbol.GotoSymbol(lspserver, location, peekSymbol, cmdmods)
 enddef
 
 # Request: "textDocument/definition"
 # Param: DefinitionParams
-def GotoDefinition(lspserver: dict<any>, peek: bool)
+def GotoDefinition(lspserver: dict<any>, peek: bool, cmdmods: string)
   # Check whether LSP server supports jumping to a definition
   if !lspserver.caps->get('definitionProvider', false)
     util.ErrMsg("Error: Jumping to a symbol definition is not supported")
@@ -844,12 +841,12 @@ def GotoDefinition(lspserver: dict<any>, peek: bool)
 
   # interface DefinitionParams
   #   interface TextDocumentPositionParams
-  GotoSymbolLoc(lspserver, 'textDocument/definition', peek)
+  GotoSymbolLoc(lspserver, 'textDocument/definition', peek, cmdmods)
 enddef
 
 # Request: "textDocument/declaration"
 # Param: DeclarationParams
-def GotoDeclaration(lspserver: dict<any>, peek: bool): void
+def GotoDeclaration(lspserver: dict<any>, peek: bool, cmdmods: string)
   # Check whether LSP server supports jumping to a declaration
   if !lspserver.caps->get('declarationProvider', false)
     util.ErrMsg("Error: Jumping to a symbol declaration is not supported")
@@ -858,12 +855,12 @@ def GotoDeclaration(lspserver: dict<any>, peek: bool): void
 
   # interface DeclarationParams
   #   interface TextDocumentPositionParams
-  GotoSymbolLoc(lspserver, 'textDocument/declaration', peek)
+  GotoSymbolLoc(lspserver, 'textDocument/declaration', peek, cmdmods)
 enddef
 
 # Request: "textDocument/typeDefinition"
 # Param: TypeDefinitionParams
-def GotoTypeDef(lspserver: dict<any>, peek: bool): void
+def GotoTypeDef(lspserver: dict<any>, peek: bool, cmdmods: string)
   # Check whether LSP server supports jumping to a type definition
   if !lspserver.caps->get('typeDefinitionProvider', false)
     util.ErrMsg("Error: Jumping to a symbol type definition is not supported")
@@ -872,12 +869,12 @@ def GotoTypeDef(lspserver: dict<any>, peek: bool): void
 
   # interface TypeDefinitionParams
   #   interface TextDocumentPositionParams
-  GotoSymbolLoc(lspserver, 'textDocument/typeDefinition', peek)
+  GotoSymbolLoc(lspserver, 'textDocument/typeDefinition', peek, cmdmods)
 enddef
 
 # Request: "textDocument/implementation"
 # Param: ImplementationParams
-def GotoImplementation(lspserver: dict<any>, peek: bool): void
+def GotoImplementation(lspserver: dict<any>, peek: bool, cmdmods: string)
   # Check whether LSP server supports jumping to a implementation
   if !lspserver.caps->get('implementationProvider', false)
     util.ErrMsg("Error: Jumping to a symbol implementation is not supported")
@@ -886,7 +883,7 @@ def GotoImplementation(lspserver: dict<any>, peek: bool): void
 
   # interface ImplementationParams
   #   interface TextDocumentPositionParams
-  GotoSymbolLoc(lspserver, 'textDocument/implementation', peek)
+  GotoSymbolLoc(lspserver, 'textDocument/implementation', peek, cmdmods)
 enddef
 
 # Request: "textDocument/switchSourceHeader"

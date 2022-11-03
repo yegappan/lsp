@@ -134,13 +134,43 @@ export def ServerRunning(ftype: string): bool
 enddef
 
 # Go to a definition using "textDocument/definition" LSP request
-export def GotoDefinition(peek: bool)
+export def GotoDefinition(peek: bool, cmdmods: string)
   var lspserver: dict<any> = CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
 
-  lspserver.gotoDefinition(peek)
+  lspserver.gotoDefinition(peek, cmdmods)
+enddef
+
+# Go to a declaration using "textDocument/declaration" LSP request
+export def GotoDeclaration(peek: bool, cmdmods: string)
+  var lspserver: dict<any> = CurbufGetServerChecked()
+  if lspserver->empty()
+    return
+  endif
+
+  lspserver.gotoDeclaration(peek, cmdmods)
+enddef
+
+# Go to a type definition using "textDocument/typeDefinition" LSP request
+export def GotoTypedef(peek: bool, cmdmods: string)
+  var lspserver: dict<any> = CurbufGetServerChecked()
+  if lspserver->empty()
+    return
+  endif
+
+  lspserver.gotoTypeDef(peek, cmdmods)
+enddef
+
+# Go to a implementation using "textDocument/implementation" LSP request
+export def GotoImplementation(peek: bool, cmdmods: string)
+  var lspserver: dict<any> = CurbufGetServerChecked()
+  if lspserver->empty()
+    return
+  endif
+
+  lspserver.gotoImplementation(peek, cmdmods)
 enddef
 
 # Switch source header using "textDocument/switchSourceHeader" LSP request
@@ -152,36 +182,6 @@ export def SwitchSourceHeader()
   endif
 
   lspserver.switchSourceHeader()
-enddef
-
-# Go to a declaration using "textDocument/declaration" LSP request
-export def GotoDeclaration(peek: bool)
-  var lspserver: dict<any> = CurbufGetServerChecked()
-  if lspserver->empty()
-    return
-  endif
-
-  lspserver.gotoDeclaration(peek)
-enddef
-
-# Go to a type definition using "textDocument/typeDefinition" LSP request
-export def GotoTypedef(peek: bool)
-  var lspserver: dict<any> = CurbufGetServerChecked()
-  if lspserver->empty()
-    return
-  endif
-
-  lspserver.gotoTypeDef(peek)
-enddef
-
-# Go to a implementation using "textDocument/implementation" LSP request
-export def GotoImplementation(peek: bool)
-  var lspserver: dict<any> = CurbufGetServerChecked()
-  if lspserver->empty()
-    return
-  endif
-
-  lspserver.gotoImplementation(peek)
 enddef
 
 # Show the signature using "textDocument/signatureHelp" LSP method
