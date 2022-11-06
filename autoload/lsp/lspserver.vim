@@ -671,7 +671,7 @@ enddef
 # Param: CompletionParams
 def GetCompletion(lspserver: dict<any>, triggerKind_arg: number, triggerChar: string): void
   # Check whether LSP server supports completion
-  if !lspserver.caps->get('completionProvider', false)
+  if !lspserver.caps->has_key('completionProvider')
     util.ErrMsg("Error: LSP server does not support completion")
     return
   endif
@@ -772,7 +772,7 @@ enddef
 # Param: CompletionItem
 def ResolveCompletion(lspserver: dict<any>, item: dict<any>): void
   # Check whether LSP server supports completion item resolve
-  if !lspserver.caps->get('completionProvider', false)
+  if !lspserver.caps->has_key('completionProvider')
       || !lspserver.caps.completionProvider->get('resolveProvider', false)
     util.ErrMsg("Error: LSP server does not support completion item resolve")
     return
