@@ -415,6 +415,16 @@ export def StopAllServers()
   endfor
 enddef
 
+# Add all the buffers with 'filetype' set to "ftype" to the language server.
+def AddBuffersToLsp(ftype: string)
+  # Add all the buffers with the same file type as the current buffer
+  for binfo in getbufinfo({bufloaded: 1})
+    if getbufvar(binfo.bufnr, '&filetype') == ftype
+      AddFile(binfo.bufnr)
+    endif
+  endfor
+enddef
+
 # Restart the LSP server for the current buffer
 export def RestartServer()
   var lspserver: dict<any> = CurbufGetServerChecked()
@@ -436,12 +446,17 @@ export def RestartServer()
   # Start the server again
   lspserver.startServer()
 
-  # Add all the buffers with the same file type as the current buffer
-  for binfo in getbufinfo({bufloaded: 1})
-    if getbufvar(binfo.bufnr, '&filetype') == ftype
-      AddFile(binfo.bufnr)
-    endif
-  endfor
+  AddBuffersToLsp(ftype)
+enddef
+
+# Add the LSP server for files with 'filetype' as "ftype".
+def AddServerForFiltype(lspserver: dict<any>, ftype: string, omnicompl: bool)
+  LspAddServer(ftype, lspserver)
+  LspOmniComplSet(ftype, omnicompl)
+
+  # If a buffer of this file type is already present, then send it to the LSP
+  # server now.
+  AddBuffersToLsp(ftype)
 enddef
 
 # Register a LSP server for one or more file types
@@ -492,19 +507,17 @@ export def AddServer(serverList: list<dict<any>>)
 						    server.syncInit,
 						    initializationOptions)
 
-    if server.filetype->type() == v:t_string
-      lspserver.name = server.filetype->substitute('\w\+', '\L\u\0', '')
-      LspAddServer(server.filetype, lspserver)
-      LspOmniComplSet(server.filetype, server.omnicompl)
-    elseif server.filetype->type() == v:t_list
-      lspserver.name = ''
-      for ftype in server.filetype
-        lspserver.name ..= ftype->substitute('\w\+', '\L\u\0', '')
-        LspAddServer(ftype, lspserver)
-        LspOmniComplSet(ftype, server.omnicompl)
+    var ftypes = server.filetype
+    if ftypes->type() == v:t_string
+      lspserver.name = ftypes->substitute('\w\+', '\L\u\0', '')
+      AddServerForFiltype(lspserver, ftypes, server.omnicompl)
+    elseif ftypes->type() == v:t_list
+      lspserver.name = ftypes[0]->substitute('\w\+', '\L\u\0', '')
+      for ftype in ftypes
+	AddServerForFiltype(lspserver, ftype, server.omnicompl)
       endfor
     else
-      util.ErrMsg($'Error: Unsupported file type information "{server.filetype->string()}" in LSP server registration')
+      util.ErrMsg($'Error: Unsupported file type information "{ftypes->string()}" in LSP server registration')
       continue
     endif
   endfor
