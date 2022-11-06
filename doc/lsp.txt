@@ -771,14 +771,14 @@ callback function for each command using the LspRegisterCmdHandler() function.
 For example: >
 
     vim9script
-    import "../../lsp/autoload/lsp/textedit.vim"
+    import autoload "lsp/textedit.vim"
 
     def WorkspaceEdit(cmd: dict<any>)
       for editAct in cmd.arguments
 	  textedit.ApplyWorkspaceEdit(editAct)
       endfor
     enddef
-    g:LspRegisterCmdHandler('java.apply.worksspaceEdit', WorkspaceEdit)
+    g:LspRegisterCmdHandler('java.apply.workspaceEdit', WorkspaceEdit)
 <
 Place the above code in a file named lsp_java/plugin/lsp_java.vim and load
 this plugin.
