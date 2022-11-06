@@ -69,6 +69,13 @@ export def LspUriToFile(uri: string): string
   return uri_decoded
 enddef
 
+# Convert a LSP file URI (file://<absolute_path>) to a Vim buffer number.
+# If the file is not in a Vim buffer, then adds the buffer.
+# Returns 0 on error.
+export def LspUriToBufnr(uri: string): number
+  return LspUriToFile(uri)->bufadd()
+enddef
+
 # Returns if the URI refers to a remote file (e.g. ssh://)
 # Credit: vim-lsp plugin
 export def LspUriRemote(uri: string): bool

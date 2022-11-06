@@ -761,4 +761,30 @@ use the :LspServerTrace command to set the trace value: >
 
     :LspServerTrace { off | messages | verbose }
 <
+==============================================================================
+11. Custom Command Handlers				*lsp-custom-commands*
+
+When applying a code action, the language server may issue a non-standard
+command.  For example, the Java language server uses non-standard commands
+(e.g. java.apply.workspaceEdit).  To handle these commands, you can register a
+callback function for each command using the LspRegisterCmdHandler() function.
+For example: >
+
+    vim9script
+    import "../../lsp/autoload/lsp/textedit.vim"
+
+    def WorkspaceEdit(cmd: dict<any>)
+      for editAct in cmd.arguments
+	  textedit.ApplyWorkspaceEdit(editAct)
+      endfor
+    enddef
+    g:LspRegisterCmdHandler('java.apply.worksspaceEdit', WorkspaceEdit)
+<
+Place the above code in a file named lsp_java/plugin/lsp_java.vim and load
+this plugin.
+
+The callback function should accept a Dict argument.  The Dict argument
+contains the LSP Command interface fields.  Refer to the LSP specification for
+more information about the "Command" interface.
+
 vim:tw=78:ts=8:noet:ft=help:norl:

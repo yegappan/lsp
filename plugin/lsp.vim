@@ -18,6 +18,10 @@ def g:LspAddServer(serverList: list<dict<any>>)
   lsp.AddServer(serverList)
 enddef
 
+def g:LspRegisterCmdHandler(cmd: string, Handler: func)
+  lsp.RegisterCmdHandler(cmd, Handler)
+enddef
+
 # Returns true if the language server for the current buffer is initialized
 # and ready to accept requests.
 def g:LspServerReady(): bool

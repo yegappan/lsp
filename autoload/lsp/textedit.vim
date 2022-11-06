@@ -210,10 +210,9 @@ export def ApplyWorkspaceEdit(workspaceEdit: dict<any>)
 
   var save_cursor: list<number> = getcurpos()
   for [uri, changes] in workspaceEdit.changes->items()
-    var fname: string = util.LspUriToFile(uri)
-    var bnr: number = fname->bufnr()
-    if bnr == -1
-      # file is already removed
+    var bnr: number = util.LspUriToBufnr(uri)
+    if bnr == 0
+      # file is not present
       continue
     endif
 

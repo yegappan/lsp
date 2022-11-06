@@ -16,6 +16,7 @@ import './diag.vim'
 import './symbol.vim'
 import './outline.vim'
 import './signature.vim'
+import './codeaction.vim'
 
 # LSP server information
 var lspServers: list<dict<any>> = []
@@ -997,6 +998,10 @@ export def TagFunc(pat: string, flags: string, info: dict<any>): any
   endif
 
   return lspserver.tagFunc(pat, flags, info)
+enddef
+
+export def RegisterCmdHandler(cmd: string, Handler: func)
+  codeaction.RegisterCmdHandler(cmd, Handler)
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2

@@ -6,6 +6,21 @@ import './util.vim'
 import './textedit.vim'
 import './options.vim' as opt
 
+var CommandHandlers: dict<func>
+
+export def RegisterCmdHandler(cmd: string, Handler: func)
+  CommandHandlers[cmd] = Handler
+enddef
+
+def DoCommand(lspserver: dict<any>, cmd: dict<any>)
+  if CommandHandlers->has_key(cmd.command)
+    var CmdHandler: func = CommandHandlers[cmd.command]
+    call CmdHandler(cmd)
+  else
+    lspserver.executeCommand(cmd)
+  endif
+enddef
+
 export def HandleCodeAction(lspserver: dict<any>, selAction: dict<any>)
   # textDocument/codeAction can return either Command[] or CodeAction[].
   # If it is a CodeAction, it can have either an edit, a command or both.
@@ -20,11 +35,11 @@ export def HandleCodeAction(lspserver: dict<any>, selAction: dict<any>)
       textedit.ApplyWorkspaceEdit(selAction.edit)
     endif
     if selAction->has_key('command')
-      lspserver.executeCommand(selAction.command)
+      DoCommand(lspserver, selAction.command)
     endif
   else
     # selAction is a Command instance, apply it directly
-    lspserver.executeCommand(selAction)
+    DoCommand(lspserver, selAction)
   endif
 enddef
 
