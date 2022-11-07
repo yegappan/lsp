@@ -77,16 +77,26 @@ export def ApplyCodeAction(lspserver: dict<any>, actions: list<dict<any>>): void
         mapping: 0,
         wrap: 0,
         title: 'Code action',
-        callback: (_, id) => {
+        callback: (_, result) => {
           # Invalid item selected or closed the popup
-          if id <= 0 || id > text->len()
+          if result <= 0 || result > text->len()
             return
           endif
 
           # Do the code action
-          HandleCodeAction(lspserver, actions[id - 1])
+          HandleCodeAction(lspserver, actions[result - 1])
         },
-        filter: 'popup_filter_menu'
+	filter: (winid, key) => {
+	  if key == 'h' || key == 'l'
+	    popup_close(winid, -1)
+	  elseif str2nr(key) > 0
+	    # supposed would not over 9 items
+	    popup_close(winid, str2nr(key))
+	  else
+	    return popup_filter_menu(winid, key)
+	  endif
+	  return 1
+	},
       })
     else
       choice = inputlist(["Code action:"] + text)
