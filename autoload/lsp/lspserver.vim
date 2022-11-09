@@ -961,9 +961,18 @@ enddef
 def DidSaveFile(lspserver: dict<any>, bnr: number): void
   # Check whether the LSP server supports the didSave notification
   if !lspserver.caps->has_key('textDocumentSync')
-	|| !lspserver.caps.textDocumentSync->has_key('save')
-	|| (lspserver.caps.textDocumentSync.save->type() == v:t_bool
+	|| (lspserver.caps.textDocumentSync->type() == v:t_number
+	     && !lspserver.caps.textDocumentSync)
+	|| (lspserver.caps.textDocumentSync->type() == v:t_dict
+	     && lspserver.caps.textDocumentSync->has_key('save')
+	     && lspserver.caps.textDocumentSync.save->type() == v:t_bool
 	     && !lspserver.caps.textDocumentSync.save)
+	|| (lspserver.caps.textDocumentSync->type() == v:t_dict
+	     && lspserver.caps.textDocumentSync->has_key('save')
+	     && lspserver.caps.textDocumentSync.save->type() == v:t_dict
+	     && lspserver.caps.textDocumentSync->has_key('change')
+	     && lspserver.caps.textDocumentSync.change->type() == v:t_number
+	     && !lspserver.caps.textDocumentSync.change)
     # LSP server doesn't support text document synchronization
     return
   endif
@@ -971,6 +980,8 @@ def DidSaveFile(lspserver: dict<any>, bnr: number): void
   # Notification: 'textDocument/didSave'
   # Params: DidSaveTextDocumentParams
   var params = {textDocument: {uri: util.LspBufnrToUri(bnr)}}
+  # FIXME: should concern 'params.text' on
+  # 'lspserver.caps.textDocumentSync.save.includeText' too?
   lspserver.sendNotification('textDocument/didSave', params)
 enddef
 
