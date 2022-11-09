@@ -90,7 +90,7 @@ export def ApplyCodeAction(lspserver: dict<any>, actions: list<dict<any>>): void
 	  if key == 'h' || key == 'l'
 	    popup_close(winid, -1)
 	  elseif str2nr(key) > 0
-	    # supposed would not over 9 items
+	    # assume less than 10 entries are present
 	    popup_close(winid, str2nr(key))
 	  else
 	    return popup_filter_menu(winid, key)

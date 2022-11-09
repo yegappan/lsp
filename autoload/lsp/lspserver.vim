@@ -122,8 +122,26 @@ def InitServer(lspserver: dict<any>)
       applyEdit: true
     },
     textDocument: {
-      foldingRange: {lineFoldingOnly: true},
+      callHierarchy: {
+	dynamicRegistration: false
+      },
+      codeAction: {
+	dynamicRegistration: false,
+	codeActionLiteralSupport: {
+	  codeActionKind: {
+	    valueSet: ['', 'quickfix', 'refactor', 'refactor.extract',
+			'refactor.inline', 'refactor.rewrite', 'source',
+			'source.organizeImports']
+	  }
+	},
+        isPreferredSupport: true,
+	disabledSupport: true
+      },
+      codeLens: {
+	dynamicRegistration: false
+      },
       completion: {
+	dynamicRegistration: false,
 	completionItem: {
 	  documentationFormat: ['plaintext', 'markdown'],
 	  resolveSupport: {properties: ['detail', 'documentation']},
@@ -131,13 +149,18 @@ def InitServer(lspserver: dict<any>)
 	},
 	completionItemKind: {valueSet: range(1, 25)}
       },
-      hover: {
-        contentFormat: ['plaintext', 'markdown']
-      },
       documentSymbol: {
+	dynamicRegistration: false,
 	hierarchicalDocumentSymbolSupport: true,
 	symbolKind: {valueSet: range(1, 25)}
       },
+      hover: {
+        contentFormat: ['plaintext', 'markdown']
+      },
+      foldingRange: {lineFoldingOnly: true},
+      synchronization: {
+	didSave: true
+      }
     },
     window: {},
     general: {}
@@ -834,7 +857,9 @@ enddef
 # Param: DefinitionParams
 def GotoDefinition(lspserver: dict<any>, peek: bool, cmdmods: string)
   # Check whether LSP server supports jumping to a definition
-  if !lspserver.caps->get('definitionProvider', false)
+  if !lspserver.caps->has_key('definitionProvider')
+	|| (lspserver.caps.definitionProvider->type() == v:t_bool
+	    && !lspserver.caps.definitionProvider)
     util.ErrMsg("Error: Jumping to a symbol definition is not supported")
     return
   endif
@@ -848,7 +873,9 @@ enddef
 # Param: DeclarationParams
 def GotoDeclaration(lspserver: dict<any>, peek: bool, cmdmods: string)
   # Check whether LSP server supports jumping to a declaration
-  if !lspserver.caps->get('declarationProvider', false)
+  if !lspserver.caps->has_key('declarationProvider')
+	|| (lspserver.caps.declarationProvider->type() == v:t_bool
+	    && !lspserver.caps.declarationProvider)
     util.ErrMsg("Error: Jumping to a symbol declaration is not supported")
     return
   endif
@@ -862,7 +889,9 @@ enddef
 # Param: TypeDefinitionParams
 def GotoTypeDef(lspserver: dict<any>, peek: bool, cmdmods: string)
   # Check whether LSP server supports jumping to a type definition
-  if !lspserver.caps->get('typeDefinitionProvider', false)
+  if !lspserver.caps->has_key('typeDefinitionProvider')
+	|| (lspserver.caps.typeDefinitionProvider->type() == v:t_bool
+	    && !lspserver.caps.typeDefinitionProvider)
     util.ErrMsg("Error: Jumping to a symbol type definition is not supported")
     return
   endif
@@ -876,7 +905,9 @@ enddef
 # Param: ImplementationParams
 def GotoImplementation(lspserver: dict<any>, peek: bool, cmdmods: string)
   # Check whether LSP server supports jumping to a implementation
-  if !lspserver.caps->get('implementationProvider', false)
+  if !lspserver.caps->has_key('implementationProvider')
+	|| (lspserver.caps.implementationProvider->type() == v:t_bool
+	    && !lspserver.caps.implementationProvider)
     util.ErrMsg("Error: Jumping to a symbol implementation is not supported")
     return
   endif
@@ -914,7 +945,7 @@ enddef
 # Param: SignatureHelpParams
 def ShowSignature(lspserver: dict<any>): void
   # Check whether LSP server supports signature help
-  if !lspserver.caps->get('signatureHelpProvider', false)
+  if !lspserver.caps->has_key('signatureHelpProvider')
     util.ErrMsg("Error: LSP server does not support signature help")
     return
   endif
@@ -930,9 +961,9 @@ enddef
 def DidSaveFile(lspserver: dict<any>, bnr: number): void
   # Check whether the LSP server supports the didSave notification
   if !lspserver.caps->has_key('textDocumentSync')
-		|| lspserver.caps.textDocumentSync->type() == v:t_number
-		|| !lspserver.caps.textDocumentSync->has_key('save')
-		|| !lspserver.caps.textDocumentSync.save
+	|| !lspserver.caps.textDocumentSync->has_key('save')
+	|| (lspserver.caps.textDocumentSync.save->type() == v:t_bool
+	     && !lspserver.caps.textDocumentSync.save)
     # LSP server doesn't support text document synchronization
     return
   endif
@@ -947,8 +978,11 @@ enddef
 # Request: "textDocument/hover"
 # Param: HoverParams
 def ShowHoverInfo(lspserver: dict<any>): void
-  # Check whether LSP server supports getting hover information
-  if !lspserver.caps->get('hoverProvider', false)
+  # Check whether LSP server supports getting hover information.
+  # caps->hoverProvider can be a "boolean" or "HoverOptions"
+  if !lspserver.caps->has_key('hoverProvider')
+	|| (lspserver.caps.hoverProvider->type() == v:t_bool
+	    && !lspserver.caps.hoverProvider)
     return
   endif
 
@@ -962,7 +996,9 @@ enddef
 # Param: ReferenceParams
 def ShowReferences(lspserver: dict<any>, peek: bool): void
   # Check whether LSP server supports getting reference information
-  if !lspserver.caps->get('referencesProvider', false)
+  if !lspserver.caps->has_key('referencesProvider')
+	|| (lspserver.caps.referencesProvider->type() == v:t_bool
+	    && !lspserver.caps.referencesProvider)
     util.ErrMsg("Error: LSP server does not support showing references")
     return
   endif
@@ -1020,7 +1056,9 @@ enddef
 # Param: DocumentHighlightParams
 def DocHighlight(lspserver: dict<any>): void
   # Check whether LSP server supports getting highlight information
-  if !lspserver.caps->get('documentHighlightProvider', false)
+  if !lspserver.caps->has_key('documentHighlightProvider')
+	|| (lspserver.caps.documentHighlightProvider->type() == v:t_bool
+	    && !lspserver.caps.documentHighlightProvider)
     util.ErrMsg("Error: LSP server does not support document highlight")
     return
   endif
@@ -1036,7 +1074,9 @@ enddef
 # Param: DocumentSymbolParams
 def GetDocSymbols(lspserver: dict<any>, fname: string): void
   # Check whether LSP server supports getting document symbol information
-  if !lspserver.caps->get('documentSymbolProvider', false)
+  if !lspserver.caps->has_key('documentSymbolProvider')
+	|| (lspserver.caps.documentSymbolProvider->type() == v:t_bool
+	    && !lspserver.caps.documentSymbolProvider)
     util.ErrMsg("Error: LSP server does not support getting list of symbols")
     return
   endif
@@ -1056,7 +1096,9 @@ enddef
 def TextDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
 				start_lnum: number, end_lnum: number)
   # Check whether LSP server supports formatting documents
-  if !lspserver.caps->get('documentFormattingProvider', false)
+  if !lspserver.caps->has_key('documentFormattingProvider')
+	|| (lspserver.caps.documentFormattingProvider->type() == v:t_bool
+	    && !lspserver.caps.documentFormattingProvider)
     util.ErrMsg("Error: LSP server does not support formatting documents")
     return
   endif
@@ -1138,7 +1180,9 @@ enddef
 # Request: "callHierarchy/incomingCalls"
 def IncomingCalls(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports call hierarchy
-  if !lspserver.caps->get('callHierarchyProvider', false)
+  if !lspserver.caps->has_key('callHierarchyProvider')
+	|| (lspserver.caps.callHierarchyProvider->type() == v:t_bool
+	    && !lspserver.caps.callHierarchyProvider)
     util.ErrMsg("Error: LSP server does not support call hierarchy")
     return
   endif
@@ -1165,7 +1209,9 @@ enddef
 # Request: "callHierarchy/outgoingCalls"
 def OutgoingCalls(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports call hierarchy
-  if !lspserver.caps->get('callHierarchyProvider', false)
+  if !lspserver.caps->has_key('callHierarchyProvider')
+	|| (lspserver.caps.callHierarchyProvider->type() == v:t_bool
+	    && !lspserver.caps.callHierarchyProvider)
     util.ErrMsg("Error: LSP server does not support call hierarchy")
     return
   endif
@@ -1193,7 +1239,9 @@ enddef
 # Param: RenameParams
 def RenameSymbol(lspserver: dict<any>, newName: string)
   # Check whether LSP server supports rename operation
-  if !lspserver.caps->get('renameProvider', false)
+  if !lspserver.caps->has_key('renameProvider')
+	|| (lspserver.caps.renameProvider->type() == v:t_bool
+	    && !lspserver.caps.renameProvider)
     util.ErrMsg("Error: LSP server does not support rename operation")
     return
   endif
@@ -1220,7 +1268,9 @@ enddef
 # Param: CodeActionParams
 def CodeAction(lspserver: dict<any>, fname_arg: string)
   # Check whether LSP server supports code action operation
-  if !lspserver.caps->get('codeActionProvider', false)
+  if !lspserver.caps->has_key('codeActionProvider')
+	|| (lspserver.caps.codeActionProvider->type() == v:t_bool
+	     && !lspserver.caps.codeActionProvider)
     util.ErrMsg("Error: LSP server does not support code action operation")
     return
   endif
@@ -1239,7 +1289,7 @@ def CodeAction(lspserver: dict<any>, fname_arg: string)
   if !diagInfo->empty()
     d->add(diagInfo)
   endif
-  params->extend({context: {diagnostics: d}})
+  params->extend({context: {diagnostics: d, triggerKind: 1}})
 
   var reply = lspserver.rpc('textDocument/codeAction', params)
 
@@ -1258,7 +1308,9 @@ enddef
 # Param: WorkspaceSymbolParams
 def WorkspaceQuerySymbols(lspserver: dict<any>, query: string)
   # Check whether the LSP server supports listing workspace symbols
-  if !lspserver.caps->get('workspaceSymbolProvider', false)
+  if !lspserver.caps->has_key('workspaceSymbolProvider')
+	|| (lspserver.caps.workspaceSymbolProvider->type() == v:t_bool
+	     && !lspserver.caps.workspaceSymbolProvider)
     util.ErrMsg("Error: LSP server does not support listing workspace symbols")
     return
   endif
@@ -1327,7 +1379,9 @@ enddef
 # Param: SelectionRangeParams
 def SelectionRange(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports selection ranges
-  if !lspserver.caps->get('selectionRangeProvider', false)
+  if !lspserver.caps->has_key('selectionRangeProvider')
+	|| (lspserver.caps.selectionRangeProvider->type() == v:t_bool
+	     && !lspserver.caps.selectionRangeProvider)
     util.ErrMsg("Error: LSP server does not support selection ranges")
     return
   endif
@@ -1353,7 +1407,9 @@ enddef
 # Expand the previous selection or start a new one
 def SelectionExpand(lspserver: dict<any>)
   # Check whether LSP server supports selection ranges
-  if !lspserver.caps->get('selectionRangeProvider', false)
+  if !lspserver.caps->has_key('selectionRangeProvider')
+	|| (lspserver.caps.selectionRangeProvider->type() == v:t_bool
+	     && !lspserver.caps.selectionRangeProvider)
     util.ErrMsg("Error: LSP server does not support selection ranges")
     return
   endif
@@ -1364,7 +1420,9 @@ enddef
 # Shrink the previous selection or start a new one
 def SelectionShrink(lspserver: dict<any>)
   # Check whether LSP server supports selection ranges
-  if !lspserver.caps->get('selectionRangeProvider', false)
+  if !lspserver.caps->has_key('selectionRangeProvider')
+	|| (lspserver.caps.selectionRangeProvider->type() == v:t_bool
+	     && !lspserver.caps.selectionRangeProvider)
     util.ErrMsg("Error: LSP server does not support selection ranges")
     return
   endif
@@ -1377,7 +1435,9 @@ enddef
 # Param: FoldingRangeParams
 def FoldRange(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports fold ranges
-  if !lspserver.caps->get('foldingRangeProvider', false)
+  if !lspserver.caps->has_key('foldingRangeProvider')
+	|| (lspserver.caps.foldingRangeProvider->type() == v:t_bool
+	     && !lspserver.caps.foldingRangeProvider)
     util.ErrMsg("Error: LSP server does not support folding")
     return
   endif
@@ -1419,6 +1479,7 @@ enddef
 # Request: workspace/executeCommand
 # Params: ExecuteCommandParams
 def ExecuteCommand(lspserver: dict<any>, cmd: dict<any>)
+  # Need to check for lspserver.caps.executeCommandProvider?
   var params = cmd
   lspserver.rpc_a('workspace/executeCommand', params, WorkspaceExecuteReply)
 enddef
@@ -1439,7 +1500,9 @@ enddef
 # symbol definition or the symbol is not defined.
 def TagFunc(lspserver: dict<any>, pat: string, flags: string, info: dict<any>): any
   # Check whether LSP server supports getting the location of a definition
-  if !lspserver.caps->get('definitionProvider', false)
+  if !lspserver.caps->has_key('definitionProvider')
+	|| (lspserver.caps.definitionProvider->type() == v:t_bool
+	    && !lspserver.caps.definitionProvider)
     return null
   endif
 

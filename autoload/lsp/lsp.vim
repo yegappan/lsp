@@ -301,7 +301,7 @@ def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
 
   # Auto highlight all the occurrences of the current keyword
   if opt.lspOptions.autoHighlight &&
-			lspserver.caps->get('documentHighlightProvider', false)
+			lspserver.caps->has_key('documentHighlightProvider')
       acmds->add({bufnr: bnr,
 		  event: 'CursorMoved',
 		  group: 'LSPBufferAutocmds',
