@@ -102,7 +102,7 @@ command! -nargs=0 -bar -range=% LspFormat lsp.TextDocFormat(<range>, <line1>, <l
 command! -nargs=0 -bar LspOutgoingCalls lsp.OutgoingCalls()
 command! -nargs=0 -bar LspIncomingCalls lsp.IncomingCalls()
 command! -nargs=0 -bar LspRename lsp.Rename()
-command! -nargs=0 -bar LspCodeAction lsp.CodeAction()
+command! -nargs=0 -bar -range LspCodeAction lsp.CodeAction(<line1>, <line2>)
 command! -nargs=? -bar LspSymbolSearch lsp.SymbolSearch(<q-args>)
 command! -nargs=0 -bar LspHover lsp.Hover()
 command! -nargs=0 -bar LspSelectionExpand lsp.SelectionExpand()

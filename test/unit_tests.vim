@@ -25,7 +25,7 @@ var lspServers = [{
       args: ['--background-index', '--clang-tidy']
   }]
 call LspAddServer(lspServers)
-echomsg system($'{lspServers[0].path} --version')
+echomsg systemlist($'{lspServers[0].path} --version')
 
 g:LSPTest = true
 

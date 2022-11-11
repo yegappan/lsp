@@ -1277,7 +1277,8 @@ enddef
 
 # Request: "textDocument/codeAction"
 # Param: CodeActionParams
-def CodeAction(lspserver: dict<any>, fname_arg: string)
+def CodeAction(lspserver: dict<any>, fname_arg: string, line1: number,
+		line2: number)
   # Check whether LSP server supports code action operation
   if !lspserver.caps->has_key('codeActionProvider')
 	|| (lspserver.caps.codeActionProvider->type() == v:t_bool
@@ -1291,15 +1292,16 @@ def CodeAction(lspserver: dict<any>, fname_arg: string)
   var fname: string = fnamemodify(fname_arg, ':p')
   var bnr: number = fname_arg->bufnr()
   var r: dict<dict<number>> = {
-		  start: {line: line('.') - 1, character: charcol('.') - 1},
-		  end: {line: line('.') - 1, character: charcol('.') - 1}}
+		  start: {line: line1 - 1, character: 0},
+		  end: {line: line2 - 1, character: charcol([line2, '$']) - 1}}
   params->extend({textDocument: {uri: util.LspFileToUri(fname)}, range: r})
   var d: list<dict<any>> = []
-  var lnum = line('.')
-  var diagInfo: dict<any> = diag.GetDiagByLine(lspserver, bnr, lnum)
-  if !diagInfo->empty()
-    d->add(diagInfo)
-  endif
+  for lnum in range(line1, line2)
+    var diagInfo: dict<any> = diag.GetDiagByLine(lspserver, bnr, lnum)
+    if !diagInfo->empty()
+      d->add(diagInfo)
+    endif
+  endfor
   params->extend({context: {diagnostics: d, triggerKind: 1}})
 
   var reply = lspserver.rpc('textDocument/codeAction', params)

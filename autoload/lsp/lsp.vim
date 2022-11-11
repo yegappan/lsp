@@ -861,14 +861,14 @@ enddef
 
 # Perform a code action
 # Uses LSP "textDocument/codeAction" request
-export def CodeAction()
+export def CodeAction(line1: number, line2: number)
   var lspserver: dict<any> = CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
 
   var fname: string = @%
-  lspserver.codeAction(fname)
+  lspserver.codeAction(fname, line1, line2)
 enddef
 
 # Perform a workspace wide symbol lookup
