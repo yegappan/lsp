@@ -25,6 +25,7 @@ var lspServers = [{
       args: ['--background-index', '--clang-tidy']
   }]
 call LspAddServer(lspServers)
+echomsg system($'{lspServers[0].path} --version')
 
 g:LSPTest = true
 
@@ -895,11 +896,8 @@ def Test_LspDiagsUpdated_Autocmd()
   assert_equal(3, g:LspAutoCmd)
 enddef
 
-def LspRunTests()
-  :set nomore
-  :set debug=beep
-  delete('results.txt')
-
+# Start the C language server.  Returns true on success and false on failure.
+def StartLangServer(): bool
   # Edit a dummy C file to start the LSP server
   :edit Xtest.c
   # Wait for the LSP server to become ready (max 10 seconds)
@@ -908,7 +906,21 @@ def LspRunTests()
     :sleep 100m
     maxcount -= 1
   endwhile
+  var serverStatus: bool = g:LspServerReady()
   :%bw!
+
+  return serverStatus
+enddef
+
+def LspRunTests()
+  :set nomore
+  :set debug=beep
+  delete('results.txt')
+
+  if !StartLangServer()
+    writefile(['FAIL: Not able to start the C language server'], 'results.txt')
+    return
+  endif
 
   # Get the list of test functions in this file and call them
   var fns: list<string> = execute('function /Test_')
