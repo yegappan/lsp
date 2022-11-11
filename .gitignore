@@ -1,2 +1,6 @@
 tags
 *.swp
+
+test/Xtest.c
+test/Xtest.cpp
+test/results.txt
