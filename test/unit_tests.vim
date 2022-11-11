@@ -21,7 +21,7 @@ endif
 source ../plugin/lsp.vim
 var lspServers = [{
       filetype: ['c', 'cpp'],
-      path: '/usr/bin/clangd-12',
+      path: (exepath('clangd-14') ?? exepath('clangd')),
       args: ['--background-index', '--clang-tidy']
   }]
 call LspAddServer(lspServers)
