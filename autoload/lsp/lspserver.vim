@@ -974,7 +974,7 @@ def CompletionResolveReply(lspserver: dict<any>, cItem: dict<any>)
         infoKind = 'text'
       elseif cItem.documentation.kind == 'markdown'
         infoText->extend(cItem.documentation.value->split("\n"))
-        infoKind = 'markdown'
+        infoKind = 'lspgfm'
       else
         util.ErrMsg($'Error: Unsupported documentation type ({cItem.documentation.kind})')
         return
@@ -1003,13 +1003,8 @@ def CompletionResolveReply(lspserver: dict<any>, cItem: dict<any>)
   var id = popup_findinfo()
   if id > 0
     var bufnr = id->winbufnr()
-    infoKind->setbufvar(bufnr, '&ft')
-    if infoKind == 'markdown'
-      3->setwinvar(id, '&conceallevel')
-    else
-      0->setwinvar(id, '&conceallevel')
-    endif
     id->popup_settext(infoText)
+    infoKind->setbufvar(bufnr, '&ft')
     id->popup_show()
   endif
 enddef

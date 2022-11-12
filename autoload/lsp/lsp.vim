@@ -293,6 +293,11 @@ def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
     endif
   endif
 
+  acmds->add({bufnr: bnr,
+                 event: 'CompleteChanged',
+                 group: 'LSPBufferAutocmds',
+                 cmd: 'LspSetFileType()'})
+
   # Execute LSP server initiated text edits after completion
   acmds->add({bufnr: bnr,
 	      event: 'CompleteDone',
@@ -666,6 +671,27 @@ def LspResolve()
   var item = v:event.completed_item
   if item->has_key('user_data') && !empty(item.user_data)
     lspserver.resolveCompletion(item.user_data)
+  endif
+enddef
+
+# If the completion popup documentation window displays 'markdown' content,
+# then set the 'filetype' to 'lspgfm'.
+def LspSetFileType()
+  var item = v:event.completed_item
+  if !item->has_key('user_data') || empty(item.user_data)
+    return
+  endif
+
+  var cItem = item.user_data
+  if !cItem->has_key('documentation') || cItem->type() != v:t_dict
+                               || cItem.documentation.kind != 'markdown'
+    return
+  endif
+
+  var id = popup_findinfo()
+  if id > 0
+    var bnum = id->winbufnr()
+    setbufvar(bnum, '&ft', 'lspgfm')
   endif
 enddef
 
