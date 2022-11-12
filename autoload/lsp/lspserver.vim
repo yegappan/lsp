@@ -1177,11 +1177,8 @@ def DidSaveFile(lspserver: dict<any>, bnr: number): void
   # Check whether the LSP server supports the didSave notification
   if !lspserver.supportsDidSave
     # LSP server doesn't support text document synchronization
-    echomsg "Doesn't support didSave notification"
     return
   endif
-
-  echomsg "Sending didSave notification"
 
   # Notification: 'textDocument/didSave'
   # Params: DidSaveTextDocumentParams
