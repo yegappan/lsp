@@ -175,7 +175,7 @@ def Test_LspFormat()
 
   # file without an LSP server
   edit a.raku
-  assert_equal(['Error: Language server not found for "raku" file type'],
+  assert_equal(['Error: Language server for "raku" file type is not found'],
 	       execute('LspFormat')->split("\n"))
 
   :%bw!
@@ -240,7 +240,7 @@ def Test_LspShowReferences()
 
   # file without an LSP server
   edit a.raku
-  assert_equal(['Error: Language server not found for "raku" file type'],
+  assert_equal(['Error: Language server for "raku" file type is not found'],
 	       execute('LspShowReferences')->split("\n"))
 
   :%bw!
@@ -358,7 +358,7 @@ def Test_LspCodeAction()
 
   # file without an LSP server
   edit a.raku
-  assert_equal(['Error: Language server not found for "raku" file type'],
+  assert_equal(['Error: Language server for "raku" file type is not found'],
 	       execute('LspCodeAction')->split("\n"))
 
   :%bw!
@@ -409,7 +409,7 @@ def Test_LspRename()
 
   # file without an LSP server
   edit a.raku
-  assert_equal(['Error: Language server not found for "raku" file type'],
+  assert_equal(['Error: Language server for "raku" file type is not found'],
 	       execute('LspRename')->split("\n"))
 
   :%bw!
@@ -509,7 +509,7 @@ def Test_LspSelection()
 
   # file without an LSP server
   edit a.raku
-  assert_equal(['Error: Language server not found for "raku" file type'],
+  assert_equal(['Error: Language server for "raku" file type is not found'],
 	       execute('LspSelectionExpand')->split("\n"))
 
   :%bw!
@@ -632,11 +632,11 @@ def Test_LspGotoSymbol()
 
   # file without an LSP server
   edit a.raku
-  assert_equal(['Error: Language server not found for "raku" file type'],
+  assert_equal(['Error: Language server for "raku" file type is not found'],
 	       execute('LspGotoDefinition')->split("\n"))
-  assert_equal(['Error: Language server not found for "raku" file type'],
+  assert_equal(['Error: Language server for "raku" file type is not found'],
 	       execute('LspGotoDeclaration')->split("\n"))
-  assert_equal(['Error: Language server not found for "raku" file type'],
+  assert_equal(['Error: Language server for "raku" file type is not found'],
 	       execute('LspGotoImpl')->split("\n"))
 
   :%bw!

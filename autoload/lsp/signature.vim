@@ -23,9 +23,9 @@ enddef
 
 # Initialize the signature triggers for the current buffer
 export def SignatureInit(lspserver: dict<any>)
-  if !opt.lspOptions.showSignature ||
-			!lspserver.caps->has_key('signatureHelpProvider') ||
-			!lspserver.caps.signatureHelpProvider->has_key('triggerCharacters')
+  if !opt.lspOptions.showSignature
+	|| !lspserver.isSignatureHelpProvider
+	|| !lspserver.caps.signatureHelpProvider->has_key('triggerCharacters')
     # no support for signature help
     return
   endif

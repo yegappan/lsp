@@ -2,9 +2,9 @@
 
 # Script to run the unit-tests for the LSP Vim plugin
 
-VIMPRG=${VIMPRG:=`which vim`}
+VIMPRG=${VIMPRG:=$(which vim)}
 if [ -z "$VIMPRG" ]; then
-  echo "ERROR: Vim is not found or did not indicate."
+  echo "ERROR: $VIMPRG is not found in PATH"
   exit 1
 fi
 

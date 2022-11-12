@@ -82,6 +82,228 @@ def StartServer(lspserver: dict<any>): number
   return 0
 enddef
 
+# Process the server capabilities
+def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
+  # completionProvider
+  if lspserver.caps->has_key('completionProvider')
+    lspserver.isCompletionProvider = true
+    if lspserver.caps.completionProvider->has_key('resolveProvider')
+      lspserver.isCompletionResolveProvider =
+			lspserver.caps.completionProvider.resolveProvider
+    else
+      lspserver.isCompletionResolveProvider = false
+    endif
+  else
+    lspserver.isCompletionProvider = false
+    lspserver.isCompletionResolveProvider = false
+  endif
+
+  # definitionProvider
+  if lspserver.caps->has_key('definitionProvider')
+    if lspserver.caps.definitionProvider->type() == v:t_bool
+      lspserver.isDefinitionProvider = lspserver.caps.definitionProvider
+    else
+      lspserver.isDefinitionProvider = true
+    endif
+  else
+    lspserver.isDefinitionProvider = false
+  endif
+
+  # declarationProvider
+  if lspserver.caps->has_key('declarationProvider')
+    if lspserver.caps.declarationProvider->type() == v:t_bool
+      lspserver.isDeclarationProvider = lspserver.caps.declarationProvider
+    else
+      lspserver.isDeclarationProvider = true
+    endif
+  else
+    lspserver.isDeclarationProvider = false
+  endif
+
+  # typeDefinitionProvider
+  if lspserver.caps->has_key('typeDefinitionProvider')
+    if lspserver.caps.typeDefinitionProvider->type() == v:t_bool
+      lspserver.isTypeDefinitionProvider = lspserver.caps.typeDefinitionProvider
+    else
+      lspserver.isTypeDefinitionProvider = true
+    endif
+  else
+    lspserver.isTypeDefinitionProvider = false
+  endif
+
+  # implementationProvider
+  if lspserver.caps->has_key('implementationProvider')
+    if lspserver.caps.implementationProvider->type() == v:t_bool
+      lspserver.isImplementationProvider = lspserver.caps.implementationProvider
+    else
+      lspserver.isImplementationProvider = true
+    endif
+  else
+    lspserver.isImplementationProvider = false
+  endif
+
+  # signatureHelpProvider
+  if lspserver.caps->has_key('signatureHelpProvider')
+    lspserver.isSignatureHelpProvider = true
+  else
+    lspserver.isSignatureHelpProvider = false
+  endif
+
+  # hoverProvider
+  if lspserver.caps->has_key('hoverProvider')
+    if lspserver.caps.hoverProvider->type() == v:t_bool
+      lspserver.isHoverProvider = lspserver.caps.hoverProvider
+    else
+      lspserver.isHoverProvider = true
+    endif
+  else
+    lspserver.isHoverProvider = false
+  endif
+
+  # referencesProvider
+  if lspserver.caps->has_key('referencesProvider')
+    if lspserver.caps.referencesProvider->type() == v:t_bool
+      lspserver.isReferencesProvider = lspserver.caps.referencesProvider
+    else
+      lspserver.isReferencesProvider = true
+    endif
+  else
+    lspserver.isReferencesProvider = false
+  endif
+
+  # documentHighlightProvider
+  if lspserver.caps->has_key('documentHighlightProvider')
+    if lspserver.caps.documentHighlightProvider->type() == v:t_bool
+      lspserver.isDocumentHighlightProvider =
+				lspserver.caps.documentHighlightProvider
+    else
+      lspserver.isDocumentHighlightProvider = true
+    endif
+  else
+    lspserver.isDocumentHighlightProvider = false
+  endif
+
+  # documentSymbolProvider
+  if lspserver.caps->has_key('documentSymbolProvider')
+    if lspserver.caps.documentSymbolProvider->type() == v:t_bool
+      lspserver.isDocumentSymbolProvider =
+				lspserver.caps.documentSymbolProvider
+    else
+      lspserver.isDocumentSymbolProvider = true
+    endif
+  else
+    lspserver.isDocumentSymbolProvider = false
+  endif
+
+  # documentFormattingProvider
+  if lspserver.caps->has_key('documentFormattingProvider')
+    if lspserver.caps.documentFormattingProvider->type() == v:t_bool
+      lspserver.isDocumentFormattingProvider =
+				lspserver.caps.documentFormattingProvider
+    else
+      lspserver.isDocumentFormattingProvider = true
+    endif
+  else
+    lspserver.isDocumentFormattingProvider = false
+  endif
+
+  # callHierarchyProvider
+  if lspserver.caps->has_key('callHierarchyProvider')
+    if lspserver.caps.callHierarchyProvider->type() == v:t_bool
+      lspserver.isCallHierarchyProvider =
+				lspserver.caps.callHierarchyProvider
+    else
+      lspserver.isCallHierarchyProvider = true
+    endif
+  else
+    lspserver.isCallHierarchyProvider = false
+  endif
+
+  # renameProvider
+  if lspserver.caps->has_key('renameProvider')
+    if lspserver.caps.renameProvider->type() == v:t_bool
+      lspserver.isRenameProvider = lspserver.caps.renameProvider
+    else
+      lspserver.isRenameProvider = true
+    endif
+  else
+    lspserver.isRenameProvider = false
+  endif
+
+  # codeActionProvider
+  if lspserver.caps->has_key('codeActionProvider')
+    if lspserver.caps.codeActionProvider->type() == v:t_bool
+      lspserver.isCodeActionProvider = lspserver.caps.codeActionProvider
+    else
+      lspserver.isCodeActionProvider = true
+    endif
+  else
+    lspserver.isCodeActionProvider = false
+  endif
+
+  # workspaceSymbolProvider
+  if lspserver.caps->has_key('workspaceSymbolProvider')
+    if lspserver.caps.workspaceSymbolProvider->type() == v:t_bool
+      lspserver.isWorkspaceSymbolProvider =
+				lspserver.caps.workspaceSymbolProvider
+    else
+      lspserver.isWorkspaceSymbolProvider = true
+    endif
+  else
+    lspserver.isWorkspaceSymbolProvider = false
+  endif
+
+  # selectionRangeProvider
+  if lspserver.caps->has_key('selectionRangeProvider')
+    if lspserver.caps.selectionRangeProvider->type() == v:t_bool
+      lspserver.isSelectionRangeProvider =
+				lspserver.caps.selectionRangeProvider
+    else
+      lspserver.isSelectionRangeProvider = true
+    endif
+  else
+    lspserver.isSelectionRangeProvider = false
+  endif
+
+  # foldingRangeProvider
+  if lspserver.caps->has_key('foldingRangeProvider')
+    if lspserver.caps.foldingRangeProvider->type() == v:t_bool
+      lspserver.isFoldingRangeProvider = lspserver.caps.foldingRangeProvider
+    else
+      lspserver.isFoldingRangeProvider = true
+    endif
+  else
+    lspserver.isFoldingRangeProvider = false
+  endif
+
+  # textDocument/didSave notification
+  if lspserver.caps->has_key('textDocumentSync')
+    if lspserver.caps.textDocumentSync->type() == v:t_bool
+		|| lspserver.caps.textDocumentSync->type() == v:t_number
+      lspserver.supportsDidSave = lspserver.caps.textDocumentSync
+    else
+      if lspserver.caps.textDocumentSync->type() == v:t_dict
+	if lspserver.caps.textDocumentSync->has_key('save')
+	  if lspserver.caps.textDocumentSync.save->type() == v:t_bool
+	    || lspserver.caps.textDocumentSync.save->type() == v:t_number
+	    lspserver.supportsDidSave = lspserver.caps.textDocumentSync.save
+	  elseif lspserver.caps.textDocumentSync.save->type() == v:t_dict
+	    lspserver.supportsDidSave = true
+	  else
+	    lspserver.supportsDidSave = false
+	  endif
+	else
+	  lspserver.supportsDidSave = false
+	endif
+      else
+	lspserver.supportsDidSave = false
+      endif
+    endif
+  else
+    lspserver.supportsDidSave = false
+  endif
+enddef
+
 # process the 'initialize' method reply from the LSP server
 # Result: InitializeResult
 def ServerInitReply(lspserver: dict<any>, initResult: dict<any>): void
@@ -91,6 +313,8 @@ def ServerInitReply(lspserver: dict<any>, initResult: dict<any>): void
 
   var caps: dict<any> = initResult.capabilities
   lspserver.caps = caps
+
+  ProcessServerCaps(lspserver, caps)
 
   if opt.lspOptions.autoComplete && caps->has_key('completionProvider')
     lspserver.completionTriggerChars = caps.completionProvider->get('triggerCharacters', [])
@@ -694,7 +918,7 @@ enddef
 # Param: CompletionParams
 def GetCompletion(lspserver: dict<any>, triggerKind_arg: number, triggerChar: string): void
   # Check whether LSP server supports completion
-  if !lspserver.caps->has_key('completionProvider')
+  if !lspserver.isCompletionProvider
     util.ErrMsg("Error: LSP server does not support completion")
     return
   endif
@@ -795,8 +1019,7 @@ enddef
 # Param: CompletionItem
 def ResolveCompletion(lspserver: dict<any>, item: dict<any>): void
   # Check whether LSP server supports completion item resolve
-  if !lspserver.caps->has_key('completionProvider')
-      || !lspserver.caps.completionProvider->get('resolveProvider', false)
+  if !lspserver.isCompletionResolveProvider
     util.ErrMsg("Error: LSP server does not support completion item resolve")
     return
   endif
@@ -857,9 +1080,7 @@ enddef
 # Param: DefinitionParams
 def GotoDefinition(lspserver: dict<any>, peek: bool, cmdmods: string)
   # Check whether LSP server supports jumping to a definition
-  if !lspserver.caps->has_key('definitionProvider')
-	|| (lspserver.caps.definitionProvider->type() == v:t_bool
-	    && !lspserver.caps.definitionProvider)
+  if !lspserver.isDefinitionProvider
     util.ErrMsg("Error: Jumping to a symbol definition is not supported")
     return
   endif
@@ -873,9 +1094,7 @@ enddef
 # Param: DeclarationParams
 def GotoDeclaration(lspserver: dict<any>, peek: bool, cmdmods: string)
   # Check whether LSP server supports jumping to a declaration
-  if !lspserver.caps->has_key('declarationProvider')
-	|| (lspserver.caps.declarationProvider->type() == v:t_bool
-	    && !lspserver.caps.declarationProvider)
+  if !lspserver.isDeclarationProvider
     util.ErrMsg("Error: Jumping to a symbol declaration is not supported")
     return
   endif
@@ -889,9 +1108,7 @@ enddef
 # Param: TypeDefinitionParams
 def GotoTypeDef(lspserver: dict<any>, peek: bool, cmdmods: string)
   # Check whether LSP server supports jumping to a type definition
-  if !lspserver.caps->has_key('typeDefinitionProvider')
-	|| (lspserver.caps.typeDefinitionProvider->type() == v:t_bool
-	    && !lspserver.caps.typeDefinitionProvider)
+  if !lspserver.isTypeDefinitionProvider
     util.ErrMsg("Error: Jumping to a symbol type definition is not supported")
     return
   endif
@@ -905,9 +1122,7 @@ enddef
 # Param: ImplementationParams
 def GotoImplementation(lspserver: dict<any>, peek: bool, cmdmods: string)
   # Check whether LSP server supports jumping to a implementation
-  if !lspserver.caps->has_key('implementationProvider')
-	|| (lspserver.caps.implementationProvider->type() == v:t_bool
-	    && !lspserver.caps.implementationProvider)
+  if !lspserver.isImplementationProvider
     util.ErrMsg("Error: Jumping to a symbol implementation is not supported")
     return
   endif
@@ -945,7 +1160,7 @@ enddef
 # Param: SignatureHelpParams
 def ShowSignature(lspserver: dict<any>): void
   # Check whether LSP server supports signature help
-  if !lspserver.caps->has_key('signatureHelpProvider')
+  if !lspserver.isSignatureHelpProvider
     util.ErrMsg("Error: LSP server does not support signature help")
     return
   endif
@@ -960,22 +1175,13 @@ enddef
 # Send a file/document saved notification to the language server
 def DidSaveFile(lspserver: dict<any>, bnr: number): void
   # Check whether the LSP server supports the didSave notification
-  if !lspserver.caps->has_key('textDocumentSync')
-	|| (lspserver.caps.textDocumentSync->type() == v:t_number
-	     && !lspserver.caps.textDocumentSync)
-	|| (lspserver.caps.textDocumentSync->type() == v:t_dict
-	     && lspserver.caps.textDocumentSync->has_key('save')
-	     && lspserver.caps.textDocumentSync.save->type() == v:t_bool
-	     && !lspserver.caps.textDocumentSync.save)
-	|| (lspserver.caps.textDocumentSync->type() == v:t_dict
-	     && lspserver.caps.textDocumentSync->has_key('save')
-	     && lspserver.caps.textDocumentSync.save->type() == v:t_dict
-	     && lspserver.caps.textDocumentSync->has_key('change')
-	     && lspserver.caps.textDocumentSync.change->type() == v:t_number
-	     && !lspserver.caps.textDocumentSync.change)
+  if !lspserver.supportsDidSave
     # LSP server doesn't support text document synchronization
+    echomsg "Doesn't support didSave notification"
     return
   endif
+
+  echomsg "Sending didSave notification"
 
   # Notification: 'textDocument/didSave'
   # Params: DidSaveTextDocumentParams
@@ -991,9 +1197,7 @@ enddef
 def ShowHoverInfo(lspserver: dict<any>): void
   # Check whether LSP server supports getting hover information.
   # caps->hoverProvider can be a "boolean" or "HoverOptions"
-  if !lspserver.caps->has_key('hoverProvider')
-	|| (lspserver.caps.hoverProvider->type() == v:t_bool
-	    && !lspserver.caps.hoverProvider)
+  if !lspserver.isHoverProvider
     return
   endif
 
@@ -1007,9 +1211,7 @@ enddef
 # Param: ReferenceParams
 def ShowReferences(lspserver: dict<any>, peek: bool): void
   # Check whether LSP server supports getting reference information
-  if !lspserver.caps->has_key('referencesProvider')
-	|| (lspserver.caps.referencesProvider->type() == v:t_bool
-	    && !lspserver.caps.referencesProvider)
+  if !lspserver.isReferencesProvider
     util.ErrMsg("Error: LSP server does not support showing references")
     return
   endif
@@ -1067,9 +1269,7 @@ enddef
 # Param: DocumentHighlightParams
 def DocHighlight(lspserver: dict<any>): void
   # Check whether LSP server supports getting highlight information
-  if !lspserver.caps->has_key('documentHighlightProvider')
-	|| (lspserver.caps.documentHighlightProvider->type() == v:t_bool
-	    && !lspserver.caps.documentHighlightProvider)
+  if !lspserver.isDocumentHighlightProvider
     util.ErrMsg("Error: LSP server does not support document highlight")
     return
   endif
@@ -1085,9 +1285,7 @@ enddef
 # Param: DocumentSymbolParams
 def GetDocSymbols(lspserver: dict<any>, fname: string): void
   # Check whether LSP server supports getting document symbol information
-  if !lspserver.caps->has_key('documentSymbolProvider')
-	|| (lspserver.caps.documentSymbolProvider->type() == v:t_bool
-	    && !lspserver.caps.documentSymbolProvider)
+  if !lspserver.isDocumentSymbolProvider
     util.ErrMsg("Error: LSP server does not support getting list of symbols")
     return
   endif
@@ -1107,9 +1305,7 @@ enddef
 def TextDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
 				start_lnum: number, end_lnum: number)
   # Check whether LSP server supports formatting documents
-  if !lspserver.caps->has_key('documentFormattingProvider')
-	|| (lspserver.caps.documentFormattingProvider->type() == v:t_bool
-	    && !lspserver.caps.documentFormattingProvider)
+  if !lspserver.isDocumentFormattingProvider
     util.ErrMsg("Error: LSP server does not support formatting documents")
     return
   endif
@@ -1191,9 +1387,7 @@ enddef
 # Request: "callHierarchy/incomingCalls"
 def IncomingCalls(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports call hierarchy
-  if !lspserver.caps->has_key('callHierarchyProvider')
-	|| (lspserver.caps.callHierarchyProvider->type() == v:t_bool
-	    && !lspserver.caps.callHierarchyProvider)
+  if !lspserver.isCallHierarchyProvider
     util.ErrMsg("Error: LSP server does not support call hierarchy")
     return
   endif
@@ -1220,9 +1414,7 @@ enddef
 # Request: "callHierarchy/outgoingCalls"
 def OutgoingCalls(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports call hierarchy
-  if !lspserver.caps->has_key('callHierarchyProvider')
-	|| (lspserver.caps.callHierarchyProvider->type() == v:t_bool
-	    && !lspserver.caps.callHierarchyProvider)
+  if !lspserver.isCallHierarchyProvider
     util.ErrMsg("Error: LSP server does not support call hierarchy")
     return
   endif
@@ -1250,9 +1442,7 @@ enddef
 # Param: RenameParams
 def RenameSymbol(lspserver: dict<any>, newName: string)
   # Check whether LSP server supports rename operation
-  if !lspserver.caps->has_key('renameProvider')
-	|| (lspserver.caps.renameProvider->type() == v:t_bool
-	    && !lspserver.caps.renameProvider)
+  if !lspserver.isRenameProvider
     util.ErrMsg("Error: LSP server does not support rename operation")
     return
   endif
@@ -1280,9 +1470,7 @@ enddef
 def CodeAction(lspserver: dict<any>, fname_arg: string, line1: number,
 		line2: number)
   # Check whether LSP server supports code action operation
-  if !lspserver.caps->has_key('codeActionProvider')
-	|| (lspserver.caps.codeActionProvider->type() == v:t_bool
-	     && !lspserver.caps.codeActionProvider)
+  if !lspserver.isCodeActionProvider
     util.ErrMsg("Error: LSP server does not support code action operation")
     return
   endif
@@ -1321,9 +1509,7 @@ enddef
 # Param: WorkspaceSymbolParams
 def WorkspaceQuerySymbols(lspserver: dict<any>, query: string)
   # Check whether the LSP server supports listing workspace symbols
-  if !lspserver.caps->has_key('workspaceSymbolProvider')
-	|| (lspserver.caps.workspaceSymbolProvider->type() == v:t_bool
-	     && !lspserver.caps.workspaceSymbolProvider)
+  if !lspserver.isWorkspaceSymbolProvider
     util.ErrMsg("Error: LSP server does not support listing workspace symbols")
     return
   endif
@@ -1392,9 +1578,7 @@ enddef
 # Param: SelectionRangeParams
 def SelectionRange(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports selection ranges
-  if !lspserver.caps->has_key('selectionRangeProvider')
-	|| (lspserver.caps.selectionRangeProvider->type() == v:t_bool
-	     && !lspserver.caps.selectionRangeProvider)
+  if !lspserver.isSelectionRangeProvider
     util.ErrMsg("Error: LSP server does not support selection ranges")
     return
   endif
@@ -1420,9 +1604,7 @@ enddef
 # Expand the previous selection or start a new one
 def SelectionExpand(lspserver: dict<any>)
   # Check whether LSP server supports selection ranges
-  if !lspserver.caps->has_key('selectionRangeProvider')
-	|| (lspserver.caps.selectionRangeProvider->type() == v:t_bool
-	     && !lspserver.caps.selectionRangeProvider)
+  if !lspserver.isSelectionRangeProvider
     util.ErrMsg("Error: LSP server does not support selection ranges")
     return
   endif
@@ -1433,9 +1615,7 @@ enddef
 # Shrink the previous selection or start a new one
 def SelectionShrink(lspserver: dict<any>)
   # Check whether LSP server supports selection ranges
-  if !lspserver.caps->has_key('selectionRangeProvider')
-	|| (lspserver.caps.selectionRangeProvider->type() == v:t_bool
-	     && !lspserver.caps.selectionRangeProvider)
+  if !lspserver.isSelectionRangeProvider
     util.ErrMsg("Error: LSP server does not support selection ranges")
     return
   endif
@@ -1448,9 +1628,7 @@ enddef
 # Param: FoldingRangeParams
 def FoldRange(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports fold ranges
-  if !lspserver.caps->has_key('foldingRangeProvider')
-	|| (lspserver.caps.foldingRangeProvider->type() == v:t_bool
-	     && !lspserver.caps.foldingRangeProvider)
+  if !lspserver.isFoldingRangeProvider
     util.ErrMsg("Error: LSP server does not support folding")
     return
   endif
@@ -1513,9 +1691,7 @@ enddef
 # symbol definition or the symbol is not defined.
 def TagFunc(lspserver: dict<any>, pat: string, flags: string, info: dict<any>): any
   # Check whether LSP server supports getting the location of a definition
-  if !lspserver.caps->has_key('definitionProvider')
-	|| (lspserver.caps.definitionProvider->type() == v:t_bool
-	    && !lspserver.caps.definitionProvider)
+  if !lspserver.isDefinitionProvider
     return null
   endif
 

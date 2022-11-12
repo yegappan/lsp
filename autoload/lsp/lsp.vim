@@ -63,15 +63,15 @@ def CurbufGetServerChecked(): dict<any>
 
   var lspserver: dict<any> = buf.CurbufGetServer()
   if lspserver->empty()
-    util.ErrMsg($'Error: Language server not found for "{&filetype}" file type')
+    util.ErrMsg($'Error: Language server for "{&filetype}" file type is not found')
     return {}
   endif
   if !lspserver.running
-    util.ErrMsg($'Error: Language server not running for "{&filetype}" file type')
+    util.ErrMsg($'Error: Language server for "{&filetype}" file type is not running')
     return {}
   endif
   if !lspserver.ready
-    util.ErrMsg($'Error: Language server not ready for "{&filetype}" file type')
+    util.ErrMsg($'Error: Language server for "{&filetype}" file type is not ready')
     return {}
   endif
 
@@ -301,7 +301,7 @@ def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
 
   # Auto highlight all the occurrences of the current keyword
   if opt.lspOptions.autoHighlight &&
-			lspserver.caps->has_key('documentHighlightProvider')
+			lspserver.isDocumentHighlightProvider
       acmds->add({bufnr: bnr,
 		  event: 'CursorMoved',
 		  group: 'LSPBufferAutocmds',
