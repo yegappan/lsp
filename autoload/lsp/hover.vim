@@ -23,14 +23,17 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any): void
         hoverKind = 'text'
       elseif hoverResult.contents.kind == 'markdown'
         hoverText = hoverResult.contents.value->split("\n")
-        hoverKind = 'markdown'
+        hoverKind = 'lspgfm'
       else
         util.ErrMsg($'Error: Unsupported hover contents type ({hoverResult.contents.kind})')
         return
       endif
     elseif hoverResult.contents->has_key('value')
       # MarkedString
-      hoverText = hoverResult.contents.value->split("\n")
+      hoverText->extend([$'``` {hoverResult.contents.language}'])
+      hoverText->extend(hoverResult.contents.value->split("\n"))
+      hoverText->extend(['```'])
+      hoverKind = 'lspgfm'
     else
       util.ErrMsg($'Error: Unsupported hover contents ({hoverResult.contents})')
       return
@@ -38,12 +41,18 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any): void
   elseif hoverResult.contents->type() == v:t_list
     # interface MarkedString[]
     for e in hoverResult.contents
+      if !hoverText->empty()
+        hoverText->extend(['- - -'])
+      endif
       if e->type() == v:t_string
         hoverText->extend(e->split("\n"))
       else
+        hoverText->extend([$'``` {e.language}'])
         hoverText->extend(e.value->split("\n"))
+        hoverText->extend(['```'])
       endif
     endfor
+    hoverKind = 'lspgfm'
   elseif hoverResult.contents->type() == v:t_string
     if hoverResult.contents->empty()
       return
@@ -65,7 +74,11 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any): void
     cursor(1, 1)
     wincmd p
   else
-    hoverText->popup_atcursor({moved: 'word'})
+    var winid = hoverText->popup_atcursor({moved: 'word',
+					   maxwidth: 80,
+					   border: [0, 1, 0, 1],
+					   borderchars: [' ']})
+    win_execute(winid, $'setlocal ft={hoverKind}')
   endif
 enddef
 
