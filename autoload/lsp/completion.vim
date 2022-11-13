@@ -286,10 +286,7 @@ def g:LspOmniFunc(findstart: number, base: string): any
       count += 1
     endwhile
 
-    var res: list<dict<any>> = []
-    for item in lspserver.completeItems
-      res->add(item)
-    endfor
+    var res: list<dict<any>> = lspserver.completeItems
     return res->empty() ? v:none : res
   endif
 enddef
@@ -427,7 +424,7 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
   if opt.lspOptions.autoComplete
     if lspserver.completionLazyDoc
       setbufvar(bnr, '&completeopt', 'menuone,popuphidden,noinsert,noselect')
-      setbufvar(bnr, '&completepopup', 'width:80,highlight:Pmenu,align:menu,border:off')
+      setbufvar(bnr, '&completepopup', 'width:80,highlight:Pmenu,align:item,border:off')
     else
       setbufvar(bnr, '&completeopt', 'menuone,popup,noinsert,noselect')
       setbufvar(bnr, '&completepopup', 'border:off')

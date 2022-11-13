@@ -1,6 +1,10 @@
 vim9script
 
 # LSP server functions
+#
+# The functions to send request messages to the language server are in this
+# file.
+#
 # Refer to https://microsoft.github.io/language-server-protocol/specification
 # for the Language Server Protocol (LSP) specificaiton.
 

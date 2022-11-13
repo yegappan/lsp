@@ -1,6 +1,8 @@
 vim9script
 
 # Vim9 LSP client
+#
+# The functions called by plugin/lsp.vim are in this file.
 
 # Needs Vim 9.0 and higher
 if v:version < 900
