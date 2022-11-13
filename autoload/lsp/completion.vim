@@ -354,7 +354,7 @@ def LspSetFileType()
   endif
 
   var cItem = item.user_data
-  if !cItem->has_key('documentation') || cItem->type() != v:t_dict
+  if cItem->type() != v:t_dict || !cItem->has_key('documentation')
                                || cItem.documentation.kind != 'markdown'
     return
   endif
