@@ -8,7 +8,7 @@ var document: dict<list<any>>
 
 try
   popup_id = bnr->getbufinfo()[0].popups[0]
-  document = md.ParseMarkdown(bnr->getbufline(1, '$'))
+  document = md.ParseMarkdown(bnr->getbufline(1, '$'), winwidth(popup_id))
 catch /.*/
   b:markdown_fallback = v:true
   finish

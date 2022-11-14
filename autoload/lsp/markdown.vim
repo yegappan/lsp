@@ -545,7 +545,7 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
   endfor
 enddef
 
-export def ParseMarkdown(data: list<string>): dict<list<any>>
+export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>>
   var document: dict<list<any>> = {content: [], syntax: []}
   var open_blocks: list<dict<any>> = []
 
@@ -618,9 +618,9 @@ export def ParseMarkdown(data: list<string>): dict<list<any>>
     if line =~ thematic_break
       CloseBlocks(document, open_blocks)
       if &g:encoding == "utf-8"
-	document.content->add({text: "\u2500"->repeat(80)})
+	document.content->add({text: "\u2500"->repeat(width)})
       else
-	document.content->add({text: "-"->repeat(80)})
+	document.content->add({text: "-"->repeat(width)})
       endif
       last_block = "hr"
       continue
