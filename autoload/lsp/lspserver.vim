@@ -611,6 +611,10 @@ def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel,
     return
   endif
 
+  if !reply->has_key('result')
+    return
+  endif
+
   RpcCb(lspserver, reply.result)
 enddef
 
