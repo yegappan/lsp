@@ -612,6 +612,7 @@ def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel,
   endif
 
   if !reply->has_key('result')
+    util.ErrMsg($'Error(LSP): request {method} failed (no result or not yet somehow)')
     return
   endif
 
