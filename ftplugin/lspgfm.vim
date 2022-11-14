@@ -1,6 +1,6 @@
 vim9script
 
-import autoload '../autoload/lsp/markdown.vim' as md
+import autoload 'lsp/markdown.vim' as md
 
 var bnr: number = bufnr()
 var popup_id: number
