@@ -68,10 +68,10 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any): void
     wincmd P
     setlocal buftype=nofile
     setlocal bufhidden=delete
-    exe $'setlocal ft={hoverKind}'
     bufnr()->deletebufline(1, '$')
     append(0, hoverText)
     cursor(1, 1)
+    exe $'setlocal ft={hoverKind}'
     wincmd p
   else
     var winid = hoverText->popup_atcursor({moved: 'word',
