@@ -49,4 +49,9 @@ export def OptionsSet(opts: dict<any>)
   endfor
 enddef
 
+# get LSP options
+export def OptionsGet(): dict<any>
+  return lspOptions
+enddef
+
 # vim: tabstop=8 shiftwidth=2 softtabstop=2

@@ -282,6 +282,13 @@ diagnostic messages, you can add the following line to your .vimrc file:
 >
 	call LspOptionsSet({'autoHighlightDiags': v:false})
 <
+
+And to get or check one option value via its key you can query like following:
+>
+	echo LspOptionsGet()['autoHighlightDiags']
+<
+Or if no specific key but just LspOptionsGet() then to get all options.
+
 ==============================================================================
 5. Commands						*lsp-commands*
 
