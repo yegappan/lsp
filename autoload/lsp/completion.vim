@@ -192,6 +192,7 @@ export def CompletionResolveReply(lspserver: dict<any>, cItem: dict<any>)
   if cInfo->empty()
       || !cInfo.pum_visible
       || cInfo.selected == -1
+      || cInfo.items[cInfo.selected]->type() != v:t_dict
       || cInfo.items[cInfo.selected].user_data.label != cItem.label
     return
   endif
@@ -239,6 +240,7 @@ export def CompletionResolveReply(lspserver: dict<any>, cItem: dict<any>)
   if cInfo->empty()
       || !cInfo.pum_visible
       || cInfo.selected == -1
+      || cInfo.items[cInfo.selected]->type() != v:t_dict
       || cInfo.items[cInfo.selected].user_data.label != cItem.label
     return
   endif
