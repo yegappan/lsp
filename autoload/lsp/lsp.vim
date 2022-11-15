@@ -344,7 +344,7 @@ enddef
 def AddBuffersToLsp(ftype: string)
   # Add all the buffers with the same file type as the current buffer
   for binfo in getbufinfo({bufloaded: 1})
-    if getbufvar(binfo.bufnr, '&filetype') == ftype
+    if binfo.bufnr->getbufvar('&filetype') == ftype
       AddFile(binfo.bufnr)
     endif
   endfor
@@ -363,7 +363,7 @@ export def RestartServer()
   # Remove all the buffers with the same file type as the current buffer
   var ftype: string = &filetype
   for binfo in getbufinfo()
-    if getbufvar(binfo.bufnr, '&filetype') == ftype
+    if binfo.bufnr->getbufvar('&filetype') == ftype
       RemoveFile(binfo.bufnr)
     endif
   endfor
@@ -396,7 +396,7 @@ export def AddServer(serverList: list<dict<any>>)
       server['omnicompl'] = v:true
     endif
 
-    if !executable(server.path)
+    if !server.path->executable()
       if !opt.lspOptions.ignoreMissingServer
         util.ErrMsg($'Error: LSP server {server.path} is not found')
       endif

@@ -74,7 +74,7 @@ def Set_lines(lines: list<string>, A: list<number>, B: list<number>,
   #echomsg "lines(1) = " .. string(lines)
 
   # replace the previous lines with the new lines
-  for i in range(new_lines_len)
+  for i in new_lines_len->range()
     lines[i_0 + i] = new_lines[i]
   endfor
   #echomsg "lines(2) = " .. string(lines)

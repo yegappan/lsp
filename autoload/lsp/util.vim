@@ -84,7 +84,7 @@ enddef
 
 # Convert a Vim filename to an LSP URI (file://<absolute_path>)
 def ConvertFilenameToUri(fname: string): string
-  var uri: string = fnamemodify(fname, ':p')
+  var uri: string = fname->fnamemodify(':p')
 
   var on_windows: bool = false
   if uri =~? '^\a:'

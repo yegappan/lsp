@@ -75,11 +75,11 @@ export def SignatureHelp(lspserver: dict<any>, sighelp: any): void
   if opt.lspOptions.echoSignature
     echon "\r\r"
     echon ''
-    echon strpart(text, 0, startcol)
+    echon text->strpart(0, startcol)
     echoh LineNr
-    echon strpart(text, startcol, hllen)
+    echon text->strpart(startcol, hllen)
     echoh None
-    echon strpart(text, startcol + hllen)
+    echon text->strpart(startcol + hllen)
   else
     # Close the previous signature popup and open a new one
     lspserver.signaturePopup->popup_close()

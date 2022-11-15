@@ -406,12 +406,12 @@ def InitServer(lspserver: dict<any>)
   initparams.rootPath = curdir
   initparams.rootUri = util.LspFileToUri(curdir)
   initparams.workspaceFolders = [{
-	name: fnamemodify(curdir, ':t'),
+	name: curdir->fnamemodify(':t'),
 	uri: util.LspFileToUri(curdir)
      }]
   initparams.trace = 'off'
   initparams.capabilities = clientCaps
-  if !empty(lspserver.initializationOptions)
+  if !lspserver.initializationOptions->empty()
     initparams.initializationOptions = lspserver.initializationOptions
   endif
 
@@ -519,12 +519,15 @@ enddef
 
 # send a response message to the server
 def SendResponse(lspserver: dict<any>, request: dict<any>, result: dict<any>, error: dict<any>)
-  if (type(request.id) == v:t_string && (trim(request.id) =~ '[^[:digit:]]\+' || trim(request.id) == ''))
-    || (type(request.id) != v:t_string && type(request.id) != v:t_number)
+  if (request.id->type() == v:t_string
+	&& (request.id->trim() =~ '[^[:digit:]]\+'
+	    || request.id->trim() == ''))
+    || (request.id->type() != v:t_string && request.id->type() != v:t_number)
     util.ErrMsg("Error: request.id of response to LSP server is not a correct number")
     return
   endif
-  var resp: dict<any> = lspserver.createResponse(type(request.id) == v:t_string ? str2nr(request.id) : request.id)
+  var resp: dict<any> = lspserver.createResponse(
+	    request.id->type() == v:t_string ? request.id->str2nr() : request.id)
   if result->type() != v:t_none
     resp->extend({result: result})
   else
@@ -612,7 +615,7 @@ def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel,
   endif
 
   if !reply->has_key('result')
-    util.ErrMsg($'Error(LSP): request {method} failed (no result or not yet somehow)')
+    util.ErrMsg($'Error(LSP): request {method} failed (no result)')
     return
   endif
 
@@ -675,7 +678,7 @@ def TextdocDidOpen(lspserver: dict<any>, bnr: number, ftype: string): void
   tdi.uri = util.LspBufnrToUri(bnr)
   tdi.languageId = ftype
   tdi.version = 1
-  tdi.text = getbufline(bnr, 1, '$')->join("\n") .. "\n"
+  tdi.text = bnr->getbufline(1, '$')->join("\n") .. "\n"
   var params = {textDocument: tdi}
   lspserver.sendNotification('textDocument/didOpen', params)
 enddef
@@ -740,7 +743,7 @@ def TextdocDidChange(lspserver: dict<any>, bnr: number, start: number,
   #   changeset->add({'range': range, 'text': lines})
   # endfor
 
-  changeset->add({text: getbufline(bnr, 1, '$')->join("\n") .. "\n"})
+  changeset->add({text: bnr->getbufline(1, '$')->join("\n") .. "\n"})
   var params = {textDocument: vtdid, contentChanges: changeset}
   lspserver.sendNotification('textDocument/didChange', params)
 enddef
@@ -1143,10 +1146,10 @@ def PrepareCallHierarchy(lspserver: dict<any>): dict<any>
   var choice: number = 1
   if reply.result->len() > 1
     var items: list<string> = ['Select a Call Hierarchy Item:']
-    for i in range(reply.result->len())
+    for i in reply.result->len()->range()
       items->add(printf("%d. %s", i + 1, reply.result[i].name))
     endfor
-    choice = inputlist(items)
+    choice = items->inputlist()
     if choice < 1 || choice > items->len()
       return {}
     endif
@@ -1248,7 +1251,7 @@ def CodeAction(lspserver: dict<any>, fname_arg: string, line1: number,
 
   # interface CodeActionParams
   var params: dict<any> = {}
-  var fname: string = fnamemodify(fname_arg, ':p')
+  var fname: string = fname_arg->fnamemodify(':p')
   var bnr: number = fname_arg->bufnr()
   var r: dict<dict<number>> = {
 		  start: {line: line1 - 1, character: 0},

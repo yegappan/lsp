@@ -125,7 +125,7 @@ export def UpdateOutlineWindow(fname: string,
   var lnumMap: list<dict<any>> = [{}, {}]
   var text: list<string> = []
   AddSymbolText(fname->bufnr(), symbolTypeTable, '', text, lnumMap, false)
-  append('$', text)
+  text->append('$')
   w:lspSymbols = {filename: fname, lnumTable: lnumMap,
 				symbolsByLine: symbolLineTable}
   :setlocal nomodifiable
@@ -194,7 +194,7 @@ def OutlineHighlightCurrentSymbol()
 
   # Highlight the selected symbol
   var col: number =
-	match(getbufline(bnr, symbolTable[mid].outlineLine)[0], '\S') + 1
+	bnr->getbufline(symbolTable[mid].outlineLine)[0]->match('\S') + 1
   prop_add(symbolTable[mid].outlineLine, col,
 			{bufnr: bnr, type: 'LspOutlineHighlight',
 			length: symbolTable[mid].name->len()})

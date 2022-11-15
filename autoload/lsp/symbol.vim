@@ -298,7 +298,7 @@ def PeekSymbolLocation(lspserver: dict<any>, fname: string,
 
   # Highlight the symbol name and center the line in the popup
   var pwid = lspserver.peekSymbolPopup
-  var pwbuf = winbufnr(pwid)
+  var pwbuf = pwid->winbufnr()
   var pos: list<number> = []
   var start_col: number
   var end_col: number
@@ -308,7 +308,7 @@ def PeekSymbolLocation(lspserver: dict<any>, fname: string,
   pos->extend([start_col, end_col - start_col])
   matchaddpos('Search', [pos], 10, 101, {window: pwid})
   var cmds =<< trim eval END
-    cursor({location.range.start.line + 1}, 1)
+    [{location.range.start.line + 1}, 1]->cursor()
     normal! z.
   END
   win_execute(pwid, cmds, 'silent!')

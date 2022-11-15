@@ -59,10 +59,10 @@ enddef
 # Remove all the snippet placeholders from 'str' and return the value.
 # Based on a similar function in the vim-lsp plugin.
 def MakeValidWord(str_arg: string): string
-  var str = substitute(str_arg, '\$[0-9]\+\|\${\%(\\.\|[^}]\)\+}', '', 'g')
-  str = substitute(str, '\\\(.\)', '\1', 'g')
-  var valid = matchstr(str, '^[^"'' (<{\[\t\r\n]\+')
-  if empty(valid)
+  var str = str_arg->substitute('\$[0-9]\+\|\${\%(\\.\|[^}]\)\+}', '', 'g')
+  str = str->substitute('\\\(.\)', '\1', 'g')
+  var valid = str->matchstr('^[^"'' (<{\[\t\r\n]\+')
+  if valid->empty()
     return str
   endif
   if valid =~# ':$'
@@ -173,7 +173,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
       start_col = start + 1
     endif
 
-    complete(start_col, completeItems)
+    completeItems->complete(start_col)
   else
     lspserver.completeItems = completeItems
     lspserver.omniCompletePending = false
@@ -339,7 +339,7 @@ def LspResolve()
   endif
 
   var item = v:event.completed_item
-  if item->has_key('user_data') && !empty(item.user_data)
+  if item->has_key('user_data') && !item.user_data->empty()
     lspserver.resolveCompletion(item.user_data)
   endif
 enddef
@@ -348,7 +348,7 @@ enddef
 # then set the 'filetype' to 'lspgfm'.
 def LspSetFileType()
   var item = v:event.completed_item
-  if !item->has_key('user_data') || empty(item.user_data)
+  if !item->has_key('user_data') || item.user_data->empty()
     return
   endif
 

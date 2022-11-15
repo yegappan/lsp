@@ -34,7 +34,7 @@ def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
   var signs: list<dict<any>> = []
   for [lnum, diag] in lspserver.diagsMap[bnr]->items()
     signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
-				lnum: str2nr(lnum),
+				lnum: lnum->str2nr(),
 				name: DiagSevToSignName(diag.severity)})
   endfor
 
@@ -151,7 +151,7 @@ enddef
 # messages.
 # Returns true if diagnostics is not empty and false if it is empty.
 def DiagsUpdateLocList(lspserver: dict<any>, bnr: number): bool
-  var fname: string = bufname(bnr)->fnamemodify(':p')
+  var fname: string = bnr->bufname()->fnamemodify(':p')
   if fname == ''
     return false
   endif
@@ -210,8 +210,8 @@ enddef
 # the diagnostic message.
 def ShowDiagInPopup(diag: dict<any>)
   var dlnum = diag.range.start.line + 1
-  var ltext = getline(dlnum)
-  var dlcol = byteidx(ltext, diag.range.start.character + 1)
+  var ltext = dlnum->getline()
+  var dlcol = ltext->byteidx(diag.range.start.character + 1)
 
   var lastline = line('$')
   if dlnum > lastline
@@ -266,7 +266,7 @@ export def ShowCurrentDiagInStatusLine(lspserver: dict<any>)
     # 15 is a enough length not to cause line break
     var max_width = &columns - 15
     var code = ""
-    if has_key(diag, 'code')
+    if diag->has_key('code')
       code = $'[{diag.code}] '
     endif
     var msgNoLineBreak = code .. substitute(substitute(diag.message, "\n", " ", ""), "\\n", " ", "")
@@ -310,7 +310,7 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
   var sortedDiags: list<number> = GetSortedDiagLines(lspserver, bnr)
 
   if which == 'first'
-    cursor(sortedDiags[0], 1)
+    [sortedDiags[0], 1]->cursor()
     return
   endif
 
@@ -319,7 +319,7 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
   for lnum in (which == 'next') ? sortedDiags : sortedDiags->reverse()
     if (which == 'next' && lnum > curlnum)
 	  || (which == 'prev' && lnum < curlnum)
-      cursor(lnum, 1)
+      [lnum, 1]->cursor()
       return
     endif
   endfor

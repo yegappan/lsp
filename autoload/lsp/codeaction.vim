@@ -52,7 +52,7 @@ export def ApplyCodeAction(lspserver: dict<any>, actions: list<dict<any>>): void
 
   var text: list<string> = []
   var act: dict<any>
-  for i in range(actions->len())
+  for i in actions->len()->range()
     act = actions[i]
     var t: string = act.title->substitute('\r\n', '\\r\\n', 'g')
     t = t->substitute('\n', '\\n', 'g')
@@ -88,10 +88,10 @@ export def ApplyCodeAction(lspserver: dict<any>, actions: list<dict<any>>): void
         },
 	filter: (winid, key) => {
 	  if key == 'h' || key == 'l'
-	    popup_close(winid, -1)
-	  elseif str2nr(key) > 0
+	    winid->popup_close(-1)
+	  elseif key->str2nr() > 0
 	    # assume less than 10 entries are present
-	    popup_close(winid, str2nr(key))
+	    winid->popup_close(key->str2nr())
 	  else
 	    return popup_filter_menu(winid, key)
 	  endif

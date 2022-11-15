@@ -420,7 +420,7 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
   endif
   last_block = blocks[0].type
 
-  for i in range(start)
+  for i in start->range()
     if blocks[i]->has_key("marker")
       if blocks[i].marker =~ '\S'
 	line.props->add(GetMarkerProp('list_item',

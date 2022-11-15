@@ -69,8 +69,8 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any): void
     setlocal buftype=nofile
     setlocal bufhidden=delete
     bufnr()->deletebufline(1, '$')
-    append(0, hoverText)
-    cursor(1, 1)
+    hoverText->append(0)
+    [1, 1]->cursor()
     exe $'setlocal ft={hoverKind}'
     wincmd p
   else
