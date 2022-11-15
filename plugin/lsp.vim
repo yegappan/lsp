@@ -10,18 +10,22 @@ vim9script
 import autoload '../autoload/lsp/options.vim'
 import autoload '../autoload/lsp/lsp.vim'
 
+# Set LSP plugin options from 'opts'.
 def g:LspOptionsSet(opts: dict<any>)
   options.OptionsSet(opts)
 enddef
 
+# Return a copy of all the LSP plugin options
 def g:LspOptionsGet(): dict<any>
   return options.OptionsGet()
 enddef
 
+# Add one or more LSP servers in 'serverList'
 def g:LspAddServer(serverList: list<dict<any>>)
   lsp.AddServer(serverList)
 enddef
 
+# Register 'Handler' callback function for LSP command 'cmd'.
 def g:LspRegisterCmdHandler(cmd: string, Handler: func)
   lsp.RegisterCmdHandler(cmd, Handler)
 enddef

@@ -42,16 +42,14 @@ export var lspOptions: dict<any> = {
   snippetSupport: false
 }
 
-# set LSP options from user provided options
+# set the LSP plugin options from the user provided option values
 export def OptionsSet(opts: dict<any>)
-  for key in opts->keys()
-    lspOptions[key] = opts[key]
-  endfor
+  lspOptions->extend(opts)
 enddef
 
-# get LSP options
+# return a copy of the LSP plugin options
 export def OptionsGet(): dict<any>
-  return lspOptions
+  return lspOptions->deepcopy()
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2
