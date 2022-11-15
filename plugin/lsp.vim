@@ -14,8 +14,8 @@ def g:LspOptionsSet(opts: dict<any>)
   options.OptionsSet(opts)
 enddef
 
-def g:LspOptionsGet(key: string): any
-  return options.OptionsGet(key)
+def g:LspOptionsGet(): dict<any>
+  return options.OptionsGet()
 enddef
 
 def g:LspAddServer(serverList: list<dict<any>>)
