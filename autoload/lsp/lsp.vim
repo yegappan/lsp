@@ -222,7 +222,7 @@ def LspLeftInsertMode()
   if lspserver->empty() || !lspserver.running
     return
   endif
-  diag.UpdateDiags(lspserver, bnr)
+  diag.ProcessNewDiags(lspserver, bnr)
 enddef
 
 # Add buffer-local autocmds when attaching a LSP server to a buffer

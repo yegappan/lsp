@@ -960,8 +960,8 @@ def DidSaveFile(lspserver: dict<any>, bnr: number): void
   # Notification: 'textDocument/didSave'
   # Params: DidSaveTextDocumentParams
   var params = {textDocument: {uri: util.LspBufnrToUri(bnr)}}
-  # FIXME: should concern 'params.text' on
-  # 'lspserver.caps.textDocumentSync.save.includeText' too?
+  # FIXME: Need to set "params.text" when
+  # 'lspserver.caps.textDocumentSync.save.includeText' is set to true.
   lspserver.sendNotification('textDocument/didSave', params)
 enddef
 

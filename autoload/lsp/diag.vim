@@ -43,7 +43,7 @@ enddef
 
 # New LSP diagnostic messages received from the server for a file.
 # Update the signs placed in the buffer for this file
-def ProcessNewDiags(lspserver: dict<any>, bnr: number)
+export def ProcessNewDiags(lspserver: dict<any>, bnr: number)
   if opt.lspOptions.autoPopulateDiags
     DiagsUpdateLocList(lspserver, bnr)
   endif
@@ -65,14 +65,6 @@ def ProcessNewDiags(lspserver: dict<any>, bnr: number)
   endif
 
   DiagsRefreshSigns(lspserver, bnr)
-enddef
-
-# FIXME: Remove this function once the Vim bug (calling one exported function
-# from another exported function in an autoload script is not working) is
-# fixed. Replace the calls to this function directly with calls to
-# ProcessNewDiags().
-export def UpdateDiags(lspserver: dict<any>, bnr: number)
-  ProcessNewDiags(lspserver, bnr)
 enddef
 
 # process a diagnostic notification message from the LSP server
