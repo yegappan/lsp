@@ -183,7 +183,7 @@ enddef
 # process the 'completionItem/resolve' reply from the LSP server
 # Result: CompletionItem
 export def CompletionResolveReply(lspserver: dict<any>, cItem: any)
-  if cItem->empty()
+  if cItem->empty() || cItem->type() != v:t_dict
     return
   endif
 
