@@ -120,7 +120,17 @@ enddef
 # Request: "workspace/workspaceFolders"
 # Param: none
 def ProcessWorkspaceFoldersReq(lspserver: dict<any>, request: dict<any>)
-  lspserver.sendResponse(request, {}, {})
+  if !lspserver->has_key('workspaceFolders')
+    lspserver.sendResponse(request, null, {})
+    return
+  endif
+  if lspserver.workspaceFolders->empty()
+    lspserver.sendResponse(request, [], {})
+  else
+    lspserver.sendResponse(request,
+	  \ lspserver.workspaceFolders->copy()->map('{name: v:val->fnamemodify(":t"), uri: util.LspFileToUri(v:val)}'),
+	  \ {})
+  endif
 enddef
 
 # process the client/registerCapability LSP server request

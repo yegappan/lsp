@@ -518,7 +518,7 @@ def CreateNotification(lspserver: dict<any>, notif: string): dict<any>
 enddef
 
 # send a response message to the server
-def SendResponse(lspserver: dict<any>, request: dict<any>, result: dict<any>, error: dict<any>)
+def SendResponse(lspserver: dict<any>, request: dict<any>, result: any, error: dict<any>)
   if (request.id->type() == v:t_string
 	&& (request.id->trim() =~ '[^[:digit:]]\+'
 	    || request.id->trim() == ''))
@@ -528,7 +528,7 @@ def SendResponse(lspserver: dict<any>, request: dict<any>, result: dict<any>, er
   endif
   var resp: dict<any> = lspserver.createResponse(
 	    request.id->type() == v:t_string ? request.id->str2nr() : request.id)
-  if result->type() != v:t_none
+  if error->empty()
     resp->extend({result: result})
   else
     resp->extend({error: error})
