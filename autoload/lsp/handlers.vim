@@ -124,11 +124,11 @@ def ProcessWorkspaceFoldersReq(lspserver: dict<any>, request: dict<any>)
     lspserver.sendResponse(request, null, {})
     return
   endif
-  if empty(lspserver.workspaceFolders)
+  if lspserver.workspaceFolders->empty()
     lspserver.sendResponse(request, [], {})
   else
     lspserver.sendResponse(request,
-	  \ map(copy(lspserver.workspaceFolders), '{name: v:val->fnamemodify(":t"), uri: util.LspFileToUri(v:val)}'),
+	  \ lspserver.workspaceFolders->copy()->map('{name: v:val->fnamemodify(":t"), uri: util.LspFileToUri(v:val)}'),
 	  \ {})
   endif
 enddef

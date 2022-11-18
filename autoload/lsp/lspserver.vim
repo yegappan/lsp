@@ -528,7 +528,7 @@ def SendResponse(lspserver: dict<any>, request: dict<any>, result: any, error: d
   endif
   var resp: dict<any> = lspserver.createResponse(
 	    request.id->type() == v:t_string ? request.id->str2nr() : request.id)
-  if empty(error)
+  if error->empty()
     resp->extend({result: result})
   else
     resp->extend({error: error})
