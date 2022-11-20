@@ -20,6 +20,7 @@ import './hover.vim'
 import './signature.vim'
 import './codeaction.vim'
 import './callhierarchy.vim' as callhier
+import './typehierarchy.vim' as typehier
 
 # LSP server standard output handler
 def Output_cb(lspserver: dict<any>, chan: channel, msg: any): void
@@ -222,6 +223,13 @@ def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
     endif
   else
     lspserver.isCallHierarchyProvider = false
+  endif
+
+  # typeHierarchyProvider
+  if lspserver.caps->has_key('typeHierarchyProvider')
+    lspserver.isTypeHierarchyProvider = true
+  else
+    lspserver.isTypeHierarchyProvider = false
   endif
 
   # renameProvider
@@ -1212,6 +1220,33 @@ def OutgoingCalls(lspserver: dict<any>, fname: string)
   callhier.OutgoingCalls(reply.result)
 enddef
 
+# Request: "textDocument/typehierarchy"
+# Support the clangd version of type hierarchy retrieval method.
+# The method described in the LSP 3.17.0 standard is not supported as clangd
+# doesn't support that method.
+def TypeHiearchy(lspserver: dict<any>, direction: number)
+  # Check whether LSP server supports type hierarchy
+  if !lspserver.isTypeHierarchyProvider
+    util.ErrMsg("Error: LSP server does not support type hierarchy")
+    return
+  endif
+
+  # interface TypeHierarchy
+  #   interface TextDocumentPositionParams
+  var param: dict<any>
+  param = GetLspTextDocPosition()
+  # 0: children, 1: parent, 2: both
+  param.direction = direction
+  param.resolve = 5
+  var reply = lspserver.rpc('textDocument/typeHierarchy', param)
+  if reply->empty() || reply.result->empty()
+    util.WarnMsg('No type hierarchy available')
+    return
+  endif
+
+  typehier.ShowTypeHierarchy(lspserver, direction == 1, reply.result)
+enddef
+
 # Request: "textDocument/rename"
 # Param: RenameParams
 def RenameSymbol(lspserver: dict<any>, newName: string)
@@ -1502,6 +1537,8 @@ export def NewLspServer(path: string, args: list<string>, isSync: bool, initiali
     omniCompletePending: false,
     completionTriggerChars: [],
     signaturePopup: -1,
+    typeHierPopup: -1,
+    typeHierFilePopup: -1,
     diagsMap: {},
     workspaceSymbolPopup: -1,
     workspaceSymbolQuery: '',
@@ -1552,6 +1589,7 @@ export def NewLspServer(path: string, args: list<string>, isSync: bool, initiali
     textDocFormat: function(TextDocFormat, [lspserver]),
     incomingCalls: function(IncomingCalls, [lspserver]),
     outgoingCalls: function(OutgoingCalls, [lspserver]),
+    typeHierarchy: function(TypeHiearchy, [lspserver]),
     renameSymbol: function(RenameSymbol, [lspserver]),
     codeAction: function(CodeAction, [lspserver]),
     workspaceQuery: function(WorkspaceQuerySymbols, [lspserver]),

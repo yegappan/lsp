@@ -150,4 +150,47 @@ export def PushCursorToTagStack()
 			 }]}, 't')
 enddef
 
+# Jump to the LSP 'location' in file 'fname'.  The user specified
+# window command modifiers (e.g. topleft) are in 'cmdmods'.
+export def JumpToLspLocation(fname: string, location: dict<any>,
+			     cmdmods: string)
+  # jump to the file and line containing the symbol
+  if cmdmods == ''
+    var bnr: number = fname->bufnr()
+    if bnr != bufnr()
+      var wid = fname->bufwinid()
+      if wid != -1
+        wid->win_gotoid()
+      else
+        if bnr != -1
+          # Reuse an existing buffer. If the current buffer has unsaved changes
+          # and 'hidden' is not set or if the current buffer is a special
+          # buffer, then open the buffer in a new window.
+          if (&modified && !&hidden) || &buftype != ''
+            exe $'sbuffer {bnr}'
+          else
+            exe $'buf {bnr}'
+          endif
+        else
+          if (&modified && !&hidden) || &buftype != ''
+            # if the current buffer has unsaved changes and 'hidden' is not set,
+            # or if the current buffer is a special buffer, then open the file
+            # in a new window
+            exe $'split {fname}'
+          else
+            exe $'edit {fname}'
+          endif
+        endif
+      endif
+    endif
+  else
+    exe $'{cmdmods} split {fname}'
+  endif
+  # Set the previous cursor location mark. Instead of using setpos(), m' is
+  # used so that the current location is added to the jump list.
+  normal m'
+  setcursorcharpos(location.range.start.line + 1,
+			location.range.start.character + 1)
+enddef
+
 # vim: tabstop=8 shiftwidth=2 softtabstop=2

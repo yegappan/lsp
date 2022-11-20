@@ -43,6 +43,7 @@ def LspInitOnce()
   prop_type_add('LspTextRef', {'highlight': 'Search'})
   prop_type_add('LspReadRef', {'highlight': 'DiffChange'})
   prop_type_add('LspWriteRef', {'highlight': 'DiffDelete'})
+
   set ballooneval balloonevalterm
   lspInitializedOnce = true
 enddef
@@ -646,6 +647,17 @@ export def OutgoingCalls()
   endif
 
   lspserver.outgoingCalls(@%)
+enddef
+
+# Display the type hierarchy for the current symbol.  Direction is 0 for
+# sub types and 1 for super types.
+export def TypeHierarchy(direction: number)
+  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  if lspserver->empty()
+    return
+  endif
+
+  lspserver.typeHierarchy(direction)
 enddef
 
 # Rename a symbol

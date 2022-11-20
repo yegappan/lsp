@@ -229,11 +229,6 @@ enddef
 
 # Display or peek symbol references in a location list
 export def ShowReferences(lspserver: dict<any>, refs: list<dict<any>>, peekSymbol: bool)
-  if refs->empty()
-    util.WarnMsg('Error: No references found')
-    return
-  endif
-
   # create a location list with the location of the references
   var qflist: list<dict<any>> = []
   for loc in refs
@@ -314,49 +309,6 @@ def PeekSymbolLocation(lspserver: dict<any>, fname: string,
   win_execute(pwid, cmds, 'silent!')
 enddef
 
-# Jump to the symbol in file 'fname' at 'location'.  The user specified
-# window command modifiers (e.g. topleft) are in 'cmdmods'.
-def JumpToSymbolLocation(lspserver: dict<any>, fname: string,
-			 location: dict<any>, cmdmods: string)
-  # jump to the file and line containing the symbol
-  if cmdmods == ''
-    var bnr: number = fname->bufnr()
-    if bnr != bufnr()
-      var wid = fname->bufwinid()
-      if wid != -1
-        wid->win_gotoid()
-      else
-        if bnr != -1
-          # Reuse an existing buffer. If the current buffer has unsaved changes
-          # and 'hidden' is not set or if the current buffer is a special
-          # buffer, then open the buffer in a new window.
-          if (&modified && !&hidden) || &buftype != ''
-            exe $'sbuffer {bnr}'
-          else
-            exe $'buf {bnr}'
-          endif
-        else
-          if (&modified && !&hidden) || &buftype != ''
-            # if the current buffer has unsaved changes and 'hidden' is not set,
-            # or if the current buffer is a special buffer, then open the file
-            # in a new window
-            exe $'split {fname}'
-          else
-            exe $'edit {fname}'
-          endif
-        endif
-      endif
-    endif
-  else
-    exe $'{cmdmods} split {fname}'
-  endif
-  # Set the previous cursor location mark. Instead of using setpos(), m' is
-  # used so that the current location is added to the jump list.
-  normal m'
-  setcursorcharpos(location.range.start.line + 1,
-			location.range.start.character + 1)
-enddef
-
 # Jump to the definition, declaration or implementation of a symbol.
 # Also, used to peek at the definition, declaration or implementation of a
 # symbol.
@@ -368,7 +320,7 @@ export def GotoSymbol(lspserver: dict<any>, location: dict<any>,
   else
     # Save the current cursor location in the tag stack.
     util.PushCursorToTagStack()
-    JumpToSymbolLocation(lspserver, fname, location, cmdmods)
+    util.JumpToLspLocation(fname, location, cmdmods)
   endif
 enddef
 
