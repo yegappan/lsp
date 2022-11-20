@@ -267,9 +267,10 @@ export def ShowReferences(lspserver: dict<any>, refs: list<dict<any>>, peekSymbo
   endif
 enddef
 
-# Display the symbol in file 'fname' at 'location' in a popup window.
-def PeekSymbolLocation(lspserver: dict<any>, fname: string,
-		       location: dict<any>)
+# Display the file specified by LSP 'location' in a popup window and highlight
+# the range in 'location'.
+def PeekSymbolLocation(lspserver: dict<any>, location: dict<any>)
+  var fname = util.LspUriToFile(location.uri)
   var bnum = fname->bufadd()
   if bnum == 0
     # Failed to create or find a buffer
@@ -314,13 +315,12 @@ enddef
 # symbol.
 export def GotoSymbol(lspserver: dict<any>, location: dict<any>,
 		      peekSymbol: bool, cmdmods: string)
-  var fname = util.LspUriToFile(location.uri)
   if peekSymbol
-    PeekSymbolLocation(lspserver, fname, location)
+    PeekSymbolLocation(lspserver, location)
   else
     # Save the current cursor location in the tag stack.
     util.PushCursorToTagStack()
-    util.JumpToLspLocation(fname, location, cmdmods)
+    util.JumpToLspLocation(location, cmdmods)
   endif
 enddef
 

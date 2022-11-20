@@ -545,9 +545,16 @@ To get a particular option value you can use the following: >
 						*:LspSuperTypeHierarchy*
 :LspSuperTypeHierarchy	Show the super type hierarchy for the symbol under the
 			cursor in a popup window.  The file containing the
-			type is shown in another popup window.  You can jump
-			to the location where a type is defined by browsing the
-			popup menu and selecting an entry.
+			type is shown in another popup window.  As the current
+			entry in the type hierarchy popup menu changes, the
+			file popup window is updated to show the location
+			where the type is defined.  You can jump to the
+			location where a type is defined by selecting the
+			entry in the popup menu.
+
+			Note that the type hierarchy support is based on the
+			protocol supported by clangd.  This is different from
+			the one specified in the 3.17 of the LSP standard.
 
 						*:LspSubTypeHierarchy*
 :LspSubTypeHierarchy	Show the sub type hierarchy for the symbol under the

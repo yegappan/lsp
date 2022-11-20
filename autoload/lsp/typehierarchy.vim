@@ -129,11 +129,9 @@ def TypeHierPopupCallback(lspserver: dict<any>, typeUriMap: list<dict<any>>,
     return
   endif
 
-  var item = typeUriMap[selIdx - 1]
-  var fname = util.LspUriToFile(item.uri)
   # Save the current cursor location in the tag stack.
   util.PushCursorToTagStack()
-  util.JumpToLspLocation(fname, item, '')
+  util.JumpToLspLocation(typeUriMap[selIdx - 1], '')
 enddef
 
 # Show the super or sub type hierarchy items 'types' as a tree in a popup window

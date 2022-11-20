@@ -150,10 +150,12 @@ export def PushCursorToTagStack()
 			 }]}, 't')
 enddef
 
-# Jump to the LSP 'location' in file 'fname'.  The user specified
-# window command modifiers (e.g. topleft) are in 'cmdmods'.
-export def JumpToLspLocation(fname: string, location: dict<any>,
-			     cmdmods: string)
+# Jump to the LSP 'location'.  The 'location' contains the file name, line
+# number and character number. The user specified window command modifiers
+# (e.g. topleft) are in 'cmdmods'.
+export def JumpToLspLocation(location: dict<any>, cmdmods: string)
+  var fname = LspUriToFile(location.uri)
+
   # jump to the file and line containing the symbol
   if cmdmods == ''
     var bnr: number = fname->bufnr()
