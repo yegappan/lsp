@@ -1543,6 +1543,7 @@ export def NewLspServer(path: string, args: list<string>, isSync: bool, initiali
     workspaceSymbolPopup: -1,
     workspaceSymbolQuery: '',
     peekSymbolPopup: -1,
+    peekSymbolFilePopup: -1,
     callHierarchyType: '',
     selection: {}
   }

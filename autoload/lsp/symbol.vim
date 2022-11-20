@@ -128,7 +128,7 @@ def ShowSymbolMenu(lspserver: dict<any>, query: string)
   var lnum = &lines - &cmdheight - 2 - 10
   var popupAttr = {
       title: 'Workspace Symbol Search',
-      wrap: 0,
+      wrap: false,
       pos: 'topleft',
       line: lnum,
       col: 2,
@@ -227,8 +227,132 @@ export def SymbolKindToName(symkind: number): string
   return symbolMap[symkind]
 enddef
 
+def UpdatePeekFilePopup(lspserver: dict<any>, refs: list<dict<any>>)
+  if lspserver.peekSymbolPopup->winbufnr() == -1
+    return
+  endif
+
+  lspserver.peekSymbolFilePopup->popup_close()
+
+  var n = line('.', lspserver.peekSymbolPopup) - 1
+  var fname: string = util.LspUriToFile(refs[n].uri)
+
+  var bnr: number = fname->bufnr()
+  if bnr == -1
+    bnr = fname->bufadd()
+  endif
+
+  var popupAttrs = {
+    title: $"{fname->fnamemodify(':t')} ({fname->fnamemodify(':h')})",
+    wrap: false,
+    fixed: true,
+    minheight: 10,
+    maxheight: 10,
+    minwidth: winwidth(0) - 38,
+    maxwidth: winwidth(0) - 38,
+    cursorline: true,
+    border: [],
+    line: 'cursor+1',
+    col: 1
+  }
+
+  lspserver.peekSymbolFilePopup = popup_create(bnr, popupAttrs)
+  var cmds =<< trim eval END
+    [{refs[n].range.start.line + 1}, 1]->cursor()
+    normal! z.
+  END
+  win_execute(lspserver.peekSymbolFilePopup, cmds)
+
+  lspserver.peekSymbolFilePopup->clearmatches()
+  var start_col = util.GetLineByteFromPos(bnr,
+					refs[n].range.start) + 1
+  var end_col = util.GetLineByteFromPos(bnr, refs[n].range.end)
+  var pos = [[refs[n].range.start.line + 1,
+	     start_col, end_col - start_col + 1]]
+  matchaddpos('Search', pos, 10, -1, {window: lspserver.peekSymbolFilePopup})
+enddef
+
+def RefPopupFilter(lspserver: dict<any>, refs: list<dict<any>>,
+                       popup_id: number, key: string): bool
+  popup_filter_menu(popup_id, key)
+  if lspserver.peekSymbolPopup->winbufnr() == -1
+    if lspserver.peekSymbolFilePopup->winbufnr() != -1
+      lspserver.peekSymbolFilePopup->popup_close()
+    endif
+    lspserver.peekSymbolPopup = -1
+    lspserver.peekSymbolFilePopup = -1
+  else
+    UpdatePeekFilePopup(lspserver, refs)
+  endif
+  return true
+enddef
+
+def RefPopupCallback(lspserver: dict<any>, refs: list<dict<any>>,
+		     popup_id: number, selIdx: number)
+  if lspserver.peekSymbolFilePopup->winbufnr() != -1
+    lspserver.peekSymbolFilePopup->popup_close()
+  endif
+  lspserver.peekSymbolPopup = -1
+  if selIdx != -1
+    var fname: string = util.LspUriToFile(refs[selIdx - 1].uri)
+    util.PushCursorToTagStack()
+    util.JumpToLspLocation(refs[selIdx - 1], '')
+  endif
+enddef
+
+# Display the references in a popup menu.  Display the corresponding file in
+# an another popup window.
+def PeekReferences(lspserver: dict<any>, refs: list<dict<any>>)
+  if lspserver.peekSymbolPopup->winbufnr() != -1
+    # If the symbol popup window is already present, close it.
+    lspserver.peekSymbolPopup->popup_close()
+  endif
+
+  var w: number = &columns
+  var fnamelen = float2nr(w * 0.4)
+
+  var menuItems: list<string> = []
+  for loc in refs
+    var fname: string = util.LspUriToFile(loc.uri)
+    var bnr: number = fname->bufnr()
+    if bnr == -1
+      bnr = fname->bufadd()
+    endif
+    if !bnr->bufloaded()
+      bnr->bufload()
+    endif
+
+    var text: string = bnr->getbufline(loc.range.start.line + 1)[0]
+    var lnum = loc.range.start.line + 1
+    menuItems->add($'{lnum}: {text}')
+  endfor
+
+  var popupAttrs = {
+    title: 'References',
+    wrap: false,
+    pos: 'topleft',
+    line: 'cursor+1',
+    col: winwidth(0) - 34,
+    minheight: 10,
+    maxheight: 10,
+    minwidth: 30,
+    maxwidth: 30,
+    mapping: false,
+    fixed: true,
+    filter: function(RefPopupFilter, [lspserver, refs]),
+    callback: function(RefPopupCallback, [lspserver, refs])
+  }
+  lspserver.peekSymbolPopup = popup_menu(menuItems, popupAttrs)
+  UpdatePeekFilePopup(lspserver, refs)
+enddef
+
 # Display or peek symbol references in a location list
 export def ShowReferences(lspserver: dict<any>, refs: list<dict<any>>, peekSymbol: bool)
+  if peekSymbol
+    PeekReferences(lspserver, refs)
+    return
+  endif
+
   # create a location list with the location of the references
   var qflist: list<dict<any>> = []
   for loc in refs
@@ -249,22 +373,24 @@ export def ShowReferences(lspserver: dict<any>, refs: list<dict<any>>, peekSymbo
   endfor
 
   var save_winid = win_getid()
-  if peekSymbol
-    silent! pedit
-    wincmd P
-  endif
   setloclist(0, [], ' ', {title: 'Symbol Reference', items: qflist})
   var mods: string = ''
-  if peekSymbol
-    # When peeking the references, open the location list in a vertically
-    # split window to the right and make the location list window 30% of the
-    # source window width
-    mods = $'belowright vert :{(winwidth(0) * 30) / 100}'
-  endif
   exe $'{mods} lopen'
   if !opt.lspOptions.keepFocusInReferences
     save_winid->win_gotoid()
   endif
+enddef
+
+# Key filter callback function used for the symbol popup window.
+# Vim doesn't close the popup window when the escape key is pressed.
+# This is function supports that.
+def SymbolFilterCB(lspserver: dict<any>, id: number, key: string): bool
+  if key == "\<Esc>"
+    lspserver.peekSymbolPopup->popup_close()
+    return true
+  endif
+
+  return false
 enddef
 
 # Display the file specified by LSP 'location' in a popup window and highlight
@@ -283,14 +409,17 @@ def PeekSymbolLocation(lspserver: dict<any>, location: dict<any>)
     lspserver.peekSymbolPopup->popup_close()
   endif
   var ptitle = $"{fnamemodify(fname, ':t')} ({fnamemodify(fname, ':h')})"
-  lspserver.peekSymbolPopup = popup_atcursor(bnum, {moved: 'any',
+  var CbFunc = function(SymbolFilterCB, [lspserver])
+  lspserver.peekSymbolPopup = popup_atcursor(bnum, {
+					moved: 'any',
 					title: ptitle,
 					minwidth: 10,
 					maxwidth: 60,
 					minheight: 10,
 					maxheight: 10,
 					mapping: false,
-					wrap: false})
+					wrap: false,
+					filter: CbFunc})
 
   # Highlight the symbol name and center the line in the popup
   var pwid = lspserver.peekSymbolPopup

@@ -71,7 +71,7 @@ def UpdateTypeHierFileInPopup(lspserver: dict<any>, typeUriMap: list<dict<any>>)
     return
   endif
 
-  var popupAttr = {
+  var popupAttrs = {
     title: $"{fname->fnamemodify(':t')} ({fname->fnamemodify(':h')})",
     wrap: false,
     fixed: true,
@@ -84,12 +84,13 @@ def UpdateTypeHierFileInPopup(lspserver: dict<any>, typeUriMap: list<dict<any>>)
     line: 'cursor+1',
     col: 1
   }
-  lspserver.typeHierFilePopup = popup_create(bnr, popupAttr)
+  lspserver.typeHierFilePopup = popup_create(bnr, popupAttrs)
   var cmds =<< trim eval END
     [{typeUriMap[n].range.start.line + 1}, 1]->cursor()
     normal! z.
   END
   win_execute(lspserver.typeHierFilePopup, cmds)
+
   lspserver.typeHierFilePopup->clearmatches()
   var start_col = util.GetLineByteFromPos(bnr,
 					typeUriMap[n].selectionRange.start) + 1
@@ -150,7 +151,7 @@ export def ShowTypeHierarchy(lspserver: dict<any>, super: bool, types: dict<any>
 
   # Display a popup window with the type hierarchy tree and a popup window for
   # the file.
-  var popupAttr = {
+  var popupAttrs = {
       title: $'{super ? "Super" : "Sub"}Type Hierarchy',
       wrap: 0,
       pos: 'topleft',
@@ -161,11 +162,11 @@ export def ShowTypeHierarchy(lspserver: dict<any>, super: bool, types: dict<any>
       minwidth: 30,
       maxwidth: 30,
       mapping: false,
-      fixed: 1,
+      fixed: true,
       filter: function(TypeHierPopupFilter, [lspserver, typeUriMap]),
       callback: function(TypeHierPopupCallback, [lspserver, typeUriMap])
     }
-  lspserver.typeHierPopup = popup_menu(typeTree, popupAttr)
+  lspserver.typeHierPopup = popup_menu(typeTree, popupAttrs)
   UpdateTypeHierFileInPopup(lspserver, typeUriMap)
 enddef
 

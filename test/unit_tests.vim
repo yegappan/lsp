@@ -229,9 +229,14 @@ def Test_LspShowReferences()
   setlocal nomodified
   cursor(1, 5)
   :LspPeekReferences
-  assert_equal([3, 3], [winnr('$'), winnr()])
-  assert_equal('preview', win_gettype(1))
-  assert_equal('loclist', win_gettype(2))
+  var ids = popup_list()
+  assert_equal(2, ids->len())
+  var filePopupAttrs = ids[0]->popup_getoptions()
+  var refPopupAttrs = ids[1]->popup_getoptions()
+  assert_match('Xtest', filePopupAttrs.title)
+  assert_equal('References', refPopupAttrs.title)
+  assert_equal(1, line('.', ids[0]))
+  popup_clear()
 
   bw!
 

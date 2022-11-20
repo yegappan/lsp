@@ -105,9 +105,8 @@ The following commands are provided:
 			popup window.
 :LspPeekImpl		Open the implementation of the symbol under cursor in
 			a popup window.
-:LspPeekReferences	Display the list of references to the keyword under
-			cursor in a location list associated with the preview
-			window.
+:LspPeekReferences	Display the list of references to the symbol under
+			cursor in a popup window.
 :LspPeekTypeDef		Open the type definition of the symbol under cursor in
 			a popup window.
 :LspRename		Rename the current symbol
@@ -446,9 +445,11 @@ To get a particular option value you can use the following: >
 			opens the location window.
 
 						*:LspPeekReferences*
-:LspPeekReferences	Opens the preview window and creates a new location
-			list with the list of locations where the symbol under
-			the cursor is referenced and opens the location window.
+:LspPeekReferences	Displays the list of references to the symbol under
+			cursor in a popup menu.  The corresponding file for
+			the reference is displayed in another popup window.
+			As the selection in the reference popup menu changes,
+			the file in the popup is updated.
 
 						*:LspHighlight*
 :LspHighlight		Highlights all the matches for the symbol under
