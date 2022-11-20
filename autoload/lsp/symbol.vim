@@ -252,6 +252,7 @@ def UpdatePeekFilePopup(lspserver: dict<any>, refs: list<dict<any>>)
     maxwidth: winwidth(0) - 38,
     cursorline: true,
     border: [],
+    mapping: false,
     line: 'cursor+1',
     col: 1
   }
@@ -408,18 +409,21 @@ def PeekSymbolLocation(lspserver: dict<any>, location: dict<any>)
     # If the symbol popup window is already present, close it.
     lspserver.peekSymbolPopup->popup_close()
   endif
-  var ptitle = $"{fnamemodify(fname, ':t')} ({fnamemodify(fname, ':h')})"
   var CbFunc = function(SymbolFilterCB, [lspserver])
-  lspserver.peekSymbolPopup = popup_atcursor(bnum, {
-					moved: 'any',
-					title: ptitle,
-					minwidth: 10,
-					maxwidth: 60,
-					minheight: 10,
-					maxheight: 10,
-					mapping: false,
-					wrap: false,
-					filter: CbFunc})
+  var popupAttrs = {
+    title: $"{fnamemodify(fname, ':t')} ({fnamemodify(fname, ':h')})",
+    wrap: false,
+    moved: 'any',
+    minheight: 10,
+    maxheight: 10,
+    minwidth: 10,
+    maxwidth: 60,
+    cursorline: true,
+    border: [],
+    mapping: false,
+    filter: CbFunc
+  }
+  lspserver.peekSymbolPopup = popup_atcursor(bnum, popupAttrs)
 
   # Highlight the symbol name and center the line in the popup
   var pwid = lspserver.peekSymbolPopup
