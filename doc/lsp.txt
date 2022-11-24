@@ -542,9 +542,9 @@ can map these commands to keys and make it easier to invoke them.
 			Enable or disable the logging of the messages emitted
 			by a language server in the standard output and
 			standard error.  On a Unix-like system, these messages
-			are logged to the /tmp/lsp_server.out and
-			/tmp/lsp_server.err file respectively.  On MS-Windows,
-			the %TEMP%/lsp_server.out and %TEMP%/lsp_server.err%
+			are logged to the /tmp/lsp-server.out and
+			/tmp/lsp-server.err file respectively.  On MS-Windows,
+			the %TEMP%/lsp-server.out and %TEMP%/lsp-server.err%
 			files are used.
 
 						*:LspServerRestart*
@@ -852,8 +852,8 @@ logging of the messages: >
 By default, the messages are not logged.
 
 The messages printed by the language server in the stdout are logged to the
-lsp_server.out file and the messages printed in the stderr are logged to the
-lsp_server.err file.  On a Unix-like system, these files are created in the
+lsp-server.out file and the messages printed in the stderr are logged to the
+lsp-server.err file.  On a Unix-like system, these files are created in the
 /tmp directory.  On MS-Windows, these files are created in the %TEMP%
 directory.
 

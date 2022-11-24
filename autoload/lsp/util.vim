@@ -35,9 +35,9 @@ export def TraceLog(stderr: bool, msg: string)
     return
   endif
   if stderr
-    writefile(msg->split("\n"), $'{lsp_log_dir}lsp_server.err', 'a')
+    writefile(msg->split("\n"), $'{lsp_log_dir}lsp-server.err', 'a')
   else
-    writefile([msg], $'{lsp_log_dir}lsp_server.out', 'a')
+    writefile([msg], $'{lsp_log_dir}lsp-server.out', 'a')
   endif
 enddef
 
@@ -46,8 +46,8 @@ export def ClearTraceLogs()
   if !lsp_server_trace
     return
   endif
-  writefile([], $'{lsp_log_dir}lsp_server.out')
-  writefile([], $'{lsp_log_dir}lsp_server.err')
+  writefile([], $'{lsp_log_dir}lsp-server.out')
+  writefile([], $'{lsp_log_dir}lsp-server.err')
 enddef
 
 # Convert a LSP file URI (file://<absolute_path>) to a Vim file name
