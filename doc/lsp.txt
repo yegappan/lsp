@@ -93,6 +93,8 @@ The following commands are provided:
 :LspGotoTypeDef		Go to the type definition of the symbol under cursor
 :LspHighlight		Highlight all the matches for the keyword under cursor
 :LspHighlightClear	Clear all the matches highlighted by :LspHighlight
+:LspHover		Show the documentation for the symbol under the cursor
+			in a popup window.
 :LspIncomingCalls	Display the list of symbols calling the current symbol
 			in a window.
 :LspOutgoingCalls	Display the list of symbols called by the current
@@ -112,13 +114,15 @@ The following commands are provided:
 :LspRename		Rename the current symbol
 :LspSelectionExpand	Expand the current symbol range visual selection
 :LspSelectionShrink	Shrink the current symbol range visual selection
+:LspServerDebug		Enable or disable the language server debug messages.
 :LspServerRestart	Restart the language server for the current buffer.
+:LspServerTrace		Set the language server debug trace value.
 :LspShowReferences	Display the list of references to the keyword under
 			cursor in a new location list.
-:LspShowServers		Display the list of registered language servers
 :LspShowServerCapabilities
 			Display the language server capabilities for the
 			current buffer.
+:LspShowServers		Display the list of registered language servers
 :LspShowSignature	Display the signature of the symbol under cursor.
 :LspSubTypeHierarchy	Display the sub type hierarchy in a popup window.
 :LspSuperTypeHierarchy	Display the super type hierarchy in a popup window.
@@ -309,12 +313,70 @@ To get a particular option value you can use the following: >
 ==============================================================================
 5. Commands						*lsp-commands*
 
-						*:LspShowServers*
-:LspShowServers		Displays the list of registered language servers and
-			their status.  The language servers are registered
-			using the LspAddServer() function. The output shows
-			the Vim file type, the corresponding language server
-			status and the path to the language server executable.
+A description of the various commands provided by this plugin is below.  You
+can map these commands to keys and make it easier to invoke them.
+
+						*:LspCodeAction*
+:LspCodeAction		Apply the code action supplied by the language server
+			to the diagnostic in the current line. This works only
+			if there is a diagnostic message for the current line.
+			You can use the |:LspDiagCurrent| command to display
+			the diagnostic for the current line. You will be
+			prompted to select one of the actions supplied by the
+			language server.
+
+						*:LspDiagCurrent*
+:LspDiagCurrent		Displays the diagnostic message (if any) for the
+			current line.  If the option 'showDiagInPopup' is set
+			to v:true (default), then the message is displayed in
+			a popup window.  Otherwise the message is displayed in
+			the status message area.
+
+						*:LspDiagFirst*
+:LspDiagFirst		Jumps to the location of the first diagnostic message
+			for the current file.
+
+:LspDiagHighlightDisable			*:LspDiagHighlightDisable*
+			Disable highlighting lines with a diagnostic message
+			for the current Vim session.
+			To always disable the highlighting, set the
+			autoHighlightDiags option to false.
+
+						*:LspDiagHighlightEnable*
+:LspDiagHighlightEnable	Enable highlighting lines with a diagnostic message
+			for the current Vim session.  Note that highlighting
+			lines with a diagnostic message is enabled by default.
+
+						*:LspDiagNext*
+:LspDiagNext		Jumps to the location of the diagnostic message after
+			the current cursor position.
+
+						*:LspDiagPrev*
+:LspDiagPrev		Jumps to the location of the diagnostic message before
+			the current cursor position.
+
+						*:LspDiagShow*
+:LspDiagShow		Creates a new location list with the diagnostics
+			messages (if any) from the language server for the
+			current file and opens the location list window. You
+			can use the Vim location list commands to browse the
+			list.
+
+						*:LspFold*
+:LspFold		Create folds for the current buffer.
+
+						*:LspFormat*
+:LspFormat		Format the current file using the language server. The
+			*shiftwidth* and *expandtab* values set for the current
+			buffer are used when format is applied.
+
+:{range}LspFormat	Format the specified range of lines in the current
+			file using the language server.
+
+						*:LspGotoDeclaration*
+:LspGotoDeclaration	Jumps to the declaration of the symbol under the
+			cursor. The behavior of this command is similar to the
+			|:LspGotoDefinition| command.
 
 						*:LspGotoDefinition*
 :LspGotoDefinition	Jumps to the definition of the symbol under the
@@ -344,21 +406,6 @@ To get a particular option value you can use the following: >
 			    nnoremap <buffer> gd <Cmd>LspGotoDefinition<CR>
 			    nnoremap <buffer> <C-W>gd <Cmd>topleft LspGotoDefinition<CR>
 <
-						*:LspGotoDeclaration*
-:LspGotoDeclaration	Jumps to the declaration of the symbol under the
-			cursor. The behavior of this command is similar to the
-			|:LspGotoDefinition| command.
-
-						*:LspGotoTypeDef*
-:LspGotoTypeDef		Jumps to the type definition of the symbol under the
-			cursor. The behavior of this command is similar to the
-			|:LspGotoDefinition| command. Note that not all the
-			language servers support this feature.
-
-			You may want to map a key to invoke this command: >
-
-			    nnoremap <buffer> gt <Cmd>LspGotoTypeDef<CR>
-<
 						*:LspGotoImpl*
 :LspGotoImpl		Jumps to the implementation of the symbol under the
 			cursor. The behavior of this command is similar to the
@@ -369,17 +416,85 @@ To get a particular option value you can use the following: >
 
 			    nnoremap <buffer> gi <Cmd>LspGotoImpl<CR>
 <
-						*:LspPeekDefinition*
-:LspPeekDefinition	Displays the line where the symbol under the cursor is
-			defined in a popup window. The symbol is highlighted
-			in the popup window. Moving the cursor or pressing
-			<Esc> will close the popup window.
+						*:LspGotoTypeDef*
+:LspGotoTypeDef		Jumps to the type definition of the symbol under the
+			cursor. The behavior of this command is similar to the
+			|:LspGotoDefinition| command. Note that not all the
+			language servers support this feature.
+
+			You may want to map a key to invoke this command: >
+
+			    nnoremap <buffer> gt <Cmd>LspGotoTypeDef<CR>
+<
+						*:LspHighlight*
+:LspHighlight		Highlights all the matches for the symbol under
+			cursor. The text, read and write references to the
+			symbol are highlighted using Search, DiffChange and
+			DiffDelete highlight groups respectively.
+
+						*:LspHighlightClear*
+:LspHighlightClear	Clears all the symbol matches highlighted by the
+			|:LspHighlight| command.
+
+						*:LspHover*
+:LspHover		Show the documentation for the symbol under the cursor
+			in a popup window. If you want to show the symbol
+			documentation in the preview window instead of in a
+			popup set >
+
+				call LspOptionsSet({'hoverInPreview': v:true})
+<
+			Default is false.
+
+						*:LspIncomingCalls*
+:LspIncomingCalls	Display a hierarchy of symbols calling the symbol
+			under the cursor in a window.  See
+			|lsp-call-hierarchy| for more information.  Note that
+			not all the language servers support this feature.
+
+						*:LspOutoingCalls*
+:LspOutoingCalls	Display a hierarchy of symbols called by the symbol
+			under the cursor in a window.  See
+			|lsp-call-hierarchy| for more information.  Note that
+			not all the language servers support this feature.
+
+						*:LspOutline*
+:LspOutline		Opens a vertically split window with the list of
+			symbols defined in the current file. The current
+			symbol is highlighted. The symbols are grouped by
+			their type. You can select a symbol and press <Enter>
+			to jump to the position of the symbol. As you move the
+			cursor in a file, the current symbol is automatically
+			highlighted in the outline window. If you open a new
+			file, the outline window is automatically updated with
+			the symbols in the new file.  Folds are created in the
+			outline window for the various group of symbols.
 
 						*:LspPeekDeclaration*
 :LspPeekDeclaration	Displays the line where the symbol under the
 			cursor is declared in a popup window. The
 			behavior of this command is similar to the
 			|:LspPeekDefinition| command.
+
+						*:LspPeekDefinition*
+:LspPeekDefinition	Displays the line where the symbol under the cursor is
+			defined in a popup window. The symbol is highlighted
+			in the popup window. Moving the cursor or pressing
+			<Esc> will close the popup window.
+
+						*:LspPeekImpl*
+:LspPeekImpl		Displays the implementation of the symbol under the
+			cursor in a popup window. The behavior of this
+			command is similar to the |:LspPeekDefinition|
+			command. Note that not all the language servers
+			support this feature.
+
+						*:LspPeekReferences*
+:LspPeekReferences	Displays the list of references to the symbol under
+			cursor in a popup menu.  The corresponding file for
+			the reference is displayed in another popup window.
+			As the selection in the reference popup menu changes,
+			the file in the popup is updated.
 
 						*:LspPeekTypeDef*
 :LspPeekTypeDef		Displays the line where the type of the symbol under
@@ -388,12 +503,76 @@ To get a particular option value you can use the following: >
 			|:LspPeekDefinition| command. Note that not all the
 			language servers support this feature.
 
-						*:LspPeekImpl*
-:LspPeekImpl		Displays the implementation of the symbol under the
-			cursor in a popup window. The behavior of this
-			command is similar to the |:LspPeekDefinition|
-			command. Note that not all the language servers
-			support this feature.
+						*:LspRename*
+:LspRename		Rename the current symbol. You will be prompted to
+			enter the new name for the symbol. You can press <Esc>
+			or enter an empty string in the prompt to cancel the
+			operation.
+
+						*:LspSelectionExpand*
+:LspSelectionExpand	Visually select the region of the symbol under the
+			cursor.  In visual mode, expands the current symbol
+			visual region selection to include the next level.
+
+			For example, if the cursor is on a "for" statement,
+			this command selects the "for" statement and the body
+			of the "for" statement.
+
+			It is useful to create a visual map to use this
+			command.  Example: >
+
+			 xnoremap <silent> <Leader>e <Cmd>LspSelectionExpand<CR>
+<
+			With the above map, you can press "\e" in visual mode
+			successively to expand the current symbol visual
+			region.
+
+						*:LspSelectionShrink*
+:LspSelectionShrink	Shrink the current symbol range visual selection. It
+			is useful to create a visual map to use this command.
+			Example: >
+
+			 xnoremap <silent> <Leader>s <Cmd>LspSelectionShrink<CR>
+<
+			With the above map, you can press "\s" in visual mode
+			successively to shrink the current symbol visual
+			region.
+
+:LspServerDebug { on | off }			*:LspServerDebug*
+			Enable or disable the logging of the messages emitted
+			by a language server in the standard output and
+			standard error.  On a Unix-like system, these messages
+			are logged to the /tmp/lsp_server.out and
+			/tmp/lsp_server.err file respectively.  On MS-Windows,
+			the %TEMP%/lsp_server.out and %TEMP%/lsp_server.err%
+			files are used.
+
+						*:LspServerRestart*
+:LspServerRestart	Restart (stop and then start) the language server for
+			the current buffer. All the loaded buffers with the
+			same filetype as the current buffer are added back to
+			the server.
+
+:LspServerTrace { off | messages | verbose }	*:LspServerTrace*
+			Set the language server debug trace value.
+
+						*:LspShowReferences*
+:LspShowReferences	Creates a new location list with the list of locations
+			where the symbol under the cursor is referenced and
+			opens the location window.
+
+:LspShowServerCapabilities			*:LspShowServerCapabilities*
+			Display the list of language server capabilities for
+			the current buffer.  The server capabilities are
+			described in the LSP protocol specification under the
+			"ServerCapabilities" interface.
+
+						*:LspShowServers*
+:LspShowServers		Displays the list of registered language servers and
+			their status.  The language servers are registered
+			using the LspAddServer() function. The output shows
+			the Vim file type, the corresponding language server
+			status and the path to the language server executable.
 
 						*:LspShowSignature*
 :LspShowSignature	Displays the signature of the symbol (e.g. a function
@@ -416,116 +595,31 @@ To get a particular option value you can use the following: >
 <
 			Default is false.
 
+						*:LspSubTypeHierarchy*
+:LspSubTypeHierarchy	Show the sub type hierarchy for the symbol under the
+			cursor in a popup window.  The file containing the
+			type is shown in another popup window.  You can jump
+			to the location where a type is defined by browsing the
+			popup menu and selecting an entry.
+
+						*:LspSuperTypeHierarchy*
+:LspSuperTypeHierarchy	Show the super type hierarchy for the symbol under the
+			cursor in a popup window.  The file containing the
+			type is shown in another popup window.  As the current
+			entry in the type hierarchy popup menu changes, the
+			file popup window is updated to show the location
+			where the type is defined.  You can jump to the
+			location where a type is defined by selecting the
+			entry in the popup menu.
+
+			Note that the type hierarchy support is based on the
+			protocol supported by clangd.  This is different from
+			the one specified in the 3.17 of the LSP standard.
+
 						*:LspSwitchSourceHeader*
 :LspSwitchSourceHeader	Switch between source and header files. This is a
 			Clangd specific extension and only works with C/C++
 			source files.
-
-						*:LspDiagShow*
-:LspDiagShow		Creates a new location list with the diagnostics
-			messages (if any) from the language server for the
-			current file and opens the location list window. You
-			can use the Vim location list commands to browse the
-			list.
-
-						*:LspDiagFirst*
-:LspDiagFirst		Jumps to the location of the first diagnostic message
-			for the current file.
-
-						*:LspDiagNext*
-:LspDiagNext		Jumps to the location of the diagnostic message after
-			the current cursor position.
-
-						*:LspDiagPrev*
-:LspDiagPrev		Jumps to the location of the diagnostic message before
-			the current cursor position.
-
-						*:LspDiagCurrent*
-:LspDiagCurrent		Displays the diagnostic message (if any) for the
-			current line.  If the option 'showDiagInPopup' is set
-			to v:true (default), then the message is displayed in
-			a popup window.  Otherwise the message is displayed in
-			the status message area.
-
-						*:LspDiagHighlightEnable*
-:LspDiagHighlightEnable	Enable highlighting lines with a diagnostic message
-			for the current Vim session.  Note that highlighting
-			lines with a diagnostic message is enabled by default.
-
-:LspDiagHighlightDisable			*:LspDiagHighlightDisable*
-			Disable highlighting lines with a diagnostic message
-			for the current Vim session.
-			To always disable the highlighting, set the
-			autoHighlightDiags option to false.
-
-						*:LspShowReferences*
-:LspShowReferences	Creates a new location list with the list of locations
-			where the symbol under the cursor is referenced and
-			opens the location window.
-
-						*:LspPeekReferences*
-:LspPeekReferences	Displays the list of references to the symbol under
-			cursor in a popup menu.  The corresponding file for
-			the reference is displayed in another popup window.
-			As the selection in the reference popup menu changes,
-			the file in the popup is updated.
-
-						*:LspHighlight*
-:LspHighlight		Highlights all the matches for the symbol under
-			cursor. The text, read and write references to the
-			symbol are highlighted using Search, DiffChange and
-			DiffDelete highlight groups respectively.
-
-						*:LspHighlightClear*
-:LspHighlightClear	Clears all the symbol matches highlighted by the
-			|:LspHighlight| command.
-
-						*:LspOutline*
-:LspOutline		Opens a vertically split window with the list of
-			symbols defined in the current file. The current
-			symbol is highlighted. The symbols are grouped by
-			their type. You can select a symbol and press <Enter>
-			to jump to the position of the symbol. As you move the
-			cursor in a file, the current symbol is automatically
-			highlighted in the outline window. If you open a new
-			file, the outline window is automatically updated with
-			the symbols in the new file.  Folds are created in the
-			outline window for the various group of symbols.
-
-						*:LspFormat*
-:LspFormat		Format the current file using the language server. The
-			*shiftwidth* and *expandtab* values set for the current
-			buffer are used when format is applied.
-
-:{range}LspFormat	Format the specified range of lines in the current
-			file using the language server.
-
-						*:LspIncomingCalls*
-:LspIncomingCalls	Display a hierarchy of symbols calling the symbol
-			under the cursor in a window.  See
-			|lsp-call-hierarchy| for more information.  Note that
-			not all the language servers support this feature.
-
-						*:LspOutoingCalls*
-:LspOutoingCalls	Display a hierarchy of symbols called by the symbol
-			under the cursor in a window.  See
-			|lsp-call-hierarchy| for more information.  Note that
-			not all the language servers support this feature.
-
-						*:LspRename*
-:LspRename		Rename the current symbol. You will be prompted to
-			enter the new name for the symbol. You can press <Esc>
-			or enter an empty string in the prompt to cancel the
-			operation.
-
-						*:LspCodeAction*
-:LspCodeAction		Apply the code action supplied by the language server
-			to the diagnostic in the current line. This works only
-			if there is a diagnostic message for the current line.
-			You can use the |:LspDiagCurrent| command to display
-			the diagnostic for the current line. You will be
-			prompted to select one of the actions supplied by the
-			language server.
 
 						*:LspSymbolSearch*
 :LspSymbolSearch <sym>	Perform a workspace wide search for the symbol <sym>.
@@ -566,91 +660,16 @@ To get a particular option value you can use the following: >
 			You can enter a new search pattern to do a workspace
 			wide symbol search.
 
-						*:LspSuperTypeHierarchy*
-:LspSuperTypeHierarchy	Show the super type hierarchy for the symbol under the
-			cursor in a popup window.  The file containing the
-			type is shown in another popup window.  As the current
-			entry in the type hierarchy popup menu changes, the
-			file popup window is updated to show the location
-			where the type is defined.  You can jump to the
-			location where a type is defined by selecting the
-			entry in the popup menu.
-
-			Note that the type hierarchy support is based on the
-			protocol supported by clangd.  This is different from
-			the one specified in the 3.17 of the LSP standard.
-
-						*:LspSubTypeHierarchy*
-:LspSubTypeHierarchy	Show the sub type hierarchy for the symbol under the
-			cursor in a popup window.  The file containing the
-			type is shown in another popup window.  You can jump
-			to the location where a type is defined by browsing the
-			popup menu and selecting an entry.
-
-						*:LspHover*
-:LspHover		Show the documentation for the symbol under the cursor
-			in a popup window. If you want to show the symbol
-			documentation in the preview window instead of in a
-			popup set >
-
-				call LspOptionsSet({'hoverInPreview': v:true})
-<
-			Default is false
-
-						*:LspSelectionExpand*
-:LspSelectionExpand	Visually select the region of the symbol under the
-			cursor.  In visual mode, expands the current symbol
-			visual region selection to include the next level.
-
-			For example, if the cursor is on a "for" statement,
-			this command selects the "for" statement and the body
-			of the "for" statement.
-
-			It is useful to create a visual map to use this
-			command.  Example: >
-
-			 xnoremap <silent> <Leader>e <Cmd>LspSelectionExpand<CR>
-<
-			With the above map, you can press "\e" in visual mode
-			successively to expand the current symbol visual
-			region.
-
-						*:LspSelectionShrink*
-:LspSelectionShrink	Shrink the current symbol range visual selection. It
-			is useful to create a visual map to use this command.
-			Example: >
-
-			 xnoremap <silent> <Leader>s <Cmd>LspSelectionShrink<CR>
-<
-			With the above map, you can press "\s" in visual mode
-			successively to shrink the current symbol visual
-			region.
-
-						*:LspFold*
-:LspFold		Fold the current file.
-
 						*:LspWorkspaceAddFolder*
 :LspWorkspaceAddFolder {folder}
 			Add a folder to the workspace
 
-						*:LspWorkspaceRemoveFolder*
-:LspWorkspaceRemoveFolder {folder}
-			Remove a folder from the workspace
-
 :LspWorkspaceListFolders			*:LspWorkspaceListFolders*
 			Show the list of folders in the workspace.
 
-:LspShowServerCapabilities			*:LspShowServerCapabilities*
-			Display the list of capabilities of a language server.
-			The server capabilities are described in the LSP
-			protocol specification under the "ServerCapabilities"
-			interface.
-
-						*:LspServerRestart*
-:LspServerRestart	Restart (stop and then start) the language server for
-			the current buffer. All the loaded buffers with the
-			same filetype as the current buffer are added back to
-			the server.
+						*:LspWorkspaceRemoveFolder*
+:LspWorkspaceRemoveFolder {folder}
+			Remove a folder from the workspace
 
 ==============================================================================
 6. Insert mode completion

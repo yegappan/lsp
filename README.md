@@ -155,6 +155,7 @@ Command|Description
 :LspGotoTypeDef|Go to the type definition of the keyword under cursor
 :LspHighlight|Highlight all the matches for the keyword under cursor
 :LspHighlightClear|Clear all the matches highlighted by :LspHighlight
+:LspHover|Show the documentation for the symbol under the cursor in a popup window.
 :LspIncomingCalls|Display the list of symbols calling the current symbol.
 :LspOutgoingCalls|Display the list of symbols called by the current symbol.
 :LspOutline|Show the list of symbols defined in the current file in a separate window.
