@@ -2,7 +2,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: Nov 23, 2022
+Last change: Nov 24, 2022
 
 ==============================================================================
 						*lsp-license*
@@ -35,9 +35,9 @@ Refer to the following pages for more information about LSP:
     https://microsoft.github.io/language-server-protocol/
     https://langserver.org/
 
-This plugin needs Vim version 9.0 and after. You will need a language
-specific server in your system to use this plugin. Refer to the above pages
-for a list of available language servers for the various programming
+This plugin needs Vim version 9.0 and after. You will need a programming
+language specific server in your system to use this plugin. Refer to the above
+pages for a list of available language servers for the various programming
 languages.
 
 The Github repository for this plugin is available at:
@@ -68,8 +68,8 @@ To use this plugin, add the following line to your .vimrc file:
 
 The following commands are provided:
 
-:LspCodeAction		Apply the code action supplied by the LSP server to
-			the diagnostic in the current line.
+:LspCodeAction		Apply the code action supplied by the language server
+			to the diagnostic in the current line.
 :LspDiagCurrent		Display the diagnostic message for the current line.
 :LspDiagFirst		Jump to the first diagnostic message for the current
 			buffer.
@@ -82,11 +82,11 @@ The following commands are provided:
 			buffer after the current line.
 :LspDiagPrev		Jump to the previous diagnostic message for the current
 			buffer before the current line.
-:LspDiagShow		Display the diagnostics messages from the LSP server
-			for the current buffer in a location list.
+:LspDiagShow		Display the diagnostics messages from the language
+			server for the current buffer in a location list.
 :LspFold		Fold the current file
-:LspFormat		Format the current file using the LSP server.
-:{range}LspFormat	Format the specified range of lines.
+:LspFormat		Format a range of lines in the current file using the
+			language server.  The default range is the entire file.
 :LspGotoDeclaration	Go to the declaration of the symbol under cursor
 :LspGotoDefinition	Go to the definition of the symbol under cursor
 :LspGotoImpl		Go to the implementation of the symbol under cursor
@@ -112,16 +112,17 @@ The following commands are provided:
 :LspRename		Rename the current symbol
 :LspSelectionExpand	Expand the current symbol range visual selection
 :LspSelectionShrink	Shrink the current symbol range visual selection
-:LspServerRestart	Restart the LSP server for the current buffer.
+:LspServerRestart	Restart the language server for the current buffer.
 :LspShowReferences	Display the list of references to the keyword under
 			cursor in a new location list.
-:LspShowServers		Display the list of registered LSP servers
+:LspShowServers		Display the list of registered language servers
 :LspShowServerCapabilities
-			Display the list of capabilities of a LSP server.
+			Display the language server capabilities for the
+			current buffer.
 :LspShowSignature	Display the signature of the symbol under cursor.
 :LspSubTypeHierarchy	Display the sub type hierarchy in a popup window.
 :LspSuperTypeHierarchy	Display the super type hierarchy in a popup window.
-:LspSwitchSourceHeader	Switch between source and header files.
+:LspSwitchSourceHeader	Switch between a source and a header file.
 :LspSymbolSearch	Perform a workspace wide search for a symbol
 :LspWorkspaceAddFolder {folder}
 			Add a folder to the workspace
@@ -133,11 +134,12 @@ The following commands are provided:
 ==============================================================================
 4. Configuration				*lsp-configuration*
 
-To register one or more LSP servers, use the LspAddServer() function with a
-list of LSP server details in the .vimrc file.
+To use the plugin features with a particular file type(s), you need to first register a language server for that file type(s).
 
-For example, to add the LSP servers for the Javascript, Typescript and Python
-file types, add the following commands to the .vimrc file: >
+To register one or more language servers, use the LspAddServer() function with
+a list of lanaguge server details in the .vimrc file.
+
+To register a language server, add the following lines to your .vimrc file (use only the language servers that you need from the below list).  If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, the steps are described later in this section:
 
    let lspServers = [
 		\     #{
@@ -157,7 +159,7 @@ Depending on the location of the typescript and python pyls language servers
 installed in your system, update the 'path' in the above snippet
 appropriately.
 
-Another example, for adding the LSP servers for the C, C++, Golang, Rust, 
+Another example, for adding the language servers for the C, C++, Golang, Rust, 
 Shell script, Vim script and PHP file types: >
 
    let lspServers = [
@@ -200,24 +202,26 @@ Shell script, Vim script and PHP file types: >
 		\   ]
    call LspAddServer(lspServers)
 <
-To add a LSP server, the following information is needed:
+To add a language server, the following information is needed:
 
-	filetype	One or more file types supported by the LSP server.
-			This can be a |String| or a |List|. To specify
+	filetype	One or more file types supported by the language
+			server.  This can be a |String| or a |List|. To specify
 			multiple multiple file types, use a List.
-	path		complete path to the LSP server executable (without
-			any arguments).
-	args		a list of command-line arguments passed to the LSP
-			server. Each argument is a separate List item.
+	path		complete path to the language server executable
+			(without any arguments).
+	args		a list of command-line arguments passed to the
+			language server. Each argument is a separate List
+			item.
 	omnicompl	(Optional) a boolean value that enables (true)
 			or disables (false) omni-completion for this file
 			types. By default this is set to 'v:true'.
-	syncInit        (Optional) for lsp servers (e.g. rust analyzer, gopls)
-			that take time to reply to a 'initialize' request
-			message this should be set to 'v:true'. If this is set
-			to true, then a synchronous call is used to initialize
-			the LSP server, otherwise the server is initialized
-			asynchronously. By default this is set to 'v:false'.
+	syncInit        (Optional) for language servers (e.g. rust analyzer,
+			gopls, etc.) that take time to initialize and reply to
+			a 'initialize' request message this should be set to
+			'v:true'. If this is set to true, then a synchronous
+			call is used to initialize the language server,
+			otherwise the server is initialized asynchronously.
+			By default this is set to 'v:false'.
 	initializationOptions
 			(Optional) for lsp servers (e.g. intelephense) some
 			additional initialization options may be required
@@ -225,9 +229,23 @@ To add a LSP server, the following information is needed:
 			this dictionary and if present will be transmitted to
 			the lsp server.
 
-The LSP servers are added using the LspAddServer() function. This function
-accepts a list of LSP servers with the above information.
+The language servers are added using the LspAddServer() function. This function
+accepts a list of language servers with the above information.
 
+If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, then you need to use the VimEnter autocmd to initialize the language server and to set the language server options.  For example: >
+
+    let lspServers = [
+		\     #{
+		\        filetype: ['c', 'cpp'],
+		\        path: '/usr/local/bin/clangd',
+		\        args: ['--background-index']
+		\      }
+		\   ]
+    autocmd VimEnter * call LspAddServer(lspServers)
+
+    let lspOpts = {'autoHighlightDiags': v:true}
+    autocmd VimEnter * call LspOptionsSet(lspOpts)
+<
 							*lsp-options*
 Some of the LSP plugin features can be enabled or disabled by using the
 LspOptionsSet() function. This function accepts a dictionary argument with the
@@ -240,11 +258,11 @@ autoHighlight		In normal mode, automatically highlight all the
 			occurrences of the symbol under the cursor. By default
 			this is set to false.
 autoHighlightDiags	Automatically place signs on the lines with a
-			diagnostic message from the LSP server. By default
-			this is set to true.
+			diagnostic message from the language server. By
+			default this is set to true.
 autoPopulateDiags	Automatically populate the location list with
-			diagnostics from the LSP server. By default this is
-			set to false.
+			diagnostics from the language server. By default this
+			is set to false.
 echoSignature		In insert mode, echo the current symbol signature
 			instead of showing it in a popup. By default this is
 			set to false.
@@ -292,11 +310,11 @@ To get a particular option value you can use the following: >
 5. Commands						*lsp-commands*
 
 						*:LspShowServers*
-:LspShowServers		Displays the list of registered LSP servers and their
-			status. The LSP servers are registered using the
-			LspAddServer() function. The output shows the Vim
-			file type, the corresponding LSP server status and the
-			path to the LSP server executable.
+:LspShowServers		Displays the list of registered language servers and
+			their status.  The language servers are registered
+			using the LspAddServer() function. The output shows
+			the Vim file type, the corresponding language server
+			status and the path to the language server executable.
 
 						*:LspGotoDefinition*
 :LspGotoDefinition	Jumps to the definition of the symbol under the
@@ -334,8 +352,8 @@ To get a particular option value you can use the following: >
 						*:LspGotoTypeDef*
 :LspGotoTypeDef		Jumps to the type definition of the symbol under the
 			cursor. The behavior of this command is similar to the
-			|:LspGotoDefinition| command. Note that not all the LSP
-			servers support this feature.
+			|:LspGotoDefinition| command. Note that not all the
+			language servers support this feature.
 
 			You may want to map a key to invoke this command: >
 
@@ -344,8 +362,8 @@ To get a particular option value you can use the following: >
 						*:LspGotoImpl*
 :LspGotoImpl		Jumps to the implementation of the symbol under the
 			cursor. The behavior of this command is similar to the
-			|:LspGotoDefinition| command. Note that not all the LSP
-			servers support this feature.
+			|:LspGotoDefinition| command. Note that not all the
+			language servers support this feature.
 
 			You may want to map a key to invoke this command: >
 
@@ -368,14 +386,14 @@ To get a particular option value you can use the following: >
 			the cursor is defined in a popup window. The
 			behavior of this command is similar to the
 			|:LspPeekDefinition| command. Note that not all the
-			LSP servers support this feature.
+			language servers support this feature.
 
 						*:LspPeekImpl*
 :LspPeekImpl		Displays the implementation of the symbol under the
 			cursor in a popup window. The behavior of this
 			command is similar to the |:LspPeekDefinition|
-			command. Note that not all the LSP servers support
-			this feature.
+			command. Note that not all the language servers
+			support this feature.
 
 						*:LspShowSignature*
 :LspShowSignature	Displays the signature of the symbol (e.g. a function
@@ -405,9 +423,10 @@ To get a particular option value you can use the following: >
 
 						*:LspDiagShow*
 :LspDiagShow		Creates a new location list with the diagnostics
-			messages (if any) from the LSP server for the current
-			file and opens the location list window. You can use
-			the Vim location list commands to browse the list.
+			messages (if any) from the language server for the
+			current file and opens the location list window. You
+			can use the Vim location list commands to browse the
+			list.
 
 						*:LspDiagFirst*
 :LspDiagFirst		Jumps to the location of the first diagnostic message
@@ -474,22 +493,24 @@ To get a particular option value you can use the following: >
 			outline window for the various group of symbols.
 
 						*:LspFormat*
-:LspFormat		Format the current file using the LSP server. The
+:LspFormat		Format the current file using the language server. The
 			*shiftwidth* and *expandtab* values set for the current
 			buffer are used when format is applied.
 
 :{range}LspFormat	Format the specified range of lines in the current
-			file using the LSP server.
+			file using the language server.
 
 						*:LspIncomingCalls*
 :LspIncomingCalls	Display a hierarchy of symbols calling the symbol
 			under the cursor in a window.  See
-			|lsp-call-hierarchy| for more information.
+			|lsp-call-hierarchy| for more information.  Note that
+			not all the language servers support this feature.
 
 						*:LspOutoingCalls*
 :LspOutoingCalls	Display a hierarchy of symbols called by the symbol
 			under the cursor in a window.  See
-			|lsp-call-hierarchy| for more information.
+			|lsp-call-hierarchy| for more information.  Note that
+			not all the language servers support this feature.
 
 						*:LspRename*
 :LspRename		Rename the current symbol. You will be prompted to
@@ -498,13 +519,13 @@ To get a particular option value you can use the following: >
 			operation.
 
 						*:LspCodeAction*
-:LspCodeAction		Apply the code action supplied by the LSP server to
-			the diagnostic in the current line. This works only if
-			there is a diagnostic message for the current line.
+:LspCodeAction		Apply the code action supplied by the language server
+			to the diagnostic in the current line. This works only
+			if there is a diagnostic message for the current line.
 			You can use the |:LspDiagCurrent| command to display
 			the diagnostic for the current line. You will be
 			prompted to select one of the actions supplied by the
-			LSP server.
+			language server.
 
 						*:LspSymbolSearch*
 :LspSymbolSearch <sym>	Perform a workspace wide search for the symbol <sym>.
@@ -620,16 +641,16 @@ To get a particular option value you can use the following: >
 			Show the list of folders in the workspace.
 
 :LspShowServerCapabilities			*:LspShowServerCapabilities*
-			Display the list of capabilities of a LSP server.
+			Display the list of capabilities of a language server.
 			The server capabilities are described in the LSP
 			protocol specification under the "ServerCapabilities"
 			interface.
 
 						*:LspServerRestart*
-:LspServerRestart	Restart (stop and then start) the LSP server for the
-			current buffer. All the loaded buffers with the same
-			filetype as the current buffer are added back to the
-			server.
+:LspServerRestart	Restart (stop and then start) the language server for
+			the current buffer. All the loaded buffers with the
+			same filetype as the current buffer are added back to
+			the server.
 
 ==============================================================================
 6. Insert mode completion
@@ -645,9 +666,9 @@ in your .vimrc file: >
 <
 If this variable is set, then the LSP plugin doesn't automatically start
 completion in insert mode and instead supports omni-completion (|compl-omni|).
-It sets the 'omnifunc' option for the buffers which have a registered LSP
+It sets the 'omnifunc' option for the buffers which have a registered language
 server. To complete a symbol in insert mode manually, you can press CTRL-X
-CTRL-O to invoke completion using the items suggested by the LSP server.
+CTRL-O to invoke completion using the items suggested by the language server.
 
 You can also enable or disable omni-completion based on a file type by setting
 the 'omnicompl' item to 'false' when registering a lsp server for the
@@ -811,7 +832,7 @@ logging of the messages: >
 <
 By default, the messages are not logged.
 
-The messages printed by the LSP server in the stdout are logged to the
+The messages printed by the language server in the stdout are logged to the
 lsp_server.out file and the messages printed in the stderr are logged to the
 lsp_server.err file.  On a Unix-like system, these files are created in the
 /tmp directory.  On MS-Windows, these files are created in the %TEMP%
@@ -820,7 +841,7 @@ directory.
 The language servers typically support command line options to enable debug
 messages and to increase the verbosity of the messages.  You can refer to the
 language server documentation for information about this.  You can include
-these options when registering the LSP server with this plugin.
+these options when registering the language server with this plugin.
 
 If a language server supports the "$/logTrace" LSP notification, then you can
 use the :LspServerTrace command to set the trace value: >

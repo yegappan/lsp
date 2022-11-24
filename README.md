@@ -21,7 +21,7 @@ your $HOME/.vimrc file:
 
 You can also install and manage this plugin using any one of the Vim plugin managers (dein.vim, pathogen, vam, vim-plug, volt, Vundle, etc.).
 
-You will also need to install one or more language servers corresponding to the programming languages that you are using. Refer to the https://langserver.org/ page for the list of available language servers.
+You will also need to download and install one or more language servers corresponding to the programming languages that you are using. Refer to the https://langserver.org/ page for the list of available language servers.  This plugin doesn't install the language servers.
 
 ## Features
 
@@ -37,6 +37,8 @@ The following language server protocol (LSP) features are supported:
 * Display type and documentation on hover
 * Signature help
 * Code action
+* Display Call hierarchy
+* Display Type hierarchy
 * Formatting code
 * Folding code
 * Visually select symbol block/region
@@ -126,7 +128,7 @@ If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP 
 		\      }
 		\   ]
     autocmd VimEnter * call LspAddServer(lspServers)
-   
+
     let lspOpts = {'autoHighlightDiags': v:true}
     autocmd VimEnter * call LspOptionsSet(lspOpts)
 ```
@@ -137,40 +139,45 @@ The following commands are provided to use the LSP features.
 
 Command|Description
 -------|-----------
-:LspShowServers|Display the list of registered LSP servers
-:LspGotoDefinition|Go to the definition of the keyword under cursor
-:LspGotoDeclaration|Go to the declaration of the keyword under cursor
-:LspGotoTypeDef|Go to the type definition of the keyword under cursor
-:LspGotoImpl|Go to the implementation of the keyword under cursor
-:LspPeekDefinition|Open the definition of the symbol under cursor in the preview window.
-:LspPeekDeclaration|Open the declaration of the symbol under cursor in the preview window.
-:LspPeekTypeDef|Open the type definition of the symbol under cursor in the preview window.
-:LspPeekImpl|Open the implementation of the symbol under cursor in the preview window.
-:LspShowSignature|Display the signature of the keyword under cursor
-:LspDiagShow|Display the diagnostics messages from the LSP server for the current buffer in a new location list.
+:LspCodeAction|Apply the code action supplied by the language server to the diagnostic in the current line.
+:LspDiagCurrent|Display the diagnostic message for the current line
 :LspDiagFirst|Display the first diagnostic message for the current buffer
+:LspDiagHighlightDisable|Disable diagnostic message highlights
+:LspDiagHighlightEnable|Enable diagnostic message highlights
 :LspDiagNext|Display the next diagnostic message after the current line
 :LspDiagPrev|Display the previous diagnostic message before the current line
-:LspDiagCurrent|Display the diagnostic message for the current line
-:LspShowReferences|Display the list of references to the keyword under cursor in a new location list.
-:LspPeekReferences|Display the list of references to the keyword under cursor in a location list associated with the preview window.
+:LspDiagShow|Display the diagnostics messages from the language server for the current buffer in a new location list.
+:LspFold|Fold the current file
+:LspFormat|Format a range of lines in the current file using the language server. The **shiftwidth** and **expandtab** values set for the current buffer are used when format is applied.  The default range is the entire file.
+:LspGotoDeclaration|Go to the declaration of the keyword under cursor
+:LspGotoDefinition|Go to the definition of the keyword under cursor
+:LspGotoImpl|Go to the implementation of the keyword under cursor
+:LspGotoTypeDef|Go to the type definition of the keyword under cursor
 :LspHighlight|Highlight all the matches for the keyword under cursor
 :LspHighlightClear|Clear all the matches highlighted by :LspHighlight
-:LspOutline|Show the list of symbols defined in the current file in a separate window.
-:LspFormat|Format the current file using the LSP server. The **shiftwidth** and **expandtab** values set for the current buffer are used when format is applied.
-:{range}LspFormat|Format the specified range of lines.
 :LspIncomingCalls|Display the list of symbols calling the current symbol.
 :LspOutgoingCalls|Display the list of symbols called by the current symbol.
+:LspOutline|Show the list of symbols defined in the current file in a separate window.
+:LspPeekDeclaration|Open the declaration of the symbol under cursor in the preview window.
+:LspPeekDefinition|Open the definition of the symbol under cursor in the preview window.
+:LspPeekImpl|Open the implementation of the symbol under cursor in the preview window.
+:LspPeekReferences|Display the list of references to the keyword under cursor in a location list associated with the preview window.
+:LspPeekTypeDef|Open the type definition of the symbol under cursor in the preview window.
 :LspRename|Rename the current symbol
-:LspCodeAction|Apply the code action supplied by the LSP server to the diagnostic in the current line.
-:LspSymbolSearch|Perform a workspace wide search for a symbol
 :LspSelectionExpand|Expand the current symbol range visual selection
 :LspSelectionShrink|Shrink the current symbol range visual selection
-:LspFold|Fold the current file
+:LspServerRestart|Restart the language server for the current buffer
+:LspShowReferences|Display the list of references to the keyword under cursor in a new location list.
+:LspShowServers|Display the list of registered language servers
+:LspShowServerCapabilities|Display the language server capabilities for the current buffer
+:LspShowSignature|Display the signature of the keyword under cursor
+:LspSubTypeHierarchy|Display the sub type hierarchy in a popup window
+:LspSuperTypeHierarchy|Display the super type hierarchy in a popup window
+:LspSwitchSourceHeader|Switch between a source and a header file.
+:LspSymbolSearch|Perform a workspace wide search for a symbol
 :LspWorkspaceAddFolder `{folder}`| Add a folder to the workspace
-:LspWorkspaceRemoveFolder `{folder}`|Remove a folder from the workspace
 :LspWorkspaceListFolders|Show the list of folders in the workspace
-:LspServerRestart|Restart the LSP server for the current buffer
+:LspWorkspaceRemoveFolder `{folder}`|Remove a folder from the workspace
 
 ## Similar Vim LSP Plugins
 

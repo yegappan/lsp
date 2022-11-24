@@ -142,9 +142,9 @@ def CallHierarchyTreeItemShow(incoming: bool, treeItem: dict<any>, pfx: string)
   var item = treeItem.item
   var treePfx: string
   if treeItem.open && treeItem->has_key('children')
-    treePfx = '▼'
+    treePfx = has('gui_running') ? '▼' : '-'
   else
-    treePfx = '▶'
+    treePfx = has('gui_running') ? '▶' : '+'
   endif
   var fname = util.LspUriToFile(item.uri)
   var s = $'{pfx}{treePfx} {item.name} ({fname->fnamemodify(":t")} [{fname->fnamemodify(":h")}])'
