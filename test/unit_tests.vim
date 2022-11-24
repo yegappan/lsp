@@ -815,9 +815,9 @@ def Test_LspIncomingCalls()
   assert_equal([1, 2], [winnr(), winnr('$')])
   var l = getline(1, '$')
   assert_equal('# Incoming calls to "xFunc"', l[0])
-  assert_match('▼ xFunc (Xtest.c \[.*\])', l[1])
-  assert_match('  ▶ aFunc (Xtest.c \[.*\])', l[2])
-  assert_match('  ▶ bFunc (Xtest.c \[.*\])', l[3])
+  assert_match('- xFunc (Xtest.c \[.*\])', l[1])
+  assert_match('  + aFunc (Xtest.c \[.*\])', l[2])
+  assert_match('  + bFunc (Xtest.c \[.*\])', l[3])
   :%bw!
 enddef
 
