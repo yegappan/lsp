@@ -812,13 +812,12 @@ def Test_LspIncomingCalls()
   :sleep 1
   cursor(1, 6)
   :LspIncomingCalls
-  assert_equal(2, winnr('$'))
-  var l = getloclist(0)
-  assert_equal([7, 3], [l[0].lnum, l[0].col])
-  assert_equal('aFunc: xFunc();', l[0].text)
-  assert_equal([12, 3], [l[1].lnum, l[1].col])
-  assert_equal('bFunc: xFunc();', l[1].text)
-  setloclist(0, [], 'f')
+  assert_equal([1, 2], [winnr(), winnr('$')])
+  var l = getline(1, '$')
+  assert_equal('# Incoming calls to "xFunc"', l[0])
+  assert_match('▼ xFunc (Xtest.c \[.*\])', l[1])
+  assert_match('  ▶ aFunc (Xtest.c \[.*\])', l[2])
+  assert_match('  ▶ bFunc (Xtest.c \[.*\])', l[3])
   :%bw!
 enddef
 

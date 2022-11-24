@@ -1174,23 +1174,19 @@ def IncomingCalls(lspserver: dict<any>, fname: string)
     return
   endif
 
-  var reply = PrepareCallHierarchy(lspserver)
-  if reply->empty()
-    util.WarnMsg('No incoming calls')
-    return
-  endif
+  callhier.IncomingCalls(lspserver)
+enddef
 
+def GetIncomingCalls(lspserver: dict<any>, item: dict<any>): any
   # Request: "callHierarchy/incomingCalls"
   # Param: CallHierarchyIncomingCallsParams
   var param = {}
-  param.item = reply
-  reply = lspserver.rpc('callHierarchy/incomingCalls', param)
-  if reply->empty() || reply.result->empty()
-    util.WarnMsg('No incoming calls')
-    return
+  param.item = item
+  var reply = lspserver.rpc('callHierarchy/incomingCalls', param)
+  if reply->empty()
+    return null
   endif
-
-  callhier.IncomingCalls(reply.result)
+  return reply.result
 enddef
 
 # Request: "callHierarchy/outgoingCalls"
@@ -1201,23 +1197,19 @@ def OutgoingCalls(lspserver: dict<any>, fname: string)
     return
   endif
 
-  var reply = PrepareCallHierarchy(lspserver)
-  if reply->empty()
-    util.WarnMsg('No outgoing calls')
-    return
-  endif
+  callhier.OutgoingCalls(lspserver)
+enddef
 
+def GetOutgoingCalls(lspserver: dict<any>, item: dict<any>): any
   # Request: "callHierarchy/outgoingCalls"
   # Param: CallHierarchyOutgoingCallsParams
   var param = {}
-  param.item = reply
-  reply = lspserver.rpc('callHierarchy/outgoingCalls', param)
-  if reply->empty() || reply.result->empty()
-    util.WarnMsg('No outgoing calls')
-    return
+  param.item = item
+  var reply = lspserver.rpc('callHierarchy/outgoingCalls', param)
+  if reply->empty()
+    return null
   endif
-
-  callhier.OutgoingCalls(reply.result)
+  return reply.result
 enddef
 
 # Request: "textDocument/typehierarchy"
@@ -1588,8 +1580,11 @@ export def NewLspServer(path: string, args: list<string>, isSync: bool, initiali
     docHighlight: function(DocHighlight, [lspserver]),
     getDocSymbols: function(GetDocSymbols, [lspserver]),
     textDocFormat: function(TextDocFormat, [lspserver]),
+    prepareCallHierarchy: function(PrepareCallHierarchy, [lspserver]),
     incomingCalls: function(IncomingCalls, [lspserver]),
+    getIncomingCalls: function(GetIncomingCalls, [lspserver]),
     outgoingCalls: function(OutgoingCalls, [lspserver]),
+    getOutgoingCalls: function(GetOutgoingCalls, [lspserver]),
     typeHierarchy: function(TypeHiearchy, [lspserver]),
     renameSymbol: function(RenameSymbol, [lspserver]),
     codeAction: function(CodeAction, [lspserver]),

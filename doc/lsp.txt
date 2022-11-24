@@ -2,7 +2,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: Nov 19, 2022
+Last change: Nov 23, 2022
 
 ==============================================================================
 						*lsp-license*
@@ -94,9 +94,9 @@ The following commands are provided:
 :LspHighlight		Highlight all the matches for the keyword under cursor
 :LspHighlightClear	Clear all the matches highlighted by :LspHighlight
 :LspIncomingCalls	Display the list of symbols calling the current symbol
-			in a new location list.
+			in a window.
 :LspOutgoingCalls	Display the list of symbols called by the current
-			symbol in a new location list.
+			symbol in a window.
 :LspOutline		Show the list of symbols defined in the current file
 			in a separate window.
 :LspPeekDeclaration	Open the declaration of the symbol under cursor in a
@@ -482,12 +482,14 @@ To get a particular option value you can use the following: >
 			file using the LSP server.
 
 						*:LspIncomingCalls*
-:LspIncomingCalls	Creates a new location list with the location of the
-			list of symbols calling the current symbol.
+:LspIncomingCalls	Display a hierarchy of symbols calling the symbol
+			under the cursor in a window.  See
+			|lsp-call-hierarchy| for more information.
 
 						*:LspOutoingCalls*
-:LspOutoingCalls	Creates a new location list with the location of
-			the list of symbols called by the current symbol.
+:LspOutoingCalls	Display a hierarchy of symbols called by the symbol
+			under the cursor in a window.  See
+			|lsp-call-hierarchy| for more information.
 
 						*:LspRename*
 :LspRename		Rename the current symbol. You will be prompted to
@@ -745,7 +747,42 @@ Note that most of the language servers return only one symbol location even if
 the symbol is defined in multiple places in the code.
 
 ==============================================================================
-9. Autocommands						*lsp-autocmds*
+9. Call Hierarchy					*lsp-call-hierarchy*
+
+The |:LspIncomingCalls| and the |:LspOutoingCalls| commands can be used to
+display the call hierarchy of a symbol.  For example, the functions calling a
+function or the functions called by a function.  These two commands open a
+window containing the call hierarchy tree.  You can use the Vim motion
+commands to browse the call hierarchy.
+
+In the call hierarchy tree window, the following keys are supported:
+
+<Enter>				Jump to the location of the symbol under the
+				cursor.
+-				Expand and show the symbols calling or called
+				by the symbol under the cursor.
++				Close the call hierarchy for the symbol under
+				the cursor.
+
+You can display either the incoming call hierarchy or the outgoing call
+hierarchy in this window.  You cannot display both at the same time.
+
+In the call hierarchy tree window, the following commands are supported:
+
+:LspCallHierarchyRefresh	Query the language server again for the top
+				level symbol and refresh the call hierarchy
+				tree.
+:LspCallHierarchyIncoming	Display the incoming call hierarchy for the
+				top level symbol.  If the window is currently
+				displaying the outgoing calls, then it is
+				refreshed to display the incoming calls.
+:LspCallHierarchyOutgoing	Display the outgoing call hierarchy for the
+				top level symbol.  If the window is currently
+				displaying the incoming calls, then it is
+				refreshed to display the outgoing calls.
+
+==============================================================================
+10. Autocommands					*lsp-autocmds*
 
 							*LspAttached*
 LspAttached			A |User| autocommand fired when the LSP client
@@ -759,7 +796,7 @@ LspDiagsUpdated			A |User| autocommand invoked when new
 				has processed the diagnostics.
 
 ==============================================================================
-10. Debugging						*lsp-debug*
+11. Debugging						*lsp-debug*
 
 To debug this plugin, you can log the language server protocol messages sent
 and received by the plugin from the language server.  The following command
@@ -791,7 +828,7 @@ use the :LspServerTrace command to set the trace value: >
     :LspServerTrace { off | messages | verbose }
 <
 ==============================================================================
-11. Custom Command Handlers				*lsp-custom-commands*
+12. Custom Command Handlers				*lsp-custom-commands*
 
 When applying a code action, the language server may issue a non-standard
 command.  For example, the Java language server uses non-standard commands
