@@ -66,8 +66,8 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any): void
   if opt.lspOptions.hoverInPreview
     silent! pedit LspHoverReply
     wincmd P
-    setlocal buftype=nofile
-    setlocal bufhidden=delete
+    :setlocal buftype=nofile
+    :setlocal bufhidden=delete
     bufnr()->deletebufline(1, '$')
     hoverText->append(0)
     [1, 1]->cursor()

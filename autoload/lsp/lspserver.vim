@@ -1479,10 +1479,29 @@ enddef
 # Display the LSP server capabilities (received during the initialization
 # stage).
 def ShowCapabilities(lspserver: dict<any>)
-  echo $"Capabilities of '{lspserver.path}' LSP server:"
+  var wid = bufwinid('Language-Server-Capabilities')
+  if wid != -1
+    wid->win_gotoid()
+    :setlocal modifiable
+    :silent! :%d _
+  else
+    :new Language-Server-Capabilities
+    :setlocal buftype=nofile
+    :setlocal bufhidden=wipe
+    :setlocal noswapfile
+    :setlocal nonumber nornu
+    :setlocal fdc=0 signcolumn=no
+  endif
+  var l = []
+  var heading = $"'{lspserver.path}' Language Server Capabilities"
+  var underlines = repeat('=', heading->len())
+  l->extend([heading, underlines])
   for k in lspserver.caps->keys()->sort()
-    echo $'{k}: {lspserver.caps[k]->string()}'
+    l->add($'{k}: {lspserver.caps[k]->string()}')
   endfor
+  setline(1, l)
+  :setlocal nomodified
+  :setlocal nomodifiable
 enddef
 
 # Send a 'textDocument/definition' request to the LSP server to get the

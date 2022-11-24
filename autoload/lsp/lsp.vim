@@ -44,7 +44,7 @@ def LspInitOnce()
   prop_type_add('LspReadRef', {'highlight': 'DiffChange'})
   prop_type_add('LspWriteRef', {'highlight': 'DiffDelete'})
 
-  set ballooneval balloonevalterm
+  :set ballooneval balloonevalterm
   lspInitializedOnce = true
 enddef
 

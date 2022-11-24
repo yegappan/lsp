@@ -204,8 +204,8 @@ def CallHierarchyTreeShow(incoming: bool, prepareItem: dict<any>,
 
   CallHierarchyTreeRefresh()
 
-  setlocal nomodified
-  setlocal nomodifiable
+  :setlocal nomodified
+  :setlocal nomodifiable
 enddef
 
 export def IncomingCalls(lspserver: dict<any>)
