@@ -2,7 +2,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: Nov 24, 2022
+Last change: Nov 26, 2022
 
 ==============================================================================
 						*lsp-license*
@@ -208,17 +208,23 @@ Shell script, Vim script and PHP file types: >
 <
 To add a language server, the following information is needed:
 
-	filetype	One or more file types supported by the language
-			server.  This can be a |String| or a |List|. To specify
-			multiple multiple file types, use a List.
-	path		complete path to the language server executable
-			(without any arguments).
 	args		a list of command-line arguments passed to the
 			language server. Each argument is a separate List
 			item.
+	filetype	One or more file types supported by the language
+			server.  This can be a |String| or a |List|. To specify
+			multiple multiple file types, use a List.
+	initializationOptions
+			(Optional) for lsp servers (e.g. intelephense) some
+			additional initialization options may be required
+			or useful for initialization. Those can be provided in
+			this dictionary and if present will be transmitted to
+			the lsp server.
 	omnicompl	(Optional) a boolean value that enables (true)
 			or disables (false) omni-completion for this file
 			types. By default this is set to 'v:true'.
+	path		complete path to the language server executable
+			(without any arguments).
 	syncInit        (Optional) for language servers (e.g. rust analyzer,
 			gopls, etc.) that take time to initialize and reply to
 			a 'initialize' request message this should be set to
@@ -226,12 +232,6 @@ To add a language server, the following information is needed:
 			call is used to initialize the language server,
 			otherwise the server is initialized asynchronously.
 			By default this is set to 'v:false'.
-	initializationOptions
-			(Optional) for lsp servers (e.g. intelephense) some
-			additional initialization options may be required
-			or useful for initialization. Those can be provided in
-			this dictionary and if present will be transmitted to
-			the lsp server.
 
 The language servers are added using the LspAddServer() function. This function
 accepts a list of language servers with the above information.
@@ -290,6 +290,9 @@ showDiagInPopup		When using the |:LspDiagCurrent| command to display
 			true.
 showDiagOnStatusLine	Show a diagnostic message on a status line.
 			By default this is set to false.
+showInlayHints		Show inlay hints from the language server.  By default
+			this is set to false.  The inlay hint text is
+			displayed as a virtual text.
 showSignature		In insert mode, automatically show the current symbol
 			signature in a popup. By default this is set to true.
 snippetSupport		Enable snippet completion support.  Need a snippet
@@ -836,7 +839,18 @@ LspDiagsUpdated			A |User| autocommand invoked when new
 				has processed the diagnostics.
 
 ==============================================================================
-11. Debugging						*lsp-debug*
+11. Highlight Groups					*lsp-highlight-groups*
+
+The following highlight groups are used by the LSP plugin.  You can define
+these highlight groups in your .vimrc file before sourcing this plugin to
+override them.
+
+LspInlayHintsParam		Used to highlight inlay hints of kind
+				"parameter".
+LspInlayHintsType		Used to highlight inlay hints of kind "type".
+
+==============================================================================
+12. Debugging						*lsp-debug*
 
 To debug this plugin, you can log the language server protocol messages sent
 and received by the plugin from the language server.  The following command

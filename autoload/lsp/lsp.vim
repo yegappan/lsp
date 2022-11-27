@@ -20,6 +20,7 @@ import './symbol.vim'
 import './outline.vim'
 import './signature.vim'
 import './codeaction.vim'
+import './inlayhints.vim'
 
 # LSP server information
 var lspServers: list<dict<any>> = []
@@ -40,9 +41,11 @@ def LspInitOnce()
 		{name: 'LspDiagHint', text: 'H>', texthl: 'Question',
 						linehl: 'MatchParen'}])
 
-  prop_type_add('LspTextRef', {'highlight': 'Search'})
-  prop_type_add('LspReadRef', {'highlight': 'DiffChange'})
-  prop_type_add('LspWriteRef', {'highlight': 'DiffDelete'})
+  prop_type_add('LspTextRef', {highlight: 'Search'})
+  prop_type_add('LspReadRef', {highlight: 'DiffChange'})
+  prop_type_add('LspWriteRef', {highlight: 'DiffDelete'})
+
+  inlayhints.InitOnce()
 
   :set ballooneval balloonevalterm
   lspInitializedOnce = true
@@ -245,14 +248,20 @@ def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
   # Auto highlight all the occurrences of the current keyword
   if opt.lspOptions.autoHighlight &&
 			lspserver.isDocumentHighlightProvider
-      acmds->add({bufnr: bnr,
-		  event: 'CursorMoved',
-		  group: 'LSPBufferAutocmds',
-		  cmd: 'call LspDocHighlightClear() | call LspDocHighlight()'})
+    acmds->add({bufnr: bnr,
+		event: 'CursorMoved',
+		group: 'LSPBufferAutocmds',
+		cmd: 'call LspDocHighlightClear() | call LspDocHighlight()'})
+  endif
+
+  # Displaying inlay hints needs the Vim virtual text support.
+  if has('patch-9.0.0178') && opt.lspOptions.showInlayHints
+			      && (lspserver.isInlayHintProvider
+				  || lspserver.isClangdInlayHintsProvider)
+    inlayhints.BufferInit(bnr)
   endif
 
   autocmd_add(acmds)
-
 enddef
 
 def BufferInit(bnr: number): void

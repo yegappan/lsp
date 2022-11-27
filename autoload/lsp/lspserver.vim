@@ -21,6 +21,7 @@ import './signature.vim'
 import './codeaction.vim'
 import './callhierarchy.vim' as callhier
 import './typehierarchy.vim' as typehier
+import './inlayhints.vim'
 
 # LSP server standard output handler
 def Output_cb(lspserver: dict<any>, chan: channel, msg: any): void
@@ -289,6 +290,25 @@ def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
     lspserver.isFoldingRangeProvider = false
   endif
 
+  # inlayHintProvider
+  if lspserver.caps->has_key('inlayHintProvider')
+    if lspserver.caps.inlayHintProvider->type() == v:t_bool
+      lspserver.isInlayHintProvider = lspserver.caps.inlayHintProvider
+    else
+      lspserver.isInlayHintProvider = true
+    endif
+  else
+    lspserver.isInlayHintProvider = false
+  endif
+
+  # clangdInlayHintsProvider
+  if lspserver.caps->has_key('clangdInlayHintsProvider')
+    lspserver.isClangdInlayHintsProvider =
+					lspserver.caps.clangdInlayHintsProvider
+  else
+    lspserver.isClangdInlayHintsProvider = false
+  endif
+
   # textDocument/didSave notification
   if lspserver.caps->has_key('textDocumentSync')
     if lspserver.caps.textDocumentSync->type() == v:t_bool
@@ -395,6 +415,7 @@ def InitServer(lspserver: dict<any>)
         contentFormat: ['plaintext', 'markdown']
       },
       foldingRange: {lineFoldingOnly: true},
+      inlayHint: {dynamicRegistration: false},
       synchronization: {
 	didSave: true
       }
@@ -1212,6 +1233,35 @@ def GetOutgoingCalls(lspserver: dict<any>, item: dict<any>): any
   return reply.result
 enddef
 
+# Request: "textDocument/inlayHint"
+# Inlay hints.
+def InlayHintsShow(lspserver: dict<any>)
+  # Check whether LSP server supports type hierarchy
+  if !lspserver.isInlayHintProvider && !lspserver.isClangdInlayHintsProvider
+    util.ErrMsg("Error: LSP server does not support inlay hint")
+    return
+  endif
+
+  var lastlnum = line('$')
+  var param = {
+      textDocument: {uri: util.LspFileToUri(@%)},
+      range:
+      {
+	start: {line: 0, character: 0},
+	end: {line: lastlnum - 1, character: charcol([lastlnum, '$']) - 1}
+      }
+  }
+
+  var msg: string
+  if lspserver.isClangdInlayHintsProvider
+    # clangd-style inlay hints
+    msg = 'clangd/inlayHints'
+  else
+    msg = 'textDocument/inlayHint'
+  endif
+  var reply = lspserver.rpc_a(msg, param, inlayhints.InlayHintsReply)
+enddef
+
 # Request: "textDocument/typehierarchy"
 # Support the clangd version of type hierarchy retrieval method.
 # The method described in the LSP 3.17.0 standard is not supported as clangd
@@ -1604,6 +1654,7 @@ export def NewLspServer(path: string, args: list<string>, isSync: bool, initiali
     getIncomingCalls: function(GetIncomingCalls, [lspserver]),
     outgoingCalls: function(OutgoingCalls, [lspserver]),
     getOutgoingCalls: function(GetOutgoingCalls, [lspserver]),
+    inlayHintsShow: function(InlayHintsShow, [lspserver]),
     typeHierarchy: function(TypeHiearchy, [lspserver]),
     renameSymbol: function(RenameSymbol, [lspserver]),
     codeAction: function(CodeAction, [lspserver]),

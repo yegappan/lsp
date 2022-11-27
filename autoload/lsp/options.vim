@@ -39,7 +39,9 @@ export var lspOptions: dict<any> = {
   # Use a floating menu to show the code action menu instead of asking for input
   usePopupInCodeAction: false,
   # enable snippet completion support
-  snippetSupport: false
+  snippetSupport: false,
+  # enable inlay hints
+  showInlayHints: false
 }
 
 # set the LSP plugin options from the user provided option values
