@@ -584,8 +584,12 @@ enddef
 
 # clear the symbol reference highlight
 def g:LspDocHighlightClear()
-  :silent! prop_remove({types: ['LspTextRef', 'LspReadRef', 'LspWriteRef'],
-			all: true})
+  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  if lspserver->empty()
+    return
+  endif
+
+  prop_remove({types: ['LspTextRef', 'LspReadRef', 'LspWriteRef'], all: true})
 enddef
 
 def g:LspRequestDocSymbols()
