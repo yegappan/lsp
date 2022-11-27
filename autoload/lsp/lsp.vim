@@ -589,7 +589,13 @@ def g:LspDocHighlightClear()
     return
   endif
 
-  prop_remove({types: ['LspTextRef', 'LspReadRef', 'LspWriteRef'], all: true})
+  if has('patch-9.0.0233')
+    prop_remove({types: ['LspTextRef', 'LspReadRef', 'LspWriteRef'], all: true})
+  else
+    prop_remove({type: 'LspTextRef', all: true})
+    prop_remove({type: 'LspReadRef', all: true})
+    prop_remove({type: 'LspWriteRef', all: true})
+  endif
 enddef
 
 def g:LspRequestDocSymbols()
