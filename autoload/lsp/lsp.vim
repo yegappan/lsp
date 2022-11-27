@@ -527,7 +527,7 @@ enddef
 
 # get the count of diagnostics in the current buffer
 export def ErrorCount(): dict<number>
-  var res = {'Error': 0, 'Warn': 0, 'Info': 0, 'Hint': 0}
+  var res = {Error: 0, Warn: 0, Info: 0, Hint: 0}
   var fname: string = @%
   if fname == ''
     return res
@@ -584,9 +584,8 @@ enddef
 
 # clear the symbol reference highlight
 def g:LspDocHighlightClear()
-  prop_remove({'type': 'LspTextRef', 'all': true}, 1, line('$'))
-  prop_remove({'type': 'LspReadRef', 'all': true}, 1, line('$'))
-  prop_remove({'type': 'LspWriteRef', 'all': true}, 1, line('$'))
+  :silent! prop_remove({types: ['LspTextRef', 'LspReadRef', 'LspWriteRef'],
+			all: true})
 enddef
 
 def g:LspRequestDocSymbols()

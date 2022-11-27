@@ -125,7 +125,7 @@ export def DiagsGetErrorCount(lspserver: dict<any>): dict<number>
     endfor
   endif
 
-  return {'Error': errCount, 'Warn': warnCount, 'Info': infoCount, 'Hint': hintCount}
+  return {Error: errCount, Warn: warnCount, Info: infoCount, Hint: hintCount}
 enddef
 
 # Map the LSP DiagnosticSeverity to a quickfix type character
