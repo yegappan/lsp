@@ -66,7 +66,7 @@ def InlayHintsCallback(lspserver: dict<any>, timerid: number)
 enddef
 
 # Update all the inlay hints.  A timer is used to throttle the updates.
-def InlayHintsUpdate()
+def LspInlayHintsUpdate()
   if !get(b:, 'LspInlayHintsNeedsUpdate', true)
     return
   endif
@@ -87,12 +87,18 @@ def InlayHintsUpdate()
 enddef
 
 # Text is modified. Need to update the inlay hints.
-def InlayHintsChanged()
+def LspInlayHintsChanged()
   b:LspInlayHintsNeedsUpdate = true
 enddef
 
+# Trigger an update of the inlay hints in the current buffer.
+export def LspInlayHintsUpdateNow()
+  b:LspInlayHintsNeedsUpdate = true
+  LspInlayHintsUpdate()
+enddef
+
 # Stop updating the inlay hints.
-def InlayHintsUpdateStop()
+def LspInlayHintsUpdateStop()
   var timerid = get(b:, 'LspInlayHintsTimer', -1)
   if timerid != -1
     timerid->timer_stop()
@@ -104,18 +110,28 @@ enddef
 export def BufferInit(bnr: number)
   var acmds: list<dict<any>> = []
 
+  # Update the inlay hints (if needed) when the cursor is not moved for some
+  # time.
   acmds->add({bufnr: bnr,
 		event: ['CursorHold'],
 		group: 'LSPBufferAutocmds',
-		cmd: 'InlayHintsUpdate()'})
+		cmd: 'LspInlayHintsUpdate()'})
+  # After the text in the current buffer is modified, the inlay hints need to
+  # be updated.
   acmds->add({bufnr: bnr,
 		event: ['TextChanged'],
 		group: 'LSPBufferAutocmds',
-		cmd: 'InlayHintsChanged()'})
+		cmd: 'LspInlayHintsChanged()'})
+  # Editing a file should trigger an inlay hint update.
+  acmds->add({bufnr: bnr,
+		event: ['BufReadPost'],
+		group: 'LSPBufferAutocmds',
+		cmd: 'LspInlayHintsUpdateNow()'})
+  # Inlay hints need not be updated if a buffer is no longer active.
   acmds->add({bufnr: bnr,
 		event: ['BufLeave'],
 		group: 'LSPBufferAutocmds',
-		cmd: 'InlayHintsUpdateStop()'})
+		cmd: 'LspInlayHintsUpdateStop()'})
 
   autocmd_add(acmds)
 enddef

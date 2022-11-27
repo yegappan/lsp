@@ -367,6 +367,12 @@ def ServerInitReply(lspserver: dict<any>, initResult: dict<any>): void
   if bufwinid('LSP-Outline') != -1
     lspserver.getDocSymbols(@%)
   endif
+
+  # Update the inlay hints (if enabled)
+  if opt.lspOptions.showInlayHints && (lspserver.isInlayHintProvider
+				    || lspserver.isClangdInlayHintsProvider)
+    inlayhints.LspInlayHintsUpdateNow()
+  endif
 enddef
 
 # Request: 'initialize'
