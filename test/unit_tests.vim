@@ -523,7 +523,7 @@ enddef
 # Test for :LspGotoDefinition, :LspGotoDeclaration and :LspGotoImpl
 def Test_LspGotoSymbol()
   silent! edit Xtest.cpp
-  sleep 200m
+  sleep 600m
   var lines: list<string> =<< trim END
     #include <iostream>
     using namespace std;
