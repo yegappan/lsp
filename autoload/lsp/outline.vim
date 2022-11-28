@@ -259,7 +259,7 @@ export def OpenOutlineWindow()
     highlight default link LSPTitle Title
   endif
 
-  prop_type_add('LspOutlineHighlight', {bufnr: bufnr(), highlight: 'Search'})
+  prop_type_add('LspOutlineHighlight', {bufnr: bufnr(), highlight: 'diffchange', override: true})
 
   try
     autocmd_delete([{group: 'LSPOutline', event: '*'}])
