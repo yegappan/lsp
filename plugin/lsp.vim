@@ -7,8 +7,14 @@ vim9script
 
 # Language Server Protocol (LSP) plugin for vim
 
+if exists('g:loaded_lsp')
+  finish
+endif
+g:loaded_lsp = 1
+
 import autoload '../autoload/lsp/options.vim'
 import autoload '../autoload/lsp/lsp.vim'
+
 
 # Set LSP plugin options from 'opts'.
 def g:LspOptionsSet(opts: dict<any>)
