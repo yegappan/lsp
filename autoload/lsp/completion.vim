@@ -273,9 +273,12 @@ def g:LspOmniFunc(findstart: number, base: string): any
     # locate the start of the word
     var line = getline('.')
     var start = charcol('.') - 1
+    var keyword: string = ''
     while start > 0 && line[start - 1] =~ '\k'
+      keyword = line[start - 1] .. keyword
       start -= 1
     endwhile
+    lspserver.omniCompleteKeyword = keyword
     return start
   else
     # Wait for the list of matches from the LSP server
@@ -289,7 +292,7 @@ def g:LspOmniFunc(findstart: number, base: string): any
     endwhile
 
     var res: list<dict<any>> = lspserver.completeItems
-    return res->empty() ? v:none : res
+    return res->empty() ? v:none : res->filter((i, v) => v.word =~# '^' .. lspserver.omniCompleteKeyword)
   endif
 enddef
 
