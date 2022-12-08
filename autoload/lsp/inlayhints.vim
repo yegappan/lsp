@@ -48,7 +48,7 @@ export def InlayHintsReply(lspserver: dict<any>, inlayHints: any)
       label = hint.label
     endif
 
-    var kind = hint.kind->string()
+    var kind = hint->has_key('kind') ? hint.kind->string() : '1'
     if kind ==# "'type'" || kind ==# '1'
       prop_add(hint.position.line + 1, hint.position.character + 1,
 		{type: 'LspInlayHintsType', text: label, bufnr: bufnum})
