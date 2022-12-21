@@ -164,7 +164,7 @@ def DiagsUpdateLocList(lspserver: dict<any>, bnr: number): bool
   var qflist: list<dict<any>> = []
   var text: string
 
-  for [lnum, diag] in lspserver.diagsMap[bnr]->items()
+  for [lnum, diag] in lspserver.diagsMap[bnr]->items()->sort((a, b) => a[0]->str2nr() - b[0]->str2nr())
     text = diag.message->substitute("\n\\+", "\n", 'g')
     qflist->add({filename: fname,
 		    lnum: diag.range.start.line + 1,
