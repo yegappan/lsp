@@ -41,7 +41,7 @@ def LspInitOnce()
 		{name: 'LspDiagHint', text: 'H>', texthl: 'Question',
 						linehl: 'MatchParen'}])
 
-  prop_type_add('LspTextRef', {highlight: 'ErrorMsg', override: true})
+  prop_type_add('LspTextRef', {highlight: 'Search', override: true})
   prop_type_add('LspReadRef', {highlight: 'DiffChange', override: true})
   prop_type_add('LspWriteRef', {highlight: 'DiffDelete', override: true})
 
