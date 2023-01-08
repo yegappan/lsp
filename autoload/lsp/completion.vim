@@ -425,16 +425,23 @@ enddef
 export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
   # set options for insert mode completion
   if opt.lspOptions.autoComplete
+    var noSel = opt.lspOptions.noSelInCompletion ? ',noselect' : ''
+
     if lspserver.completionLazyDoc
-      setbufvar(bnr, '&completeopt', 'menuone,popuphidden,noinsert,noselect')
+      setbufvar(bnr, '&completeopt', 'menuone,popuphidden,noinsert' .. noSel)
       setbufvar(bnr, '&completepopup', 'width:80,highlight:Pmenu,align:item,border:off')
     else
-      setbufvar(bnr, '&completeopt', 'menuone,popup,noinsert,noselect')
+      setbufvar(bnr, '&completeopt', 'menuone,popup,noinsert' .. noSel)
       setbufvar(bnr, '&completepopup', 'border:off')
     endif
     # <Enter> in insert mode stops completion and inserts a <Enter>
     if !opt.lspOptions.noNewlineInCompletion
       inoremap <expr> <buffer> <CR> pumvisible() ? "\<C-Y>\<CR>" : "\<CR>"
+    endif
+
+	# <Tab> in insert mode confirms selected item in completion list
+    if opt.lspOptions.useTabInCompletion
+      inoremap <expr> <buffer> <Tab> pumvisible() ? "\<C-Y>" : "\<Tab>"
     endif
   else
     if LspOmniComplEnabled(ftype)

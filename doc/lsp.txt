@@ -280,6 +280,8 @@ noDiagHoverOnLine	Suppress diagnostic hover from appearing when
 noNewlineInCompletion	Suppress adding a new line on completion selection
 			with <CR>.
 			By default this is set to false.
+noSelInCompletion	Remove selection on the first item in the completion list.
+			By default this is set to true.
 outlineOnRight		Open the outline window on the right side, by default
 			this is false.
 outlineWinSize		Outline window size, by default this is 20.
@@ -302,6 +304,8 @@ snippetSupport		Enable snippet completion support.  Need a snippet
 usePopupInCodeAction    When using the |:LspCodeAction| command to display the
 			code action for the current line, use a popup menu
 			instead of echoing.
+			By default this is set to false.
+useTabInCompletion	Using tab to confirm the selected item in the completion list.
 			By default this is set to false.
 
 For example, to disable the automatic placement of signs for the LSP

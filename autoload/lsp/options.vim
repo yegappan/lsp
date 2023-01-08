@@ -23,6 +23,8 @@ export var lspOptions: dict<any> = {
   keepFocusInReferences: false,
   # Suppress adding a new line on completion selection with <CR>
   noNewlineInCompletion: false,
+  # Remove selection on the first item in the completion list.
+  noSelInCompletion: true,
   # Outline window size
   outlineWinSize: 20,
   # Open outline window on right side
@@ -38,6 +40,8 @@ export var lspOptions: dict<any> = {
   ignoreMissingServer: false,
   # Use a floating menu to show the code action menu instead of asking for input
   usePopupInCodeAction: false,
+  # Use tab to confirm the selected item in the completion list
+  useTabInCompletion: false,
   # enable snippet completion support
   snippetSupport: false,
   # enable inlay hints
