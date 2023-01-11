@@ -167,6 +167,10 @@ def g:LspShowSignature(): string
   return ''
 enddef
 
+def BufChangeTimerCallback(timer_id: number)
+  remove(b:, 'LspBufChangeTimer')
+enddef
+
 # buffer change notification listener
 def Bufchange_listener(bnr: number, start: number, end: number, added: number, changes: list<dict<number>>)
   var lspserver: dict<any> = buf.CurbufGetServer()
@@ -174,6 +178,13 @@ def Bufchange_listener(bnr: number, start: number, end: number, added: number, c
     return
   endif
 
+  if opt.lspOptions.autoComplete
+    var timer: number = get(b:, 'LspBufChangeTimer')
+    if timer > 0
+      return
+    endif
+    b:LspBufChangeTimer = timer_start(300, function('BufChangeTimerCallback', []))
+  endif
   lspserver.textdocDidChange(bnr, start, end, added, changes)
 enddef
 
