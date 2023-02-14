@@ -31,6 +31,10 @@ var ftypeServerMap: dict<dict<any>> = {}
 var lspInitializedOnce = false
 
 def LspInitOnce()
+  var lineHL: string = opt.lspOptions.diagLineHL
+  if lineHL->empty()
+    lineHL = 'MatchParen'
+  endif
   # Signs used for LSP diagnostics
   sign_define([{name: 'LspDiagError', text: 'E>', texthl: 'ErrorMsg',
 						linehl: 'MatchParen'},

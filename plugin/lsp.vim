@@ -168,5 +168,4 @@ if has('gui_running')
           \ :LspHighlightClear<CR>
   endif
 endif
-
 # vim: shiftwidth=2 softtabstop=2
