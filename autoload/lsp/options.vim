@@ -30,6 +30,8 @@ export var lspOptions: dict<any> = {
   # Suppress diagnostic hover from appearing when the mouse is over the line
   # instead of the signature
   noDiagHoverOnLine: true,
+  # Highlight used for diagnostic line.
+  diagLineHL: 'NONE',
   # Show a diagnostic message on a status line
   showDiagOnStatusLine: false,
   # Make diagnostics show in a popup instead of echoing

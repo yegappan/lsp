@@ -31,15 +31,19 @@ var ftypeServerMap: dict<dict<any>> = {}
 var lspInitializedOnce = false
 
 def LspInitOnce()
+  var lineHL: string = opt.lspOptions.diagLineHL
+  if lineHL->empty()
+    lineHL = 'MatchParen'
+  endif
   # Signs used for LSP diagnostics
   sign_define([{name: 'LspDiagError', text: 'E>', texthl: 'ErrorMsg',
-						linehl: 'MatchParen'},
+						linehl: lineHL},
 		{name: 'LspDiagWarning', text: 'W>', texthl: 'Search',
-						linehl: 'MatchParen'},
+						linehl: lineHL},
 		{name: 'LspDiagInfo', text: 'I>', texthl: 'Pmenu',
-						linehl: 'MatchParen'},
+						linehl: lineHL},
 		{name: 'LspDiagHint', text: 'H>', texthl: 'Question',
-						linehl: 'MatchParen'}])
+						linehl: lineHL}])
 
   prop_type_add('LspTextRef', {highlight: 'Search', override: true})
   prop_type_add('LspReadRef', {highlight: 'DiffChange', override: true})
@@ -167,6 +171,15 @@ def g:LspShowSignature(): string
   return ''
 enddef
 
+def BufChangeTimerCallback(timer_id: number)
+  #var lspserver: dict<any> = buf.CurbufGetServer()
+  #echomsg $"bnr:{bnr} start:{start} end:{end} added:{added} changes:{string(changes)}"
+  #lspserver.textdocDidChange(bnr, start, end, added, changes)
+  #if exists('b:LspBufChangeTimer')
+  remove(b:, 'LspBufChangeTimer')
+  #endif
+enddef
+
 # buffer change notification listener
 def Bufchange_listener(bnr: number, start: number, end: number, added: number, changes: list<dict<number>>)
   var lspserver: dict<any> = buf.CurbufGetServer()
@@ -174,6 +187,15 @@ def Bufchange_listener(bnr: number, start: number, end: number, added: number, c
     return
   endif
 
+  if opt.lspOptions.autoComplete
+    var timer: number = get(b:, 'LspBufChangeTimer')
+    if timer > 0
+      echomsg "DONT"
+      return
+    endif
+    b:LspBufChangeTimer = timer_start(300, function('BufChangeTimerCallback', []))
+  endif
+  echomsg "SEND"
   lspserver.textdocDidChange(bnr, start, end, added, changes)
 enddef
 
