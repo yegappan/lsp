@@ -13,7 +13,7 @@ export def RegisterCmdHandler(cmd: string, Handler: func)
 enddef
 
 def DoCommand(lspserver: dict<any>, cmd: dict<any>)
-  if CommandHandlers->has_key(cmd.command)
+  if cmd->has_key('command') && CommandHandlers->has_key(cmd.command)
     var CmdHandler: func = CommandHandlers[cmd.command]
     call CmdHandler(cmd)
   else
