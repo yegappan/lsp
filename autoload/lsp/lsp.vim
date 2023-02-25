@@ -31,15 +31,16 @@ var ftypeServerMap: dict<dict<any>> = {}
 var lspInitializedOnce = false
 
 def LspInitOnce()
+  var lineHL: string = opt.lspOptions.diagLineHL
   # Signs used for LSP diagnostics
   sign_define([{name: 'LspDiagError', text: 'E>', texthl: 'ErrorMsg',
-						linehl: 'MatchParen'},
+						linehl: lineHL},
 		{name: 'LspDiagWarning', text: 'W>', texthl: 'Search',
-						linehl: 'MatchParen'},
+						linehl: lineHL},
 		{name: 'LspDiagInfo', text: 'I>', texthl: 'Pmenu',
-						linehl: 'MatchParen'},
+						linehl: lineHL},
 		{name: 'LspDiagHint', text: 'H>', texthl: 'Question',
-						linehl: 'MatchParen'}])
+						linehl: lineHL}])
 
   prop_type_add('LspTextRef', {highlight: 'Search', override: true})
   prop_type_add('LspReadRef', {highlight: 'DiffChange', override: true})

@@ -277,6 +277,9 @@ keepFocusInReferences	Focus on the location list window after
 noDiagHoverOnLine	Suppress diagnostic hover from appearing when
 			the mouse is over the line instead of the signature.
 			By default this is set to true.
+diagLineHL		Highlight used for diagnostic line.
+			By default uses `Cursor`.
+			Use `NONE` to disable.
 noNewlineInCompletion	Suppress adding a new line on completion selection
 			with <CR>.
 			By default this is set to false.
