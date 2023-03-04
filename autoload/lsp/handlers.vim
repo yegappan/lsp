@@ -73,7 +73,7 @@ def ProcessUnsupportedNotifOnce(lspserver: dict<any>, reply: dict<any>)
   endif
 enddef
 
-# ignore unsupported notification message
+# silently ignore an unsupported notification message
 def IgnoreNotif(lspserver: dict<any>, reply: dict<any>)
 enddef
 
@@ -84,7 +84,7 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       'window/showMessage': ProcessShowMsgNotif,
       'window/logMessage': ProcessLogMsgNotif,
       'textDocument/publishDiagnostics': ProcessDiagNotif,
-      '$/progress': ProcessUnsupportedNotif,
+      '$/progress': IgnoreNotif,
       '$/logTrace': ProcessLogTraceNotif,
       'telemetry/event': ProcessUnsupportedNotifOnce,
       # Java language server sends the 'language/status' notification which is
