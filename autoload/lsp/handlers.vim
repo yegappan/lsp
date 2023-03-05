@@ -89,7 +89,10 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       'telemetry/event': ProcessUnsupportedNotifOnce,
       # Java language server sends the 'language/status' notification which is
       # not in the LSP specification
-      'language/status': IgnoreNotif
+      'language/status': IgnoreNotif,
+      # Typescript language server sends the '$/typescriptVersion' notification
+      # which is not in the LSP specification
+      '$/typescriptVersion': IgnoreNotif
     }
 
   if lsp_notif_handlers->has_key(reply.method)
