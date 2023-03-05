@@ -468,7 +468,7 @@ export def TagFunc(lspserver: dict<any>,
     var tagitem = {}
     tagitem.name = pat
     tagitem.filename = util.LspUriToFile(tagloc.uri)
-    tagitem.cmd = (tagloc.range.start.line + 1)->string()
+    tagitem.cmd = printf("/\\%%%dl\\%%%dc", tagloc.range.start.line + 1, tagloc.range.start.character + 1)
     retval->add(tagitem)
   endfor
 
