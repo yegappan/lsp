@@ -73,10 +73,6 @@ def ProcessUnsupportedNotifOnce(lspserver: dict<any>, reply: dict<any>)
   endif
 enddef
 
-# silently ignore an unsupported notification message
-def IgnoreNotif(lspserver: dict<any>, reply: dict<any>)
-enddef
-
 # process notification messages from the LSP server
 export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
   var lsp_notif_handlers: dict<func> =
@@ -84,22 +80,28 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       'window/showMessage': ProcessShowMsgNotif,
       'window/logMessage': ProcessLogMsgNotif,
       'textDocument/publishDiagnostics': ProcessDiagNotif,
-      '$/progress': IgnoreNotif,
       '$/logTrace': ProcessLogTraceNotif,
-      '$/status/report': IgnoreNotif,
-      '$/status/show': IgnoreNotif,
       'telemetry/event': ProcessUnsupportedNotifOnce,
+    }
+
+  var lsp_ignored_notif_handlers: list<string> =
+    [
+      '$/progress',
+      '$/status/report',
+      '$/status/show',
       # Java language server sends the 'language/status' notification which is
       # not in the LSP specification
-      'language/status': IgnoreNotif,
+      'language/status',
       # Typescript language server sends the '$/typescriptVersion' notification
       # which is not in the LSP specification
-      '$/typescriptVersion': IgnoreNotif
-    }
+      '$/typescriptVersion'
+    ]
 
   if lsp_notif_handlers->has_key(reply.method)
     lsp_notif_handlers[reply.method](lspserver, reply)
-  else
+  elseif lspserver.customNotificationHandlers->has_key(reply.method)
+    lspserver.customNotificationHandlers[reply.method](lspserver, reply)
+  elseif lsp_ignored_notif_handlers->index(reply.method) == -1
     util.ErrMsg($'Error: Unsupported notification received from LSP server {reply->string()}')
   endif
 enddef
