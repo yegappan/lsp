@@ -867,7 +867,7 @@ def Test_LspTagFunc()
   :setlocal tagfunc=lsp#lsp#TagFunc
   cursor(3, 4)
   :exe "normal \<C-]>"
-  assert_equal([11, 1], [line('.'), col('.')])
+  assert_equal([11, 6], [line('.'), col('.')])
   cursor(1, 1)
   assert_fails('exe "normal \<C-]>"', 'E433: No tags file')
 
