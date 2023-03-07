@@ -382,7 +382,8 @@ def InitServer(lspserver: dict<any>)
   var clientCaps: dict<any> = {
     workspace: {
       workspaceFolders: true,
-      applyEdit: true
+      applyEdit: true,
+      configuration: false
     },
     textDocument: {
       callHierarchy: {

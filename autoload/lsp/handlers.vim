@@ -86,6 +86,8 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       'textDocument/publishDiagnostics': ProcessDiagNotif,
       '$/progress': IgnoreNotif,
       '$/logTrace': ProcessLogTraceNotif,
+      '$/status/report': IgnoreNotif,
+      '$/status/show': IgnoreNotif,
       'telemetry/event': ProcessUnsupportedNotifOnce,
       # Java language server sends the 'language/status' notification which is
       # not in the LSP specification
@@ -136,6 +138,20 @@ def ProcessWorkspaceFoldersReq(lspserver: dict<any>, request: dict<any>)
   endif
 enddef
 
+# process the workspace/configuration LSP server request
+# Request: "workspace/configuration"
+# Param: none
+def ProcessWorkspaceConfiguration(lspserver: dict<any>, request: dict<any>)
+  lspserver.sendResponse(request, {}, {})
+enddef
+
+# process the window/workDoneProgress/create LSP server request
+# Request: "window/workDoneProgress/create"
+# Param: none
+def ProcessWorkDoneProgressCreate(lspserver: dict<any>, request: dict<any>)
+  lspserver.sendResponse(request, {}, {})
+enddef
+
 # process the client/registerCapability LSP server request
 # Request: "client/registerCapability"
 # Param: RegistrationParams
@@ -160,10 +176,10 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
     {
       'workspace/applyEdit': ProcessApplyEditReq,
       'workspace/workspaceFolders': ProcessWorkspaceFoldersReq,
-      'window/workDoneProgress/create': ProcessUnsupportedReq,
+      'window/workDoneProgress/create': ProcessWorkDoneProgressCreate,
       'client/registerCapability': ProcessClientRegisterCap,
       'client/unregisterCapability': ProcessClientUnregisterCap,
-      'workspace/configuration': ProcessUnsupportedReq,
+      'workspace/configuration': ProcessWorkspaceConfiguration,
       'workspace/codeLens/refresh': ProcessUnsupportedReq,
       'workspace/semanticTokens/refresh': ProcessUnsupportedReq
     }
