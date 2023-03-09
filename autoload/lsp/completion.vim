@@ -88,9 +88,9 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
   var completeItems: list<dict<any>> = []
   for item in items
     var d: dict<any> = {}
-    if item->has_key('textEdit') && item.textEdit->has_key('newText')
-      d.word = item.textEdit.newText
-    elseif item->has_key('insertText')
+    # TODO: Add proper support for item.textEdit.newText and item.textEdit.range
+    # Keep in mind that item.textEdit.range can start be way before the typed keyword.
+    if item->has_key('insertText')
       d.word = item.insertText
     else
       d.word = item.label
@@ -148,19 +148,6 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     endif
 
     var start_col: number = 0
-
-    # FIXME: The following doesn't work with typescript as one of the
-    # completion item has a start column that is before the special character.
-    # For example, when completing the methods for "str.", the dot is removed.
-    #
-    # # Find the start column for the completion.  If any of the entries
-    # # returned by the LSP server has a starting position, then use that.
-    # for item in items
-    #   if item->has_key('textEdit')
-    #     start_col = item.textEdit.range.start.character + 1
-    #     break
-    #   endif
-    # endfor
 
     # LSP server didn't return a starting position for completion, search
     # backwards from the current cursor position for a non-keyword character.
