@@ -220,6 +220,12 @@ To add a language server, the following information is needed:
 			or useful for initialization. Those can be provided in
 			this dictionary and if present will be transmitted to
 			the lsp server.
+	customNotificationHandlers
+			(Optional) some lsp servers (e.g.
+			typescript-language-server) will send additional
+			notifications which you might want to silence or handle.
+			The provided notification handlers will be called with a
+			reference to the 'lspserver' and the 'reply'.
 	omnicompl	(Optional) a boolean value that enables (true)
 			or disables (false) omni-completion for this file
 			types. By default this is set to 'v:true'.

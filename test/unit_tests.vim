@@ -19,10 +19,17 @@ if do_profile
 endif
 
 source ../plugin/lsp.vim
+
 var lspServers = [{
       filetype: ['c', 'cpp'],
       path: (exepath('clangd-14') ?? exepath('clangd')),
-      args: ['--background-index', '--clang-tidy']
+      args: ['--background-index', '--clang-tidy'],
+      initializationOptions: { clangdFileStatus: true },
+      customNotificationHandlers: {
+        'textDocument/clangd.fileStatus': (lspserver: dict<any>, reply: dict<any>) => {
+          g:LSPTest_customNotificationHandlerReplied = true
+        }
+      }
   }]
 call LspAddServer(lspServers)
 echomsg systemlist($'{lspServers[0].path} --version')
@@ -40,7 +47,7 @@ g:LSPTest = true
 # Return zero for success, one for failure (like the assert function).
 func WaitForAssert(assert, ...)
   let timeout = get(a:000, 0, 5000)
-  if WaitForCommon(v:null, a:assert, timeout) < 0
+  if s:WaitForCommon(v:null, a:assert, timeout) < 0
     return 1
   endif
   return 0
@@ -898,6 +905,24 @@ def Test_LspDiagsUpdated_Autocmd()
   :%bw!
   autocmd_delete([{event: 'User', pattern: 'LspDiagsUpdated'}])
   assert_equal(3, g:LspAutoCmd)
+enddef
+
+# Test custom notification handlers
+def Test_LspCustomNotificationHandlers()
+
+  g:LSPTest_customNotificationHandlerReplied = false
+
+  silent! edit Xtest.c
+  sleep 200m
+  var lines: list<string> =<< trim END
+    int a = 1;
+    int main(void) {
+      return a;
+    }
+  END
+  setline(1, lines)
+  WaitForAssert(() => assert_equal(true, g:LSPTest_customNotificationHandlerReplied))
+  :%bw!
 enddef
 
 # Start the C language server.  Returns true on success and false on failure.

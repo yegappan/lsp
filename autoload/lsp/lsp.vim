@@ -429,6 +429,11 @@ export def AddServer(serverList: list<dict<any>>)
       initializationOptions = server.initializationOptions
     endif
 
+    var customNotificationHandlers: dict<func> = {}
+    if server->has_key('customNotificationHandlers')
+      customNotificationHandlers = server.customNotificationHandlers
+    endif
+
     if server.omnicompl->type() != v:t_bool
       util.ErrMsg($'Error: Setting of omnicompl {server.omnicompl} is not a Boolean')
       return
@@ -441,7 +446,8 @@ export def AddServer(serverList: list<dict<any>>)
     var lspserver: dict<any> = lserver.NewLspServer(server.path,
 						    args,
 						    server.syncInit,
-						    initializationOptions)
+						    initializationOptions,
+						    customNotificationHandlers)
 
     var ftypes = server.filetype
     if ftypes->type() == v:t_string
