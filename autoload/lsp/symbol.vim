@@ -394,10 +394,10 @@ def SymbolFilterCB(lspserver: dict<any>, id: number, key: string): bool
   return false
 enddef
 
-# Display the file specified by LSP 'location' in a popup window and highlight
-# the range in 'location'.
+# Display the file specified by LSP 'LocationLink' in a popup window and
+# highlight the range in 'location'.
 def PeekSymbolLocation(lspserver: dict<any>, location: dict<any>)
-  var fname = util.LspUriToFile(location.uri)
+  var fname = util.LspUriToFile(location.targetUri)
   var bnum = fname->bufadd()
   if bnum == 0
     # Failed to create or find a buffer
@@ -431,13 +431,13 @@ def PeekSymbolLocation(lspserver: dict<any>, location: dict<any>)
   var pos: list<number> = []
   var start_col: number
   var end_col: number
-  start_col = util.GetLineByteFromPos(pwbuf, location.range.start) + 1
-  end_col = util.GetLineByteFromPos(pwbuf, location.range.end) + 1
-  pos->add(location.range.start.line + 1)
+  start_col = util.GetLineByteFromPos(pwbuf, location.targetSelectionRange.start) + 1
+  end_col = util.GetLineByteFromPos(pwbuf, location.targetSelectionRange.end) + 1
+  pos->add(location.targetSelectionRange.start.line + 1)
   pos->extend([start_col, end_col - start_col])
   matchaddpos('Search', [pos], 10, 101, {window: pwid})
   var cmds =<< trim eval END
-    [{location.range.start.line + 1}, 1]->cursor()
+    [{location.targetSelectionRange.start.line + 1}, 1]->cursor()
     normal! z.
   END
   win_execute(pwid, cmds, 'silent!')
@@ -467,8 +467,10 @@ export def TagFunc(lspserver: dict<any>,
   for tagloc in taglocations
     var tagitem = {}
     tagitem.name = pat
-    tagitem.filename = util.LspUriToFile(tagloc.uri)
-    tagitem.cmd = $"/\\%{tagloc.range.start.line + 1}l\\%{tagloc.range.start.character + 1}c"
+
+    tagitem.filename = util.LspUriToFile(tagloc.targetUri)
+    tagitem.cmd = $"/\\%{tagloc.targetSelectionRange.start.line + 1}l\\%{tagloc.targetSelectionRange.start.character + 1}c"
+
     retval->add(tagitem)
   endfor
 
