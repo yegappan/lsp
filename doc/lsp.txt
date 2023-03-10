@@ -282,6 +282,7 @@ diagLineHL		Highlight used for diagnostic line.
 echoSignature		In insert mode, echo the current symbol signature
 			instead of showing it in a popup. By default this is
 			set to false.
+hideDisabledCodeActions Hide all disabled code actions
 ignoreMissingServer	Do not print a missing language server executable.
 			By default this is set to false.
 keepFocusInReferences	Focus on the location list window after
