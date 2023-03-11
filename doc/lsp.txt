@@ -208,6 +208,8 @@ Shell script, Vim script and PHP file types: >
 <
 To add a language server, the following information is needed:
 
+	path		complete path to the language server executable
+			(without any arguments).
 	args		a list of command-line arguments passed to the
 			language server. Each argument is a separate List
 			item.
@@ -220,6 +222,9 @@ To add a language server, the following information is needed:
 			or useful for initialization. Those can be provided in
 			this dictionary and if present will be transmitted to
 			the lsp server.
+
+Aditionally the following configurations can be made:
+
 	customNotificationHandlers
 			(Optional) some lsp servers (e.g.
 			typescript-language-server) will send additional
@@ -229,8 +234,6 @@ To add a language server, the following information is needed:
 	omnicompl	(Optional) a boolean value that enables (true)
 			or disables (false) omni-completion for this file
 			types. By default this is set to 'v:true'.
-	path		complete path to the language server executable
-			(without any arguments).
 	syncInit        (Optional) for language servers (e.g. rust analyzer,
 			gopls, etc.) that take time to initialize and reply to
 			a 'initialize' request message this should be set to
@@ -273,9 +276,13 @@ autoHighlightDiags	Automatically place signs on the lines with a
 autoPopulateDiags	Automatically populate the location list with
 			diagnostics from the language server. By default this
 			is set to false.
+diagLineHL		Highlight used for diagnostic line.
+			By default uses `Cursor`.
+			Use `NONE` to disable.
 echoSignature		In insert mode, echo the current symbol signature
 			instead of showing it in a popup. By default this is
 			set to false.
+hideDisabledCodeActions Hide all disabled code actions
 ignoreMissingServer	Do not print a missing language server executable.
 			By default this is set to false.
 keepFocusInReferences	Focus on the location list window after
@@ -283,9 +290,6 @@ keepFocusInReferences	Focus on the location list window after
 noDiagHoverOnLine	Suppress diagnostic hover from appearing when
 			the mouse is over the line instead of the signature.
 			By default this is set to true.
-diagLineHL		Highlight used for diagnostic line.
-			By default uses `Cursor`.
-			Use `NONE` to disable.
 noNewlineInCompletion	Suppress adding a new line on completion selection
 			with <CR>.
 			By default this is set to false.

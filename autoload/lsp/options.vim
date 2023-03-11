@@ -43,7 +43,9 @@ export var lspOptions: dict<any> = {
   # enable snippet completion support
   snippetSupport: false,
   # enable inlay hints
-  showInlayHints: false
+  showInlayHints: false,
+  # hide disabled code actions
+  hideDisabledCodeActions: false
 }
 
 # set the LSP plugin options from the user provided option values

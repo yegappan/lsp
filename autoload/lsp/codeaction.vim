@@ -43,7 +43,13 @@ export def HandleCodeAction(lspserver: dict<any>, selAction: dict<any>)
   endif
 enddef
 
-export def ApplyCodeAction(lspserver: dict<any>, actions: list<dict<any>>): void
+export def ApplyCodeAction(lspserver: dict<any>, actionlist: list<dict<any>>): void
+  var actions = actionlist
+
+  if opt.lspOptions.hideDisabledCodeActions
+    actions = actions->filter((ix, act) => !act->has_key('disabled'))
+  endif
+
   if actions->empty()
     # no action can be performed
     util.WarnMsg('No code action is available')
