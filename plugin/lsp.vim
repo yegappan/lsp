@@ -80,7 +80,7 @@ augroup END
 # autocmd VimLeavePre * call lsp.StopAllServers()
 
 # LSP commands
-command! -nargs=0 -bar -range LspCodeAction lsp.CodeAction(<line1>, <line2>)
+command! -nargs=? -bar -range LspCodeAction lsp.CodeAction(<line1>, <line2>, <q-args>)
 command! -nargs=0 -bar LspDiagCurrent lsp.LspShowCurrentDiag()
 command! -nargs=0 -bar LspDiagFirst lsp.JumpToDiag('first')
 command! -nargs=0 -bar LspDiagHighlightDisable lsp.DiagHighlightDisable()

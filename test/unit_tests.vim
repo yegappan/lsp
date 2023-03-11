@@ -343,26 +343,57 @@ def Test_LspCodeAction()
   sleep 1
   cursor(4, 1)
   redraw!
-  g:LSPTest_CodeActionChoice = 1
-  :LspCodeAction
+  :LspCodeAction 1
   assert_equal("\tcount = 20;", getline(4))
 
   setline(4, "\tcount = 20:")
   cursor(4, 1)
   sleep 500m
-  g:LSPTest_CodeActionChoice = 0
-  :LspCodeAction
+  :LspCodeAction 0
   assert_equal("\tcount = 20:", getline(4))
 
-  g:LSPTest_CodeActionChoice = 2
   cursor(4, 1)
-  :LspCodeAction
+  :LspCodeAction 2
   assert_equal("\tcount = 20:", getline(4))
 
-  g:LSPTest_CodeActionChoice = 1
   cursor(4, 1)
-  :LspCodeAction
+  :LspCodeAction 1
   assert_equal("\tcount = 20;", getline(4))
+  bw!
+
+  # pattern and string prefix
+  silent! edit Xtest.c
+  sleep 200m
+  var lines2: list<string> =<< trim END
+    void testFunc()
+    {
+	int count;
+	if (count = 1) {
+	}
+    }
+  END
+  setline(1, lines2)
+  sleep 1
+  cursor(4, 1)
+  redraw!
+  :LspCodeAction use
+  assert_equal("\tif (count == 1) {", getline(4))
+
+  setline(4, "\tif (count = 1) {")
+  cursor(4, 1)
+  sleep 500m
+  :LspCodeAction /paren
+  assert_equal("\tif ((count = 1)) {", getline(4))
+
+  setline(4, "\tif (count = 1) {")
+  cursor(4, 1)
+  sleep 500m
+  :LspCodeAction NON_EXISTING_PREFIX
+  assert_equal("\tif (count = 1) {", getline(4))
+
+  cursor(4, 1)
+  :LspCodeAction /NON_EXISTING_REGEX
+  assert_equal("\tif (count = 1) {", getline(4))
   bw!
 
   # empty file

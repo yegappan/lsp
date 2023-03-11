@@ -1335,7 +1335,7 @@ enddef
 # Request: "textDocument/codeAction"
 # Param: CodeActionParams
 def CodeAction(lspserver: dict<any>, fname_arg: string, line1: number,
-		line2: number)
+		line2: number, query: string)
   # Check whether LSP server supports code action operation
   if !lspserver.isCodeActionProvider
     util.ErrMsg("Error: LSP server does not support code action operation")
@@ -1368,7 +1368,7 @@ def CodeAction(lspserver: dict<any>, fname_arg: string, line1: number,
     return
   endif
 
-  codeaction.ApplyCodeAction(lspserver, reply.result)
+  codeaction.ApplyCodeAction(lspserver, reply.result, query)
 enddef
 
 # List project-wide symbols matching query string
