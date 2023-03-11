@@ -687,20 +687,23 @@ enddef
 
 # Rename a symbol
 # Uses LSP "textDocument/rename" request
-export def Rename()
+export def Rename(a_newName: string)
   var lspserver: dict<any> = buf.CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
 
-  var sym: string = expand('<cword>')
-  var newName: string = input($"Rename symbol '{sym}' to: ", sym)
+  var newName: string = a_newName
   if newName == ''
-    return
-  endif
+    var sym: string = expand('<cword>')
+    newName = input($"Rename symbol '{sym}' to: ", sym)
+    if newName == ''
+      return
+    endif
 
-  # clear the input prompt
-  echo "\r"
+    # clear the input prompt
+    echo "\r"
+  endif
 
   lspserver.renameSymbol(newName)
 enddef

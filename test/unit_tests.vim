@@ -445,6 +445,25 @@ def Test_LspRename()
     }
   END
   assert_equal(expected, getline(1, '$'))
+
+  cursor(1, 1)
+  search('counter')
+  LspRename countvar
+  var expected2: list<string> =<< trim END
+    void F1(int countvar)
+    {
+	countvar = 20;
+
+	++countvar;
+    }
+
+    void F2(int count)
+    {
+	count = 5;
+    }
+  END
+  assert_equal(expected2, getline(1, '$'))
+  sleep 100m
   bw!
 
   # empty file

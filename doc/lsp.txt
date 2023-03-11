@@ -527,10 +527,12 @@ can map these commands to keys and make it easier to invoke them.
 			language servers support this feature.
 
 						*:LspRename*
-:LspRename		Rename the current symbol. You will be prompted to
-			enter the new name for the symbol. You can press <Esc>
-			or enter an empty string in the prompt to cancel the
-			operation.
+:LspRename [newName]	Rename the current symbol.
+
+			When [newName] is not given, then you will be prompted
+			to enter the new name for the symbol. You can press
+			<Esc> or enter an empty string in the prompt to cancel
+			the operation.
 
 						*:LspSelectionExpand*
 :LspSelectionExpand	Visually select the region of the symbol under the
