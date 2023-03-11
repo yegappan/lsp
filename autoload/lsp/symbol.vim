@@ -138,7 +138,7 @@ def ShowSymbolMenu(lspserver: dict<any>, query: string)
       maxwidth: 60,
       mapping: false,
       fixed: 1,
-      close: "button",
+      close: 'button',
       filter: function(FilterSymbols, [lspserver]),
       callback: JumpToWorkspaceSymbol
   }

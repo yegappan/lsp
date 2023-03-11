@@ -21,6 +21,7 @@ def DoCommand(lspserver: dict<any>, cmd: dict<any>)
   endif
 enddef
 
+# Apply the code action selected by the user.
 export def HandleCodeAction(lspserver: dict<any>, selAction: dict<any>)
   # textDocument/codeAction can return either Command[] or CodeAction[].
   # If it is a CodeAction, it can have either an edit, a command or both.
@@ -43,6 +44,16 @@ export def HandleCodeAction(lspserver: dict<any>, selAction: dict<any>)
   endif
 enddef
 
+# Process the list of code actions returned by the LSP server, ask the user to
+# choose one action from the list and then apply it.
+# If "query" is a number, then apply the corresponding action in the list.
+# If "query" is a regular expression starting with "/", then apply the action
+# matching the search string in the list.
+# If "query" is a regular string, then apply the action matching the string.
+# If "query" is an empty string, then if the "usePopupInCodeAction" option is
+# configured by the user, then display the list of items in a popup menu.
+# Otherwise display the items in an input list and prompt the user to select
+# an action.
 export def ApplyCodeAction(lspserver: dict<any>, actionlist: list<dict<any>>, query: string): void
   var actions = actionlist
 
@@ -106,7 +117,7 @@ export def ApplyCodeAction(lspserver: dict<any>, actionlist: list<dict<any>>, qu
       },
     })
   else
-    choice = inputlist(["Code action:"] + text)
+    choice = inputlist(['Code action:'] + text)
   endif
 
   if choice < 1 || choice > text->len()

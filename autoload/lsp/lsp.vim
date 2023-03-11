@@ -81,7 +81,7 @@ enddef
 # Show information about all the LSP servers
 export def ShowServers()
   for [ftype, lspserver] in ftypeServerMap->items()
-    var msg = ftype .. "    "
+    var msg = $'{ftype}    '
     if lspserver.running
       msg ..= 'running'
     else
@@ -299,7 +299,7 @@ export def AddFile(bnr: number): void
   endif
 
   # Skip remote files
-  if util.LspUriRemote(bnr->bufname()->fnamemodify(":p"))
+  if util.LspUriRemote(bnr->bufname()->fnamemodify(':p'))
     return
   endif
 
@@ -730,7 +730,7 @@ export def SymbolSearch(queryArg: string)
 
   var query: string = queryArg
   if query == ''
-    query = input("Lookup symbol: ", expand('<cword>'))
+    query = input('Lookup symbol: ', expand('<cword>'))
     if query == ''
       return
     endif
@@ -759,7 +759,7 @@ export def AddWorkspaceFolder(dirArg: string)
 
   var dirName: string = dirArg
   if dirName == ''
-    dirName = input("Add Workspace Folder: ", getcwd(), 'dir')
+    dirName = input('Add Workspace Folder: ', getcwd(), 'dir')
     if dirName == ''
       return
     endif
@@ -782,7 +782,7 @@ export def RemoveWorkspaceFolder(dirArg: string)
 
   var dirName: string = dirArg
   if dirName == ''
-    dirName = input("Remove Workspace Folder: ", getcwd(), 'dir')
+    dirName = input('Remove Workspace Folder: ', getcwd(), 'dir')
     if dirName == ''
       return
     endif

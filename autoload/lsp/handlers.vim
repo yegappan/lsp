@@ -214,9 +214,9 @@ export def ProcessMessages(lspserver: dict<any>): void
       else
 	# request failed
 	var emsg: string = msg.error.message
-	emsg ..= ', code = ' .. msg.error.code
+	emsg ..= $', code = {msg.error.code}'
 	if msg.error->has_key('data')
-	  emsg = emsg .. ', data = ' .. msg.error.data->string()
+	  emsg ..= $', data = {msg.error.data->string()}'
 	endif
 	util.ErrMsg($'Error(LSP): request {req.method} failed ({emsg})')
       endif

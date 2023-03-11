@@ -43,9 +43,9 @@ def Set_lines(lines: list<string>, A: list<number>, B: list<number>,
     #util.WarnMsg("set_lines: Invalid range, A = " .. A->string()
     #		.. ", B = " ..  B->string() .. ", numlines = " .. numlines
     #		.. ", new lines = " .. new_lines->string())
-    var msg = "set_lines: Invalid range, A = " .. A->string()
-    msg ..= ", B = " ..  B->string() .. ", numlines = " .. numlines
-    msg ..= ", new lines = " .. new_lines->string()
+    var msg = $"set_lines: Invalid range, A = {A->string()}"
+    msg ..= $", B = {B->string()}, numlines = {numlines}"
+    msg ..= $", new lines = {new_lines->string()}"
     util.WarnMsg(msg)
     return lines
   endif
@@ -59,7 +59,7 @@ def Set_lines(lines: list<string>, A: list<number>, B: list<number>,
 
   var new_lines_len: number = new_lines->len()
 
-  #echomsg 'i_0 = ' .. i_0 .. ', i_n = ' .. i_n .. ', new_lines = ' .. string(new_lines)
+  #echomsg $"i_0 = {i_0}, i_n = {i_n}, new_lines = {string(new_lines)}"
   var n: number = i_n - i_0 + 1
   if n != new_lines_len
     if n > new_lines_len
@@ -71,26 +71,26 @@ def Set_lines(lines: list<string>, A: list<number>, B: list<number>,
       lines->extend(repeat([''], new_lines_len - n), i_0)
     endif
   endif
-  #echomsg "lines(1) = " .. string(lines)
+  #echomsg $"lines(1) = {string(lines)}"
 
   # replace the previous lines with the new lines
   for i in new_lines_len->range()
     lines[i_0 + i] = new_lines[i]
   endfor
-  #echomsg "lines(2) = " .. string(lines)
+  #echomsg $"lines(2) = {string(lines)}"
 
   # append the suffix (if any) to the last line
   if suffix != ''
     var i = i_0 + new_lines_len - 1
     lines[i] = lines[i] .. suffix
   endif
-  #echomsg "lines(3) = " .. string(lines)
+  #echomsg $"lines(3) = {string(lines)}"
 
   # prepend the prefix (if any) to the first line
   if prefix != ''
     lines[i_0] = prefix .. lines[i_0]
   endif
-  #echomsg "lines(4) = " .. string(lines)
+  #echomsg $"lines(4) = {string(lines)}"
 
   return lines
 enddef
@@ -142,7 +142,7 @@ export def ApplyTextEdits(bnr: number, text_edits: list<dict<any>>): void
     lines->add('')
   endif
 
-  #echomsg 'lines(1) = ' .. string(lines)
+  #echomsg $'lines(1) = {string(lines)}'
   #echomsg updated_edits
 
   for e in updated_edits
@@ -151,15 +151,15 @@ export def ApplyTextEdits(bnr: number, text_edits: list<dict<any>>): void
     lines = Set_lines(lines, A, B, e.lines)
   endfor
 
-  #echomsg 'lines(2) = ' .. string(lines)
+  #echomsg $'lines(2) = {string(lines)}'
 
   # If the last line is empty and we need to set EOL, then remove it.
   if set_eol && lines[-1]->len() == 0
     lines->remove(-1)
   endif
 
-  #echomsg 'ApplyTextEdits: start_line = ' .. start_line .. ', finish_line = ' .. finish_line
-  #echomsg 'lines = ' .. string(lines)
+  #echomsg $'ApplyTextEdits: start_line = {start_line}, finish_line = {finish_line}'
+  #echomsg $'lines = {string(lines)}'
 
   # Delete all the lines that need to be modified
   bnr->deletebufline(start_line + 1, finish_line + 1)

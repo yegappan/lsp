@@ -194,7 +194,7 @@ enddef
 
 def GetNextInlineBlock(text: string, blocks: list<any>, rel_pos: number): dict<any>
   var result = {
-    text: "",
+    text: '',
     props: []
   }
   var cur = blocks->remove(0)
@@ -227,7 +227,7 @@ enddef
 
 def ParseInlines(text: string, rel_pos: number = 0): dict<any>
   var formatted = {
-    text: "",
+    text: '',
     props: []
   }
   var code_spans = GetCodeSpans(text)
@@ -341,13 +341,13 @@ enddef
 def CreateContainerBlock(match: list<any>, start_lnum: number): dict<any>
   if match[0][0] == '>'
     return {
-      type: "quote_block",
+      type: 'quote_block',
       lnum: start_lnum,
       indent: 0
     }
   else
     return {
-      type: "list_item",
+      type: 'list_item',
       lnum: start_lnum,
       marker: $' {match[0]->matchstr("\\S\\+")} ',
       indent: match[2]
@@ -357,7 +357,7 @@ enddef
 
 # new open leaf block
 def CreateLeafBlock(block_type: string, line: string, ...opt: list<any>): dict<any>
-  if block_type == "fenced_code"
+  if block_type == 'fenced_code'
     var token = line->matchlist(code_fence)
     return {
       type: block_type,
@@ -365,23 +365,23 @@ def CreateLeafBlock(block_type: string, line: string, ...opt: list<any>): dict<a
       language: token[2],
       text: []
     }
-  elseif block_type == "indented_code"
+  elseif block_type == 'indented_code'
     return {
       type: block_type,
       text: [line->matchstr(code_indent)]
     }
-  elseif block_type == "paragraph"
+  elseif block_type == 'paragraph'
     return {
       type: block_type,
       text: [line->matchstr(paragraph)]
     }
-  elseif block_type == "heading"
+  elseif block_type == 'heading'
     return {
       type: block_type,
       level: opt[0],
       text: line
     }
-  elseif block_type == "table"
+  elseif block_type == 'table'
     return {
       type: block_type,
       header: line,
@@ -393,11 +393,11 @@ def CreateLeafBlock(block_type: string, line: string, ...opt: list<any>): dict<a
 enddef
 
 def NeedBlankLine(prev: string, cur: string): bool
-  if prev == "hr" || cur == "hr"
+  if prev == 'hr' || cur == 'hr'
     return v:false
-  elseif prev == "heading" || cur == "heading"
+  elseif prev == 'heading' || cur == 'heading'
     return v:true
-  elseif prev == "paragraph" && cur == "paragraph"
+  elseif prev == 'paragraph' && cur == 'paragraph'
     return v:true
   elseif prev != cur
     return v:true
@@ -405,23 +405,23 @@ def NeedBlankLine(prev: string, cur: string): bool
   return v:false
 enddef
 
-var last_block: string = ""
+var last_block: string = ''
 
 def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: number = 0): void
   if start >= blocks->len()
     return
   endif
   var line: dict<any> = {
-    text: "",
+    text: '',
     props: []
   }
   if !document.content->empty() && NeedBlankLine(last_block, blocks[0].type)
-    document.content->add({text: "", props: []})
+    document.content->add({text: '', props: []})
   endif
   last_block = blocks[0].type
 
   for i in start->range()
-    if blocks[i]->has_key("marker")
+    if blocks[i]->has_key('marker')
       if blocks[i].marker =~ '\S'
 	line.props->add(GetMarkerProp('list_item',
 				      line.text->len() + 1,
@@ -435,7 +435,7 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
   endfor
   for block in blocks->remove(start, -1)
     if block.type =~ 'quote_block\|list_item'
-      if block->has_key("marker")
+      if block->has_key('marker')
 	if block.marker =~ '\S'
 	  line.props->add(GetMarkerProp('list_item',
 					line.text->len() + 1,
@@ -449,7 +449,7 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
     else
       # leaf block
       if block.type =~ '_code'
-	if block.type == "indented_code"
+	if block.type == 'indented_code'
 	  while !block.text->empty() && block.text[0] !~ '\S'
 	    block.text->remove(0)
 	  endwhile
@@ -479,7 +479,7 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
 					  indent->len() + max_len + 1))
 	  endif
 	endif
-      elseif block.type == "heading"
+      elseif block.type == 'heading'
 	line.props->add(GetMarkerProp('heading',
 				      line.text->len() + 1,
 				      block.text->len(),
@@ -488,7 +488,7 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
 	line.text ..= format.text
 	line.props += line.props
 	document.content->add(line)
-      elseif block.type == "table"
+      elseif block.type == 'table'
 	var indent = line.text
 	var head = block.header->split('\\\@1<!|')
 	var col1 = head->remove(0)
@@ -504,7 +504,7 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
 	  line.props->add(GetMarkerProp('table_header',
 					line.text->len() + 2,
 					format.text->len()))
-	  line.text ..= "|" .. format.text
+	  line.text ..= $'|{format.text}'
 	  line.props += format.props
 	endfor
 	document.content->add(line)
@@ -530,13 +530,13 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
 	    data.props->add(GetMarkerProp('table_sep',
 					  data.text->len() + 1,
 					  1))
-	    data.text ..= "|" .. format.text
+	    data.text ..= $'|{format.text}'
 	    data.props += format.props
 	  endfor
 	  document.content->add(data)
 	endfor
-      elseif block.type == "paragraph"
-	var format = ParseInlines(block.text->join(" "), line.text->len())
+      elseif block.type == 'paragraph'
+	var format = ParseInlines(block.text->join(' '), line.text->len())
 	line.text ..= format.text
 	line.props += format.props
 	document.content->add(line)
@@ -555,19 +555,19 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
 
     # for each open block check if current line continue it
     while cur < open_blocks->len()
-      if open_blocks[cur].type == "quote_block"
+      if open_blocks[cur].type == 'quote_block'
 	var marker = line->matchstrpos(block_quote)
 	if marker[1] == -1
 	  break
 	endif
 	line = line[marker[2] :]
-      elseif open_blocks[cur].type == "list_item"
+      elseif open_blocks[cur].type == 'list_item'
 	var marker = line->matchstrpos($'^ \{{{open_blocks[cur].indent}}}')
 	if marker[1] == -1
 	  break
 	endif
 	line = line[marker[2] :]
-      elseif open_blocks[cur].type == "fenced_code"
+      elseif open_blocks[cur].type == 'fenced_code'
 	if line =~ $'^ \{{,3}}{open_blocks[cur].fence}{open_blocks[cur].fence[0]}* *$'
 	  CloseBlocks(document, open_blocks, cur)
 	else
@@ -575,19 +575,19 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
 	endif
 	cur = -1
 	break
-      elseif open_blocks[cur].type == "indented_code"
+      elseif open_blocks[cur].type == 'indented_code'
 	var marker = line->matchstrpos(code_indent)
 	if marker[1] >= 0
 	  open_blocks[cur].text->add(marker[0])
 	  cur = -1
 	endif
 	break
-      elseif open_blocks[cur].type == "paragraph"
+      elseif open_blocks[cur].type == 'paragraph'
 	if line =~ setext_heading
 	  var marker = line->matchstrpos(setext_heading)
 	  open_blocks->add(CreateLeafBlock(
-				  "heading",
-				  open_blocks->remove(cur).text->join(" "),
+				  'heading',
+				  open_blocks->remove(cur).text->join(' '),
 				  setext_heading_level[marker[0]]))
 	  CloseBlocks(document, open_blocks, cur)
 	  cur = -1
@@ -595,9 +595,9 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
 	  # may be a table
 	  var marker = line->matchstr(table_delimiter)
 	  if !marker->empty()
-	    if open_blocks[cur].text[0]->split('\\\@1<!|')->len() == marker->split("|")->len()
+	    if open_blocks[cur].text[0]->split('\\\@1<!|')->len() == marker->split('|')->len()
 	      open_blocks->add(CreateLeafBlock(
-				  "table",
+				  'table',
 				  open_blocks->remove(cur).text[0],
 				  marker))
 	      cur = -1
@@ -617,12 +617,12 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
     # a themaic break close all previous blocks
     if line =~ thematic_break
       CloseBlocks(document, open_blocks)
-      if &g:encoding == "utf-8"
+      if &g:encoding == 'utf-8'
 	document.content->add({text: "\u2500"->repeat(width)})
       else
-	document.content->add({text: "-"->repeat(width)})
+	document.content->add({text: '-'->repeat(width)})
       endif
-      last_block = "hr"
+      last_block = 'hr'
       continue
     endif
 
@@ -643,45 +643,45 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
     # check for leaf block
     if line =~ code_fence
       CloseBlocks(document, open_blocks, cur)
-      open_blocks->add(CreateLeafBlock("fenced_code", line))
+      open_blocks->add(CreateLeafBlock('fenced_code', line))
     elseif line =~ blank_line
       if open_blocks->empty()
 	continue
       endif
-      if open_blocks[-1].type == "paragraph"
+      if open_blocks[-1].type == 'paragraph'
 	CloseBlocks(document, open_blocks, min([cur, open_blocks->len() - 1]))
-      elseif open_blocks[-1].type == "table"
+      elseif open_blocks[-1].type == 'table'
 	CloseBlocks(document, open_blocks, open_blocks->len() - 1)
       elseif open_blocks[-1].type =~ '_code'
 	open_blocks[-1].text->add(line)
       endif
     elseif line =~ code_indent
       if open_blocks->empty()
-	open_blocks->add(CreateLeafBlock("indented_code", line))
+	open_blocks->add(CreateLeafBlock('indented_code', line))
       elseif open_blocks[-1].type =~ '_code'
 	open_blocks[-1].text->add(line->matchstr(code_indent))
-      elseif open_blocks[-1].type == "paragraph"
+      elseif open_blocks[-1].type == 'paragraph'
 	open_blocks[-1].text->add(line->matchstr(paragraph))
       else
         CloseBlocks(document, open_blocks, cur)
-	open_blocks->add(CreateLeafBlock("indented_code", line))
+	open_blocks->add(CreateLeafBlock('indented_code', line))
       endif
     elseif line =~ atx_heading
       CloseBlocks(document, open_blocks, cur)
       var token = line->matchlist(atx_heading)
-      open_blocks->add(CreateLeafBlock("heading", token[2], token[1]->len()))
+      open_blocks->add(CreateLeafBlock('heading', token[2], token[1]->len()))
       CloseBlocks(document, open_blocks, cur)
     elseif !open_blocks->empty()
-      if open_blocks[-1].type == "table"
+      if open_blocks[-1].type == 'table'
 	open_blocks[-1].text->add(line)
-      elseif open_blocks[-1].type == "paragraph"
+      elseif open_blocks[-1].type == 'paragraph'
 	open_blocks[-1].text->add(line->matchstr(paragraph))
       else
         CloseBlocks(document, open_blocks, cur)
-        open_blocks->add(CreateLeafBlock("paragraph", line))
+        open_blocks->add(CreateLeafBlock('paragraph', line))
       endif
     else
-      open_blocks->add(CreateLeafBlock("paragraph", line))
+      open_blocks->add(CreateLeafBlock('paragraph', line))
     endif
   endfor
 

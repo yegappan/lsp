@@ -66,8 +66,8 @@ export def SelectionModify(lspserver: dict<any>, expand: bool)
     # reply for this buffer is available. Modify the current selection.
 
     var selRange: dict<any> = lspserver.selection.selRange
-    var startpos: list<number> = getcharpos("v")
-    var endpos: list<number> = getcharpos(".")
+    var startpos: list<number> = getcharpos('v')
+    var endpos: list<number> = getcharpos('.')
     var idx: number = lspserver.selection.index
 
     # Locate the range in the LSP reply for the current selection

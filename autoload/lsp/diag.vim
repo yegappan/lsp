@@ -257,14 +257,14 @@ export def ShowCurrentDiagInStatusLine(lspserver: dict<any>)
   if !diag->empty()
     # 15 is a enough length not to cause line break
     var max_width = &columns - 15
-    var code = ""
+    var code = ''
     if diag->has_key('code')
       code = $'[{diag.code}] '
     endif
-    var msgNoLineBreak = code .. substitute(substitute(diag.message, "\n", " ", ""), "\\n", " ", "")
+    var msgNoLineBreak = code .. substitute(substitute(diag.message, "\n", ' ', ''), "\\n", ' ', '')
     echo msgNoLineBreak[ : max_width]
   else
-    echo ""
+    echo ''
   endif
 enddef
 

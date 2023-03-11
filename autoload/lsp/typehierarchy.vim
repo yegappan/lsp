@@ -50,7 +50,7 @@ def TypeTreeGenerate(super: bool, typeHier: dict<any>, pfx_arg: string,
   items = super ? typeHier.parents : typeHier.children
 
   for item in items
-    TypeTreeGenerate(super, item, pfx_arg .. '| ', typeTree, typeUriMap)
+    TypeTreeGenerate(super, item, $'{pfx_arg}| ', typeTree, typeUriMap)
   endfor
 enddef
 
