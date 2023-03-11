@@ -330,13 +330,19 @@ A description of the various commands provided by this plugin is below.  You
 can map these commands to keys and make it easier to invoke them.
 
 						*:LspCodeAction*
-:LspCodeAction		Apply the code action supplied by the language server
+:LspCodeAction [query]	Apply the code action supplied by the language server
 			to the diagnostic in the current line. This works only
 			if there is a diagnostic message for the current line.
 			You can use the |:LspDiagCurrent| command to display
-			the diagnostic for the current line. You will be
-			prompted to select one of the actions supplied by the
-			language server.
+			the diagnostic for the current line.
+
+			When [query] is given the code action starting with
+			[query] will be applied. [query] can be a regexp
+			pattern, or a digit corresponding to the index of the
+			code actions in the created prompt.
+
+			When [query] is not given you will be prompted to select
+			one of the actions supplied by the language server.
 
 						*:LspDiagCurrent*
 :LspDiagCurrent		Displays the diagnostic message (if any) for the

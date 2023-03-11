@@ -707,14 +707,14 @@ enddef
 
 # Perform a code action
 # Uses LSP "textDocument/codeAction" request
-export def CodeAction(line1: number, line2: number)
+export def CodeAction(line1: number, line2: number, query: string)
   var lspserver: dict<any> = buf.CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
 
   var fname: string = @%
-  lspserver.codeAction(fname, line1, line2)
+  lspserver.codeAction(fname, line1, line2, query)
 enddef
 
 # Perform a workspace wide symbol lookup

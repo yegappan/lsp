@@ -206,4 +206,16 @@ export def JumpToLspLocation(location: dict<any>, cmdmods: string)
 			location.targetSelectionRange.start.character + 1)
 enddef
 
+# 'indexof' is to new to use it, use this instead.
+export def Indexof(list: list<any>, CallbackFn: func(number, any): bool): number
+  var ix = 0
+  for val in list
+    if CallbackFn(ix, val)
+      return ix
+    endif
+    ix += 1
+  endfor
+  return -1
+enddef
+
 # vim: tabstop=8 shiftwidth=2 softtabstop=2
