@@ -9,7 +9,7 @@ vim9script
 
 g:loaded_lsp = 1
 
-import autoload '../autoload/lsp/options.vim'
+import '../autoload/lsp/options.vim'
 import autoload '../autoload/lsp/lsp.vim'
 
 
@@ -70,9 +70,6 @@ augroup LSPAutoCmds
   # Note that when BufWipeOut is invoked, the current buffer may be different
   # from the buffer getting wiped out.
   autocmd BufWipeOut * lsp.RemoveFile(expand('<abuf>')->str2nr())
-  if options.lspOptions.showDiagOnStatusLine
-    autocmd CursorMoved * lsp.LspShowCurrentDiagInStatusLine()
-  endif
 augroup END
 
 # TODO: Is it needed to shutdown all the LSP servers when exiting Vim?
