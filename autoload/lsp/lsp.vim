@@ -262,6 +262,14 @@ def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
     inlayhints.BufferInit(bnr)
   endif
 
+  # Show diagnostics on the status line
+  if opt.lspOptions.showDiagOnStatusLine
+    acmds->add({bufnr: bnr,
+		event: 'CursorMoved',
+		group: 'LSPBufferAutocmds',
+		cmd: 'LspShowCurrentDiagInStatusLine()'})
+  endif
+
   autocmd_add(acmds)
 enddef
 
