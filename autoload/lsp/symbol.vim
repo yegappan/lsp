@@ -259,6 +259,7 @@ def UpdatePeekFilePopup(lspserver: dict<any>, refs: list<dict<any>>)
 
   lspserver.peekSymbolFilePopup = popup_create(bnr, popupAttrs)
   var cmds =<< trim eval END
+    setlocal number
     [{refs[n].range.start.line + 1}, 1]->cursor()
     normal! z.
   END
@@ -397,7 +398,8 @@ enddef
 # Display the file specified by LSP 'LocationLink' in a popup window and
 # highlight the range in 'location'.
 def PeekSymbolLocation(lspserver: dict<any>, location: dict<any>)
-  var fname = util.LspUriToFile(location.targetUri)
+  var [uri, range] = util.LspLocationParse(location)
+  var fname = util.LspUriToFile(uri)
   var bnum = fname->bufadd()
   if bnum == 0
     # Failed to create or find a buffer
@@ -431,13 +433,13 @@ def PeekSymbolLocation(lspserver: dict<any>, location: dict<any>)
   var pos: list<number> = []
   var start_col: number
   var end_col: number
-  start_col = util.GetLineByteFromPos(pwbuf, location.targetSelectionRange.start) + 1
-  end_col = util.GetLineByteFromPos(pwbuf, location.targetSelectionRange.end) + 1
-  pos->add(location.targetSelectionRange.start.line + 1)
+  start_col = util.GetLineByteFromPos(pwbuf, range.start) + 1
+  end_col = util.GetLineByteFromPos(pwbuf, range.end) + 1
+  pos->add(range.start.line + 1)
   pos->extend([start_col, end_col - start_col])
   matchaddpos('Search', [pos], 10, 101, {window: pwid})
   var cmds =<< trim eval END
-    [{location.targetSelectionRange.start.line + 1}, 1]->cursor()
+    [{range.start.line + 1}, 1]->cursor()
     normal! z.
   END
   win_execute(pwid, cmds, 'silent!')
@@ -468,8 +470,9 @@ export def TagFunc(lspserver: dict<any>,
     var tagitem = {}
     tagitem.name = pat
 
-    tagitem.filename = util.LspUriToFile(tagloc.targetUri)
-    tagitem.cmd = $"/\\%{tagloc.targetSelectionRange.start.line + 1}l\\%{tagloc.targetSelectionRange.start.character + 1}c"
+    var [uri, range] = util.LspLocationParse(tagloc)
+    tagitem.filename = util.LspUriToFile(uri)
+    tagitem.cmd = $"/\\%{range.start.line + 1}l\\%{range.start.character + 1}c"
 
     retval->add(tagitem)
   endfor

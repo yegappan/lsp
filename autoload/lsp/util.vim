@@ -50,15 +50,16 @@ export def ClearTraceLogs()
   writefile([], $'{lsp_log_dir}lsp-server.err')
 enddef
 
-# Convert a 'Location' to a dict that looks a lot like a 'LocationLink' but with
-# the caveat that 'targetRange' is null.
-export def LspLocationToLocationLink(location: dict<any>): dict<any>
-  return {
-    targetUri: location.uri,
-    targetSelectionRange: location.range,
-    targetRange: null,
-    originSelectionRange: null
-  }
+# Parse a LSP Location or LocationLink type and return a List with two items.
+# The first item is the DocumentURI and the second item is the Range.
+export def LspLocationParse(lsploc: dict<any>): list<any>
+  if lsploc->has_key('targetUri')
+    # LocationLink
+    return [lsploc.targetUri, lsploc.targetSelectionRange]
+  else
+    # Location
+    return [lsploc.uri, lsploc.range]
+  endif
 enddef
 
 # Convert a LSP file URI (file://<absolute_path>) to a Vim file name
@@ -165,7 +166,8 @@ enddef
 # number and character number. The user specified window command modifiers
 # (e.g. topleft) are in 'cmdmods'.
 export def JumpToLspLocation(location: dict<any>, cmdmods: string)
-  var fname = LspUriToFile(location.targetUri)
+  var [uri, range] = LspLocationParse(location)
+  var fname = LspUriToFile(uri)
 
   # jump to the file and line containing the symbol
   if cmdmods == ''
@@ -202,8 +204,7 @@ export def JumpToLspLocation(location: dict<any>, cmdmods: string)
   # Set the previous cursor location mark. Instead of using setpos(), m' is
   # used so that the current location is added to the jump list.
   normal m'
-  setcursorcharpos(location.targetSelectionRange.start.line + 1,
-			location.targetSelectionRange.start.character + 1)
+  setcursorcharpos(range.start.line + 1, range.start.character + 1)
 enddef
 
 # 'indexof' is to new to use it, use this instead.

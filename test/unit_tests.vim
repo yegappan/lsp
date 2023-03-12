@@ -234,7 +234,7 @@ def Test_LspShowReferences()
   # write since last change" error message.  To disable this message, mark the
   # buffer as not modified.
   setlocal nomodified
-  cursor(1, 5)
+  cursor(10, 6)
   :LspPeekReferences
   var ids = popup_list()
   assert_equal(2, ids->len())
@@ -242,7 +242,11 @@ def Test_LspShowReferences()
   var refPopupAttrs = ids[1]->popup_getoptions()
   assert_match('Xtest', filePopupAttrs.title)
   assert_equal('References', refPopupAttrs.title)
-  assert_equal(1, line('.', ids[0]))
+  assert_equal(10, line('.', ids[0]))
+  assert_equal(3, line('$', ids[1]))
+  feedkeys("jj\<CR>", 'xt')
+  assert_equal(12, line('.'))
+  assert_equal([], popup_list())
   popup_clear()
 
   bw!

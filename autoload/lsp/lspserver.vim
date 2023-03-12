@@ -890,11 +890,6 @@ def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
     location = reply.result
   endif
 
-  # Convert to 'LocationLink'
-  if !location->has_key('targetUri')
-    location = util.LspLocationToLocationLink(location)
-  endif
-
   symbol.GotoSymbol(lspserver, location, peekSymbol, cmdmods)
 enddef
 
@@ -1594,14 +1589,6 @@ def TagFunc(lspserver: dict<any>, pat: string, flags: string, info: dict<any>): 
   else
     taglocations = [reply.result]
   endif
-
-  taglocations = taglocations->map((key, location) => {
-    # Already a 'LocationLink'
-    if location->has_key('targetUri')
-      return location
-    endif
-    return util.LspLocationToLocationLink(location)
-  })
 
   return symbol.TagFunc(lspserver, taglocations, pat)
 enddef
