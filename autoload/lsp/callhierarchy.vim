@@ -5,55 +5,6 @@ vim9script
 import './util.vim'
 import './buffer.vim' as buf
 
-def CreateLoclistWithCalls(calls: list<dict<any>>, incoming: bool)
-  var qflist: list<dict<any>> = []
-
-  for item in calls
-    var fname: string
-    if incoming
-      fname = util.LspUriToFile(item.from.uri)
-    else
-      fname = util.LspUriToFile(item.to.uri)
-    endif
-    var bnr: number = fname->bufnr()
-    if bnr == -1
-      bnr = fname->bufadd()
-    endif
-    if !bnr->bufloaded()
-      bnr->bufload()
-    endif
-
-    var name: string
-    if incoming
-      name = item.from.name
-    else
-      name = item.to.name
-    endif
-
-    if incoming
-      for r in item.fromRanges
-        var text: string =
-       			bnr->getbufline(r.start.line + 1)[0]->trim("\t ", 1)
-        qflist->add({filename: fname,
-          		lnum: r.start.line + 1,
-          		col: util.GetLineByteFromPos(bnr, r.start) + 1,
-			text: $'{name}: {text}'})
-      endfor
-    else
-      var pos: dict<any> = item.to.range.start
-      var text: string = bnr->getbufline(pos.line + 1)[0]->trim("\t ", 1)
-      qflist->add({filename: fname,
-			lnum: item.to.range.start.line + 1,
-			col: util.GetLineByteFromPos(bnr, pos) + 1,
-			text: $'{name}: {text}'})
-    endif
-  endfor
-  var save_winid = win_getid()
-  setloclist(0, [], ' ', {title: 'Incoming Calls', items: qflist})
-  lopen
-  save_winid->win_gotoid()
-enddef
-
 # Jump to the location of the symbol under the cursor in the call hierarchy
 # tree window.
 def CallHierarchyItemJump()
