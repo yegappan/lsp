@@ -1342,8 +1342,15 @@ def CodeAction(lspserver: dict<any>, fname_arg: string, line1: number,
   var fname: string = fname_arg->fnamemodify(':p')
   var bnr: number = fname_arg->bufnr()
   var r: dict<dict<number>> = {
-		  start: {line: line1 - 1, character: 0},
-		  end: {line: line2 - 1, character: charcol([line2, '$']) - 1}}
+    start: {
+      line: line1 - 1,
+      character: line1 == line2 ? charcol('.') - 1 : 0
+    },
+    end: {
+      line: line2 - 1,
+      character: charcol([line2, '$']) - 1
+    }
+  }
   params->extend({textDocument: {uri: util.LspFileToUri(fname)}, range: r})
   var d: list<dict<any>> = []
   for lnum in range(line1, line2)
