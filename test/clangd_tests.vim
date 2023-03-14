@@ -272,6 +272,40 @@ def g:Test_LspDiag()
   :%bw!
 enddef
 
+# Test that the client have been able to configure the server to speak utf-32
+def g:Test_UnicodeColumnCalc()
+  :silent! edit Xtest.c
+  sleep 200m
+  var lines: list<string> =<< trim END
+    int count;
+    int fn(int a)
+    {
+      int 😊😊😊😊;
+      😊😊😊😊 = a;
+
+      int b;
+      b = a;
+      return    count + 1;
+    }
+  END
+  setline(1, lines)
+  :redraw!
+
+  cursor(5, 1) # 😊😊😊😊 = a;
+  search('a')
+  assert_equal([],
+              execute('LspGotoDefinition')->split("\n"))
+  assert_equal([2, 12], [line('.'), col('.')])
+
+  cursor(8, 1) # b = a;
+  search('a')
+  assert_equal([],
+              execute('LspGotoDefinition')->split("\n"))
+  assert_equal([2, 12], [line('.'), col('.')])
+
+  bw!
+enddef
+
 # Test for multiple LSP diagnostics on the same line
 def g:Test_LspDiag_Multi()
   :silent! edit Xtest.c
