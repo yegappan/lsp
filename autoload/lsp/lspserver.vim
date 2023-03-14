@@ -789,22 +789,39 @@ def TextdocDidChange(lspserver: dict<any>, bnr: number, start: number,
 enddef
 
 # Return the current cursor position as a LSP position.
+# find_ident will search for a identifier in front of the cursor, just like
+# CTRL-] and c_CTRL-R_CTRL-W does.
+#
 # LSP line and column numbers start from zero, whereas Vim line and column
 # numbers start from one. The LSP column number is the character index in the
 # line and not the byte index in the line.
-def GetLspPosition(): dict<number>
+def GetLspPosition(find_ident: bool): dict<number>
   var lnum: number = line('.') - 1
   var col: number = charcol('.') - 1
+  var line = getline('.')
+
+  if find_ident
+    # 1. skip to start of identifier
+    while line[col] != '' && line[col] !~ '\k'
+      col = col + 1
+    endwhile
+
+    # 2. back up to start of identifier
+    while col > 0 && line[col - 1] =~ '\k'
+      col = col - 1
+    endwhile
+  endif
+
   return {line: lnum, character: col}
 enddef
 
 # Return the current file name and current cursor position as a LSP
 # TextDocumentPositionParams structure
-def GetLspTextDocPosition(): dict<dict<any>>
+def GetLspTextDocPosition(find_ident: bool): dict<dict<any>>
   # interface TextDocumentIdentifier
   # interface Position
   return {textDocument: {uri: util.LspFileToUri(@%)},
-	  position: GetLspPosition()}
+	  position: GetLspPosition(find_ident)}
 enddef
 
 # Get a list of completion items.
@@ -824,7 +841,7 @@ def GetCompletion(lspserver: dict<any>, triggerKind_arg: number, triggerChar: st
 
   # interface CompletionParams
   #   interface TextDocumentPositionParams
-  var params = GetLspTextDocPosition()
+  var params = GetLspTextDocPosition(false)
   #   interface CompletionContext
   params.context = {triggerKind: triggerKind_arg, triggerCharacter: triggerChar}
 
@@ -866,7 +883,7 @@ enddef
 # Result: Location | Location[] | LocationLink[] | null
 def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
 		  cmdmods: string)
-  var reply = lspserver.rpc(msg, GetLspTextDocPosition())
+  var reply = lspserver.rpc(msg, GetLspTextDocPosition(true))
   if reply->empty() || reply.result->empty()
     var emsg: string
     if msg ==# 'textDocument/declaration'
@@ -984,7 +1001,7 @@ def ShowSignature(lspserver: dict<any>): void
 
   # interface SignatureHelpParams
   #   interface TextDocumentPositionParams
-  var params = GetLspTextDocPosition()
+  var params = GetLspTextDocPosition(false)
   lspserver.rpc_a('textDocument/signatureHelp', params,
 			signature.SignatureHelp)
 enddef
@@ -1017,7 +1034,7 @@ def ShowHoverInfo(lspserver: dict<any>): void
 
   # interface HoverParams
   #   interface TextDocumentPositionParams
-  var params = GetLspTextDocPosition()
+  var params = GetLspTextDocPosition(false)
   lspserver.rpc_a('textDocument/hover', params, hover.HoverReply)
 enddef
 
@@ -1033,7 +1050,7 @@ def ShowReferences(lspserver: dict<any>, peek: bool): void
   # interface ReferenceParams
   #   interface TextDocumentPositionParams
   var param: dict<any>
-  param = GetLspTextDocPosition()
+  param = GetLspTextDocPosition(true)
   param.context = {includeDeclaration: true}
   var reply = lspserver.rpc('textDocument/references', param)
 
@@ -1090,7 +1107,7 @@ def DocHighlight(lspserver: dict<any>): void
 
   # interface DocumentHighlightParams
   #   interface TextDocumentPositionParams
-  var params = GetLspTextDocPosition()
+  var params = GetLspTextDocPosition(false)
   lspserver.rpc_a('textDocument/documentHighlight', params,
 			function('DocHighlightReply', [bufnr()]))
 enddef
@@ -1176,7 +1193,7 @@ def PrepareCallHierarchy(lspserver: dict<any>): dict<any>
   # interface CallHierarchyPrepareParams
   #   interface TextDocumentPositionParams
   var param: dict<any>
-  param = GetLspTextDocPosition()
+  param = GetLspTextDocPosition(false)
   var reply = lspserver.rpc('textDocument/prepareCallHierarchy', param)
   if reply->empty() || reply.result->empty()
     return {}
@@ -1287,7 +1304,7 @@ def TypeHiearchy(lspserver: dict<any>, direction: number)
   # interface TypeHierarchy
   #   interface TextDocumentPositionParams
   var param: dict<any>
-  param = GetLspTextDocPosition()
+  param = GetLspTextDocPosition(false)
   # 0: children, 1: parent, 2: both
   param.direction = direction
   param.resolve = 5
@@ -1312,7 +1329,7 @@ def RenameSymbol(lspserver: dict<any>, newName: string)
   # interface RenameParams
   #   interface TextDocumentPositionParams
   var param: dict<any> = {}
-  param = GetLspTextDocPosition()
+  param = GetLspTextDocPosition(true)
   param.newName = newName
 
   var reply = lspserver.rpc('textDocument/rename', param)
@@ -1460,7 +1477,7 @@ def SelectionRange(lspserver: dict<any>, fname: string)
   var param = {}
   param.textDocument = {}
   param.textDocument.uri = util.LspFileToUri(fname)
-  param.positions = [GetLspPosition()]
+  param.positions = [GetLspPosition(false)]
   var reply = lspserver.rpc('textDocument/selectionRange', param)
 
   if reply->empty() || reply.result->empty()
@@ -1585,7 +1602,7 @@ def TagFunc(lspserver: dict<any>, pat: string, flags: string, info: dict<any>): 
 
   # interface DefinitionParams
   #   interface TextDocumentPositionParams
-  var reply = lspserver.rpc('textDocument/definition', GetLspTextDocPosition())
+  var reply = lspserver.rpc('textDocument/definition', GetLspTextDocPosition(false))
   if reply->empty() || reply.result->empty()
     return null
   endif

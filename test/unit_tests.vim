@@ -979,6 +979,47 @@ def Test_LspCustomNotificationHandlers()
   :%bw!
 enddef
 
+def Test_ScanFindIdent()
+  :silent! edit Xtest.c
+  sleep 200m
+  var lines: list<string> =<< trim END
+    int count;
+    int fn(int a)
+    {
+      int hello;
+      hello =    a;
+      return    count + 1;
+    }
+  END
+  setline(1, lines)
+  :redraw!
+
+  # LspGotoDefinition et al
+  cursor(5, 10)
+  assert_equal([],
+	       execute('LspGotoDefinition')->split("\n"))
+  assert_equal([2, 12], [line('.'), col('.')])
+
+  cursor(6, 10)
+  assert_equal([],
+	       execute('LspGotoDefinition')->split("\n"))
+  assert_equal([1, 5], [line('.'), col('.')])
+
+  # LspShowReferences
+  cursor(6, 10)
+  assert_equal([],
+	       execute('LspShowReferences')->split("\n"))
+
+  # LspRename
+  cursor(6, 10)
+  assert_equal([],
+	       execute('LspRename counter')->split("\n"))
+  assert_equal('int counter;', getline(1))
+  assert_equal('  return    counter + 1;', getline(6))
+
+  bw!
+enddef
+
 # Start the C language server.  Returns true on success and false on failure.
 def StartLangServer(): bool
   # Edit a dummy C file to start the LSP server
