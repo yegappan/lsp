@@ -9,8 +9,8 @@ vim9script
 
 g:loaded_lsp = 1
 
-import '../autoload/lsp/options.vim'
-import autoload '../autoload/lsp/lsp.vim'
+import autoload 'lsp/options.vim'
+import autoload 'lsp/lsp.vim'
 
 
 # Set LSP plugin options from 'opts'.
