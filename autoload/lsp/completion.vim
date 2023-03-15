@@ -88,7 +88,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
   # Get the keyword prefix before the current cursor column.
   var col = charcol('.')
   var starttext = getline('.')[ : col - 1]
-  var prefix = matchstr(starttext, '\k*$')
+  var prefix = tolower(matchstr(starttext, '\k*$'))
 
   var completeItems: list<dict<any>> = []
   for item in items
@@ -107,7 +107,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     else
       # plain text completion.  If the completion item text doesn't start with
       # the current (case ignored) keyword prefix, skip it.
-      if prefix != '' && d.word !~? $'^{prefix}'
+      if prefix != '' && stridx(tolower(d.word), prefix) != 0
 	continue
       endif
     endif
