@@ -106,8 +106,8 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
       d.word = MakeValidWord(d.word)
     else
       # plain text completion.  If the completion item text doesn't start with
-      # the current keyword prefix, skip it.
-      if prefix != '' && stridx(d.word, prefix) != 0
+      # the current (case ignored) keyword prefix, skip it.
+      if prefix != '' && d.word !~? $'^{prefix}'
 	continue
       endif
     endif
