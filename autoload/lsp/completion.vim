@@ -85,6 +85,11 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     items = cItems.items
   endif
 
+  # Get the keyword prefix before the current cursor column.
+  var col = charcol('.')
+  var starttext = getline('.')[ : col - 1]
+  var prefix = matchstr(starttext, '\k*$')
+
   var completeItems: list<dict<any>> = []
   for item in items
     var d: dict<any> = {}
@@ -99,6 +104,12 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
       # snippet completion.  Needs a snippet plugin to expand the snippet.
       # Remove all the snippet placeholders
       d.word = MakeValidWord(d.word)
+    else
+      # plain text completion.  If the completion item text doesn't start with
+      # the current keyword prefix, skip it.
+      if prefix != '' && stridx(d.word, prefix) != 0
+	continue
+      endif
     endif
     d.abbr = item.label
     d.dup = 1

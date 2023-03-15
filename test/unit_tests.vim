@@ -236,6 +236,7 @@ def Test_LspShowReferences()
   setlocal nomodified
   cursor(10, 6)
   :LspPeekReferences
+  sleep 10m
   var ids = popup_list()
   assert_equal(2, ids->len())
   var filePopupAttrs = ids[0]->popup_getoptions()
