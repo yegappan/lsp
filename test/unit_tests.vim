@@ -18,7 +18,7 @@ if do_profile
   profile! file */lsp/*
 endif
 
-source ../plugin/lsp.vim
+source %:p:h:h/plugin/lsp.vim
 
 var lspServers = [{
       filetype: ['c', 'cpp'],
