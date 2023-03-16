@@ -86,20 +86,38 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
   endif
 
   # Get the keyword prefix before the current cursor column.
-  var col = charcol('.')
-  var starttext = getline('.')[ : col - 1]
-  var prefix = starttext->tolower()->matchstr('\k*$')
+  var chcol = charcol('.')
+  var starttext = getline('.')[ : chcol - 1]
+  var [prefix, start_idx, end_idx] = starttext->tolower()->matchstrpos('\k*$')
+  var start_col = start_idx + 1
 
   var completeItems: list<dict<any>> = []
   for item in items
     var d: dict<any> = {}
+
     # TODO: Add proper support for item.textEdit.newText and item.textEdit.range
     # Keep in mind that item.textEdit.range can start be way before the typed keyword.
-    if item->has_key('insertText')
+    if item->has_key('textEdit')
+      var start_charcol: number
+      if prefix != ''
+        start_charcol = charidx(starttext, start_idx) + 1
+      else
+        start_charcol = chcol
+      endif
+      var textEdit = item.textEdit
+      var textEditStartCol = textEdit.range.start.character
+      if textEditStartCol != start_charcol
+        var offset = start_charcol - textEditStartCol - 1
+        d.word = textEdit.newText[offset : ]
+      else
+        d.word = textEdit.newText
+      endif
+    elseif item->has_key('insertText')
       d.word = item.insertText
     else
       d.word = item.label
     endif
+
     if item->get('insertTextFormat', 1) == 2
       # snippet completion.  Needs a snippet plugin to expand the snippet.
       # Remove all the snippet placeholders
@@ -111,13 +129,16 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
 	continue
       endif
     endif
+
     d.abbr = item.label
     d.dup = 1
+
     if item->has_key('kind')
       # namespace CompletionItemKind
       # map LSP kind to complete-item-kind
       d.kind = LspCompleteItemKindChar(item.kind)
     endif
+
     if lspserver.completionLazyDoc
       d.info = 'Lazy doc'
     else
@@ -136,6 +157,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
         endif
       endif
     endif
+
     d.user_data = item
     completeItems->add(d)
   endfor
@@ -156,19 +178,6 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
 	&& getline('.')->matchstr($'{completeItems[0].word}\>') != ''
       # only one complete match. No need to show the completion popup
       return
-    endif
-
-    var start_col: number = 0
-
-    # LSP server didn't return a starting position for completion, search
-    # backwards from the current cursor position for a non-keyword character.
-    if start_col == 0
-      var line: string = getline('.')
-      var start = col('.') - 1
-      while start > 0 && line[start - 1] =~ '\k'
-	start -= 1
-      endwhile
-      start_col = start + 1
     endif
 
     completeItems->complete(start_col)
