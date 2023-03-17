@@ -123,6 +123,15 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
       # Remove all the snippet placeholders
       d.word = MakeValidWord(d.word)
     else
+      # FIXME: Some lsp server e.g phpactor may include trigger char into
+      # compl item, so simply remove it as a tmp workaround for now; or
+      # looks 'insertText' may just have partial content of that compl item,
+      # so may need to take care such things (etc) later.
+      if d.word != '' && lspserver.completionTriggerChars->len() > 0
+	    \ && lspserver.completionTriggerChars->index(d.word[0]) != -1
+	d.word = d.word[1 : ]
+      endif
+
       # plain text completion.  If the completion item text doesn't start with
       # the current (case ignored) keyword prefix, skip it.
       if prefix != '' && d.word->tolower()->stridx(prefix) != 0
