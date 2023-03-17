@@ -124,9 +124,9 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
       d.word = MakeValidWord(d.word)
     else
       # FIXME: Some lsp server e.g phpactor may include trigger char into
-      # compl item, so simply remove it as a tmp workaround for now; or
-      # looks 'insertText' may just have partial content of that compl item,
-      # so may need to take care such things (etc) later.
+      # compl item, so simply remove it as a tmp workaround;
+      # and looks lsp specification allowed 'insertText' only have partial
+      # content of that compl item, may need to take care such things later.
       if d.word != '' && lspserver.completionTriggerChars->len() > 0
 	    \ && lspserver.completionTriggerChars->index(d.word[0]) != -1
 	d.word = d.word[1 : ]
