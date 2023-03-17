@@ -95,8 +95,6 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
   for item in items
     var d: dict<any> = {}
 
-    # TODO: Add proper support for item.textEdit.newText and item.textEdit.range
-    # Keep in mind that item.textEdit.range can start be way before the typed keyword.
     if item->has_key('textEdit')
       var start_charcol: number
       if prefix != ''
@@ -123,15 +121,12 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
       # Remove all the snippet placeholders
       d.word = MakeValidWord(d.word)
     else
-      # FIXME: Some lsp server e.g phpactor may include trigger char into
-      # compl item, so simply remove it as a tmp workaround;
-      # and looks lsp specification allowed 'insertText' only have partial
-      # content of that compl item, may need to take care such things later.
+      # FIXME: some lsp server e.g phpactor may include trigger char into
+      # compl item, so simply remove it as a tmp workaround.
       if d.word != '' && lspserver.completionTriggerChars->len() > 0
 	    \ && lspserver.completionTriggerChars->index(d.word[0]) != -1
 	d.word = d.word[1 : ]
       endif
-
       # plain text completion.  If the completion item text doesn't start with
       # the current (case ignored) keyword prefix, skip it.
       if prefix != '' && d.word->tolower()->stridx(prefix) != 0
