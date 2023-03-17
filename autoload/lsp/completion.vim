@@ -311,7 +311,9 @@ def g:LspOmniFunc(findstart: number, base: string): any
       return res->empty() ? v:none : res
     endif
 
-    return res->empty() ? v:none : res->filter((i, v) => v.word =~# '^' .. lspserver.omniCompleteKeyword)
+    var prefix: string = lspserver.omniCompleteKeyword->tolower()
+    # To filter (case ignored) keyword prefixed compl items only.
+    return res->empty() ? v:none : res->filter((i, v) => v.word->tolower()->stridx(prefix) == 0)
   endif
 enddef
 
