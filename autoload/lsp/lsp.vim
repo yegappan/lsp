@@ -870,6 +870,17 @@ export def TagFunc(pat: string, flags: string, info: dict<any>): any
   return lspserver.tagFunc(pat, flags, info)
 enddef
 
+# Function to use with the 'formatexpr' option.
+export def FormatExpr(): number
+  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  if lspserver->empty()
+    return 1
+  endif
+
+  lspserver.textDocFormat(@%, true, v:lnum, v:lnum + v:count - 1)
+  return 0
+enddef
+
 export def RegisterCmdHandler(cmd: string, Handler: func)
   codeaction.RegisterCmdHandler(cmd, Handler)
 enddef

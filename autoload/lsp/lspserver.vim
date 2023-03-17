@@ -72,7 +72,7 @@ def StartServer(lspserver: dict<any>): number
   lspserver.signaturePopup = -1
   lspserver.workspaceFolders = [getcwd()]
 
-  var job = job_start(cmd, opts)
+  var job = cmd->job_start(opts)
   if job->job_status() == 'fail'
     util.ErrMsg($'Error: Failed to start LSP server {lspserver.path}')
     return 1
@@ -579,7 +579,7 @@ enddef
 # Send a request message to LSP server
 def SendMessage(lspserver: dict<any>, content: dict<any>): void
   var ch = lspserver.job->job_getchannel()
-  if ch_status(ch) != 'open'
+  if ch->ch_status() != 'open'
     # LSP server has exited
     return
   endif
@@ -605,7 +605,7 @@ def Rpc(lspserver: dict<any>, method: string, params: any): dict<any>
   req.params->extend(params)
 
   var ch = lspserver.job->job_getchannel()
-  if ch_status(ch) != 'open'
+  if ch->ch_status() != 'open'
     # LSP server has exited
     return {}
   endif
@@ -672,7 +672,7 @@ def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func): n
   req.params->extend(params)
 
   var ch = lspserver.job->job_getchannel()
-  if ch_status(ch) != 'open'
+  if ch->ch_status() != 'open'
     # LSP server has exited
     return -1
   endif
@@ -1162,7 +1162,7 @@ def TextDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
   if rangeFormat
     var r: dict<dict<number>> = {
 	start: {line: start_lnum - 1, character: 0},
-	end: {line: end_lnum - 1, character: 99999}}
+	end: {line: end_lnum - 1, character: charcol([end_lnum, '$']) - 1}}
     param.range = r
   endif
 

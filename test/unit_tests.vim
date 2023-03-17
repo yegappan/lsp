@@ -188,6 +188,27 @@ def Test_LspFormat()
   :%bw!
 enddef
 
+# Test for formatting a file using 'formatexpr'
+def Test_LspFormatExpr()
+  :silent! edit Xtest.c
+  sleep 200m
+  setlocal formatexpr=lsp#lsp#FormatExpr()
+  setline(1, ['  int i;', '  int j;'])
+  :redraw!
+  normal! ggVGgq
+  assert_equal(['int i;', 'int j;'], getline(1, '$'))
+
+  # empty line/file
+  deletebufline('', 1, '$')
+  setline(1, [''])
+  redraw!
+  normal! ggVGgq
+  assert_equal([''], getline(1, '$'))
+
+  setlocal formatexpr&
+  :%bw!
+enddef
+
 # Test for :LspShowReferences - showing all the references to a symbol in a
 # file using LSP
 def Test_LspShowReferences()

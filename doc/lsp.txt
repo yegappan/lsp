@@ -2,7 +2,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: Nov 26, 2022
+Last change: March 16, 2023
 
 ==============================================================================
 						*lsp-license*
@@ -812,7 +812,18 @@ Note that most of the language servers return only one symbol location even if
 the symbol is defined in multiple places in the code.
 
 ==============================================================================
-9. Call Hierarchy					*lsp-call-hierarchy*
+9. Code Formatting
+
+The |:LspFormat| command can be used to format either the entire file or a
+selected range of lines using the language server.  The *shiftwidth* and
+*expandtab* values set for the current buffer are used when format is applied.
+
+To format code using the 'gq' command, you can set the 'formatexpr' option:
+>
+    setlocal formatexpr=lsp#lsp#FormatExpr()
+<
+==============================================================================
+10. Call Hierarchy					*lsp-call-hierarchy*
 
 The |:LspIncomingCalls| and the |:LspOutoingCalls| commands can be used to
 display the call hierarchy of a symbol.  For example, the functions calling a
@@ -847,7 +858,7 @@ In the call hierarchy tree window, the following commands are supported:
 				refreshed to display the outgoing calls.
 
 ==============================================================================
-10. Autocommands					*lsp-autocmds*
+11. Autocommands					*lsp-autocmds*
 
 							*LspAttached*
 LspAttached			A |User| autocommand fired when the LSP client
@@ -861,7 +872,7 @@ LspDiagsUpdated			A |User| autocommand invoked when new
 				has processed the diagnostics.
 
 ==============================================================================
-11. Highlight Groups					*lsp-highlight-groups*
+12. Highlight Groups					*lsp-highlight-groups*
 
 The following highlight groups are used by the LSP plugin.  You can define
 these highlight groups in your .vimrc file before sourcing this plugin to
@@ -872,7 +883,7 @@ LspInlayHintsParam		Used to highlight inlay hints of kind
 LspInlayHintsType		Used to highlight inlay hints of kind "type".
 
 ==============================================================================
-12. Debugging						*lsp-debug*
+13. Debugging						*lsp-debug*
 
 To debug this plugin, you can log the language server protocol messages sent
 and received by the plugin from the language server.  The following command
@@ -904,7 +915,7 @@ use the :LspServerTrace command to set the trace value: >
     :LspServerTrace { off | messages | verbose }
 <
 ==============================================================================
-12. Custom Command Handlers				*lsp-custom-commands*
+14. Custom Command Handlers				*lsp-custom-commands*
 
 When applying a code action, the language server may issue a non-standard
 command.  For example, the Java language server uses non-standard commands
