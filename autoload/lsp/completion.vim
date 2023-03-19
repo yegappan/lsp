@@ -78,11 +78,14 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     return
   endif
 
+  lspserver.completeItemsIsIncomplete = false
+
   var items: list<dict<any>>
   if cItems->type() == v:t_list
     items = cItems
   else
     items = cItems.items
+    lspserver.completeItemsIsIncomplete = cItems.isIncomplete
   endif
 
   # Get the keyword prefix before the current cursor column.
@@ -301,6 +304,12 @@ def g:LspOmniFunc(findstart: number, base: string): any
     endwhile
 
     var res: list<dict<any>> = lspserver.completeItems
+
+    # Don't attempt to filter on the items, when "isIncomplete" is set
+    if lspserver.completeItemsIsIncomplete
+      return res->empty() ? v:none : res
+    endif
+
     return res->empty() ? v:none : res->filter((i, v) => v.word =~# '^' .. lspserver.omniCompleteKeyword)
   endif
 enddef
