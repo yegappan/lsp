@@ -172,7 +172,11 @@ export def JumpToLspLocation(location: dict<any>, cmdmods: string)
   # jump to the file and line containing the symbol
   if cmdmods == ''
     var bnr: number = fname->bufnr()
-    if bnr != bufnr()
+    if bnr == bufnr()
+      # Set the previous cursor location mark. Instead of using setpos(), m' is
+      # used so that the current location is added to the jump list.
+      normal m'
+    else
       var wid = fname->bufwinid()
       if wid != -1
         wid->win_gotoid()
@@ -201,9 +205,6 @@ export def JumpToLspLocation(location: dict<any>, cmdmods: string)
   else
     exe $'{cmdmods} split {fname}'
   endif
-  # Set the previous cursor location mark. Instead of using setpos(), m' is
-  # used so that the current location is added to the jump list.
-  normal m'
   setcursorcharpos(range.start.line + 1, range.start.character + 1)
 enddef
 
