@@ -278,11 +278,9 @@ export def GetDiagByLine(lspserver: dict<any>, bnr: number, lnum: number): dict<
 enddef
 
 # sort the diaganostics messages for a buffer by line number
-def GetSortedDiagLines(lspsrv: dict<any>, bnr: number): list<number>
-  # create a list of line numbers from the diag map keys
-  var lnums: list<number> =
-		lspsrv.diagsMap[bnr]->keys()->mapnew((_, v) => v->str2nr())
-  return lnums->sort((a, b) => a - b)
+def GetSortedDiagLines(lspsrv: dict<any>, bnr: number): list<dict<any>>
+  var diags = lspsrv.diagsMap[bnr]
+  return diags->values()->sort((a, b) => a.range.start.line - b.range.start.line)
 enddef
 
 # jump to the next/previous/first diagnostic message in the current buffer
@@ -299,19 +297,20 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
   endif
 
   # sort the diagnostics by line number
-  var sortedDiags: list<number> = GetSortedDiagLines(lspserver, bnr)
+  var sortedDiags: list<dict<any>> = GetSortedDiagLines(lspserver, bnr)
 
   if which == 'first'
-    [sortedDiags[0], 1]->cursor()
+    setcursorcharpos(sortedDiags[0].range.start.line + 1, sortedDiags[0].range.start.character + 1)
     return
   endif
 
   # Find the entry just before the current line (binary search)
   var curlnum: number = line('.')
-  for lnum in (which == 'next') ? sortedDiags : sortedDiags->reverse()
+  for diag in (which == 'next') ? sortedDiags : sortedDiags->reverse()
+    var lnum = diag.range.start.line + 1
     if (which == 'next' && lnum > curlnum)
 	  || (which == 'prev' && lnum < curlnum)
-      [lnum, 1]->cursor()
+      setcursorcharpos(diag.range.start.line + 1, diag.range.start.character + 1)
       return
     endif
   endfor
