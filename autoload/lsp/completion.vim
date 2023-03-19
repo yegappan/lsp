@@ -125,9 +125,10 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
       # snippet completion.  Needs a snippet plugin to expand the snippet.
       # Remove all the snippet placeholders
       d.word = MakeValidWord(d.word)
-    else
+    elseif !lspserver.completeItemsIsIncomplete
       # plain text completion.  If the completion item text doesn't start with
       # the current (case ignored) keyword prefix, skip it.
+      # Don't attempt to filter on the items, when "isIncomplete" is set
       if prefix != '' && d.word->tolower()->stridx(prefix) != 0
 	continue
       endif
