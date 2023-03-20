@@ -135,6 +135,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     endif
 
     d.abbr = item.label
+    d.icase = 1
     d.dup = 1
 
     if item->has_key('kind')
