@@ -10,7 +10,7 @@ fi
 
 VIM_CMD="$VIMPRG -u NONE -U NONE -i NONE --noplugin -N --not-a-term"
 
-TESTS="clangd_tests.vim"
+TESTS="tsserver_tests.vim clangd_tests.vim"
 
 for testfile in $TESTS
 do
@@ -24,8 +24,7 @@ do
 
     cat results.txt
 
-    grep -w FAIL results.txt >/dev/null 2>&1
-    if [ $? -eq 0 ]; then
+    if grep -qw FAIL results.txt; then
       echo "ERROR: Some test(s) in $testfile failed."
       exit 3
     fi

@@ -4,7 +4,7 @@ vim9script
 var lspServers = [{
       filetype: ['typescript', 'javascript'],
       path: exepath('typescript-language-server'),
-      args: ['--stdio', '--tsserver-path=' .. exepath('tsserver')]
+      args: ['--stdio']
   }]
 call LspAddServer(lspServers)
 echomsg systemlist($'{lspServers[0].path} --version')
@@ -13,24 +13,60 @@ echomsg systemlist($'{lspServers[0].path} --version')
 def g:Test_LspDiag()
   :silent! edit Xtest.ts
   sleep 200m
+
+  var bnr: number = bufnr()
+
+  # This tests that two diagnostics can be on the same line
   var lines: list<string> = [
-    '  let person: string = "rob";',
-    '  person = 10;',
-    '  MyFunc();'
+    '  export obj = {',
+    '    foo: 1,',
+    '    bar: 2,',
+    '    baz: 3',
+    '  }'
   ]
+
   setline(1, lines)
   :sleep 1
   g:WaitForDiags(2)
-  var bnr: number = bufnr()
   :redraw!
   :LspDiagShow
   var qfl: list<dict<any>> = getloclist(0)
   assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
   assert_equal(bnr, qfl[0].bufnr)
   assert_equal(2, qfl->len())
-  assert_equal([2, 3, 'E'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
-  assert_equal([3, 3, 'E'], [qfl[1].lnum, qfl[1].col, qfl[1].type])
+  assert_equal([1, 3, 'E'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
+  assert_equal([1, 10, 'E'], [qfl[1].lnum, qfl[1].col, qfl[1].type])
   close
+
+  :sleep 100m
+  cursor(5, 1)
+  assert_equal('', execute('LspDiagPrev'))
+  assert_equal([1, 10], [line('.'), col('.')])
+
+  assert_equal('', execute('LspDiagPrev'))
+  assert_equal([1, 3], [line('.'), col('.')])
+
+  var output = execute('LspDiagPrev')->split("\n")
+  assert_equal('Error: No more diagnostics found', output[0])
+
+  cursor(5, 1)
+  assert_equal('', execute('LspDiagFirst'))
+  assert_equal([1, 3], [line('.'), col('.')])
+  assert_equal('', execute('LspDiagNext'))
+  assert_equal([1, 10], [line('.'), col('.')])
+
+  g:LspOptionsSet({showDiagInPopup: false})
+  for i in range(1, 3)
+    cursor(1, i)
+    output = execute('LspDiagCurrent')->split('\n')
+    assert_equal('Declaration or statement expected.', output[0])
+  endfor
+  for i in range(4, 16)
+    cursor(1, i)
+    output = execute('LspDiagCurrent')->split('\n')
+    assert_equal('Cannot find name ''obj''.', output[0])
+  endfor
+  g:LspOptionsSet({showDiagInPopup: true})
 
   :%bw!
 enddef
