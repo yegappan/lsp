@@ -2,9 +2,7 @@
 
 # Script to run the unit-tests for the LSP Vim plugin
 
-#VIMPRG=${VIMPRG:=$(which vim)}
-export VIMRUNTIME=/home/yega/bin/vim90/share/vim/vim90
-export VIMPRG=/home/yega/bin/vim90/bin/vim
+VIMPRG=${VIMPRG:=$(which vim)}
 if [ -z "$VIMPRG" ]; then
   echo "ERROR: $VIMPRG is not found in PATH"
   exit 1
