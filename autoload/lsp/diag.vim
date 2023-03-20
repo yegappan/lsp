@@ -310,6 +310,7 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
     var lnum = diag.range.start.line + 1
     if (which == 'next' && lnum > curlnum)
 	  || (which == 'prev' && lnum < curlnum)
+	  || (which == 'this' && lnum == curlnum)
       setcursorcharpos(diag.range.start.line + 1, diag.range.start.character + 1)
       return
     endif
