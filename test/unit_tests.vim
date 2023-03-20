@@ -330,13 +330,13 @@ def Test_LspDiag()
   var output = execute('LspDiagCurrent')->split("\n")
   assert_equal('No diagnostic messages found for current line', output[0])
   :LspDiagFirst
-  assert_equal([3, 1], [line('.'), col('.')])
+  assert_equal([3, 14], [line('.'), col('.')])
   output = execute('LspDiagCurrent')->split("\n")
   assert_equal("Expected ';' at end of declaration (fix available)", output[0])
   :LspDiagNext
-  assert_equal([5, 1], [line('.'), col('.')])
+  assert_equal([5, 2], [line('.'), col('.')])
   :LspDiagNext
-  assert_equal([7, 1], [line('.'), col('.')])
+  assert_equal([7, 2], [line('.'), col('.')])
   output = execute('LspDiagNext')->split("\n")
   assert_equal('Error: No more diagnostics found', output[0])
   :LspDiagPrev
