@@ -7,7 +7,12 @@ jobs:
     steps:
       - name: Install packages
         run: |
-          sudo apt update && sudo apt install -y clangd-14
+          sudo apt update
+          sudo apt install -y clangd-14
+          sudo apt install -y curl
+          curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+          sudo apt install -y nodejs
+          npm install -g typescript-language-server typescript
       - name: Setup Vim
         uses: rhysd/action-setup-vim@v1
         id: vim

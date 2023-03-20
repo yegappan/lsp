@@ -1,24 +1,5 @@
 vim9script
-# Unit tests for Vim Language Server Protocol (LSP) client
-
-syntax on
-filetype on
-filetype plugin on
-filetype indent on
-
-# Set the $LSP_PROFILE environment variable to profile the LSP plugin
-var do_profile: bool = false
-if exists('$LSP_PROFILE')
-  do_profile = true
-endif
-
-if do_profile
-  # profile the LSP plugin
-  profile start lsp_profile.txt
-  profile! file */lsp/*
-endif
-
-source ../plugin/lsp.vim
+# Unit tests for Vim Language Server Protocol (LSP) clangd client
 
 var lspServers = [{
       filetype: ['c', 'cpp'],
@@ -34,67 +15,8 @@ var lspServers = [{
 call LspAddServer(lspServers)
 echomsg systemlist($'{lspServers[0].path} --version')
 
-g:LSPTest = true
-
-# The WaitFor*() functions are reused from the Vim test suite.
-#
-# Wait for up to five seconds for "assert" to return zero.  "assert" must be a
-# (lambda) function containing one assert function.  Example:
-#	call WaitForAssert({-> assert_equal("dead", job_status(job)})
-#
-# A second argument can be used to specify a different timeout in msec.
-#
-# Return zero for success, one for failure (like the assert function).
-func WaitForAssert(assert, ...)
-  let timeout = get(a:000, 0, 5000)
-  if s:WaitForCommon(v:null, a:assert, timeout) < 0
-    return 1
-  endif
-  return 0
-endfunc
-
-# Either "expr" or "assert" is not v:null
-# Return the waiting time for success, -1 for failure.
-func WaitForCommon(expr, assert, timeout)
-  " using reltime() is more accurate, but not always available
-  let slept = 0
-  if exists('*reltimefloat')
-    let start = reltime()
-  endif
-
-  while 1
-    if type(a:expr) == v:t_func
-      let success = a:expr()
-    elseif type(a:assert) == v:t_func
-      let success = a:assert() == 0
-    else
-      let success = eval(a:expr)
-    endif
-    if success
-      return slept
-    endif
-
-    if slept >= a:timeout
-      break
-    endif
-    if type(a:assert) == v:t_func
-      " Remove the error added by the assert function.
-      call remove(v:errors, -1)
-    endif
-
-    sleep 10m
-    if exists('*reltimefloat')
-      let slept = float2nr(reltimefloat(reltime(start)) * 1000)
-    else
-      let slept += 10
-    endif
-  endwhile
-
-  return -1  " timed out
-endfunc
-
 # Test for formatting a file using LspFormat
-def Test_LspFormat()
+def g:Test_LspFormat()
   :silent! edit Xtest.c
   sleep 200m
   setline(1, ['  int i;', '  int j;'])
@@ -189,7 +111,7 @@ def Test_LspFormat()
 enddef
 
 # Test for formatting a file using 'formatexpr'
-def Test_LspFormatExpr()
+def g:Test_LspFormatExpr()
   :silent! edit Xtest.c
   sleep 200m
   setlocal formatexpr=lsp#lsp#FormatExpr()
@@ -211,7 +133,7 @@ enddef
 
 # Test for :LspShowReferences - showing all the references to a symbol in a
 # file using LSP
-def Test_LspShowReferences()
+def g:Test_LspShowReferences()
   :silent! edit Xtest.c
   sleep 200m
   var lines: list<string> =<< trim END
@@ -284,21 +206,8 @@ def Test_LspShowReferences()
   :%bw!
 enddef
 
-# Wait for diagnostic messages from the LSP server
-def WaitForDiags(errCount: number)
-  var retries = 0
-  while retries < 30
-    var d = lsp#lsp#ErrorCount()
-    if d.Error  == errCount
-      break
-    endif
-    retries += 1
-    :sleep 100m
-  endwhile
-enddef
-
 # Test for LSP diagnostics
-def Test_LspDiag()
+def g:Test_LspDiag()
   :silent! edit Xtest.c
   sleep 200m
   var lines: list<string> =<< trim END
@@ -313,7 +222,7 @@ def Test_LspDiag()
   END
   setline(1, lines)
   :sleep 1
-  WaitForDiags(1)
+  g:WaitForDiags(1)
   var bnr: number = bufnr()
   :redraw!
   :LspDiagShow
@@ -346,7 +255,7 @@ def Test_LspDiag()
   assert_equal('Error: No more diagnostics found', output[0])
   :%d
   setline(1, ['void blueFunc()', '{', '}'])
-  WaitForDiags(0)
+  g:WaitForDiags(0)
   output = execute('LspDiagShow')->split("\n")
   assert_match('No diagnostic messages found for', output[0])
   g:LspOptionsSet({showDiagInPopup: true})
@@ -355,7 +264,7 @@ def Test_LspDiag()
 enddef
 
 # Test for :LspCodeAction
-def Test_LspCodeAction()
+def g:Test_LspCodeAction()
   silent! edit Xtest.c
   sleep 200m
   var lines: list<string> =<< trim END
@@ -434,7 +343,7 @@ def Test_LspCodeAction()
 enddef
 
 # Test for :LspRename
-def Test_LspRename()
+def g:Test_LspRename()
   silent! edit Xtest.c
   sleep 200m
   var lines: list<string> =<< trim END
@@ -504,7 +413,7 @@ def Test_LspRename()
 enddef
 
 # Test for :LspSelectionExpand and :LspSelectionShrink
-def Test_LspSelection()
+def g:Test_LspSelection()
   silent! edit Xtest.c
   sleep 200m
   var lines: list<string> =<< trim END
@@ -604,7 +513,8 @@ def Test_LspSelection()
 enddef
 
 # Test for :LspGotoDefinition, :LspGotoDeclaration and :LspGotoImpl
-def Test_LspGotoSymbol()
+def g:Test_LspGotoSymbol()
+  settagstack(0, {items: []})
   silent! edit Xtest.cpp
   sleep 600m
   var lines: list<string> =<< trim END
@@ -731,7 +641,7 @@ def Test_LspGotoSymbol()
 enddef
 
 # Test for :LspHighlight
-def Test_LspHighlight()
+def g:Test_LspHighlight()
   silent! edit Xtest.c
   sleep 200m
   var lines: list<string> =<< trim END
@@ -763,7 +673,7 @@ def Test_LspHighlight()
 enddef
 
 # Test for :LspHover
-def Test_LspHover()
+def g:Test_LspHover()
   silent! edit Xtest.c
   sleep 200m
   var lines: list<string> =<< trim END
@@ -792,7 +702,7 @@ def Test_LspHover()
 enddef
 
 # Test for :LspShowSignature
-def Test_LspShowSignature()
+def g:Test_LspShowSignature()
   silent! edit Xtest.c
   sleep 200m
   var lines: list<string> =<< trim END
@@ -835,7 +745,7 @@ def Test_LspShowSignature()
 enddef
 
 # Test for :LspSymbolSearch
-def Test_LspSymbolSearch()
+def g:Test_LspSymbolSearch()
   silent! edit Xtest.c
   sleep 200m
   var lines: list<string> =<< trim END
@@ -873,7 +783,7 @@ def Test_LspSymbolSearch()
 enddef
 
 # Test for :LspIncomingCalls
-def Test_LspIncomingCalls()
+def g:Test_LspIncomingCalls()
   silent! edit Xtest.c
   sleep 200m
   var lines: list<string> =<< trim END
@@ -905,7 +815,7 @@ def Test_LspIncomingCalls()
 enddef
 
 # Test for :LspOutline
-def Test_LspOutline()
+def g:Test_LspOutline()
   silent! edit Xtest.c
   sleep 200m
   var lines: list<string> =<< trim END
@@ -928,7 +838,7 @@ def Test_LspOutline()
 enddef
 
 # Test for setting the 'tagfunc'
-def Test_LspTagFunc()
+def g:Test_LspTagFunc()
   var lines: list<string> =<< trim END
     void aFunc(void)
     {
@@ -960,7 +870,7 @@ def Test_LspTagFunc()
 enddef
 
 # Test for the LspDiagsUpdated autocmd
-def Test_LspDiagsUpdated_Autocmd()
+def g:Test_LspDiagsUpdated_Autocmd()
   g:LspAutoCmd = 0
   autocmd_add([{event: 'User', pattern: 'LspDiagsUpdated', cmd: 'g:LspAutoCmd = g:LspAutoCmd + 1'}])
   silent! edit Xtest.c
@@ -973,18 +883,18 @@ def Test_LspDiagsUpdated_Autocmd()
   END
   setline(1, lines)
   :sleep 1
-  WaitForDiags(0)
+  g:WaitForDiags(0)
   setline(3, '    return:')
-  WaitForDiags(1)
+  g:WaitForDiags(1)
   setline(3, '    return;')
-  WaitForDiags(0)
+  g:WaitForDiags(0)
   :%bw!
   autocmd_delete([{event: 'User', pattern: 'LspDiagsUpdated'}])
   assert_equal(3, g:LspAutoCmd)
 enddef
 
 # Test custom notification handlers
-def Test_LspCustomNotificationHandlers()
+def g:Test_LspCustomNotificationHandlers()
 
   g:LSPTest_customNotificationHandlerReplied = false
 
@@ -997,11 +907,11 @@ def Test_LspCustomNotificationHandlers()
     }
   END
   setline(1, lines)
-  WaitForAssert(() => assert_equal(true, g:LSPTest_customNotificationHandlerReplied))
+  g:WaitForAssert(() => assert_equal(true, g:LSPTest_customNotificationHandlerReplied))
   :%bw!
 enddef
 
-def Test_ScanFindIdent()
+def g:Test_ScanFindIdent()
   :silent! edit Xtest.c
   sleep 200m
   var lines: list<string> =<< trim END
@@ -1043,7 +953,7 @@ def Test_ScanFindIdent()
 enddef
 
 # Start the C language server.  Returns true on success and false on failure.
-def StartLangServer(): bool
+def g:StartLangServer(): bool
   # Edit a dummy C file to start the LSP server
   :edit Xtest.c
   # Wait for the LSP server to become ready (max 10 seconds)
@@ -1057,43 +967,5 @@ def StartLangServer(): bool
 
   return serverStatus
 enddef
-
-def LspRunTests()
-  :set nomore
-  :set debug=beep
-  delete('results.txt')
-
-  if !StartLangServer()
-    writefile(['FAIL: Not able to start the C language server'], 'results.txt')
-    return
-  endif
-
-  # Get the list of test functions in this file and call them
-  var fns: list<string> = execute('function /Test_')
-		    ->split("\n")
-		    ->map("v:val->substitute('^def <SNR>\\d\\+_', '', '')")
-  for f in fns
-    v:errors = []
-    v:errmsg = ''
-    try
-      :%bw!
-      exe f
-    catch
-      call add(v:errors, "Error: Test " .. f .. " failed with exception " .. v:exception .. " at " .. v:throwpoint)
-    endtry
-    if v:errmsg != ''
-      call add(v:errors, "Error: Test " .. f .. " generated error " .. v:errmsg)
-    endif
-    if !v:errors->empty()
-      writefile(v:errors, 'results.txt', 'a')
-      writefile([f .. ': FAIL'], 'results.txt', 'a')
-    else
-      writefile([f .. ': pass'], 'results.txt', 'a')
-    endif
-  endfor
-enddef
-
-LspRunTests()
-qall!
 
 # vim: shiftwidth=2 softtabstop=2 noexpandtab
