@@ -206,7 +206,7 @@ export def CompletionResolveReply(lspserver: dict<any>, cItem: any)
       || cInfo.selected == -1
       || cInfo.items[cInfo.selected]->type() != v:t_dict
       || cInfo.items[cInfo.selected].user_data->type() != v:t_dict
-      || cInfo.items[cInfo.selected].user_data.label != cItem.label
+      || cInfo.items[cInfo.selected].user_data.label !=# cItem.label
     return
   endif
 
@@ -255,7 +255,7 @@ export def CompletionResolveReply(lspserver: dict<any>, cItem: any)
       || cInfo.selected == -1
       || cInfo.items[cInfo.selected]->type() != v:t_dict
       || cInfo.items[cInfo.selected].user_data->type() != v:t_dict
-      || cInfo.items[cInfo.selected].user_data.label != cItem.label
+      || cInfo.items[cInfo.selected].user_data.label !=# cItem.label
     return
   endif
 
