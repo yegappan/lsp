@@ -20,7 +20,7 @@ def g:Test_LspDiag()
   ]
   setline(1, lines)
   :sleep 1
-  g:WaitForDiags(1)
+  g:WaitForDiags(2)
   var bnr: number = bufnr()
   :redraw!
   :LspDiagShow

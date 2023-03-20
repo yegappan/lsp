@@ -86,7 +86,7 @@ def g:WaitForDiags(errCount: number)
   var retries = 0
   while retries < 30
     var d = lsp#lsp#ErrorCount()
-    if d.Error  == errCount
+    if d.Error == errCount
       break
     endif
     retries += 1
