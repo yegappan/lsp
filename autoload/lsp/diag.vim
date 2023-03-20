@@ -210,16 +210,10 @@ def ShowDiagInPopup(diag: dict<any>)
     # The line number is outside the last line in the file.
     dlnum = lastline
   endif
-  # Make sure column is not outside the character in line.
   if dlcol < 1
-    dlcol = 1
-  elseif dlcol > ltext->len()
-    dlcol = ltext->len()
+    # The column is outside the last character in line.
+    dlcol = ltext->len() + 1
   endif
-
-  # Move cursor to the right col of current diag
-  cursor(dlnum, dlcol)
-
   var d = screenpos(0, dlnum, dlcol)
   if d->empty()
     # If the diag position cannot be converted to Vim lnum/col, then use
