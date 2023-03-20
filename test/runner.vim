@@ -84,7 +84,7 @@ endfunc
 # Wait for diagnostic messages from the LSP server
 def g:WaitForDiags(errCount: number)
   var retries = 0
-  while retries < 30
+  while retries < 150
     var d = lsp#lsp#ErrorCount()
     if d.Error == errCount
       break

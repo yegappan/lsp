@@ -4,7 +4,7 @@ vim9script
 var lspServers = [{
       filetype: ['typescript', 'javascript'],
       path: exepath('typescript-language-server'),
-      args: ['--stdio', '--tsserver-path=' .. exepath('tsserver')]
+      args: ['--stdio']
   }]
 call LspAddServer(lspServers)
 echomsg systemlist($'{lspServers[0].path} --version')
