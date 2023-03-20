@@ -1371,10 +1371,8 @@ def CodeAction(lspserver: dict<any>, fname_arg: string, line1: number,
   params->extend({textDocument: {uri: util.LspFileToUri(fname)}, range: r})
   var d: list<dict<any>> = []
   for lnum in range(line1, line2)
-    var diagInfo: dict<any> = diag.GetDiagByLine(lspserver, bnr, lnum)
-    if !diagInfo->empty()
-      d->add(diagInfo)
-    endif
+    var diagsInfo: list<dict<any>> = diag.GetDiagsByLine(lspserver, bnr, lnum)
+    d->extend(diagsInfo)
   endfor
   params->extend({context: {diagnostics: d, triggerKind: 1}})
 
@@ -1665,7 +1663,8 @@ export def NewLspServer(path: string, args: list<string>, isSync: bool, initiali
     processNotif: function(handlers.ProcessNotif, [lspserver]),
     processRequest: function(handlers.ProcessRequest, [lspserver]),
     processMessages: function(handlers.ProcessMessages, [lspserver]),
-    getDiagByLine: function(diag.GetDiagByLine, [lspserver]),
+    getDiagByPos: function(diag.GetDiagByPos, [lspserver]),
+    getDiagsByLine: function(diag.GetDiagsByLine, [lspserver]),
     textdocDidOpen: function(TextdocDidOpen, [lspserver]),
     textdocDidClose: function(TextdocDidClose, [lspserver]),
     textdocDidChange: function(TextdocDidChange, [lspserver]),

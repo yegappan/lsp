@@ -27,14 +27,19 @@ def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
   # Remove all the existing diagnostic signs
   sign_unplace('LSPDiag', {buffer: bnr})
 
-  if lspserver.diagsMap[bnr]->empty()
+  if !lspserver.diagsMap->has_key(bnr) ||
+      lspserver.diagsMap[bnr].sortedDiagnostics->empty()
     return
   endif
 
   var signs: list<dict<any>> = []
-  for [lnum, diag] in lspserver.diagsMap[bnr]->items()
+  var diags = lspserver.diagsMap[bnr].sortedDiagnostics
+  for diag in diags
+    # TODO: prioritize most important severity if there are multiple diagnostics
+    # from the same line
+    var lnum = diag.range.start.line + 1
     signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
-				lnum: lnum->str2nr(),
+				lnum: lnum,
 				name: DiagSevToSignName(diag.severity)})
   endfor
 
@@ -80,20 +85,39 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags: list<dict<
 
   # TODO: Is the buffer (bnr) always a loaded buffer? Should we load it here?
   var lastlnum: number = bnr->getbufinfo()[0].linecount
-  var lnum: number
-
   # store the diagnostic for each line separately
-  var diag_by_lnum: dict<dict<any>> = {}
-  for d in diags
-    lnum = d.range.start.line + 1
-    if lnum > lastlnum
+  var diagByLnum: dict<list<dict<any>>> = {}
+  var diagWithinRange: list<dict<any>> = []
+  for diag in diags
+    if diag.range.start.line + 1 > lastlnum
       # Make sure the line number is a valid buffer line number
-      lnum = lastlnum
+      diag.range.start.line = lastlnum - 1
     endif
-    diag_by_lnum[lnum] = d
+
+    var lnum = diag.range.start.line + 1
+    if !diagByLnum->has_key(lnum)
+      diagByLnum[lnum] = []
+    endif
+    diagByLnum[lnum]->add(diag)
+
+    diagWithinRange->add(diag)
   endfor
 
-  lspserver.diagsMap->extend({[$'{bnr}']: diag_by_lnum})
+  var sortedDiags = diagWithinRange->sort((a, b) => {
+    var linediff = a.range.start.line - b.range.start.line
+    if linediff == 0
+      return a.range.start.character - b.range.start.character
+    endif
+    return linediff
+  })
+
+  lspserver.diagsMap->extend({
+    [$'{bnr}']: {
+      sortedDiagnostics: sortedDiags,
+      diagnosticsByLnum: diagByLnum
+    }
+  })
+
   ProcessNewDiags(lspserver, bnr)
 
   # Notify user scripts that diags has been updated
@@ -111,8 +135,9 @@ export def DiagsGetErrorCount(lspserver: dict<any>): dict<number>
 
   var bnr: number = bufnr()
   if lspserver.diagsMap->has_key(bnr)
-    for item in lspserver.diagsMap[bnr]->values()
-      var severity = item->get('severity', -1)
+    var diags = lspserver.diagsMap[bnr].sortedDiagnostics
+    for diag in diags
+      var severity = diag->get('severity', -1)
       if severity == 1
 	errCount += 1
       elseif severity == 2
@@ -154,7 +179,8 @@ def DiagsUpdateLocList(lspserver: dict<any>, bnr: number): bool
     LspQfId = b:LspQfId
   endif
 
-  if !lspserver.diagsMap->has_key(bnr) || lspserver.diagsMap[bnr]->empty()
+  if !lspserver.diagsMap->has_key(bnr) ||
+      lspserver.diagsMap[bnr].sortedDiagnostics->empty()
     if LspQfId != 0
       setloclist(0, [], 'r', {id: LspQfId, items: []})
     endif
@@ -164,7 +190,8 @@ def DiagsUpdateLocList(lspserver: dict<any>, bnr: number): bool
   var qflist: list<dict<any>> = []
   var text: string
 
-  for [lnum, diag] in lspserver.diagsMap[bnr]->items()->sort((a, b) => a[0]->str2nr() - b[0]->str2nr())
+  var diags = lspserver.diagsMap[bnr].sortedDiagnostics
+  for diag in diags
     text = diag.message->substitute("\n\\+", "\n", 'g')
     qflist->add({filename: fname,
 		    lnum: diag.range.start.line + 1,
@@ -235,7 +262,8 @@ enddef
 export def ShowCurrentDiag(lspserver: dict<any>)
   var bnr: number = bufnr()
   var lnum: number = line('.')
-  var diag: dict<any> = lspserver.getDiagByLine(bnr, lnum)
+  var col: number = charcol('.')
+  var diag: dict<any> = lspserver.getDiagByPos(bnr, lnum, col)
   if diag->empty()
     util.WarnMsg('No diagnostic messages found for current line')
   else
@@ -253,7 +281,8 @@ enddef
 export def ShowCurrentDiagInStatusLine(lspserver: dict<any>)
   var bnr: number = bufnr()
   var lnum: number = line('.')
-  var diag: dict<any> = lspserver.getDiagByLine(bnr, lnum)
+  var col: number = charcol('.')
+  var diag: dict<any> = lspserver.getDiagByPos(bnr, lnum, col)
   if !diag->empty()
     # 15 is a enough length not to cause line break
     var max_width = &columns - 15
@@ -268,19 +297,32 @@ export def ShowCurrentDiagInStatusLine(lspserver: dict<any>)
   endif
 enddef
 
-# Get the diagnostic from the LSP server for a particular line in a file
-export def GetDiagByLine(lspserver: dict<any>, bnr: number, lnum: number): dict<any>
-  if lspserver.diagsMap->has_key(bnr) &&
-				lspserver.diagsMap[bnr]->has_key(lnum)
-    return lspserver.diagsMap[bnr][lnum]
+# Get the diagnostic from the LSP server for a particular line and character
+# offset in a file
+export def GetDiagByPos(lspserver: dict<any>, bnr: number, lnum: number, col: number): dict<any>
+  var diags_in_line = GetDiagsByLine(lspserver, bnr, lnum)
+
+  for diag in diags_in_line
+    if col <= diag.range.start.character + 1
+      return diag
+    endif
+  endfor
+
+  if diags_in_line->len() > 0
+    return diags_in_line[-1]
   endif
+
   return {}
 enddef
 
-# sort the diaganostics messages for a buffer by line number
-def GetSortedDiagLines(lspsrv: dict<any>, bnr: number): list<dict<any>>
-  var diags = lspsrv.diagsMap[bnr]
-  return diags->values()->sort((a, b) => a.range.start.line - b.range.start.line)
+# Get all diagnostics from the LSP server for a particular line in a file
+export def GetDiagsByLine(lspserver: dict<any>, bnr: number, lnum: number): list<dict<any>>
+  if lspserver.diagsMap->has_key(bnr)
+    if lspserver.diagsMap[bnr].diagnosticsByLnum->has_key(lnum)
+      return lspserver.diagsMap[bnr].diagnosticsByLnum[lnum]
+    endif
+  endif
+  return []
 enddef
 
 # jump to the next/previous/first diagnostic message in the current buffer
@@ -291,26 +333,29 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
   endif
   var bnr: number = bufnr()
 
-  if !lspserver.diagsMap->has_key(bnr) || lspserver.diagsMap[bnr]->empty()
+  if !lspserver.diagsMap->has_key(bnr) ||
+      lspserver.diagsMap[bnr].sortedDiagnostics->empty()
     util.WarnMsg($'No diagnostic messages found for {fname}')
     return
   endif
 
   # sort the diagnostics by line number
-  var sortedDiags: list<dict<any>> = GetSortedDiagLines(lspserver, bnr)
+  var diags = lspserver.diagsMap[bnr].sortedDiagnostics
 
   if which == 'first'
-    setcursorcharpos(sortedDiags[0].range.start.line + 1, sortedDiags[0].range.start.character + 1)
+    setcursorcharpos(diags[0].range.start.line + 1, diags[0].range.start.character + 1)
     return
   endif
 
   # Find the entry just before the current line (binary search)
   var curlnum: number = line('.')
-  for diag in (which == 'next') ? sortedDiags : sortedDiags->reverse()
+  var curcol: number = charcol('.')
+  for diag in (which == 'next') ? diags : diags->copy()->reverse()
     var lnum = diag.range.start.line + 1
-    if (which == 'next' && lnum > curlnum)
-	  || (which == 'prev' && lnum < curlnum)
-      setcursorcharpos(diag.range.start.line + 1, diag.range.start.character + 1)
+    var col = diag.range.start.character + 1
+    if (which == 'next' && (lnum > curlnum ||  lnum == curlnum && col > curcol))
+	  || (which == 'prev' && (lnum < curlnum || lnum == curlnum && col < curcol))
+      setcursorcharpos(lnum, col)
       return
     endif
   endfor

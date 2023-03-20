@@ -205,14 +205,22 @@ def g:LspDiagExpr(): any
     return ''
   endif
 
-  var diagInfo: dict<any> = lspserver.getDiagByLine(v:beval_bufnr,
-								v:beval_lnum)
-  if diagInfo->empty()
+  var diagsInfo: list<dict<any>> = lspserver.getDiagsByLine(
+    v:beval_bufnr,
+    v:beval_lnum
+  )
+  if diagsInfo->empty()
     # No diagnostic for the current cursor location
     return ''
   endif
 
-  return diagInfo.message->split("\n")
+  # Include all diagnostics from the current line in the message
+  var message: list<string> = []
+  for diag in diagsInfo
+    message->extend(diag.message->split("\n"))
+  endfor
+
+  return message
 enddef
 
 # Called after leaving insert mode. Used to process diag messages (if any)
