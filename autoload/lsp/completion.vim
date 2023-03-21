@@ -179,7 +179,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     endif
 
     if completeItems->len() == 1
-	&& getline('.')->matchstr($'{completeItems[0].word}\>') != ''
+	&& getline('.')->matchstr($'\C{completeItems[0].word}\>') != ''
       # only one complete match. No need to show the completion popup
       return
     endif
