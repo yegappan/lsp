@@ -1064,7 +1064,7 @@ def ShowReferences(lspserver: dict<any>, peek: bool): void
     return
   endif
 
-  symbol.ShowLocations(lspserver, reply.result, peek)
+  symbol.ShowLocations(lspserver, reply.result, peek, 'Symbol References')
 enddef
 
 # process the 'textDocument/documentHighlight' reply from the LSP server

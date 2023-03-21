@@ -303,7 +303,8 @@ enddef
 
 # Display the locations in a popup menu.  Display the corresponding file in
 # an another popup window.
-def PeekLocations(lspserver: dict<any>, locations: list<dict<any>>)
+def PeekLocations(lspserver: dict<any>, locations: list<dict<any>>,
+                  title: string)
   if lspserver.peekSymbolPopup->winbufnr() != -1
     # If the symbol popup window is already present, close it.
     lspserver.peekSymbolPopup->popup_close()
@@ -330,7 +331,7 @@ def PeekLocations(lspserver: dict<any>, locations: list<dict<any>>)
   endfor
 
   var popupAttrs = {
-    title: 'References',
+    title: title,
     wrap: false,
     pos: 'topleft',
     line: 'cursor+1',
@@ -348,10 +349,10 @@ def PeekLocations(lspserver: dict<any>, locations: list<dict<any>>)
   UpdatePeekFilePopup(lspserver, locations)
 enddef
 
-# Display or peek locations in a loclist
-export def ShowLocations(lspserver: dict<any>, locations: list<dict<any>>, peekSymbol: bool)
+export def ShowLocations(lspserver: dict<any>, locations: list<dict<any>>,
+                         peekSymbol: bool, title: string)
   if peekSymbol
-    PeekLocations(lspserver, locations)
+    PeekLocations(lspserver, locations, title)
     return
   endif
 
@@ -375,7 +376,7 @@ export def ShowLocations(lspserver: dict<any>, locations: list<dict<any>>, peekS
   endfor
 
   var save_winid = win_getid()
-  setloclist(0, [], ' ', {title: 'Symbol Reference', items: qflist})
+  setloclist(0, [], ' ', {title: title, items: qflist})
   var mods: string = ''
   exe $'{mods} lopen'
   if !opt.lspOptions.keepFocusInReferences
