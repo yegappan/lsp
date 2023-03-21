@@ -2,7 +2,7 @@ vim9script
 
 # Functions for dealing with symbols.
 #   - LSP symbol menu and for searching symbols across the workspace.
-#   - show symbol references
+#   - show locations
 #   - jump to a symbol definition, declaration, type definition or
 #     implementation
 
@@ -227,7 +227,7 @@ export def SymbolKindToName(symkind: number): string
   return symbolMap[symkind]
 enddef
 
-def UpdatePeekFilePopup(lspserver: dict<any>, refs: list<dict<any>>)
+def UpdatePeekFilePopup(lspserver: dict<any>, locations: list<dict<any>>)
   if lspserver.peekSymbolPopup->winbufnr() == -1
     return
   endif
@@ -235,7 +235,8 @@ def UpdatePeekFilePopup(lspserver: dict<any>, refs: list<dict<any>>)
   lspserver.peekSymbolFilePopup->popup_close()
 
   var n = line('.', lspserver.peekSymbolPopup) - 1
-  var fname: string = util.LspUriToFile(refs[n].uri)
+  var [uri, range] = util.LspLocationParse(locations[n])
+  var fname: string = util.LspUriToFile(uri)
 
   var bnr: number = fname->bufnr()
   if bnr == -1
@@ -260,22 +261,21 @@ def UpdatePeekFilePopup(lspserver: dict<any>, refs: list<dict<any>>)
   lspserver.peekSymbolFilePopup = popup_create(bnr, popupAttrs)
   var cmds =<< trim eval END
     setlocal number
-    [{refs[n].range.start.line + 1}, 1]->cursor()
+    [{range.start.line + 1}, 1]->cursor()
     normal! z.
   END
   win_execute(lspserver.peekSymbolFilePopup, cmds)
 
   lspserver.peekSymbolFilePopup->clearmatches()
-  var start_col = util.GetLineByteFromPos(bnr,
-					refs[n].range.start) + 1
-  var end_col = util.GetLineByteFromPos(bnr, refs[n].range.end)
-  var pos = [[refs[n].range.start.line + 1,
+  var start_col = util.GetLineByteFromPos(bnr, range.start) + 1
+  var end_col = util.GetLineByteFromPos(bnr, range.end)
+  var pos = [[range.start.line + 1,
 	     start_col, end_col - start_col + 1]]
   matchaddpos('Search', pos, 10, -1, {window: lspserver.peekSymbolFilePopup})
 enddef
 
-def RefPopupFilter(lspserver: dict<any>, refs: list<dict<any>>,
-                       popup_id: number, key: string): bool
+def LocPopupFilter(lspserver: dict<any>, locations: list<dict<any>>,
+                   popup_id: number, key: string): bool
   popup_filter_menu(popup_id, key)
   if lspserver.peekSymbolPopup->winbufnr() == -1
     if lspserver.peekSymbolFilePopup->winbufnr() != -1
@@ -284,27 +284,26 @@ def RefPopupFilter(lspserver: dict<any>, refs: list<dict<any>>,
     lspserver.peekSymbolPopup = -1
     lspserver.peekSymbolFilePopup = -1
   else
-    UpdatePeekFilePopup(lspserver, refs)
+    UpdatePeekFilePopup(lspserver, locations)
   endif
   return true
 enddef
 
-def RefPopupCallback(lspserver: dict<any>, refs: list<dict<any>>,
+def LocPopupCallback(lspserver: dict<any>, locations: list<dict<any>>,
 		     popup_id: number, selIdx: number)
   if lspserver.peekSymbolFilePopup->winbufnr() != -1
     lspserver.peekSymbolFilePopup->popup_close()
   endif
   lspserver.peekSymbolPopup = -1
   if selIdx != -1
-    var fname: string = util.LspUriToFile(refs[selIdx - 1].uri)
     util.PushCursorToTagStack()
-    util.JumpToLspLocation(refs[selIdx - 1], '')
+    util.JumpToLspLocation(locations[selIdx - 1], '')
   endif
 enddef
 
-# Display the references in a popup menu.  Display the corresponding file in
+# Display the locations in a popup menu.  Display the corresponding file in
 # an another popup window.
-def PeekReferences(lspserver: dict<any>, refs: list<dict<any>>)
+def PeekLocations(lspserver: dict<any>, locations: list<dict<any>>)
   if lspserver.peekSymbolPopup->winbufnr() != -1
     # If the symbol popup window is already present, close it.
     lspserver.peekSymbolPopup->popup_close()
@@ -314,8 +313,9 @@ def PeekReferences(lspserver: dict<any>, refs: list<dict<any>>)
   var fnamelen = float2nr(w * 0.4)
 
   var menuItems: list<string> = []
-  for loc in refs
-    var fname: string = util.LspUriToFile(loc.uri)
+  for loc in locations
+    var [uri, range] = util.LspLocationParse(loc)
+    var fname: string = util.LspUriToFile(uri)
     var bnr: number = fname->bufnr()
     if bnr == -1
       bnr = fname->bufadd()
@@ -324,8 +324,8 @@ def PeekReferences(lspserver: dict<any>, refs: list<dict<any>>)
       bnr->bufload()
     endif
 
-    var text: string = bnr->getbufline(loc.range.start.line + 1)[0]
-    var lnum = loc.range.start.line + 1
+    var text: string = bnr->getbufline(range.start.line + 1)[0]
+    var lnum = range.start.line + 1
     menuItems->add($'{lnum}: {text}')
   endfor
 
@@ -341,24 +341,25 @@ def PeekReferences(lspserver: dict<any>, refs: list<dict<any>>)
     maxwidth: 30,
     mapping: false,
     fixed: true,
-    filter: function(RefPopupFilter, [lspserver, refs]),
-    callback: function(RefPopupCallback, [lspserver, refs])
+    filter: function(LocPopupFilter, [lspserver, locations]),
+    callback: function(LocPopupCallback, [lspserver, locations])
   }
   lspserver.peekSymbolPopup = popup_menu(menuItems, popupAttrs)
-  UpdatePeekFilePopup(lspserver, refs)
+  UpdatePeekFilePopup(lspserver, locations)
 enddef
 
-# Display or peek symbol references in a location list
-export def ShowReferences(lspserver: dict<any>, refs: list<dict<any>>, peekSymbol: bool)
+# Display or peek locations in a loclist
+export def ShowLocations(lspserver: dict<any>, locations: list<dict<any>>, peekSymbol: bool)
   if peekSymbol
-    PeekReferences(lspserver, refs)
+    PeekLocations(lspserver, locations)
     return
   endif
 
-  # create a location list with the location of the references
+  # create a loclist the location of the locations
   var qflist: list<dict<any>> = []
-  for loc in refs
-    var fname: string = util.LspUriToFile(loc.uri)
+  for loc in locations
+    var [uri, range] = util.LspLocationParse(loc)
+    var fname: string = util.LspUriToFile(uri)
     var bnr: number = fname->bufnr()
     if bnr == -1
       bnr = fname->bufadd()
@@ -366,11 +367,10 @@ export def ShowReferences(lspserver: dict<any>, refs: list<dict<any>>, peekSymbo
     if !bnr->bufloaded()
       bnr->bufload()
     endif
-    var text: string = bnr->getbufline(loc.range.start.line + 1)[0]
-						->trim("\t ", 1)
+    var text: string = bnr->getbufline(range.start.line + 1)[0]->trim("\t ", 1)
     qflist->add({filename: fname,
-			lnum: loc.range.start.line + 1,
-			col: util.GetLineByteFromPos(bnr, loc.range.start) + 1,
+			lnum: range.start.line + 1,
+			col: util.GetLineByteFromPos(bnr, range.start) + 1,
 			text: text})
   endfor
 
