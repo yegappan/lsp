@@ -900,8 +900,24 @@ def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
     return
   endif
 
+  var title: string = ''
+  if msg ==# 'textDocument/declaration'
+    title = 'Declarations'
+  elseif msg ==# 'textDocument/typeDefinition'
+    title = 'Type Definitions'
+  elseif msg ==# 'textDocument/implementation'
+    title = 'Implementations'
+  else
+    title = 'Definitions'
+  endif
+
   var location: dict<any>
   if reply.result->type() == v:t_list
+    if reply.result->len() > 1
+      symbol.ShowLocations(lspserver, reply.result, peekSymbol, title)
+      return
+    endif
+
     location = reply.result[0]
   else
     location = reply.result
