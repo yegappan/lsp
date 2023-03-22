@@ -630,6 +630,9 @@ def Rpc(lspserver: dict<any>, method: string, params: any): dict<any>
       emsg ..= $', data = {reply.error.data->string()}'
     endif
     util.ErrMsg($'Error(LSP): request {method} failed ({emsg})')
+  else
+    # No 'result'
+    HandleSymbolLocErr(lspserver, method)
   endif
 
   return {}
@@ -864,6 +867,21 @@ def ResolveCompletion(lspserver: dict<any>, item: dict<any>): void
 			completion.CompletionResolveReply)
 enddef
 
+# Handle symbol err msg when getting response
+def HandleSymbolLocErr(lspserver: dict<any>, msg: string)
+  var emsg: string
+  if msg ==# 'textDocument/declaration'
+    emsg = 'Error: symbol declaration is not found'
+  elseif msg ==# 'textDocument/typeDefinition'
+    emsg = 'Error: symbol type definition is not found'
+  elseif msg ==# 'textDocument/implementation'
+    emsg = 'Error: symbol implementation is not found'
+  else
+    emsg = 'Error: symbol definition is not found'
+  endif
+  util.WarnMsg(emsg)
+enddef
+
 # Jump to or peek a symbol location.
 #
 # Send 'msg' to a LSP server and process the reply.  'msg' is one of the
@@ -884,7 +902,13 @@ enddef
 def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
 		  cmdmods: string)
   var reply = lspserver.rpc(msg, GetLspTextDocPosition(true))
-  if reply->empty() || reply.result->empty()
+
+  if reply->empty()
+    # Exception 'result'
+    return
+  endif
+  if reply.result->empty()
+    HandleSymbolLocErr(lspserver, msg)
     return
   endif
 
