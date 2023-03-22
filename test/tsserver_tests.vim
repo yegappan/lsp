@@ -76,7 +76,7 @@ def g:Test_LspGoto()
   sleep 200m
 
   var lines: list<string> = [
-    'function B(val: number): void;'
+    'function B(val: number): void;',
     'function B(val: string): void;',
     'function B(val: string | number) {',
     '	console.log(val);',
