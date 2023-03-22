@@ -1,6 +1,10 @@
 vim9script
 # Unit tests for Vim Language Server Protocol (LSP) typescript client
 
+source common.vim
+source term_util.vim
+source screendump.vim
+
 var lspServers = [{
       filetype: ['typescript', 'javascript'],
       path: exepath('typescript-language-server'),
@@ -26,7 +30,7 @@ def g:Test_LspDiag()
   ]
 
   setline(1, lines)
-  :sleep 1
+  :sleep 3
   g:WaitForDiags(2)
   :redraw!
   :LspDiagShow
@@ -76,7 +80,7 @@ def g:Test_LspGoto()
   sleep 200m
 
   var lines: list<string> = [
-    'function B(val: number): void;'
+    'function B(val: number): void;',
     'function B(val: string): void;',
     'function B(val: string | number) {',
     '	console.log(val);',
@@ -88,7 +92,7 @@ def g:Test_LspGoto()
   ]
 
   setline(1, lines)
-  :sleep 1
+  :sleep 3
 
   cursor(8, 1)
   assert_equal('', execute('LspGotoDefinition'))
@@ -133,25 +137,32 @@ def g:Test_LspGoto()
   assert_equal(3, line('.'))
   assert_equal([], popup_list())
   popup_clear()
+enddef
 
-  :%bw!
+# Test for auto-completion.  Make sure that only keywords that matches with the
+# keyword before the cursor are shown.
+def g:Test_LspCompletion1()
+  var lines =<< trim END
+    const http = require('http')
+    http.cr
+  END
+  writefile(lines, 'Xcompletion1.js', 'D')
+  var buf = g:RunVimInTerminal('--cmd "silent so start_tsserver.vim" Xcompletion1.js', {rows: 10, wait_for_ruler: 1})
+  sleep 5
+  term_sendkeys(buf, "GAe")
+  g:TermWait(buf)
+  g:VerifyScreenDump(buf, 'Test_tsserver_completion_1', {})
+  term_sendkeys(buf, "\<BS>")
+  g:TermWait(buf)
+  g:VerifyScreenDump(buf, 'Test_tsserver_completion_2', {})
+
+  g:StopVimInTerminal(buf)
 enddef
 
 # Start the typescript language server.  Returns true on success and false on
 # failure.
 def g:StartLangServer(): bool
-  # Edit a dummy .ts file to start the LSP server
-  :edit Xtest.ts
-  # Wait for the LSP server to become ready (max 10 seconds)
-  var maxcount = 100
-  while maxcount > 0 && !g:LspServerReady()
-    :sleep 100m
-    maxcount -= 1
-  endwhile
-  var serverStatus: bool = g:LspServerReady()
-  :%bw!
-
-  return serverStatus
+  return g:StartLangServerWithFile('Xtest.ts')
 enddef
 
 # vim: shiftwidth=2 softtabstop=2 noexpandtab

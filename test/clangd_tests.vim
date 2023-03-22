@@ -1,6 +1,8 @@
 vim9script
 # Unit tests for Vim Language Server Protocol (LSP) clangd client
 
+source common.vim
+
 var lspServers = [{
       filetype: ['c', 'cpp'],
       path: (exepath('clangd-14') ?? exepath('clangd')),
@@ -952,20 +954,17 @@ def g:Test_ScanFindIdent()
   bw!
 enddef
 
+# TODO:
+# 1. Add a test for autocompletion with a single match while ignoring case.
+#    After the full matched name is typed, the completion popup should still
+#    be displayed. e.g.
+#
+#      int MyVar = 1;
+#      int abc = myvar<C-N><C-Y>
+
 # Start the C language server.  Returns true on success and false on failure.
 def g:StartLangServer(): bool
-  # Edit a dummy C file to start the LSP server
-  :edit Xtest.c
-  # Wait for the LSP server to become ready (max 10 seconds)
-  var maxcount = 100
-  while maxcount > 0 && !g:LspServerReady()
-    :sleep 100m
-    maxcount -= 1
-  endwhile
-  var serverStatus: bool = g:LspServerReady()
-  :%bw!
-
-  return serverStatus
+  return g:StartLangServerWithFile('Xtest.c')
 enddef
 
 # vim: shiftwidth=2 softtabstop=2 noexpandtab
