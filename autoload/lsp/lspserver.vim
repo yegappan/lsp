@@ -885,18 +885,6 @@ def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
 		  cmdmods: string)
   var reply = lspserver.rpc(msg, GetLspTextDocPosition(true))
   if reply->empty() || reply.result->empty()
-    var emsg: string
-    if msg ==# 'textDocument/declaration'
-      emsg = 'Error: symbol declaration is not found'
-    elseif msg ==# 'textDocument/typeDefinition'
-      emsg = 'Error: symbol type definition is not found'
-    elseif msg ==# 'textDocument/implementation'
-      emsg = 'Error: symbol implementation is not found'
-    else
-      emsg = 'Error: symbol definition is not found'
-    endif
-
-    util.WarnMsg(emsg)
     return
   endif
 
