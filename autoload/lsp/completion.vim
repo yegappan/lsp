@@ -90,7 +90,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
 
   # Get the keyword prefix before the current cursor column.
   var chcol = charcol('.')
-  var starttext = getline('.')[ : chcol - 1]
+  var starttext = getline('.')[ : chcol - 2]
   var [prefix, start_idx, end_idx] = starttext->tolower()->matchstrpos('\k*$')
   var start_col = start_idx + 1
 
