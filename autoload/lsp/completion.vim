@@ -135,6 +135,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     endif
 
     d.abbr = item.label
+    d.icase = 1
     d.dup = 1
 
     if item->has_key('kind')
@@ -205,7 +206,7 @@ export def CompletionResolveReply(lspserver: dict<any>, cItem: any)
       || cInfo.selected == -1
       || cInfo.items[cInfo.selected]->type() != v:t_dict
       || cInfo.items[cInfo.selected].user_data->type() != v:t_dict
-      || cInfo.items[cInfo.selected].user_data.label != cItem.label
+      || cInfo.items[cInfo.selected].user_data.label !=# cItem.label
     return
   endif
 
@@ -254,7 +255,7 @@ export def CompletionResolveReply(lspserver: dict<any>, cItem: any)
       || cInfo.selected == -1
       || cInfo.items[cInfo.selected]->type() != v:t_dict
       || cInfo.items[cInfo.selected].user_data->type() != v:t_dict
-      || cInfo.items[cInfo.selected].user_data.label != cItem.label
+      || cInfo.items[cInfo.selected].user_data.label !=# cItem.label
     return
   endif
 
@@ -311,7 +312,9 @@ def g:LspOmniFunc(findstart: number, base: string): any
       return res->empty() ? v:none : res
     endif
 
-    return res->empty() ? v:none : res->filter((i, v) => v.word =~# '^' .. lspserver.omniCompleteKeyword)
+    var prefix: string = lspserver.omniCompleteKeyword->tolower()
+    # To filter (case ignored) keyword prefixed compl items only.
+    return res->empty() ? v:none : res->filter((i, v) => v.word->tolower()->stridx(prefix) == 0)
   endif
 enddef
 
