@@ -50,7 +50,7 @@ To use the plugin features with a particular file type(s), you need to first reg
 To register a LSP server, add the following lines to your .vimrc file (use only the LSP servers that you need from the below list).  If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, the steps are described later in this section.
 ```
    function! TypeScriptCustomNotificationHandler(lspserver, reply) abort
-     echom printf("TypeScript Version = %s", reply.params.version)
+     echom printf("TypeScript Version = %s", a:reply.params.version)
    endfunction
    let lspServers = [
 		\     #{
@@ -61,7 +61,7 @@ To register a LSP server, add the following lines to your .vimrc file (use only 
 		\     #{
 		\	 filetype: ['javascript', 'typescript'],
 		\	 path: '/usr/local/bin/typescript-language-server',
-		\	 args: ['--stdio']
+		\	 args: ['--stdio'],
 		\	 customNotificationHandlers: {
 		\	   '$/typescriptVersion': function('TypeScriptCustomNotificationHandler')
 		\	 }
@@ -103,7 +103,7 @@ To register a LSP server, add the following lines to your .vimrc file (use only 
 		\        path: '/usr/local/bin/intelephense',
 		\        args: ['--stdio'],
 		\        syncInit: v:true,
-		\        initializationOptions: {
+		\        initializationOptions: #{
 		\          licenceKey: 'absolute path to file with key or key itself'
 		\        }
 		\      }
