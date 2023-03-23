@@ -91,7 +91,11 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
   # Get the keyword prefix before the current cursor column.
   var chcol = charcol('.')
   var starttext = chcol == 1 ? '' : getline('.')[ : chcol - 2]
-  var [prefix, start_idx, end_idx] = starttext->tolower()->matchstrpos('\k*$')
+  var [prefix, start_idx, end_idx] = starttext->matchstrpos('\k*$')
+  if opt.lspOptions.completionMatcher == 'icase'
+    prefix = prefix->tolower()
+  endif
+
   var start_col = start_idx + 1
 
   var completeItems: list<dict<any>> = []
@@ -100,7 +104,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
 
     # TODO: Add proper support for item.textEdit.newText and item.textEdit.range
     # Keep in mind that item.textEdit.range can start be way before the typed keyword.
-    if item->has_key('textEdit')
+    if item->has_key('textEdit') && opt.lspOptions.completionMatcher != 'fuzzy'
       var start_charcol: number
       if prefix != ''
         start_charcol = charidx(starttext, start_idx) + 1
@@ -126,17 +130,38 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
       # Remove all the snippet placeholders
       d.word = MakeValidWord(d.word)
     elseif !lspserver.completeItemsIsIncomplete
-      # plain text completion.  If the completion item text doesn't start with
-      # the current (case ignored) keyword prefix, skip it.
       # Don't attempt to filter on the items, when "isIncomplete" is set
-      if prefix != '' && d.word->tolower()->stridx(prefix) != 0
-	continue
+
+      # plain text completion
+      if prefix != ''
+        # If the completion item text doesn't start with the current (case
+        # ignored) keyword prefix, skip it.
+        if opt.lspOptions.completionMatcher == 'icase'
+          if d.word->tolower()->stridx(prefix) != 0
+            continue
+          endif
+        # If the completion item text doesn't fuzzy match with the current
+        # keyword prefix, skip it.
+        elseif opt.lspOptions.completionMatcher == 'fuzzy'
+          if matchfuzzy([d.word], prefix)->empty()
+            continue
+          endif
+        # If the completion item text doesn't start with the current keyword
+        # prefix, skip it.
+        else
+          if d.word->stridx(prefix) != 0
+            continue
+          endif
+        endif
       endif
     endif
 
     d.abbr = item.label
-    d.icase = 1
     d.dup = 1
+
+    if opt.lspOptions.completionMatcher == 'icase'
+      d.icase = 1
+    endif
 
     if item->has_key('kind')
       # namespace CompletionItemKind
@@ -307,14 +332,22 @@ def g:LspOmniFunc(findstart: number, base: string): any
 
     var res: list<dict<any>> = lspserver.completeItems
 
+    var prefix = lspserver.omniCompleteKeyword
+
     # Don't attempt to filter on the items, when "isIncomplete" is set
-    if lspserver.completeItemsIsIncomplete
+    if prefix == '' || lspserver.completeItemsIsIncomplete
       return res->empty() ? v:none : res
     endif
 
-    var prefix: string = lspserver.omniCompleteKeyword->tolower()
-    # To filter (case ignored) keyword prefixed compl items only.
-    return res->empty() ? v:none : res->filter((i, v) => v.word->tolower()->stridx(prefix) == 0)
+    if opt.lspOptions.completionMatcher == 'fuzzy'
+      return res->empty() ? v:none : res->matchfuzzy(prefix, { key: 'word' })
+    endif
+
+    if opt.lspOptions.completionMatcher == 'icase'
+      return res->empty() ? v:none : res->filter((i, v) => v.word->tolower()->stridx(prefix) == 0)
+    endif
+
+    return res->empty() ? v:none : res->filter((i, v) => v.word->stridx(prefix) == 0)
   endif
 enddef
 
