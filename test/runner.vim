@@ -13,7 +13,7 @@ def LspRunTests()
   delete('results.txt')
 
   # Get the list of test functions in this file and call them
-  var fns: list<string> = execute('function /Test_')
+  var fns: list<string> = execute('function /^Test_')
 		    ->split("\n")
 		    ->map("v:val->substitute('^def ', '', '')")
   for f in fns

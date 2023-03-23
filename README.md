@@ -151,8 +151,8 @@ Command|Description
 :LspDiagFirst|Display the first diagnostic message for the current buffer
 :LspDiagHighlightDisable|Disable diagnostic message highlights
 :LspDiagHighlightEnable|Enable diagnostic message highlights
-:LspDiagNext|Display the next diagnostic message after the current line
-:LspDiagPrev|Display the previous diagnostic message before the current line
+:LspDiagNext|Jump to the next diagnostic message after the current position
+:LspDiagPrev|Jump to the previous diagnostic message before the current position
 :LspDiagShow|Display the diagnostics messages from the language server for the current buffer in a new location list.
 :LspFold|Fold the current file
 :LspFormat|Format a range of lines in the current file using the language server. The **shiftwidth** and **expandtab** values set for the current buffer are used when format is applied.  The default range is the entire file.

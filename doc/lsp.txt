@@ -79,9 +79,9 @@ The following commands are provided:
 :LspDiagHighlightEnable	Enable highlighting lines with a diagnostic message
 			for the current Vim session.
 :LspDiagNext		Jump to the next diagnostic message for the current
-			buffer after the current line.
+			buffer after the current cursor position.
 :LspDiagPrev		Jump to the previous diagnostic message for the current
-			buffer before the current line.
+			buffer before the current current position.
 :LspDiagShow		Display the diagnostics messages from the language
 			server for the current buffer in a location list.
 :LspFold		Fold the current file
