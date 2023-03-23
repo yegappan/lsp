@@ -598,7 +598,7 @@ enddef
 
 # Send a sync RPC request message to the LSP server and return the received
 # reply.  In case of an error, an empty Dict is returned.
-def Rpc(lspserver: dict<any>, method: string, params: any): dict<any>
+def Rpc(lspserver: dict<any>, method: string, params: any, handleError: bool = true): dict<any>
   var req = {}
   req.method = method
   req.params = {}
@@ -622,7 +622,7 @@ def Rpc(lspserver: dict<any>, method: string, params: any): dict<any>
     return reply
   endif
 
-  if reply->has_key('error')
+  if handleError && reply->has_key('error')
     # request failed
     var emsg: string = reply.error.message
     emsg ..= $', code = {reply.error.code}'
@@ -883,7 +883,7 @@ enddef
 # Result: Location | Location[] | LocationLink[] | null
 def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
 		  cmdmods: string)
-  var reply = lspserver.rpc(msg, GetLspTextDocPosition(true))
+  var reply = lspserver.rpc(msg, GetLspTextDocPosition(true), false)
   if reply->empty() || reply.result->empty()
     var emsg: string
     if msg ==# 'textDocument/declaration'
