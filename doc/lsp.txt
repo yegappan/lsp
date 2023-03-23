@@ -282,6 +282,17 @@ diagLineHL		Highlight used for diagnostic line.
 echoSignature		In insert mode, echo the current symbol signature
 			instead of showing it in a popup. By default this is
 			set to false.
+completionMatcher	Enable fuzzy or incase sensitive completion for language
+			servers that replies with a full list of completion
+			items.  Some language servers does completion filtering
+			in the server, while other relies on the client to do
+			the filtering.
+
+			This option only works for language servers that expect
+			the client to filter the completion items.
+
+			Can be either `fuzzy`, `icase` or `case`, default is
+			`case`.
 hideDisabledCodeActions Hide all disabled code actions
 ignoreMissingServer	Do not print a missing language server executable.
 			By default this is set to false.

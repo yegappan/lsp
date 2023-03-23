@@ -45,7 +45,10 @@ export var lspOptions: dict<any> = {
   # enable inlay hints
   showInlayHints: false,
   # hide disabled code actions
-  hideDisabledCodeActions: false
+  hideDisabledCodeActions: false,
+  # icase | fuzzy | case match for language servers that replies with a full
+  # list of completion items
+  completionMatcher: 'case',
 }
 
 # set the LSP plugin options from the user provided option values
