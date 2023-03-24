@@ -140,13 +140,17 @@ The following commands are provided:
 ==============================================================================
 4. Configuration				*lsp-configuration*
 
-To use the plugin features with a particular file type(s), you need to first register a language server for that file type(s).
+To use the plugin features with a particular file type(s), you need to first
+register a language server for that file type(s).
 
 To register one or more language servers, use the LspAddServer() function with
 a list of lanaguge server details in the .vimrc file.
 
-To register a language server, add the following lines to your .vimrc file (use only the language servers that you need from the below list).  If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, the steps are described later in this section:
-
+To register a language server, add the following lines to your .vimrc file
+(use only the language servers that you need from the below list).
+If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the
+LSP plugin, the steps are described later in this section:
+>
    let lspServers = [
 		\     #{
 		\	 filetype: ['javascript', 'typescript'],
@@ -162,7 +166,7 @@ To register a language server, add the following lines to your .vimrc file (use 
    call LspAddServer(lspServers)
 <
 Depending on the location of the typescript and python pyls language servers
-installed in your system, update the 'path' in the above snippet
+installed in your system, update the "path" in the above snippet
 appropriately.
 
 Another example, for adding the language servers for the C, C++, Golang, Rust, 
@@ -232,22 +236,24 @@ Aditionally the following configurations can be made:
 			typescript-language-server) will send additional
 			notifications which you might want to silence or handle.
 			The provided notification handlers will be called with a
-			reference to the 'lspserver' and the 'reply'.
+			reference to the "lspserver" and the "reply".
 	omnicompl	(Optional) a boolean value that enables (true)
 			or disables (false) omni-completion for this file
-			types. By default this is set to 'v:true'.
+			types. By default this is set to "v:true".
 	syncInit        (Optional) for language servers (e.g. rust analyzer,
 			gopls, etc.) that take time to initialize and reply to
-			a 'initialize' request message this should be set to
-			'v:true'. If this is set to true, then a synchronous
+			a "initialize" request message this should be set to
+			"v:true". If this is set to true, then a synchronous
 			call is used to initialize the language server,
 			otherwise the server is initialized asynchronously.
-			By default this is set to 'v:false'.
+			By default this is set to "v:false".
 
 The language servers are added using the LspAddServer() function. This function
 accepts a list of language servers with the above information.
 
-If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, then you need to use the VimEnter autocmd to initialize the language server and to set the language server options.  For example: >
+If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP
+plugin, then you need to use the VimEnter autocmd to initialize the language
+server and to set the language server options.  For example: >
 
     let lspServers = [
 		\     #{
@@ -279,7 +285,7 @@ autoPopulateDiags	|Boolean| option. Automatically populate the location
 			list with diagnostics from the language server.
 			By default this is set to false.
 diagLineHL		|String| option. Highlight used for diagnostic line.
-			By default uses `Cursor`.  Use `NONE` to disable.
+			By default uses "Cursor".  Use "NONE" to disable.
 echoSignature		|Boolean| option.  In insert mode, echo the current
 			symbol signature instead of showing it in a popup.
 			By default this is set to false.
@@ -412,7 +418,7 @@ can map these commands to keys and make it easier to invoke them.
 
 						*:LspFormat*
 :LspFormat		Format the current file using the language server. The
-			*shiftwidth* and *expandtab* values set for the current
+			'shiftwidth' and 'expandtab' values set for the current
 			buffer are used when format is applied.
 
 :{range}LspFormat	Format the specified range of lines in the current
@@ -857,8 +863,8 @@ the symbol is defined in multiple places in the code.
 9. Code Formatting
 
 The |:LspFormat| command can be used to format either the entire file or a
-selected range of lines using the language server.  The *shiftwidth* and
-*expandtab* values set for the current buffer are used when format is applied.
+selected range of lines using the language server.  The 'shiftwidth' and
+'expandtab' values set for the current buffer are used when format is applied.
 
 To format code using the 'gq' command, you can set the 'formatexpr' option:
 >
