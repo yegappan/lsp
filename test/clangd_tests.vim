@@ -248,7 +248,7 @@ def g:Test_LspDiag()
   output = execute('LspDiagCurrent')->split("\n")
   assert_equal("Expected ';' at end of declaration (fix available)", output[0])
   :normal! 0
-  :LspDiagThis
+  :LspDiagHere
   assert_equal([3, 14], [line('.'), col('.')])
   :LspDiagNext
   assert_equal([5, 2], [line('.'), col('.')])

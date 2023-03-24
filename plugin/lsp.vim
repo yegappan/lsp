@@ -85,7 +85,7 @@ command! -nargs=0 -bar LspDiagHighlightEnable lsp.DiagHighlightEnable()
 command! -nargs=0 -bar LspDiagNext lsp.JumpToDiag('next')
 command! -nargs=0 -bar LspDiagPrev lsp.JumpToDiag('prev')
 command! -nargs=0 -bar LspDiagShow lsp.ShowDiagnostics()
-command! -nargs=0 -bar LspDiagThis lsp.JumpToDiag('this')
+command! -nargs=0 -bar LspDiagHere lsp.JumpToDiag('here')
 command! -nargs=0 -bar LspFold lsp.FoldDocument()
 command! -nargs=0 -bar -range=% LspFormat lsp.TextDocFormat(<range>, <line1>, <line2>)
 command! -nargs=0 -bar LspGotoDeclaration lsp.GotoDeclaration(v:false, <q-mods>)
@@ -150,7 +150,7 @@ if has('gui_running')
   anoremenu <silent> L&sp.Diagnostics.First :LspDiagFirst<CR>
   anoremenu <silent> L&sp.Diagnostics.Next :LspDiagNext<CR>
   anoremenu <silent> L&sp.Diagnostics.Prev :LspDiagPrev<CR>
-  anoremenu <silent> L&sp.Diagnostics.This :LspDiagThis<CR>
+  anoremenu <silent> L&sp.Diagnostics.This :LspDiagHere<CR>
 
   if &mousemodel =~ 'popup'
     anoremenu <silent> PopUp.L&sp.Go\ to\ Definition

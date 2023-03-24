@@ -350,12 +350,12 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
   # Find the entry just before the current line (binary search)
   var curlnum: number = line('.')
   var curcol: number = charcol('.')
-  for diag in (which == 'next' || which == 'this') ? diags : diags->copy()->reverse()
+  for diag in (which == 'next' || which == 'here') ? diags : diags->copy()->reverse()
     var lnum = diag.range.start.line + 1
     var col = diag.range.start.character + 1
     if (which == 'next' && (lnum > curlnum || lnum == curlnum && col > curcol))
 	  || (which == 'prev' && (lnum < curlnum || lnum == curlnum && col < curcol))
-	  || (which == 'this' && (lnum == curlnum && col > curcol))
+	  || (which == 'here' && (lnum == curlnum && col > curcol))
       setcursorcharpos(lnum, col)
       return
     endif

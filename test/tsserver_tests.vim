@@ -60,9 +60,9 @@ def g:Test_LspDiag()
   assert_equal([1, 10], [line('.'), col('.')])
 
   :normal! 0
-  :LspDiagThis
+  :LspDiagHere
   assert_equal([1, 3], [line('.'), col('.')])
-  :LspDiagThis
+  :LspDiagHere
   assert_equal([1, 10], [line('.'), col('.')])
 
   g:LspOptionsSet({showDiagInPopup: false})
