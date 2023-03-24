@@ -84,6 +84,8 @@ The following commands are provided:
 			buffer before the current current position.
 :LspDiagShow		Display the diagnostics messages from the language
 			server for the current buffer in a location list.
+:LspDiagThis		Jump to the current diagnostic message for the current
+			buffer in the current line (start from current column).
 :LspFold		Fold the current file
 :LspFormat		Format a range of lines in the current file using the
 			language server.  The default range is the entire file.
@@ -395,6 +397,10 @@ can map these commands to keys and make it easier to invoke them.
 			current file and opens the location list window. You
 			can use the Vim location list commands to browse the
 			list.
+
+						*:LspDiagThis*
+:LspDiagThis		Jumps to the location of the diagnostic message in
+			the current line (start from current column).
 
 						*:LspFold*
 :LspFold		Create folds for the current buffer.
@@ -765,8 +771,10 @@ the current file in a |location-list-window|.  You can use the |:LspDiagFirst|
 command to jump to the line with the first diagnostic message, the
 |:LspDiagNext| command to jump to the next nearest line with the diagnostic
 message, the |:LspDiagPrev| command to jump to the previous nearest line with
-the diagnostic message.  You can use the |:LspDiagCurrent| command to display
-the entire diagnostic message from the language server for the current line.
+the diagnostic message, the |:LspDiagThis| command to jump to the diagnostic
+message in the current line.  You can use the |:LspDiagCurrent| command to
+display the entire diagnostic message from the language server for the current
+line.
 
 By default, the lines with a diagnostic message have a sign placed on them and
 are highlighted.  You can temporarily disable them for the current Vim session
