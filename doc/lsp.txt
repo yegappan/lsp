@@ -73,6 +73,8 @@ The following commands are provided:
 :LspDiagCurrent		Display the diagnostic message for the current line.
 :LspDiagFirst		Jump to the first diagnostic message for the current
 			buffer.
+:LspDiagHere		Jump to the next diagnostic message in the current
+			line.
 :LspDiagHighlightDisable
 			Disable highlighting lines with a diagnostic message
 			for the current Vim session.
@@ -84,8 +86,6 @@ The following commands are provided:
 			buffer before the current current position.
 :LspDiagShow		Display the diagnostics messages from the language
 			server for the current buffer in a location list.
-:LspDiagHere		Jump to the current diagnostic message for the current
-			buffer in the current line (start from current column).
 :LspFold		Fold the current file
 :LspFormat		Format a range of lines in the current file using the
 			language server.  The default range is the entire file.
