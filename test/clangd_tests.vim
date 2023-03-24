@@ -3,6 +3,9 @@ vim9script
 
 source common.vim
 
+var lspOpts = {autoComplete: false}
+g:LspOptionsSet(lspOpts)
+
 var lspServers = [{
       filetype: ['c', 'cpp'],
       path: (exepath('clangd-14') ?? exepath('clangd')),
@@ -957,6 +960,25 @@ def g:Test_ScanFindIdent()
   bw!
 enddef
 
+# Test for doing omni completion from the first column
+def g:Test_OmniComplete_FirstColumn()
+  :silent! edit Xtest.c
+  sleep 200m
+  var lines: list<string> =<< trim END
+    typedef struct Foo_ {
+    } Foo_t;
+
+    #define FOO 1
+  END
+  setline(1, lines)
+  :sleep 1
+  redraw!
+
+  feedkeys("G0i\<C-X>\<C-O>", 'xt')
+  assert_equal('Foo_t#define FOO 1', getline('.'))
+  :bw!
+enddef
+
 # TODO:
 # 1. Add a test for autocompletion with a single match while ignoring case.
 #    After the full matched name is typed, the completion popup should still
@@ -964,6 +986,7 @@ enddef
 #
 #      int MyVar = 1;
 #      int abc = myvar<C-N><C-Y>
+# 2. Add a test for jumping to a non-existing symbol definition, declaration.
 
 # Start the C language server.  Returns true on success and false on failure.
 def g:StartLangServer(): bool

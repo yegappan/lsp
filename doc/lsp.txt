@@ -2,7 +2,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: March 16, 2023
+Last change: March 24, 2023
 
 ==============================================================================
 						*lsp-license*
@@ -266,68 +266,73 @@ Some of the LSP plugin features can be enabled or disabled by using the
 LspOptionsSet() function. This function accepts a dictionary argument with the
 following optional items:
 
-autoComplete		In insert mode, automatically complete the current
-			symbol. Otherwise use omni-completion. By default this
-			is set to true.
-autoHighlight		In normal mode, automatically highlight all the
-			occurrences of the symbol under the cursor. By default
-			this is set to false.
-autoHighlightDiags	Automatically place signs on the lines with a
-			diagnostic message from the language server. By
-			default this is set to true.
-autoPopulateDiags	Automatically populate the location list with
-			diagnostics from the language server. By default this
-			is set to false.
-diagLineHL		Highlight used for diagnostic line.
-			By default uses `Cursor`.
-			Use `NONE` to disable.
-echoSignature		In insert mode, echo the current symbol signature
-			instead of showing it in a popup. By default this is
-			set to false.
-completionMatcher	Enable fuzzy or incase sensitive completion for language
-			servers that replies with a full list of completion
-			items.  Some language servers does completion filtering
-			in the server, while other relies on the client to do
-			the filtering.
+autoComplete		|Boolean| option. In insert mode, automatically
+			complete the current symbol. Otherwise use
+			omni-completion. By default this is set to true.
+autoHighlight		|Boolean| option. In normal mode, automatically
+			highlight all the occurrences of the symbol under the
+			cursor. By default this is set to false.
+autoHighlightDiags	|Boolean| option. Automatically place signs on the
+			lines with a diagnostic message from the language
+			server. By default this is set to true.
+autoPopulateDiags	|Boolean| option. Automatically populate the location
+			list with diagnostics from the language server.
+			By default this is set to false.
+diagLineHL		|String| option. Highlight used for diagnostic line.
+			By default uses `Cursor`.  Use `NONE` to disable.
+echoSignature		|Boolean| option.  In insert mode, echo the current
+			symbol signature instead of showing it in a popup.
+			By default this is set to false.
+completionMatcher	|String| option.  Enable fuzzy or case insensitive
+			completion for language servers that replies with a
+			full list of completion items.  Some language servers
+			does completion filtering in the server, while other
+			relies on the client to do the filtering.
 
 			This option only works for language servers that expect
 			the client to filter the completion items.
 
-			Can be either `fuzzy`, `icase` or `case`, default is
-			`case`.
-hideDisabledCodeActions Hide all disabled code actions
-ignoreMissingServer	Do not print a missing language server executable.
+			This option accepts one of the following values:
+			    case  - case sensitive matching (default).
+			    fuzzy - fuzzy match completion items.
+			    icase - ignore case when matching items.
+hideDisabledCodeActions |Boolean| option. Hide all the disabled code actions.
 			By default this is set to false.
-keepFocusInReferences	Focus on the location list window after
-			LspShowReferences.  By default this is set to false.
-noDiagHoverOnLine	Suppress diagnostic hover from appearing when
-			the mouse is over the line instead of the signature.
+ignoreMissingServer	|Boolean| option.  Do not print a missing language
+			server executable.  By default this is set to false.
+keepFocusInReferences	|Boolean| option.  Focus on the location list window
+			after LspShowReferences.
+			By default this is set to false.
+noDiagHoverOnLine	|Boolean| option.  Suppress diagnostic hover from
+			appearing when the mouse is over the line instead of
+			the signature.  By default this is set to true.
+noNewlineInCompletion	|Boolean| option.  Suppress adding a new line on
+			completion selection with <CR>.
+			By default this is set to false.
+outlineOnRight		|Boolean| option.  Open the outline window on the
+			right side, by default this is false.
+outlineWinSize		|Number| option.  The size of the symbol Outline
+			window.  By default this is set to 20.
+showDiagInPopup		|Boolean| option.  When using the |:LspDiagCurrent|
+			command to display the diagnostic message for the
+			current line, use a popup window to display the
+			message instead of echoing in the status area.
 			By default this is set to true.
-noNewlineInCompletion	Suppress adding a new line on completion selection
-			with <CR>.
+showDiagOnStatusLine	|Boolean| option.  Show a diagnostic message on a
+			status line.  By default this is set to false.
+showInlayHints		|Boolean| option.  Show inlay hints from the language
+			server.  By default this is set to false.  The inlay
+			hint text is displayed as a virtual text.  Needs Vim
+			version 9.0.0178 or later.
+showSignature		|Boolean| option.  In insert mode, automatically show
+			the current symbol signature in a popup.
+			By default this is set to true.
+snippetSupport		|Boolean| option.  Enable snippet completion support.
+			Need a snippet completion plugin like vim-vsnip.
 			By default this is set to false.
-outlineOnRight		Open the outline window on the right side, by default
-			this is false.
-outlineWinSize		Outline window size, by default this is 20.
-showDiagInPopup		When using the |:LspDiagCurrent| command to display
-			the diagnostic message for the current line, use a
-			popup window to display the message instead of
-			echoing in the status area.  By default this is set to
-			true.
-showDiagOnStatusLine	Show a diagnostic message on a status line.
-			By default this is set to false.
-showInlayHints		Show inlay hints from the language server.  By default
-			this is set to false.  The inlay hint text is
-			displayed as a virtual text.  Needs Vim version
-			9.0.0178 or later.
-showSignature		In insert mode, automatically show the current symbol
-			signature in a popup. By default this is set to true.
-snippetSupport		Enable snippet completion support.  Need a snippet
-			completion plugin like vim-vsnip. By default this is
-			set to false.
-usePopupInCodeAction    When using the |:LspCodeAction| command to display the
-			code action for the current line, use a popup menu
-			instead of echoing.
+usePopupInCodeAction    |Boolean| option.  When using the |:LspCodeAction|
+			command to display the code action for the current
+			line, use a popup menu instead of echoing.
 			By default this is set to false.
 
 For example, to disable the automatic placement of signs for the LSP
@@ -754,12 +759,22 @@ default. The following example disables omni-completion for python: >
 		\   ]
 <
 If you want to use omni completion, in addition to the automatic completion,
-then you can set the 'omnifunc' option to the "LspOmniFunc" function: >
+then you can set the 'omnifunc' option to the "g:LspOmniFunc" function: >
 
-	set omnifunc=LspOmniFunc
+	set omnifunc=g:LspOmniFunc
 <
 To use omni completion, press CTRL-X CTRL-O in insert mode.  Refer to
 |compl-omni| for more information.
+
+When doing insert-mode completion, the plugin sends a request message to the
+language server to return a list of possible completion matches for the
+current cursor position.  The plugin retrieves the keyword before the cursor
+(see 'iskeyword') and then filters the returned list of completion items
+against this keyword and displays the completion menu.  Some language servers
+does completion filtering in the server, while other relies on the client to
+do the filtering.  By default, case sensitive comparison is used to filter the
+returned items.  You can modify the 'completionMatcher' option to use either
+case insensitive or fuzzy comparison.
 
 ==============================================================================
 7. Diagnostics

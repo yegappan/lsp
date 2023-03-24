@@ -98,6 +98,8 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
 
   var start_col = start_idx + 1
 
+  #writefile([$'chcol = {chcol}, starttext = [{starttext}], prefix = [{prefix}], start_idx = {start_idx}, end_idx = {end_idx}, start_col = {start_col}'], '/tmp/lspcomplete.log', 'a')
+
   var completeItems: list<dict<any>> = []
   for item in items
     var d: dict<any> = {}
@@ -496,7 +498,7 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
     endif
   else
     if LspOmniComplEnabled(ftype)
-      setbufvar(bnr, '&omnifunc', 'LspOmniFunc')
+      setbufvar(bnr, '&omnifunc', 'g:LspOmniFunc')
     endif
   endif
 

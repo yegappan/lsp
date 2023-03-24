@@ -622,7 +622,7 @@ def Rpc(lspserver: dict<any>, method: string, params: any, handleError: bool = t
     return reply
   endif
 
-  if handleError && reply->has_key('error')
+  if reply->has_key('error') && handleError
     # request failed
     var emsg: string = reply.error.message
     emsg ..= $', code = {reply.error.code}'

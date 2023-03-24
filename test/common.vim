@@ -20,9 +20,8 @@ def g:LoadLspPlugin()
       profile! file */lsp/*
   endif
 
-  source ../plugin/lsp.vim
-
   g:LSPTest = true
+  source ../plugin/lsp.vim
 enddef
 
 # The WaitFor*() functions are reused from the Vim test suite.
