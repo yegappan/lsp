@@ -362,7 +362,7 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
     if (which == 'next' && (lnum > curlnum || lnum == curlnum && col > curcol))
 	  || (which == 'prev' && (lnum < curlnum || lnum == curlnum
 							&& col < curcol))
-	  || (which == 'here' && (lnum == curlnum && col >= curcol))
+	  || (which == 'here' && (lnum == curlnum && col > curcol))
       setcursorcharpos(lnum, col)
       if (which == 'here')
 	DisplayDiag(diag)

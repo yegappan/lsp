@@ -62,11 +62,10 @@ def g:Test_LspDiag()
   :normal! 0
   :LspDiagHere
   assert_equal([1, 3], [line('.'), col('.')])
-  :normal! l
   :LspDiagHere
   assert_equal([1, 10], [line('.'), col('.')])
-  popup_clear()
 
+  popup_clear()
   g:LspOptionsSet({showDiagInPopup: false})
   for i in range(1, 3)
     cursor(1, i)
