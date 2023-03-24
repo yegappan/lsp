@@ -258,6 +258,17 @@ def ShowDiagInPopup(diag: dict<any>)
   popup_create(diag.message->split("\n"), ppopts)
 enddef
 
+# Display the 'diag' message in a popup or in the status message area
+def DisplayDiag(diag: dict<any>)
+  if opt.lspOptions.showDiagInPopup
+    # Display the diagnostic message in a popup window.
+    ShowDiagInPopup(diag)
+  else
+    # Display the diagnostic message in the status message area
+    echo diag.message
+  endif
+enddef
+
 # Show the diagnostic message for the current line
 export def ShowCurrentDiag(lspserver: dict<any>)
   var bnr: number = bufnr()
@@ -267,13 +278,7 @@ export def ShowCurrentDiag(lspserver: dict<any>)
   if diag->empty()
     util.WarnMsg('No diagnostic messages found for current line')
   else
-    if opt.lspOptions.showDiagInPopup
-      # Display the diagnostic message in a popup window.
-      ShowDiagInPopup(diag)
-    else
-      # Display the diagnostic message in the status message area
-      echo diag.message
-    endif
+    DisplayDiag(diag)
   endif
 enddef
 
@@ -350,13 +355,18 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
   # Find the entry just before the current line (binary search)
   var curlnum: number = line('.')
   var curcol: number = charcol('.')
-  for diag in (which == 'next' || which == 'here') ? diags : diags->copy()->reverse()
+  for diag in (which == 'next' || which == 'here') ?
+					diags : diags->copy()->reverse()
     var lnum = diag.range.start.line + 1
     var col = diag.range.start.character + 1
     if (which == 'next' && (lnum > curlnum || lnum == curlnum && col > curcol))
-	  || (which == 'prev' && (lnum < curlnum || lnum == curlnum && col < curcol))
-	  || (which == 'here' && (lnum == curlnum && col > curcol))
+	  || (which == 'prev' && (lnum < curlnum || lnum == curlnum
+							&& col < curcol))
+	  || (which == 'here' && (lnum == curlnum && col >= curcol))
       setcursorcharpos(lnum, col)
+      if (which == 'here')
+	DisplayDiag(diag)
+      endif
       return
     endif
   endfor
