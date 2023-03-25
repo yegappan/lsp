@@ -124,7 +124,7 @@ enddef
 # Wait for the LSP server to load and process a file.  This works by waiting
 # for a certain number of diagnostic messages from the server.
 def g:WaitForServerFileLoad(diagCount: number)
-  redraw!
+  :redraw!
   var waitCount = diagCount
   if waitCount == 0
     # Introduce a temporary diagnostic

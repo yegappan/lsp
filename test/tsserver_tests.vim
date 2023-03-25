@@ -30,8 +30,9 @@ def g:Test_LspDiag()
   END
 
   setline(1, lines)
-  g:WaitForServerFileLoad(5)
   :redraw!
+  :sleep 3
+  g:WaitForServerFileLoad(5)
   :LspDiagShow
   var qfl: list<dict<any>> = getloclist(0)
   assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
@@ -114,6 +115,8 @@ def g:Test_LspGoto()
   ]
 
   setline(1, lines)
+  :redraw!
+  :sleep 3
   g:WaitForServerFileLoad(0)
 
   cursor(8, 1)
