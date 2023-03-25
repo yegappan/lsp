@@ -101,10 +101,10 @@ func g:WaitFor(expr, ...)
 endfunc
 
 # Wait for diagnostic messages from the LSP server.
-# Waits for a maximum of (10 * 1500) / 1000 seconds
+# Waits for a maximum of (10 * 2000) / 1000 = 20 seconds
 def g:WaitForDiags(errCount: number)
   var retries = 0
-  while retries < 1500
+  while retries < 2000
     var d = lsp#lsp#ErrorCount()
     if d.Error == errCount
       break
