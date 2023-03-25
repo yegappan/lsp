@@ -494,7 +494,7 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
     endif
     # <Enter> in insert mode stops completion and inserts a <Enter>
     if !opt.lspOptions.noNewlineInCompletion
-      inoremap <expr> <buffer> <CR> pumvisible() ? "\<C-Y>\<CR>" : "\<CR>"
+      inoremap <expr> <buffer> <CR> pumvisible() ? "\<C-Y>" : "\<CR>"
     endif
   else
     if LspOmniComplEnabled(ftype)
