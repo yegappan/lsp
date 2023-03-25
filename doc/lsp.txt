@@ -803,7 +803,7 @@ message, you can set the 'autoHighlightDiags' option to v:false:
 <
 By default the 'autoHighlightDiags' option is set to v:true.
 
-The function lsp#lsp#Errorcount() function can be used to get the count of the
+The function lsp#lsp#ErrorCount() function can be used to get the count of the
 diagnostic messages in the current buffer by type.  This function returns a
 Dictionary with the following keys: Info, Hint, Warn and Error.  The value for
 these keys is the number of diagnostic messages of the corresponding type.

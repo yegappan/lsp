@@ -21,62 +21,76 @@ def g:Test_LspDiag()
   var bnr: number = bufnr()
 
   # This tests that two diagnostics can be on the same line
-  var lines: list<string> = [
-    '  export obj = {',
-    '    foo: 1,',
-    '    bar: 2,',
-    '    baz: 3',
-    '  }'
-  ]
+  var lines: list<string> =<< trim END
+    export obj = {
+      foo: 1,
+      bar: 2,
+      baz; 3
+    }
+  END
 
   setline(1, lines)
-  :sleep 3
-  g:WaitForDiags(2)
+  g:WaitForServerFileLoad(5)
   :redraw!
   :LspDiagShow
   var qfl: list<dict<any>> = getloclist(0)
   assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
   assert_equal(bnr, qfl[0].bufnr)
-  assert_equal(2, qfl->len())
-  assert_equal([1, 3, 'E'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
-  assert_equal([1, 10, 'E'], [qfl[1].lnum, qfl[1].col, qfl[1].type])
+  assert_equal(5, qfl->len())
+  assert_equal([1, 1, 'E'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
+  assert_equal([1, 8, 'E'], [qfl[1].lnum, qfl[1].col, qfl[1].type])
+  assert_equal([4, 3, 'E'], [qfl[2].lnum, qfl[2].col, qfl[2].type])
   close
 
   :sleep 100m
-  cursor(5, 1)
+  cursor(3, 1)
   assert_equal('', execute('LspDiagPrev'))
-  assert_equal([1, 10], [line('.'), col('.')])
+  assert_equal([1, 8], [line('.'), col('.')])
 
   assert_equal('', execute('LspDiagPrev'))
-  assert_equal([1, 3], [line('.'), col('.')])
+  assert_equal([1, 1], [line('.'), col('.')])
 
   var output = execute('LspDiagPrev')->split("\n")
   assert_equal('Error: No more diagnostics found', output[0])
 
   cursor(5, 1)
   assert_equal('', execute('LspDiagFirst'))
-  assert_equal([1, 3], [line('.'), col('.')])
+  assert_equal([1, 1], [line('.'), col('.')])
   assert_equal('', execute('LspDiagNext'))
-  assert_equal([1, 10], [line('.'), col('.')])
-
-  :normal! 0
-  :LspDiagHere
-  assert_equal([1, 3], [line('.'), col('.')])
-  :normal! l
-  :LspDiagHere
-  assert_equal([1, 10], [line('.'), col('.')])
+  assert_equal([1, 8], [line('.'), col('.')])
   popup_clear()
+
+  # Test for :LspDiagHere on a line with multiple diagnostics
+  cursor(4, 1)
+  :LspDiagHere
+  assert_equal([4, 3], [line('.'), col('.')])
+  var ids = popup_list()
+  assert_equal(1, ids->len())
+  assert_match('No value exists', getbufline(ids[0]->winbufnr(), 1, '$')[0])
+  popup_clear()
+  cursor(4, 4)
+  :LspDiagHere
+  assert_equal([4, 6], [line('.'), col('.')])
+  ids = popup_list()
+  assert_equal(1, ids->len())
+  assert_match("',' expected.", getbufline(ids[0]->winbufnr(), 1, '$')[0])
+  popup_clear()
+
+  # Line without diagnostics
+  cursor(3, 1)
+  output = execute('LspDiagHere')->split("\n")
+  assert_equal('Error: No more diagnostics found on this line', output[0])
 
   g:LspOptionsSet({showDiagInPopup: false})
   for i in range(1, 3)
-    cursor(1, i)
+    cursor(4, i)
     output = execute('LspDiagCurrent')->split('\n')
-    assert_equal('Declaration or statement expected.', output[0])
+    assert_match('No value exists in scope', output[0])
   endfor
-  for i in range(4, 16)
-    cursor(1, i)
+  for i in range(4, 8)
+    cursor(4, i)
     output = execute('LspDiagCurrent')->split('\n')
-    assert_equal('Cannot find name ''obj''.', output[0])
+    assert_equal("',' expected.", output[0])
   endfor
   g:LspOptionsSet({showDiagInPopup: true})
 
@@ -100,7 +114,7 @@ def g:Test_LspGoto()
   ]
 
   setline(1, lines)
-  :sleep 3
+  g:WaitForServerFileLoad(0)
 
   cursor(8, 1)
   assert_equal('', execute('LspGotoDefinition'))

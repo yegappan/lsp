@@ -226,8 +226,7 @@ def g:Test_LspDiag()
     }
   END
   setline(1, lines)
-  :sleep 1
-  g:WaitForDiags(1)
+  g:WaitForServerFileLoad(1)
   var bnr: number = bufnr()
   :redraw!
   :LspDiagShow
@@ -268,6 +267,7 @@ def g:Test_LspDiag()
   assert_match('No diagnostic messages found for', output[0])
   g:LspOptionsSet({showDiagInPopup: true})
 
+  popup_clear()
   :%bw!
 enddef
 
@@ -283,7 +283,7 @@ def g:Test_LspCodeAction()
     }
   END
   setline(1, lines)
-  sleep 1
+  g:WaitForServerFileLoad(0)
   cursor(4, 1)
   redraw!
   :LspCodeAction 1
@@ -316,7 +316,7 @@ def g:Test_LspCodeAction()
     }
   END
   setline(1, lines2)
-  sleep 1
+  g:WaitForServerFileLoad(0)
   cursor(4, 1)
   redraw!
   :LspCodeAction use
@@ -368,7 +368,7 @@ def g:Test_LspRename()
     }
   END
   setline(1, lines)
-  sleep 1
+  g:WaitForServerFileLoad(0)
   cursor(1, 1)
   search('count')
   redraw!
@@ -435,7 +435,7 @@ def g:Test_LspSelection()
     }
   END
   setline(1, lines)
-  sleep 1
+  g:WaitForServerFileLoad(0)
   # start a block-wise visual mode, LspSelectionExpand should change this to
   # a characterwise visual mode.
   exe "normal! 1G\<C-V>G\"_y"
@@ -660,7 +660,7 @@ def g:Test_LspHighlight()
     }
   END
   setline(1, lines)
-  :sleep 1
+  g:WaitForServerFileLoad(0)
   cursor(1, 13)
   :LspHighlight
   var expected: dict<any>
@@ -696,7 +696,7 @@ def g:Test_LspHover()
     }
   END
   setline(1, lines)
-  :sleep 1
+  g:WaitForServerFileLoad(0)
   cursor(8, 4)
   :LspHover
   var p: list<number> = popup_list()
@@ -725,7 +725,7 @@ def g:Test_LspShowSignature()
     }
   END
   setline(1, lines)
-  :sleep 1
+  g:WaitForServerFileLoad(2)
   cursor(8, 10)
   :LspShowSignature
   var p: list<number> = popup_list()
@@ -770,7 +770,7 @@ def g:Test_LspSymbolSearch()
     }
   END
   setline(1, lines)
-  :sleep 1
+  g:WaitForServerFileLoad(0)
 
   cursor(1, 1)
   feedkeys(":LspSymbolSearch lsptest_funcB\<CR>\<CR>", "xt")
@@ -810,7 +810,7 @@ def g:Test_LspIncomingCalls()
     }
   END
   setline(1, lines)
-  :sleep 1
+  g:WaitForServerFileLoad(0)
   cursor(1, 6)
   :LspIncomingCalls
   assert_equal([1, 2], [winnr(), winnr('$')])
@@ -836,7 +836,7 @@ def g:Test_LspOutline()
     }
   END
   setline(1, lines)
-  :sleep 1
+  g:WaitForServerFileLoad(0)
   :LspOutline
   assert_equal(2, winnr('$'))
   var bnum = winbufnr(1)
@@ -864,7 +864,7 @@ def g:Test_LspTagFunc()
   END
   writefile(lines, 'Xtest.c')
   :silent! edit Xtest.c
-  :sleep 1
+  g:WaitForServerFileLoad(1)
   :setlocal tagfunc=lsp#lsp#TagFunc
   cursor(3, 4)
   :exe "normal \<C-]>"
@@ -890,15 +890,16 @@ def g:Test_LspDiagsUpdated_Autocmd()
     }
   END
   setline(1, lines)
-  :sleep 1
-  g:WaitForDiags(0)
+  g:WaitForServerFileLoad(0)
   setline(3, '    return:')
+  redraw!
   g:WaitForDiags(1)
   setline(3, '    return;')
+  redraw!
   g:WaitForDiags(0)
   :%bw!
   autocmd_delete([{event: 'User', pattern: 'LspDiagsUpdated'}])
-  assert_equal(3, g:LspAutoCmd)
+  assert_equal(6, g:LspAutoCmd)
 enddef
 
 # Test custom notification handlers
@@ -971,7 +972,7 @@ def g:Test_OmniComplete_FirstColumn()
     #define FOO 1
   END
   setline(1, lines)
-  :sleep 1
+  g:WaitForServerFileLoad(0)
   redraw!
 
   feedkeys("G0i\<C-X>\<C-O>", 'xt')

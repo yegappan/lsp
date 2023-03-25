@@ -100,17 +100,45 @@ func g:WaitFor(expr, ...)
   return slept
 endfunc
 
-# Wait for diagnostic messages from the LSP server
+# Wait for diagnostic messages from the LSP server.
+# Waits for a maximum of (10 * 1500) / 1000 seconds
 def g:WaitForDiags(errCount: number)
   var retries = 0
-  while retries < 150
+  while retries < 1500
     var d = lsp#lsp#ErrorCount()
     if d.Error == errCount
       break
     endif
     retries += 1
-    :sleep 100m
+    :sleep 10m
   endwhile
+
+  assert_equal(errCount, lsp#lsp#ErrorCount().Error)
+  if lsp#lsp#ErrorCount().Error != errCount
+    :LspDiagShow
+    assert_report(getloclist(0)->string())
+    :lclose
+  endif
+enddef
+
+# Wait for the LSP server to load and process a file.  This works by waiting
+# for a certain number of diagnostic messages from the server.
+def g:WaitForServerFileLoad(diagCount: number)
+  redraw!
+  var waitCount = diagCount
+  if waitCount == 0
+    # Introduce a temporary diagnostic
+    append('$', '-')
+    redraw!
+    waitCount = 1
+  endif
+  g:WaitForDiags(waitCount)
+  if waitCount != diagCount
+    # Remove the temporary line
+    deletebufline('%', '$')
+    redraw!
+    g:WaitForDiags(0)
+  endif
 enddef
 
 # Start the language server.  Returns true on success and false on failure.

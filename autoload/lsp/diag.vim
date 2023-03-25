@@ -103,6 +103,7 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags: list<dict<
     diagWithinRange->add(diag)
   endfor
 
+  # sort the diagnostics by line number and column number
   var sortedDiags = diagWithinRange->sort((a, b) => {
     var linediff = a.range.start.line - b.range.start.line
     if linediff == 0
@@ -323,8 +324,11 @@ enddef
 # Get all diagnostics from the LSP server for a particular line in a file
 export def GetDiagsByLine(lspserver: dict<any>, bnr: number, lnum: number): list<dict<any>>
   if lspserver.diagsMap->has_key(bnr)
-    if lspserver.diagsMap[bnr].diagnosticsByLnum->has_key(lnum)
-      return lspserver.diagsMap[bnr].diagnosticsByLnum[lnum]
+    var diagsbyLnum = lspserver.diagsMap[bnr].diagnosticsByLnum
+    if diagsbyLnum->has_key(lnum)
+      return diagsbyLnum[lnum]->sort((a, b) => {
+	  return a.range.start.character - b.range.start.character
+	})
     endif
   endif
   return []
@@ -344,11 +348,11 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
     return
   endif
 
-  # sort the diagnostics by line number
   var diags = lspserver.diagsMap[bnr].sortedDiagnostics
 
   if which == 'first'
     setcursorcharpos(diags[0].range.start.line + 1, diags[0].range.start.character + 1)
+    DisplayDiag(diags[0])
     return
   endif
 
@@ -364,14 +368,16 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
 							&& col < curcol))
 	  || (which == 'here' && (lnum == curlnum && col >= curcol))
       setcursorcharpos(lnum, col)
-      if (which == 'here')
-	DisplayDiag(diag)
-      endif
+      DisplayDiag(diag)
       return
     endif
   endfor
 
-  util.WarnMsg('Error: No more diagnostics found')
+  if which == 'here'
+    util.WarnMsg('Error: No more diagnostics found on this line')
+  else
+    util.WarnMsg('Error: No more diagnostics found')
+  endif
 enddef
 
 # Disable the LSP diagnostics highlighting in all the buffers
