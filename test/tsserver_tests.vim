@@ -94,9 +94,10 @@ def g:Test_LspDiag()
   endfor
   g:LspOptionsSet({showDiagInPopup: true})
 
-  :%bw!
+  bw!
 enddef
 
+# Test for :LspGotoDefinition, :LspGotoDeclaration, etc.
 def g:Test_LspGoto()
   :silent! edit Xtest.ts
   sleep 200m
@@ -160,6 +161,8 @@ def g:Test_LspGoto()
   assert_equal(3, line('.'))
   assert_equal([], popup_list())
   popup_clear()
+
+  bw!
 enddef
 
 # Test for auto-completion.  Make sure that only keywords that matches with the
