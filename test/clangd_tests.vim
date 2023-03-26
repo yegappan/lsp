@@ -184,7 +184,7 @@ def g:Test_LspShowReferences()
   setlocal nomodified
   cursor(10, 6)
   :LspPeekReferences
-  sleep 10m
+  sleep 50m
   var ids = popup_list()
   assert_equal(2, ids->len())
   var filePopupAttrs = ids[0]->popup_getoptions()
@@ -526,9 +526,6 @@ def g:Test_LspGotoSymbol()
   silent! edit Xtest.cpp
   sleep 600m
   var lines: list<string> =<< trim END
-    #include <iostream>
-    using namespace std;
-
     class base {
 	public:
 	    virtual void print();
@@ -553,35 +550,35 @@ def g:Test_LspGotoSymbol()
     }
   END
   setline(1, lines)
-  :sleep 1
+  g:WaitForServerFileLoad(0)
 
-  cursor(24, 6)
+  cursor(21, 6)
   :LspGotoDeclaration
-  assert_equal([6, 19], [line('.'), col('.')])
+  assert_equal([3, 19], [line('.'), col('.')])
   exe "normal! \<C-t>"
-  assert_equal([24, 6], [line('.'), col('.')])
+  assert_equal([21, 6], [line('.'), col('.')])
   assert_equal(1, winnr('$'))
 
   :LspGotoDefinition
-  assert_equal([9, 12], [line('.'), col('.')])
+  assert_equal([6, 12], [line('.'), col('.')])
   exe "normal! \<C-t>"
-  assert_equal([24, 6], [line('.'), col('.')])
+  assert_equal([21, 6], [line('.'), col('.')])
   assert_equal(1, winnr('$'))
 
   # Command modifiers
   :topleft LspGotoDefinition
-  assert_equal([9, 12], [line('.'), col('.')])
+  assert_equal([6, 12], [line('.'), col('.')])
   assert_equal([1, 2], [winnr(), winnr('$')])
   close
   exe "normal! \<C-t>"
-  assert_equal([24, 6], [line('.'), col('.')])
+  assert_equal([21, 6], [line('.'), col('.')])
 
   :tab LspGotoDefinition
-  assert_equal([9, 12], [line('.'), col('.')])
+  assert_equal([6, 12], [line('.'), col('.')])
   assert_equal([2, 2, 1], [tabpagenr(), tabpagenr('$'), winnr('$')])
   tabclose
   exe "normal! \<C-t>"
-  assert_equal([24, 6], [line('.'), col('.')])
+  assert_equal([21, 6], [line('.'), col('.')])
 
   # FIXME: :LspGotoTypeDef and :LspGotoImpl are supported only with clang-14.
   # This clangd version is not available in Github CI.
@@ -590,7 +587,7 @@ def g:Test_LspGotoSymbol()
   # FIXME: The following tests are failing in Github CI. Comment out for now.
   if 0
   :messages clear
-  cursor(14, 5)
+  cursor(11, 5)
   :LspGotoDeclaration
   var m = execute('messages')->split("\n")
   assert_equal('Error: declaration is not found', m[1])
@@ -605,13 +602,13 @@ def g:Test_LspGotoSymbol()
   endif
 
   # Test for LspPeekDeclaration
-  cursor(24, 6)
+  cursor(21, 6)
   var bnum = bufnr()
   :LspPeekDeclaration
   var plist = popup_list()
   assert_true(1, plist->len())
   assert_equal(bnum, plist[0]->winbufnr())
-  assert_equal(6, line('.', plist[0]))
+  assert_equal(3, line('.', plist[0]))
   popup_clear()
   # tag stack should not be changed
   assert_fails("normal! \<C-t>", 'E555:')
@@ -621,7 +618,7 @@ def g:Test_LspGotoSymbol()
   plist = popup_list()
   assert_true(1, plist->len())
   assert_equal(bnum, plist[0]->winbufnr())
-  assert_equal(9, line('.', plist[0]))
+  assert_equal(6, line('.', plist[0]))
   popup_clear()
   # tag stack should not be changed
   assert_fails("normal! \<C-t>", 'E555:')
