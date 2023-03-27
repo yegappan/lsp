@@ -429,7 +429,13 @@ def InitServer(lspserver: dict<any>)
       declaration: {linkSupport: true},
       definition: {linkSupport: true},
       typeDefinition: {linkSupport: true},
-      implementation: {linkSupport: true}
+      implementation: {linkSupport: true},
+      signatureHelp: {
+	signatureInformation: {
+	  documentationFormat: ['plaintext', 'markdown'],
+	  activeParameterSupport: true
+	}
+      }
     },
     window: {},
     general: {}
