@@ -352,6 +352,7 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
 
   if which == 'first'
     setcursorcharpos(diags[0].range.start.line + 1, diags[0].range.start.character + 1)
+    :redraw
     DisplayDiag(diags[0])
     return
   endif
@@ -368,6 +369,7 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
 							&& col < curcol))
 	  || (which == 'here' && (lnum == curlnum && col >= curcol))
       setcursorcharpos(lnum, col)
+      :redraw
       DisplayDiag(diag)
       return
     endif
