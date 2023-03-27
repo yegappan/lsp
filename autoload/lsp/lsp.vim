@@ -48,7 +48,7 @@ def LspInitOnce()
 
   if has('patch-9.0.1157') && opt.lspOptions.showDiagWithVirtualText
       if !hlexists('LspDiagVirtualText')
-          hlset([{name: 'LspDiagVirtualText', linksto: 'LineNr'}])
+          hlset([{name: 'LspDiagVirtualText', linksto: opt.lspOptions.diagVirtualTextHL}])
       endif
       prop_type_add('LspDiagVirtualText', {highlight: 'LspDiagVirtualText', override: true})
   endif
