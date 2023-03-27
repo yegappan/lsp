@@ -250,13 +250,23 @@ def ShowDiagInPopup(diag: dict<any>)
   endif
 
   # Display a popup right below the diagnostics position
+  var msg = diag.message->split("\n")
+  var msglen = msg->reduce((acc, val) => max([acc, val->strcharlen()]), 0)
+
   var ppopts = {}
   ppopts.pos = 'topleft'
   ppopts.line = d.row + 1
-  ppopts.col = d.col
   ppopts.moved = 'any'
-  ppopts.wrap = false
-  popup_create(diag.message->split("\n"), ppopts)
+
+  if msglen > &columns
+    ppopts.wrap = true
+    ppopts.col = 1
+  else
+    ppopts.wrap = false
+    ppopts.col = d.col
+  endif
+
+  popup_create(msg, ppopts)
 enddef
 
 # Display the 'diag' message in a popup or in the status message area
