@@ -119,12 +119,15 @@ The following commands are provided:
 :LspServerDebug		Enable or disable the language server debug messages.
 :LspServerRestart	Restart the language server for the current buffer.
 :LspServerTrace		Set the language server debug trace value.
+:LspShowAllServers	Display the status of all the registered language
+			servers.
 :LspShowReferences	Display the list of references to the keyword under
 			cursor in a new location list.
 :LspShowServerCapabilities
 			Display the language server capabilities for the
 			current buffer.
-:LspShowServers		Display the list of registered language servers
+:LspShowServer		Display the status of the language server for the
+			current buffer.
 :LspShowSignature	Display the signature of the symbol under cursor.
 :LspSubTypeHierarchy	Display the sub type hierarchy in a popup window.
 :LspSuperTypeHierarchy	Display the super type hierarchy in a popup window.
@@ -284,8 +287,9 @@ autoHighlightDiags	|Boolean| option. Automatically place signs on the
 autoPopulateDiags	|Boolean| option. Automatically populate the location
 			list with diagnostics from the language server.
 			By default this is set to false.
-diagLineHL		|String| option. Highlight used for diagnostic line.
-			By default uses "Cursor".  Use "NONE" to disable.
+diagLineHL		|String| option. The highlight group used for a line
+			with one or more diagnostics.  By default uses
+			"DiffAdd".  Use "NONE" to disable.
 echoSignature		|Boolean| option.  In insert mode, echo the current
 			symbol signature instead of showing it in a popup.
 			By default this is set to false.
@@ -617,6 +621,16 @@ can map these commands to keys and make it easier to invoke them.
 :LspServerTrace { off | messages | verbose }	*:LspServerTrace*
 			Set the language server debug trace value.
 
+						*:LspShowAllServers*
+:LspShowAllServers	Displays the list of registered language servers and
+			their status.  The language servers are registered
+			using the LspAddServer() function.  The output is
+			displayed in a scratch buffer.  The output shows the
+			Vim file type, the corresponding language server
+			status and the path to the language server executable.
+			The language server information for each buffer is
+			also shown.
+
 						*:LspShowReferences*
 :LspShowReferences	Creates a new location list with the list of locations
 			where the symbol under the cursor is referenced and
@@ -628,12 +642,10 @@ can map these commands to keys and make it easier to invoke them.
 			described in the LSP protocol specification under the
 			"ServerCapabilities" interface.
 
-						*:LspShowServers*
-:LspShowServers		Displays the list of registered language servers and
-			their status.  The language servers are registered
-			using the LspAddServer() function. The output shows
-			the Vim file type, the corresponding language server
-			status and the path to the language server executable.
+						*:LspShowServer*
+:LspShowServer		Displays the language server status for the current
+			buffer.  The output shows the path to the language
+			server executable and the server status.
 
 						*:LspShowSignature*
 :LspShowSignature	Displays the signature of the symbol (e.g. a function

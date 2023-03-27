@@ -35,7 +35,7 @@ export var lspOptions: dict<any> = {
   # Make diagnostics show in a popup instead of echoing
   showDiagInPopup: true,
   # Default diagnostic highlight on lines
-  diagLineHL: 'Cursor',
+  diagLineHL: 'DiffAdd',
   # Don't print message when a configured language server is missing.
   ignoreMissingServer: false,
   # Use a floating menu to show the code action menu instead of asking for input

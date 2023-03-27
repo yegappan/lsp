@@ -111,7 +111,8 @@ command! -nargs=0 -bar LspServerRestart lsp.RestartServer()
 command! -nargs=1 -complete=customlist,LspServerTraceComplete -bar LspServerTrace lsp.ServerTraceSet(<q-args>)
 command! -nargs=0 -bar LspShowReferences lsp.ShowReferences(v:false)
 command! -nargs=0 -bar LspShowServerCapabilities lsp.ShowServerCapabilities()
-command! -nargs=0 -bar LspShowServers lsp.ShowServers()
+command! -nargs=0 -bar LspShowServer lsp.ShowServer()
+command! -nargs=0 -bar LspShowAllServers lsp.ShowAllServers()
 command! -nargs=0 -bar LspShowSignature call LspShowSignature()
 # Clangd specifc extension to switch from one C/C++ source file to a
 # corresponding header file

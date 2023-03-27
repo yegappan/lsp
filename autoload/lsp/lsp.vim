@@ -79,17 +79,64 @@ export def ServerDebug(arg: string)
 enddef
 
 # Show information about all the LSP servers
-export def ShowServers()
+export def ShowAllServers()
+  var lines = []
+  # Add filetype to server mapping information
+  lines->add('Filetype Information')
+  lines->add('====================')
   for [ftype, lspserver] in ftypeServerMap->items()
-    var msg = $'{ftype}    '
-    if lspserver.running
-      msg ..= 'running'
-    else
-      msg ..= 'not running'
-    endif
-    msg ..= $'    {lspserver.path}'
-    :echomsg msg
+    lines->add($"Filetype: '{ftype}'")
+    lines->add($"Server Path: '{lspserver.path}'")
+    lines->add($"Status: {lspserver.running ? 'Running' : 'Not running'}")
+    lines->add('')
   endfor
+
+  # Add buffer to server mapping information
+  lines->add('Buffer Information')
+  lines->add('==================')
+  for bnr in range(1, bufnr('$'))
+    if buf.BufHasLspServer(bnr)
+      lines->add($"Buffer: '{bufname(bnr)}'")
+      var lspserver = buf.BufLspServerGet(bnr)
+      lines->add($"Server Path: '{lspserver.path}'")
+      lines->add($"Status: {lspserver.running ? 'Running' : 'Not running'}")
+      lines->add('')
+    endif
+  endfor
+
+  var wid = bufwinid('Language-Servers')
+  if wid != -1
+    wid->win_gotoid()
+    :setlocal modifiable
+    :silent! :%d _
+  else
+    :new Language-Servers
+    :setlocal buftype=nofile
+    :setlocal bufhidden=wipe
+    :setlocal noswapfile
+    :setlocal nonumber nornu
+    :setlocal fdc=0 signcolumn=no
+  endif
+  setline(1, lines)
+  :setlocal nomodified
+  :setlocal nomodifiable
+enddef
+
+# Show the status of the LSP server for the current buffer
+export def ShowServer()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  if lspserver->empty()
+    :echomsg "LSP Server not found"
+    return
+  endif
+
+  var msg = $"LSP server '{lspserver.path}' is "
+  if lspserver.running
+    msg ..= 'running'
+  else
+    msg ..= 'not running'
+  endif
+  :echomsg msg
 enddef
 
 # Get LSP server running status for filetype 'ftype'

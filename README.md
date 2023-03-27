@@ -147,22 +147,22 @@ The following commands are provided to use the LSP features.
 Command|Description
 -------|-----------
 :LspCodeAction|Apply the code action supplied by the language server to the diagnostic in the current line.
-:LspDiagCurrent|Display the diagnostic message for the current line
-:LspDiagFirst|Jump to the first diagnostic message for the current buffer
-:LspDiagHere|Jump to the next diagnostic message in the current line
-:LspDiagHighlightDisable|Disable diagnostic message highlights
-:LspDiagHighlightEnable|Enable diagnostic message highlights
-:LspDiagNext|Jump to the next diagnostic message after the current position
-:LspDiagPrev|Jump to the previous diagnostic message before the current position
+:LspDiagCurrent|Display the diagnostic message for the current line.
+:LspDiagFirst|Jump to the first diagnostic message for the current buffer.
+:LspDiagHere|Jump to the next diagnostic message in the current line.
+:LspDiagHighlightDisable|Disable diagnostic message highlights.
+:LspDiagHighlightEnable|Enable diagnostic message highlights.
+:LspDiagNext|Jump to the next diagnostic message after the current position.
+:LspDiagPrev|Jump to the previous diagnostic message before the current position.
 :LspDiagShow|Display the diagnostics messages from the language server for the current buffer in a new location list.
-:LspFold|Fold the current file
+:LspFold|Fold the current file.
 :LspFormat|Format a range of lines in the current file using the language server. The **shiftwidth** and **expandtab** values set for the current buffer are used when format is applied.  The default range is the entire file.
-:LspGotoDeclaration|Go to the declaration of the keyword under cursor
-:LspGotoDefinition|Go to the definition of the keyword under cursor
-:LspGotoImpl|Go to the implementation of the keyword under cursor
-:LspGotoTypeDef|Go to the type definition of the keyword under cursor
-:LspHighlight|Highlight all the matches for the keyword under cursor
-:LspHighlightClear|Clear all the matches highlighted by :LspHighlight
+:LspGotoDeclaration|Go to the declaration of the keyword under cursor.
+:LspGotoDefinition|Go to the definition of the keyword under cursor.
+:LspGotoImpl|Go to the implementation of the keyword under cursor.
+:LspGotoTypeDef|Go to the type definition of the keyword under cursor.
+:LspHighlight|Highlight all the matches for the keyword under cursor.
+:LspHighlightClear|Clear all the matches highlighted by :LspHighlight.
 :LspHover|Show the documentation for the symbol under the cursor in a popup window.
 :LspIncomingCalls|Display the list of symbols calling the current symbol.
 :LspOutgoingCalls|Display the list of symbols called by the current symbol.
@@ -172,21 +172,22 @@ Command|Description
 :LspPeekImpl|Open the implementation of the symbol under cursor in the preview window.
 :LspPeekReferences|Display the list of references to the keyword under cursor in a location list associated with the preview window.
 :LspPeekTypeDef|Open the type definition of the symbol under cursor in the preview window.
-:LspRename|Rename the current symbol
-:LspSelectionExpand|Expand the current symbol range visual selection
-:LspSelectionShrink|Shrink the current symbol range visual selection
-:LspServerRestart|Restart the language server for the current buffer
+:LspRename|Rename the current symbol.
+:LspSelectionExpand|Expand the current symbol range visual selection.
+:LspSelectionShrink|Shrink the current symbol range visual selection.
+:LspShowAllServers|Display information about all the registered language servers.
+:LspServerRestart|Restart the language server for the current buffer.
 :LspShowReferences|Display the list of references to the keyword under cursor in a new location list.
-:LspShowServers|Display the list of registered language servers
-:LspShowServerCapabilities|Display the language server capabilities for the current buffer
-:LspShowSignature|Display the signature of the keyword under cursor
-:LspSubTypeHierarchy|Display the sub type hierarchy in a popup window
-:LspSuperTypeHierarchy|Display the super type hierarchy in a popup window
+:LspShowServer|Display the language server status for the current buffer.
+:LspShowServerCapabilities|Display the language server capabilities for the current buffer.
+:LspShowSignature|Display the signature of the keyword under cursor.
+:LspSubTypeHierarchy|Display the sub type hierarchy in a popup window.
+:LspSuperTypeHierarchy|Display the super type hierarchy in a popup window.
 :LspSwitchSourceHeader|Switch between a source and a header file.
-:LspSymbolSearch|Perform a workspace wide search for a symbol
-:LspWorkspaceAddFolder `{folder}`| Add a folder to the workspace
-:LspWorkspaceListFolders|Show the list of folders in the workspace
-:LspWorkspaceRemoveFolder `{folder}`|Remove a folder from the workspace
+:LspSymbolSearch|Perform a workspace wide search for a symbol.
+:LspWorkspaceAddFolder `{folder}`| Add a folder to the workspace.
+:LspWorkspaceListFolders|Show the list of folders in the workspace.
+:LspWorkspaceRemoveFolder `{folder}`|Remove a folder from the workspace.
 
 ## Similar Vim LSP Plugins
 
