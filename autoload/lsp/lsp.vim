@@ -46,6 +46,13 @@ def LspInitOnce()
   prop_type_add('LspReadRef', {highlight: 'DiffChange', override: true})
   prop_type_add('LspWriteRef', {highlight: 'DiffDelete', override: true})
 
+  if has('patch-9.0.1157') && opt.lspOptions.showDiagWithVirtualText
+      if !hlexists('LspDiagVirtualText')
+          hlset([{name: 'LspDiagVirtualText', linksto: 'LineNr'}])
+      endif
+      prop_type_add('LspDiagVirtualText', {highlight: 'LspDiagVirtualText', override: true})
+  endif
+
   inlayhints.InitOnce()
 
   :set ballooneval balloonevalterm

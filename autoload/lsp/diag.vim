@@ -27,6 +27,11 @@ def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
   # Remove all the existing diagnostic signs
   sign_unplace('LSPDiag', {buffer: bnr})
 
+  if has('patch-9.0.1157') && opt.lspOptions.showDiagWithVirtualText
+      # Remove all virtual text
+      prop_remove({type: 'LspDiagVirtualText', bufnr: bnr, all: true})
+  endif
+
   if !lspserver.diagsMap->has_key(bnr) ||
       lspserver.diagsMap[bnr].sortedDiagnostics->empty()
     return
@@ -41,6 +46,15 @@ def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
     signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
 				lnum: lnum,
 				name: DiagSevToSignName(diag.severity)})
+
+    if has('patch-9.0.1157') && opt.lspOptions.showDiagWithVirtualText
+        prop_add( lnum, 0, {
+            'bufnr': bnr,
+            'type': 'LspDiagVirtualText',
+            'text': '┌─ ' .. diag.message,
+            'text_align': 'above',
+            'text_padding_left': diag.range.start.character})
+    endif
   endfor
 
   signs->sign_placelist()
