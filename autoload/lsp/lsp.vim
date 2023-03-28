@@ -31,28 +31,11 @@ var ftypeServerMap: dict<dict<any>> = {}
 var lspInitializedOnce = false
 
 def LspInitOnce()
-  var lineHL: string = opt.lspOptions.diagLineHL
-  # Signs used for LSP diagnostics
-  sign_define([{name: 'LspDiagError', text: 'E>', texthl: 'ErrorMsg',
-						linehl: lineHL},
-		{name: 'LspDiagWarning', text: 'W>', texthl: 'Search',
-						linehl: lineHL},
-		{name: 'LspDiagInfo', text: 'I>', texthl: 'Pmenu',
-						linehl: lineHL},
-		{name: 'LspDiagHint', text: 'H>', texthl: 'Question',
-						linehl: lineHL}])
-
   prop_type_add('LspTextRef', {highlight: 'Search', override: true})
   prop_type_add('LspReadRef', {highlight: 'DiffChange', override: true})
   prop_type_add('LspWriteRef', {highlight: 'DiffDelete', override: true})
 
-  if has('patch-9.0.1157') && opt.lspOptions.showDiagWithVirtualText
-      if !hlexists('LspDiagVirtualText')
-          hlset([{name: 'LspDiagVirtualText', linksto: opt.lspOptions.diagVirtualTextHL}])
-      endif
-      prop_type_add('LspDiagVirtualText', {highlight: 'LspDiagVirtualText', override: true})
-  endif
-
+  diag.InitOnce()
   inlayhints.InitOnce()
 
   :set ballooneval balloonevalterm

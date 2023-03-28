@@ -6,6 +6,29 @@ import './options.vim' as opt
 import './buffer.vim' as buf
 import './util.vim'
 
+# Initialize the signs and the text property type used for diagnostics.
+export def InitOnce()
+  var lineHL: string = opt.lspOptions.diagLineHL
+  # Signs used for LSP diagnostics
+  sign_define([{name: 'LspDiagError', text: 'E>', texthl: 'ErrorMsg',
+						linehl: lineHL},
+		{name: 'LspDiagWarning', text: 'W>', texthl: 'Search',
+						linehl: lineHL},
+		{name: 'LspDiagInfo', text: 'I>', texthl: 'Pmenu',
+						linehl: lineHL},
+		{name: 'LspDiagHint', text: 'H>', texthl: 'Question',
+						linehl: lineHL}])
+
+  if has('patch-9.0.1157') && opt.lspOptions.showDiagWithVirtualText
+    if !hlexists('LspDiagVirtualText')
+      hlset([{name: 'LspDiagVirtualText',
+	      linksto: opt.lspOptions.diagVirtualTextHL}])
+    endif
+    prop_type_add('LspDiagVirtualText', {highlight: 'LspDiagVirtualText',
+					 override: true})
+  endif
+enddef
+
 # Remove the diagnostics stored for buffer 'bnr'
 export def DiagRemoveFile(lspserver: dict<any>, bnr: number)
   if lspserver.diagsMap->has_key(bnr)
@@ -28,16 +51,9 @@ def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
   # Remove all the existing diagnostic signs
   sign_unplace('LSPDiag', {buffer: bnr})
 
-  if has('patch-9.0.1157') && opt.lspOptions.showDiagWithVirtualText && opt.lspOptions.autoHighlightDiags
-      # Remove all virtual text
-      prop_remove({type: 'LspDiagVirtualText', bufnr: bnr, all: true})
-  endif
-
-  # remove add virtual text in all bufs if auto highlight digs off
-  if !opt.lspOptions.autoHighlightDiags
-      for binfo in getbufinfo({bufloaded: true})
-          prop_remove({type: 'LspDiagVirtualText', bufnr: binfo.bufnr, all: true})
-      endfor
+  if has('patch-9.0.1157') && opt.lspOptions.showDiagWithVirtualText
+    # Remove all the existing virtual text
+    prop_remove({type: 'LspDiagVirtualText', bufnr: bnr, all: true})
   endif
 
   if !lspserver.diagsMap->has_key(bnr) ||
@@ -55,13 +71,12 @@ def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
 				lnum: lnum,
 				name: DiagSevToSignName(diag.severity)})
 
-    if has('patch-9.0.1157') && opt.lspOptions.showDiagWithVirtualText && opt.lspOptions.autoHighlightDiags
-        prop_add( lnum, 0, {
-            bufnr: bnr,
-            type: 'LspDiagVirtualText',
-            text: '┌─ ' .. diag.message,
-            text_align: 'above',
-            text_padding_left: diag.range.start.character})
+    if has('patch-9.0.1157') && opt.lspOptions.showDiagWithVirtualText
+      prop_add(lnum, 0, {bufnr: bnr,
+			 type: 'LspDiagVirtualText',
+			 text: $'┌─ {diag.message}',
+			 text_align: 'above',
+			 text_padding_left: diag.range.start.character})
     endif
   endfor
 
@@ -198,7 +213,7 @@ def DiagsUpdateLocList(lspserver: dict<any>, bnr: number): bool
 
   var LspQfId: number = 0
   if bnr->getbufvar('LspQfId', 0) != 0 &&
-		  getloclist(0, {id: b:LspQfId}).id == b:LspQfId
+		getloclist(0, {id: b:LspQfId}).id == b:LspQfId
     LspQfId = b:LspQfId
   endif
 
@@ -418,13 +433,15 @@ enddef
 export def DiagsHighlightDisable()
   # turn off all diags highlight
   opt.lspOptions.autoHighlightDiags = false
-  # refresh for removing diagnostic virtual text
+
+  # Remove the diganostics virtual text in all the buffers.
   for binfo in getbufinfo({bufloaded: true})
-    var lspserver: dict<any> = buf.BufLspServerGet(binfo.bufnr)
-    if !lspserver->empty() && lspserver.running
-      DiagsRefreshSigns(lspserver, binfo.bufnr)
+    if has('patch-9.0.1157') && opt.lspOptions.showDiagWithVirtualText
+      # Remove all virtual text
+      prop_remove({type: 'LspDiagVirtualText', bufnr: binfo.bufnr, all: true})
     endif
   endfor
+
   # Remove all the existing diagnostic signs in all the buffers
   sign_unplace('LSPDiag')
 enddef
