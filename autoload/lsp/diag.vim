@@ -24,6 +24,7 @@ enddef
 
 # Refresh the signs placed in buffer 'bnr' on lines with a diagnostic message.
 def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
+  bnr->bufload()
   # Remove all the existing diagnostic signs
   sign_unplace('LSPDiag', {buffer: bnr})
 
@@ -49,11 +50,11 @@ def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
 
     if has('patch-9.0.1157') && opt.lspOptions.showDiagWithVirtualText
         prop_add( lnum, 0, {
-            'bufnr': bnr,
-            'type': 'LspDiagVirtualText',
-            'text': '┌─ ' .. diag.message,
-            'text_align': 'above',
-            'text_padding_left': diag.range.start.character})
+            bufnr: bnr,
+            type: 'LspDiagVirtualText',
+            text: '┌─ ' .. diag.message,
+            text_align: 'above',
+            text_padding_left: diag.range.start.character})
     endif
   endfor
 
