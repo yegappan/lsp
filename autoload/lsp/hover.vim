@@ -64,15 +64,15 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any): void
   endif
 
   if opt.lspOptions.hoverInPreview
-    silent! pedit LspHoverReply
-    wincmd P
+    :silent! pedit LspHoverReply
+    :wincmd P
     :setlocal buftype=nofile
     :setlocal bufhidden=delete
     bufnr()->deletebufline(1, '$')
     hoverText->append(0)
     [1, 1]->cursor()
     exe $'setlocal ft={hoverKind}'
-    wincmd p
+    :wincmd p
   else
     var winid = hoverText->popup_atcursor({moved: 'word',
 					   maxwidth: 80,

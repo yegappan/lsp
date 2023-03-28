@@ -175,7 +175,7 @@ export def JumpToLspLocation(location: dict<any>, cmdmods: string)
     if bnr == bufnr()
       # Set the previous cursor location mark. Instead of using setpos(), m' is
       # used so that the current location is added to the jump list.
-      normal m'
+      :normal m'
     else
       var wid = fname->bufwinid()
       if wid != -1

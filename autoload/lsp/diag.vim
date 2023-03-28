@@ -123,7 +123,7 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags: list<dict<
 
   # Notify user scripts that diags has been updated
   if exists('#User#LspDiagsUpdated')
-    doautocmd <nomodeline> User LspDiagsUpdated
+    :doautocmd <nomodeline> User LspDiagsUpdated
   endif
 enddef
 
@@ -276,7 +276,7 @@ def DisplayDiag(diag: dict<any>)
     ShowDiagInPopup(diag)
   else
     # Display the diagnostic message in the status message area
-    echo diag.message
+    :echo diag.message
   endif
 enddef
 
@@ -307,9 +307,9 @@ export def ShowCurrentDiagInStatusLine(lspserver: dict<any>)
       code = $'[{diag.code}] '
     endif
     var msgNoLineBreak = code .. substitute(substitute(diag.message, "\n", ' ', ''), "\\n", ' ', '')
-    echo msgNoLineBreak[ : max_width]
+    :echo msgNoLineBreak[ : max_width]
   else
-    echo ''
+    :echo ''
   endif
 enddef
 

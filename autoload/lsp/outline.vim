@@ -255,8 +255,8 @@ export def OpenOutlineWindow()
   :syntax keyword LSPTitle EnumMember Struct Event Operator TypeParameter
 
   if str2nr(&t_Co) > 2
-    highlight clear LSPTitle
-    highlight default link LSPTitle Title
+    :highlight clear LSPTitle
+    :highlight default link LSPTitle Title
   endif
 
   prop_type_add('LspOutlineHighlight', {bufnr: bufnr(), highlight: 'Search', override: true})

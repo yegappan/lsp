@@ -765,7 +765,7 @@ export def Rename(a_newName: string)
     endif
 
     # clear the input prompt
-    echo "\r"
+    :echo "\r"
   endif
 
   lspserver.renameSymbol(newName)
@@ -798,7 +798,7 @@ export def SymbolSearch(queryArg: string)
       return
     endif
   endif
-  redraw!
+  :redraw!
 
   lspserver.workspaceQuery(query)
 enddef
@@ -810,7 +810,7 @@ export def ListWorkspaceFolders()
     return
   endif
 
-  echomsg $'Workspace Folders: {lspserver.workspaceFolders->string()}'
+  :echomsg $'Workspace Folders: {lspserver.workspaceFolders->string()}'
 enddef
 
 # Add a workspace folder. Default is to use the current folder.

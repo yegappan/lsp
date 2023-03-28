@@ -58,7 +58,7 @@ def FilterSymbols(lspserver: dict<any>, popupID: number, key: string): bool
     else
       []->setwinvar(popupID, 'LspSymbolTable')
     endif
-    echo $'Symbol: {query}'
+    :echo $'Symbol: {query}'
   endif
 
   # Update the workspace symbol query string
@@ -74,7 +74,7 @@ enddef
 # Jump to the location of a symbol selected in the popup menu
 def JumpToWorkspaceSymbol(popupID: number, result: number): void
   # clear the message displayed at the command-line
-  echo ''
+  :echo ''
 
   if result <= 0
     # popup is canceled
@@ -114,7 +114,7 @@ def JumpToWorkspaceSymbol(popupID: number, result: number): void
     endif
     # Set the previous cursor location mark. Instead of using setpos(), m' is
     # used so that the current location is added to the jump list.
-    normal m'
+    :normal m'
     setcursorcharpos(symTbl[result - 1].pos.line + 1,
 			symTbl[result - 1].pos.character + 1)
   catch
@@ -147,7 +147,7 @@ def ShowSymbolMenu(lspserver: dict<any>, query: string)
   prop_type_add('lspworkspacesymbol',
 			{bufnr: lspserver.workspaceSymbolPopup->winbufnr(),
 			 highlight: 'Title'})
-  echo $'Symbol: {query}'
+  :echo $'Symbol: {query}'
 enddef
 
 # Convert a file name to <filename> (<dirname>) format.
@@ -260,9 +260,9 @@ def UpdatePeekFilePopup(lspserver: dict<any>, locations: list<dict<any>>)
 
   lspserver.peekSymbolFilePopup = popup_create(bnr, popupAttrs)
   var cmds =<< trim eval END
-    setlocal number
+    :setlocal number
     [{range.start.line + 1}, 1]->cursor()
-    normal! z.
+    :normal! z.
   END
   win_execute(lspserver.peekSymbolFilePopup, cmds)
 
@@ -441,7 +441,7 @@ def PeekSymbolLocation(lspserver: dict<any>, location: dict<any>)
   matchaddpos('Search', [pos], 10, 101, {window: pwid})
   var cmds =<< trim eval END
     [{range.start.line + 1}, 1]->cursor()
-    normal! z.
+    :normal! z.
   END
   win_execute(pwid, cmds, 'silent!')
 enddef
