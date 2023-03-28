@@ -24,8 +24,21 @@ enddef
 
 # Refresh the signs placed in buffer 'bnr' on lines with a diagnostic message.
 def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
+  bnr->bufload()
   # Remove all the existing diagnostic signs
   sign_unplace('LSPDiag', {buffer: bnr})
+
+  if has('patch-9.0.1157') && opt.lspOptions.showDiagWithVirtualText && opt.lspOptions.autoHighlightDiags
+      # Remove all virtual text
+      prop_remove({type: 'LspDiagVirtualText', bufnr: bnr, all: true})
+  endif
+
+  # remove add virtual text in all bufs if auto highlight digs off
+  if !opt.lspOptions.autoHighlightDiags
+      for binfo in getbufinfo({bufloaded: true})
+          prop_remove({type: 'LspDiagVirtualText', bufnr: binfo.bufnr, all: true})
+      endfor
+  endif
 
   if !lspserver.diagsMap->has_key(bnr) ||
       lspserver.diagsMap[bnr].sortedDiagnostics->empty()
@@ -41,6 +54,15 @@ def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
     signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
 				lnum: lnum,
 				name: DiagSevToSignName(diag.severity)})
+
+    if has('patch-9.0.1157') && opt.lspOptions.showDiagWithVirtualText && opt.lspOptions.autoHighlightDiags
+        prop_add( lnum, 0, {
+            bufnr: bnr,
+            type: 'LspDiagVirtualText',
+            text: '┌─ ' .. diag.message,
+            text_align: 'above',
+            text_padding_left: diag.range.start.character})
+    endif
   endfor
 
   signs->sign_placelist()
@@ -394,9 +416,17 @@ enddef
 
 # Disable the LSP diagnostics highlighting in all the buffers
 export def DiagsHighlightDisable()
+  # turn off all diags highlight
+  opt.lspOptions.autoHighlightDiags = false
+  # refresh for removing diagnostic virtual text
+  for binfo in getbufinfo({bufloaded: true})
+    var lspserver: dict<any> = buf.BufLspServerGet(binfo.bufnr)
+    if !lspserver->empty() && lspserver.running
+      DiagsRefreshSigns(lspserver, binfo.bufnr)
+    endif
+  endfor
   # Remove all the existing diagnostic signs in all the buffers
   sign_unplace('LSPDiag')
-  opt.lspOptions.autoHighlightDiags = false
 enddef
 
 # Enable the LSP diagnostics highlighting

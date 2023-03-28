@@ -334,6 +334,13 @@ showInlayHints		|Boolean| option.  Show inlay hints from the language
 			server.  By default this is set to false.  The inlay
 			hint text is displayed as a virtual text.  Needs Vim
 			version 9.0.0178 or later.
+showDiagWithVirtualText		|Boolean| option.  Show diagnostic messages text from the language
+			server with virtual text.  By default this is set to false.
+            Needs autoHighlightDiags == true
+            Needs Vim version 9.0.1157 or later.
+diagVirtualTextHL		|String| option.
+            The highlight group used for a diagnostics virtual text.
+            By default uses "LineNr".
 showSignature		|Boolean| option.  In insert mode, automatically show
 			the current symbol signature in a popup.
 			By default this is set to true.
