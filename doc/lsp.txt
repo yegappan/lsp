@@ -351,6 +351,28 @@ usePopupInCodeAction    |Boolean| option.  When using the |:LspCodeAction|
 			command to display the code action for the current
 			line, use a popup menu instead of echoing.
 			By default this is set to false.
+diagSignOpts |dict<any>| option. Options that allow you to change diagnostic
+            sings text and highlight
+            default settings
+              diagSignOpts: {
+                  error: {
+                      text: 'E>',
+                      texthl: 'ErrorMsg',
+                  },
+                  warning: {
+                      text: 'W>',
+                      texthl: 'Search',
+                  },
+                  info: {
+                      text: 'I>',
+                      texthl: 'Pmenu',
+                  },
+                  hint: {
+                      text: 'H>',
+                      texthl: 'Question',
+                  },
+              },
+
 
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file: >
