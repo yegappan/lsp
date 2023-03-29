@@ -13,26 +13,26 @@ export def InitOnce()
   sign_define([
         {
             name: 'LspDiagError',
-            text: opt.lspOptions.diagSignOpts.error.text,
-            texthl: opt.lspOptions.diagSignOpts.error.texthl,
+            text: opt.lspOptions.diagSignErrorText,
+            texthl: opt.lspOptions.diagSignErrorTexthl,
 		    linehl: lineHL
         },
 		{
             name: 'LspDiagWarning',
-            text: opt.lspOptions.diagSignOpts.warning.text,
-            texthl: opt.lspOptions.diagSignOpts.warning.texthl,
+            text: opt.lspOptions.diagSignWarningText,
+            texthl: opt.lspOptions.diagSignWarningTexthl,
             linehl: lineHL
         },
 		{
             name: 'LspDiagInfo',
-            text: opt.lspOptions.diagSignOpts.info.text,
-            texthl: opt.lspOptions.diagSignOpts.info.texthl,
+            text: opt.lspOptions.diagSignInfoText,
+            texthl: opt.lspOptions.diagSignInfoTexthl,
             linehl: lineHL
         },
 		{
             name: 'LspDiagHint',
-            text: opt.lspOptions.diagSignOpts.hint.text,
-            texthl: opt.lspOptions.diagSignOpts.hint.texthl,
+            text: opt.lspOptions.diagSignHintText,
+            texthl: opt.lspOptions.diagSignHintTexthl,
             linehl: lineHL
         }
   ])

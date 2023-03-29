@@ -54,24 +54,14 @@ export var lspOptions: dict<any> = {
   # list of completion items
   completionMatcher: 'case',
   # diagnostics signs options
-  diagSignOpts: {
-      error: {
-          text: 'E>',
-          texthl: 'ErrorMsg',
-      },
-      warning: {
-          text: 'W>',
-          texthl: 'Search',
-      },
-      info: {
-          text: 'I>',
-          texthl: 'Pmenu',
-      },
-      hint: {
-          text: 'H>',
-          texthl: 'Question',
-      },
-  },
+  diagSignErrorText: 'E>',
+  diagSignErrorTexthl: 'ErrorMsg',
+  diagSignWarningText: 'W>',
+  diagSignWarningTexthl: 'Search',
+  diagSignInfoText: 'I>',
+  diagSignInfoTexthl: 'Pmenu',
+  diagSignHintText: 'H>',
+  diagSignHintTexthl: 'Question',
 }
 
 # set the LSP plugin options from the user provided option values

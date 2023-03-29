@@ -351,27 +351,22 @@ usePopupInCodeAction    |Boolean| option.  When using the |:LspCodeAction|
 			command to display the code action for the current
 			line, use a popup menu instead of echoing.
 			By default this is set to false.
-diagSignOpts |dict<any>| option. Options that allow you to change diagnostic
-            sings text and highlight
-            default settings
-              diagSignOpts: {
-                  error: {
-                      text: 'E>',
-                      texthl: 'ErrorMsg',
-                  },
-                  warning: {
-                      text: 'W>',
-                      texthl: 'Search',
-                  },
-                  info: {
-                      text: 'I>',
-                      texthl: 'Pmenu',
-                  },
-                  hint: {
-                      text: 'H>',
-                      texthl: 'Question',
-                  },
-              },
+diagSignErrorText       |String| option. Change diag sign text for errors
+                        By default 'E>'
+diagSignErrorTexthl     |String| option. Change diag sign highlight for errors
+                        By default 'ErrorMsg',
+diagSignWarningText     |String| option. Change diag sign text for warnings
+                        By default 'W>',
+diagSignWarningTexthl   |String| option. Change diag sign highlight for warnings
+                        By default 'Search',
+diagSignInfoText        |String| option. Change diag sign text for info
+                        By default 'I>',
+diagSignInfoTexthl      |String| option. Change diag sign text highlight info
+                        By default 'Pmenu',
+diagSignHintText        |String| option. Change diag sign text for hints
+                        By default 'H>',
+diagSignHintTexthl      |String| option. Change diag sign highlight for hints
+                        By default 'Question',
 
 
 For example, to disable the automatic placement of signs for the LSP
