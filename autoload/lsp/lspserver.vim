@@ -37,7 +37,7 @@ enddef
 
 # LSP server exit callback
 def Exit_cb(lspserver: dict<any>, job: job, status: number): void
-  util.WarnMsg($'LSP server exited with status {status}')
+  util.WarnMsg($'[{strftime("%m/%d/%y %T")}]: LSP server exited with status {status}')
   lspserver.running = false
   lspserver.ready = false
   lspserver.requests = {}
@@ -584,12 +584,12 @@ enddef
 
 # Send a request message to LSP server
 def SendMessage(lspserver: dict<any>, content: dict<any>): void
-  var ch = lspserver.job->job_getchannel()
-  if ch->ch_status() != 'open'
+  var job = lspserver.job
+  if job->job_status() != 'run'
     # LSP server has exited
     return
   endif
-  ch->ch_sendexpr(content)
+  job->ch_sendexpr(content)
   if content->has_key('id')
     util.TraceLog(false, $'Sent [{strftime("%m/%d/%y %T")}]: {content->string()}')
   endif
@@ -610,8 +610,8 @@ def Rpc(lspserver: dict<any>, method: string, params: any, handleError: bool = t
   req.params = {}
   req.params->extend(params)
 
-  var ch = lspserver.job->job_getchannel()
-  if ch->ch_status() != 'open'
+  var job = lspserver.job
+  if job->job_status() != 'run'
     # LSP server has exited
     return {}
   endif
@@ -619,7 +619,7 @@ def Rpc(lspserver: dict<any>, method: string, params: any, handleError: bool = t
   util.TraceLog(false, $'Sent [{strftime("%m/%d/%y %T")}]: {req->string()}')
 
   # Do the synchronous RPC call
-  var reply = ch->ch_evalexpr(req)
+  var reply = job->ch_evalexpr(req)
 
   util.TraceLog(false, $'Received [{strftime("%m/%d/%y %T")}]: {reply->string()}')
 
@@ -677,8 +677,8 @@ def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func): n
   req.params = {}
   req.params->extend(params)
 
-  var ch = lspserver.job->job_getchannel()
-  if ch->ch_status() != 'open'
+  var job = lspserver.job
+  if job->job_status() != 'run'
     # LSP server has exited
     return -1
   endif
@@ -695,7 +695,7 @@ def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func): n
     Fn(test_null_channel(), reply)
   else
     # Otherwise, make an asynchronous RPC call
-    reply = ch->ch_sendexpr(req, {callback: Fn})
+    reply = job->ch_sendexpr(req, {callback: Fn})
   endif
   if reply->empty()
     return -1

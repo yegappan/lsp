@@ -19,7 +19,7 @@ export def InitOnce()
 		{name: 'LspDiagHint', text: 'H>', texthl: 'Question',
 						linehl: lineHL}])
 
-  if has('patch-9.0.1157') && opt.lspOptions.showDiagWithVirtualText
+  if opt.lspOptions.showDiagWithVirtualText
     if !hlexists('LspDiagVirtualText')
       hlset([{name: 'LspDiagVirtualText',
 	      linksto: opt.lspOptions.diagVirtualTextHL}])
@@ -51,7 +51,7 @@ def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
   # Remove all the existing diagnostic signs
   sign_unplace('LSPDiag', {buffer: bnr})
 
-  if has('patch-9.0.1157') && opt.lspOptions.showDiagWithVirtualText
+  if opt.lspOptions.showDiagWithVirtualText
     # Remove all the existing virtual text
     prop_remove({type: 'LspDiagVirtualText', bufnr: bnr, all: true})
   endif
@@ -71,7 +71,7 @@ def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
 				lnum: lnum,
 				name: DiagSevToSignName(diag.severity)})
 
-    if has('patch-9.0.1157') && opt.lspOptions.showDiagWithVirtualText
+    if opt.lspOptions.showDiagWithVirtualText
       prop_add(lnum, 0, {bufnr: bnr,
 			 type: 'LspDiagVirtualText',
 			 text: $'┌─ {diag.message}',
@@ -399,8 +399,10 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
 
   if which == 'first'
     setcursorcharpos(diags[0].range.start.line + 1, diags[0].range.start.character + 1)
-    :redraw
-    DisplayDiag(diags[0])
+    if !opt.lspOptions.showDiagWithVirtualText
+      :redraw
+      DisplayDiag(diags[0])
+    endif
     return
   endif
 
@@ -416,8 +418,10 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
 							&& col < curcol))
 	  || (which == 'here' && (lnum == curlnum && col >= curcol))
       setcursorcharpos(lnum, col)
-      :redraw
-      DisplayDiag(diag)
+      if !opt.lspOptions.showDiagWithVirtualText
+	:redraw
+	DisplayDiag(diag)
+      endif
       return
     endif
   endfor
@@ -435,12 +439,12 @@ export def DiagsHighlightDisable()
   opt.lspOptions.autoHighlightDiags = false
 
   # Remove the diganostics virtual text in all the buffers.
-  for binfo in getbufinfo({bufloaded: true})
-    if has('patch-9.0.1157') && opt.lspOptions.showDiagWithVirtualText
+  if opt.lspOptions.showDiagWithVirtualText
+    for binfo in getbufinfo({bufloaded: true})
       # Remove all virtual text
       prop_remove({type: 'LspDiagVirtualText', bufnr: binfo.bufnr, all: true})
-    endif
-  endfor
+    endfor
+  endif
 
   # Remove all the existing diagnostic signs in all the buffers
   sign_unplace('LSPDiag')

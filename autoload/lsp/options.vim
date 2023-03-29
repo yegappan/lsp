@@ -58,6 +58,12 @@ export var lspOptions: dict<any> = {
 # set the LSP plugin options from the user provided option values
 export def OptionsSet(opts: dict<any>)
   lspOptions->extend(opts)
+  if !has('patch-9.0.0178')
+    lspOptions.showInlayHints = false
+  endif
+  if !has('patch-9.0.1157')
+    lspOptions.showDiagWithVirtualText = false
+  endif
 enddef
 
 # return a copy of the LSP plugin options

@@ -301,9 +301,8 @@ def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
   endif
 
   # Displaying inlay hints needs the Vim virtual text support.
-  if has('patch-9.0.0178') && opt.lspOptions.showInlayHints
-			      && (lspserver.isInlayHintProvider
-				  || lspserver.isClangdInlayHintsProvider)
+  if opt.lspOptions.showInlayHints && (lspserver.isInlayHintProvider
+				|| lspserver.isClangdInlayHintsProvider)
     inlayhints.BufferInit(bnr)
   endif
 
@@ -416,13 +415,15 @@ enddef
 
 # Restart the LSP server for the current buffer
 export def RestartServer()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServer()
   if lspserver->empty()
     return
   endif
 
-  # Stop the server
-  lspserver.stopServer()
+  # Stop the server (if running)
+  if lspserver.running
+    lspserver.stopServer()
+  endif
 
   # Remove all the buffers with the same file type as the current buffer
   var ftype: string = &filetype
