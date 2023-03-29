@@ -489,9 +489,18 @@ export def DiagsHighlightDisable()
 
   # Remove the diganostics virtual text in all the buffers.
   if opt.lspOptions.showDiagWithVirtualText
+      || opt.lspOptions.highlightDiagInline
     for binfo in getbufinfo({bufloaded: true})
       # Remove all virtual text
-      prop_remove({type: 'LspDiagVirtualText', bufnr: binfo.bufnr, all: true})
+      if opt.lspOptions.showDiagWithVirtualText
+        prop_remove({type: 'LspDiagVirtualText', bufnr: binfo.bufnr, all: true})
+      endif
+      if opt.lspOptions.highlightDiagInline
+        prop_remove({type: 'LspDiagInlineError', bufnr: binfo.bufnr, all: true})
+        prop_remove({type: 'LspDiagInlineWarning', bufnr: binfo.bufnr, all: true})
+        prop_remove({type: 'LspDiagInlineInfo', bufnr: binfo.bufnr, all: true})
+        prop_remove({type: 'LspDiagInlineHint', bufnr: binfo.bufnr, all: true})
+      endif
     endfor
   endif
 
