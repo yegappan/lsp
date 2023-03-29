@@ -40,6 +40,16 @@ export var lspOptions: dict<any> = {
   showDiagWithVirtualText: false,
   # The highlight group used for a diagnostics virtual text
   diagVirtualTextHL: 'LineNr',
+  # Highlight diagnostics inline
+  highlightDiagInline: false,
+  # The highlight group used inline Error diagnostics
+  diagInlineErrorHL: 'SpellBad',
+  # The highlight group used inline Warning diagnostics
+  diagInlineWarningHL: 'SpellCap',
+  # The highlight group used inline Info diagnostics
+  diagInlineInfoHL: 'SpellRare',
+  # The highlight group used inline Hint diagnostics
+  diagInlineHintHL: 'SpellLocal',
   # Don't print message when a configured language server is missing.
   ignoreMissingServer: false,
   # Use a floating menu to show the code action menu instead of asking for input

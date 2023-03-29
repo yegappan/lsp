@@ -351,6 +351,16 @@ usePopupInCodeAction    |Boolean| option.  When using the |:LspCodeAction|
 			command to display the code action for the current
 			line, use a popup menu instead of echoing.
 			By default this is set to false.
+highlightDiagInline	|Boolean| option.  Highlight the diagnostics inline
+			By default this is set to false.
+diagInlineErrorHL	|String| option.  The highlight group used for
+			inline error highlight.  By default uses "SpellBad"
+diagInlineWarningHL	|String| option.  The highlight group used for
+			inline warning highlight.  By default uses "SpellCap"
+diagInlineInfoHL	|String| option.  The highlight group used for
+			inline info highlight.  By default uses "SpellRare"
+diagInlineHintHL	|String| option.  The highlight group used for
+			inline hint highlight.  By default uses "SpellLocal"
 
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file: >

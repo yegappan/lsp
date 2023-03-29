@@ -19,6 +19,25 @@ export def InitOnce()
 		{name: 'LspDiagHint', text: 'H>', texthl: 'Question',
 						linehl: lineHL}])
 
+  if opt.lspOptions.highlightDiagInline
+    if !hlexists('LspDiagInlineError')
+      hlset([{name: 'LspDiagInlineError', linksto: opt.lspOptions.diagInlineErrorHL}])
+    endif
+    if !hlexists('LspDiagInlineWarning')
+      hlset([{name: 'LspDiagInlineWarning', linksto: opt.lspOptions.diagInlineWarningHL}])
+    endif
+    if !hlexists('LspDiagInlineInfo')
+      hlset([{name: 'LspDiagInlineInfo', linksto: opt.lspOptions.diagInlineInfoHL}])
+    endif
+    if !hlexists('LspDiagInlineHint')
+      hlset([{name: 'LspDiagInlineHint', linksto: opt.lspOptions.diagInlineHintHL}])
+    endif
+    prop_type_add('LspDiagInlineError', { highlight: 'LspDiagInlineError', override: true })
+    prop_type_add('LspDiagInlineWarning', { highlight: 'LspDiagInlineWarning', override: true })
+    prop_type_add('LspDiagInlineInfo', { highlight: 'LspDiagInlineInfo', override: true })
+    prop_type_add('LspDiagInlineHint', { highlight: 'LspDiagInlineHint', override: true })
+  endif
+
   if opt.lspOptions.showDiagWithVirtualText
     if !hlexists('LspDiagVirtualText')
       hlset([{name: 'LspDiagVirtualText',
@@ -45,6 +64,19 @@ def DiagSevToSignName(severity: number): string
   return typeMap[severity - 1]
 enddef
 
+def DiagSevToInlineHLName(severity: number): string
+  var typeMap: list<string> = [
+    'LspDiagInlineError',
+    'LspDiagInlineWarning',
+    'LspDiagInlineInfo',
+    'LspDiagInlineHint'
+  ]
+  if severity > 4
+    return 'LspDiagInlineHint'
+  endif
+  return typeMap[severity - 1]
+enddef
+
 # Refresh the signs placed in buffer 'bnr' on lines with a diagnostic message.
 def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
   bnr->bufload()
@@ -54,6 +86,14 @@ def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
   if opt.lspOptions.showDiagWithVirtualText
     # Remove all the existing virtual text
     prop_remove({type: 'LspDiagVirtualText', bufnr: bnr, all: true})
+  endif
+
+  if opt.lspOptions.highlightDiagInline
+    # Remove all the existing virtual text
+    prop_remove({type: 'LspDiagInlineError', bufnr: bnr, all: true})
+    prop_remove({type: 'LspDiagInlineWarning', bufnr: bnr, all: true})
+    prop_remove({type: 'LspDiagInlineInfo', bufnr: bnr, all: true})
+    prop_remove({type: 'LspDiagInlineHint', bufnr: bnr, all: true})
   endif
 
   if !lspserver.diagsMap->has_key(bnr) ||
@@ -70,6 +110,15 @@ def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
     signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
 				lnum: lnum,
 				name: DiagSevToSignName(diag.severity)})
+
+    if opt.lspOptions.highlightDiagInline
+      prop_add(diag.range.start.line + 1,
+		util.GetLineByteFromPos(bnr, diag.range.start) + 1,
+		{end_lnum: diag.range.end.line + 1,
+		  end_col: util.GetLineByteFromPos(bnr, diag.range.end) + 1,
+		  bufnr: bnr,
+		  type: DiagSevToInlineHLName(diag.severity)})
+    endif
 
     if opt.lspOptions.showDiagWithVirtualText
       prop_add(lnum, 0, {bufnr: bnr,
