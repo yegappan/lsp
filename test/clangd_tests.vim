@@ -161,6 +161,7 @@ def g:Test_LspShowReferences()
   cursor(5, 2)
   var bnr: number = bufnr()
   :LspShowReferences
+  sleep 100m
   assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
   var qfl: list<dict<any>> = getloclist(0)
   assert_equal(bnr, qfl[0].bufnr)
@@ -1032,6 +1033,7 @@ def g:Test_ScanFindIdent()
   cursor(6, 10)
   assert_equal([],
 	       execute('LspRename counter')->split("\n"))
+  sleep 100m
   assert_equal('int counter;', getline(1))
   assert_equal('  return    counter + 1;', getline(6))
 
