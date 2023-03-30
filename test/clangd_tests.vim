@@ -977,6 +977,59 @@ def g:Test_OmniComplete_FirstColumn()
   :bw!
 enddef
 
+# Test for doing omni completion from the first column
+def g:Test_OmniComplete_Multibyte()
+  :silent! edit Xtest.c
+  sleep 200m
+  var lines: list<string> =<< trim END
+    #include <string.h>
+    void Fn(void)
+    {
+      int thisVar = 1;
+      int len = strlen("©©©©©") + thisVar;
+    }
+  END
+  setline(1, lines)
+  g:WaitForServerFileLoad(0)
+  redraw!
+
+  cursor(5, 36)
+  feedkeys("cwthis\<C-X>\<C-O>", 'xt')
+  assert_equal('  int len = strlen("©©©©©") + thisVar;', getline('.'))
+  :bw!
+enddef
+
+# Test for doing omni completion from the first column
+def g:Test_OmniComplete_Struct()
+  :silent! edit Xtest.c
+  sleep 200m
+  var lines: list<string> =<< trim END
+    struct test_ {
+        int foo;
+        int bar;
+        int baz;
+    };
+    void Fn(void)
+    {
+        struct test_ myTest;
+        struct test_ *pTest;
+        myTest.bar = 10;
+        pTest->bar = 20;
+    }
+  END
+  setline(1, lines)
+  g:WaitForServerFileLoad(0)
+  redraw!
+
+  cursor(10, 12)
+  feedkeys("cwb\<C-X>\<C-O>\<C-N>\<C-Y>", 'xt')
+  assert_equal('    myTest.baz = 10;', getline('.'))
+  cursor(11, 12)
+  feedkeys("cw\<C-X>\<C-O>\<C-N>\<C-N>\<C-Y>", 'xt')
+  assert_equal('    pTest->foo = 20;', getline('.'))
+  :bw!
+enddef
+
 # TODO:
 # 1. Add a test for autocompletion with a single match while ignoring case.
 #    After the full matched name is typed, the completion popup should still

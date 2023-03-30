@@ -16,6 +16,7 @@ def LspRunTests()
   var fns: list<string> = execute('function /^Test_')
 		    ->split("\n")
 		    ->map("v:val->substitute('^def ', '', '')")
+		    ->sort()
   for f in fns
     v:errors = []
     v:errmsg = ''
