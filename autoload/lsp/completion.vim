@@ -448,12 +448,26 @@ def LspCompleteDone()
   textedit.ApplyTextEdits(bnr, completionData.additionalTextEdits)
 enddef
 
-# Add buffer-local autocmds for completion
-def AddAutocmds(lspserver: dict<any>, bnr: number)
+# Initialize buffer-local completion options and autocmds
+export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
+
+  # buffer-local autocmds for completion
   var acmds: list<dict<any>> = []
 
-  # Insert-mode completion autocmds (if configured)
+  # set options for insert mode completion
   if opt.lspOptions.autoComplete
+    if lspserver.completionLazyDoc
+      setbufvar(bnr, '&completeopt', 'menuone,popuphidden,noinsert,noselect')
+      setbufvar(bnr, '&completepopup', 'width:80,highlight:Pmenu,align:item,border:off')
+    else
+      setbufvar(bnr, '&completeopt', 'menuone,popup,noinsert,noselect')
+      setbufvar(bnr, '&completepopup', 'border:off')
+    endif
+    # <Enter> in insert mode stops completion and inserts a <Enter>
+    if !opt.lspOptions.noNewlineInCompletion
+      :inoremap <expr> <buffer> <CR> pumvisible() ? "\<C-Y>\<CR>" : "\<CR>"
+    endif
+
     # Trigger 24x7 insert mode completion when text is changed
     acmds->add({bufnr: bnr,
 		event: 'TextChangedI',
@@ -465,6 +479,10 @@ def AddAutocmds(lspserver: dict<any>, bnr: number)
 		  event: 'CompleteChanged',
 		  group: 'LSPBufferAutocmds',
 		  cmd: 'LspResolve()'})
+    endif
+  else
+    if LspOmniComplEnabled(ftype)
+      setbufvar(bnr, '&omnifunc', 'g:LspOmniFunc')
     endif
   endif
 
@@ -480,30 +498,6 @@ def AddAutocmds(lspserver: dict<any>, bnr: number)
 	      cmd: 'LspCompleteDone()'})
 
   autocmd_add(acmds)
-enddef
-
-# Initialize buffer-local completion options and autocmds
-export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
-  # set options for insert mode completion
-  if opt.lspOptions.autoComplete
-    if lspserver.completionLazyDoc
-      setbufvar(bnr, '&completeopt', 'menuone,popuphidden,noinsert,noselect')
-      setbufvar(bnr, '&completepopup', 'width:80,highlight:Pmenu,align:item,border:off')
-    else
-      setbufvar(bnr, '&completeopt', 'menuone,popup,noinsert,noselect')
-      setbufvar(bnr, '&completepopup', 'border:off')
-    endif
-    # <Enter> in insert mode stops completion and inserts a <Enter>
-    if !opt.lspOptions.noNewlineInCompletion
-      :inoremap <expr> <buffer> <CR> pumvisible() ? "\<C-Y>\<CR>" : "\<CR>"
-    endif
-  else
-    if LspOmniComplEnabled(ftype)
-      setbufvar(bnr, '&omnifunc', 'g:LspOmniFunc')
-    endif
-  endif
-
-  AddAutocmds(lspserver, bnr)
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2
