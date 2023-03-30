@@ -303,8 +303,6 @@ completionMatcher	|String| option.  Enable fuzzy or case insensitive
 diagLineHL		|String| option. The highlight group used for a line
 			with one or more diagnostics.  By default uses
 			"DiffAdd".  Use "NONE" to disable.
-diagVirtualTextHL	|String| option.  The highlight group used for a
-			diagnostics virtual text.  By default uses "LineNr".
 diagSignErrorText       |String| option. Change diag sign text for errors
                         By default 'E>'
 diagSignErrorTexthl     |String| option. Change diag sign highlight for errors
@@ -321,6 +319,8 @@ diagSignHintText        |String| option. Change diag sign text for hints
                         By default 'H>',
 diagSignHintTexthl      |String| option. Change diag sign highlight for hints
                         By default 'Question',
+diagVirtualTextHL	|String| option.  The highlight group used for a
+			diagnostics virtual text.  By default uses "LineNr".
 echoSignature		|Boolean| option.  In insert mode, echo the current
 			symbol signature instead of showing it in a popup.
 			By default this is set to false.
