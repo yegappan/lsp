@@ -347,6 +347,14 @@ def ServerInitReply(lspserver: dict<any>, initResult: dict<any>): void
   var caps: dict<any> = initResult.capabilities
   lspserver.caps = caps
 
+  for [key, val] in initResult->items()
+    if key == 'capabilities'
+      continue
+    endif
+
+    lspserver.caps[$'~additionalInitResult_{key}'] = val
+  endfor
+
   ProcessServerCaps(lspserver, caps)
 
   if opt.lspOptions.autoComplete && caps->has_key('completionProvider')
