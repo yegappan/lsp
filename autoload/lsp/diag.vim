@@ -147,7 +147,7 @@ def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
                            text_align: 'above',
                            text_padding_left: padding})
       endif
-    catch /E966\|E964/ # Invalid lnum | Invalid col
+    catch /E966\|E964\|E475/ # Invalid lnum | Invalid col | Invalid arg
       # Diagnostics arrive asynchronous and the document changed while they wore
       # send. Ignore this as new once will arrive shortly.
     endtry
