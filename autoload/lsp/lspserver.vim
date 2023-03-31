@@ -438,7 +438,16 @@ def InitServer(lspserver: dict<any>)
       }
     },
     window: {},
-    general: {}
+    general: {
+      # Currently we always send character count as position offset,
+      # which meanas only utf-32 is supported.
+      # Adding utf-16 simply for good mesure, as I'm scared some servers will
+      # give up if they don't support utf-32 only.
+      positionEncodings: ['utf-32', 'utf-16']
+    },
+    # This is the way clangd expects to be informated about supported encodings:
+    # https://clangd.llvm.org/extensions#utf-8-offsets
+    offsetEncoding: ['utf-32', 'utf-16']
   }
 
   # interface 'InitializeParams'
