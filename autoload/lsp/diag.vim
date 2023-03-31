@@ -131,7 +131,7 @@ def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
         prop_add(diag.range.start.line + 1,
                   util.GetLineByteFromPos(bnr, diag.range.start) + 1,
                   {end_lnum: diag.range.end.line + 1,
-                    end_col: util.GetLineByteFromPos(bnr, diag.range.end) + 1,
+                    end_col: util.GetLineByteFromPos(bnr, diag.range.end),
                     bufnr: bnr,
                     type: DiagSevToInlineHLName(diag.severity)})
       endif
