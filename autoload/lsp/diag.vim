@@ -10,14 +10,32 @@ import './util.vim'
 export def InitOnce()
   var lineHL: string = opt.lspOptions.diagLineHL
   # Signs used for LSP diagnostics
-  sign_define([{name: 'LspDiagError', text: 'E>', texthl: 'ErrorMsg',
-						linehl: lineHL},
-		{name: 'LspDiagWarning', text: 'W>', texthl: 'Search',
-						linehl: lineHL},
-		{name: 'LspDiagInfo', text: 'I>', texthl: 'Pmenu',
-						linehl: lineHL},
-		{name: 'LspDiagHint', text: 'H>', texthl: 'Question',
-						linehl: lineHL}])
+  sign_define([
+        {
+            name: 'LspDiagError',
+            text: opt.lspOptions.diagSignErrorText,
+            texthl: opt.lspOptions.diagSignErrorTexthl,
+		    linehl: lineHL
+        },
+		{
+            name: 'LspDiagWarning',
+            text: opt.lspOptions.diagSignWarningText,
+            texthl: opt.lspOptions.diagSignWarningTexthl,
+            linehl: lineHL
+        },
+		{
+            name: 'LspDiagInfo',
+            text: opt.lspOptions.diagSignInfoText,
+            texthl: opt.lspOptions.diagSignInfoTexthl,
+            linehl: lineHL
+        },
+		{
+            name: 'LspDiagHint',
+            text: opt.lspOptions.diagSignHintText,
+            texthl: opt.lspOptions.diagSignHintTexthl,
+            linehl: lineHL
+        }
+  ])
 
   if opt.lspOptions.highlightDiagInline
     if !hlexists('LspDiagInlineError')
@@ -111,22 +129,27 @@ def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
 				lnum: lnum,
 				name: DiagSevToSignName(diag.severity)})
 
-    if opt.lspOptions.highlightDiagInline
-      prop_add(diag.range.start.line + 1,
-		util.GetLineByteFromPos(bnr, diag.range.start) + 1,
-		{end_lnum: diag.range.end.line + 1,
-		  end_col: util.GetLineByteFromPos(bnr, diag.range.end) + 1,
-		  bufnr: bnr,
-		  type: DiagSevToInlineHLName(diag.severity)})
-    endif
+    try
+      if opt.lspOptions.highlightDiagInline
+        prop_add(diag.range.start.line + 1,
+                  util.GetLineByteFromPos(bnr, diag.range.start) + 1,
+                  {end_lnum: diag.range.end.line + 1,
+                    end_col: util.GetLineByteFromPos(bnr, diag.range.end) + 1,
+                    bufnr: bnr,
+                    type: DiagSevToInlineHLName(diag.severity)})
+      endif
 
-    if opt.lspOptions.showDiagWithVirtualText
-      prop_add(lnum, 0, {bufnr: bnr,
-			 type: 'LspDiagVirtualText',
-			 text: $'┌─ {diag.message}',
-			 text_align: 'above',
-			 text_padding_left: diag.range.start.character})
-    endif
+      if opt.lspOptions.showDiagWithVirtualText
+        prop_add(lnum, 0, {bufnr: bnr,
+                           type: 'LspDiagVirtualText',
+                           text: $'┌─ {diag.message}',
+                           text_align: 'above',
+                           text_padding_left: diag.range.start.character})
+      endif
+    catch /E966\|E964/ # Invalid lnum | Invalid col
+      # Diagnostics arrive asynchronous and the document changed while they wore
+      # send. Ignore this as new once will arrive shortly.
+    endtry
   endfor
 
   signs->sign_placelist()

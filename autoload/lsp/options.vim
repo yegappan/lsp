@@ -63,6 +63,15 @@ export var lspOptions: dict<any> = {
   # icase | fuzzy | case match for language servers that replies with a full
   # list of completion items
   completionMatcher: 'case',
+  # diagnostics signs options
+  diagSignErrorText: 'E>',
+  diagSignErrorTexthl: 'ErrorMsg',
+  diagSignWarningText: 'W>',
+  diagSignWarningTexthl: 'Search',
+  diagSignInfoText: 'I>',
+  diagSignInfoTexthl: 'Pmenu',
+  diagSignHintText: 'H>',
+  diagSignHintTexthl: 'Question',
 }
 
 # set the LSP plugin options from the user provided option values
