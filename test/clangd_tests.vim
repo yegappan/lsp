@@ -161,6 +161,7 @@ def g:Test_LspShowReferences()
   cursor(5, 2)
   var bnr: number = bufnr()
   :LspShowReferences
+  sleep 100m
   assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
   var qfl: list<dict<any>> = getloclist(0)
   assert_equal(bnr, qfl[0].bufnr)
@@ -271,6 +272,86 @@ def g:Test_LspDiag()
   :%bw!
 enddef
 
+# Test for multiple LSP diagnostics on the same line
+def g:Test_LspDiag_Multi()
+  :silent! edit Xtest.c
+  sleep 200m
+
+  var bnr: number = bufnr()
+
+  setline(1, [
+    'int i = "a";',
+    'int j = i;',
+    'int y = 0;'
+  ])
+  :redraw!
+  # TODO: Waiting count doesn't include Warning, Info, and Hint diags
+  g:WaitForServerFileLoad(2)
+  :LspDiagShow
+  var qfl: list<dict<any>> = getloclist(0)
+  assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
+  assert_equal(bnr, qfl[0].bufnr)
+  assert_equal(3, qfl->len())
+  assert_equal([1, 5, 'W'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
+  assert_equal([1, 9, 'E'], [qfl[1].lnum, qfl[1].col, qfl[1].type])
+  assert_equal([2, 9, 'E'], [qfl[2].lnum, qfl[2].col, qfl[2].type])
+  close
+
+  :sleep 100m
+  cursor(2, 1)
+  assert_equal('', execute('LspDiagPrev'))
+  assert_equal([1, 9], [line('.'), col('.')])
+
+  assert_equal('', execute('LspDiagPrev'))
+  assert_equal([1, 5], [line('.'), col('.')])
+
+  var output = execute('LspDiagPrev')->split("\n")
+  assert_equal('Error: No more diagnostics found', output[0])
+
+  cursor(2, 1)
+  assert_equal('', execute('LspDiagFirst'))
+  assert_equal([1, 5], [line('.'), col('.')])
+  assert_equal('', execute('LspDiagNext'))
+  assert_equal([1, 9], [line('.'), col('.')])
+  popup_clear()
+
+  # Test for :LspDiagHere on a line with multiple diagnostics
+  cursor(1, 1)
+  :LspDiagHere
+  assert_equal([1, 5], [line('.'), col('.')])
+  var ids = popup_list()
+  assert_equal(1, ids->len())
+  assert_match('Incompatible pointer to integer', getbufline(ids[0]->winbufnr(), 1, '$')[0])
+  popup_clear()
+  cursor(1, 6)
+  :LspDiagHere
+  assert_equal([1, 9], [line('.'), col('.')])
+  ids = popup_list()
+  assert_equal(1, ids->len())
+  assert_match('Initializer element is not', getbufline(ids[0]->winbufnr(), 1, '$')[0])
+  popup_clear()
+
+  # Line without diagnostics
+  cursor(3, 1)
+  output = execute('LspDiagHere')->split("\n")
+  assert_equal('Error: No more diagnostics found on this line', output[0])
+
+  g:LspOptionsSet({showDiagInPopup: false})
+  for i in range(1, 5)
+    cursor(1, i)
+    output = execute('LspDiagCurrent')->split('\n')
+    assert_match('Incompatible pointer to integer', output[0])
+  endfor
+  for i in range(6, 12)
+    cursor(1, i)
+    output = execute('LspDiagCurrent')->split('\n')
+    assert_match('Initializer element is not ', output[0])
+  endfor
+  g:LspOptionsSet({showDiagInPopup: true})
+
+  bw!
+enddef
+
 # Test for highlight diag inline
 def g:Test_LspHighlightDiagInline()
   :silent! edit Xtest.c
@@ -306,7 +387,6 @@ def g:Test_LspHighlightDiagInline()
   assert_equal(0, props->len())
 
   bw!
-
 enddef
 
 # Test for :LspCodeAction
@@ -990,6 +1070,7 @@ def g:Test_ScanFindIdent()
   cursor(6, 10)
   assert_equal([],
 	       execute('LspRename counter')->split("\n"))
+  sleep 100m
   assert_equal('int counter;', getline(1))
   assert_equal('  return    counter + 1;', getline(6))
 
