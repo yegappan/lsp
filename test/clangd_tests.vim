@@ -515,14 +515,14 @@ def g:Test_LspHighlightDiagInline()
   props = prop_list(3)
   assert_equal(2, props->len())
   assert_equal([
-    {'id': 0, 'col': 12, 'type_bufnr': 0, 'end': 1, 'type': 'LspDiagInlineInfo', 'length': 3, 'start': 1},
-    {'id': 0, 'col': 16, 'type_bufnr': 0, 'end': 1, 'type': 'LspDiagInlineError', 'length': 3, 'start': 1}
+    {'id': 0, 'col': 12, 'type_bufnr': 0, 'end': 1, 'type': 'LspDiagInlineInfo', 'length': 2, 'start': 1},
+    {'id': 0, 'col': 16, 'type_bufnr': 0, 'end': 1, 'type': 'LspDiagInlineError', 'length': 2, 'start': 1}
   ], props)
   props = prop_list(4)
   assert_equal(0, props->len())
   props = prop_list(5)
   assert_equal(1, props->len())
-  assert_equal([{'id': 0, 'col': 5, 'type_bufnr': 0, 'end': 1, 'type': 'LspDiagInlineError', 'length': 6, 'start': 1}], props)
+  assert_equal([{'id': 0, 'col': 5, 'type_bufnr': 0, 'end': 1, 'type': 'LspDiagInlineError', 'length': 5, 'start': 1}], props)
   props = prop_list(6)
   assert_equal(0, props->len())
 
