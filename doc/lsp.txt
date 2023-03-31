@@ -287,12 +287,6 @@ autoHighlightDiags	|Boolean| option. Automatically place signs on the
 autoPopulateDiags	|Boolean| option. Automatically populate the location
 			list with diagnostics from the language server.
 			By default this is set to false.
-diagLineHL		|String| option. The highlight group used for a line
-			with one or more diagnostics.  By default uses
-			"DiffAdd".  Use "NONE" to disable.
-echoSignature		|Boolean| option.  In insert mode, echo the current
-			symbol signature instead of showing it in a popup.
-			By default this is set to false.
 completionMatcher	|String| option.  Enable fuzzy or case insensitive
 			completion for language servers that replies with a
 			full list of completion items.  Some language servers
@@ -306,6 +300,30 @@ completionMatcher	|String| option.  Enable fuzzy or case insensitive
 			    case  - case sensitive matching (default).
 			    fuzzy - fuzzy match completion items.
 			    icase - ignore case when matching items.
+diagLineHL		|String| option. The highlight group used for a line
+			with one or more diagnostics.  By default uses
+			"DiffAdd".  Use "NONE" to disable.
+diagSignErrorText       |String| option. Change diag sign text for errors
+                        By default 'E>'
+diagSignErrorTexthl     |String| option. Change diag sign highlight for errors
+                        By default 'ErrorMsg',
+diagSignWarningText     |String| option. Change diag sign text for warnings
+                        By default 'W>',
+diagSignWarningTexthl   |String| option. Change diag sign highlight for warnings
+                        By default 'Search',
+diagSignInfoText        |String| option. Change diag sign text for info
+                        By default 'I>',
+diagSignInfoTexthl      |String| option. Change diag sign text highlight info
+                        By default 'Pmenu',
+diagSignHintText        |String| option. Change diag sign text for hints
+                        By default 'H>',
+diagSignHintTexthl      |String| option. Change diag sign highlight for hints
+                        By default 'Question',
+diagVirtualTextHL	|String| option.  The highlight group used for a
+			diagnostics virtual text.  By default uses "LineNr".
+echoSignature		|Boolean| option.  In insert mode, echo the current
+			symbol signature instead of showing it in a popup.
+			By default this is set to false.
 hideDisabledCodeActions |Boolean| option. Hide all the disabled code actions.
 			By default this is set to false.
 ignoreMissingServer	|Boolean| option.  Do not print a missing language
@@ -339,8 +357,6 @@ showDiagWithVirtualText	|Boolean| option.  Show diagnostic message text from
 			this is set to false.  The "autoHighlightDiags" option
 			should be set to true.
 			Needs Vim version 9.0.1157 or later.
-diagVirtualTextHL	|String| option.  The highlight group used for a
-			diagnostics virtual text.  By default uses "LineNr".
 showSignature		|Boolean| option.  In insert mode, automatically show
 			the current symbol signature in a popup.
 			By default this is set to true.
@@ -361,6 +377,7 @@ diagInlineInfoHL	|String| option.  The highlight group used for
 			inline info highlight.  By default uses "SpellRare"
 diagInlineHintHL	|String| option.  The highlight group used for
 			inline hint highlight.  By default uses "SpellLocal"
+
 
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file: >

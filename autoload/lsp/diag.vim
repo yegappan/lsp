@@ -10,14 +10,32 @@ import './util.vim'
 export def InitOnce()
   var lineHL: string = opt.lspOptions.diagLineHL
   # Signs used for LSP diagnostics
-  sign_define([{name: 'LspDiagError', text: 'E>', texthl: 'ErrorMsg',
-						linehl: lineHL},
-		{name: 'LspDiagWarning', text: 'W>', texthl: 'Search',
-						linehl: lineHL},
-		{name: 'LspDiagInfo', text: 'I>', texthl: 'Pmenu',
-						linehl: lineHL},
-		{name: 'LspDiagHint', text: 'H>', texthl: 'Question',
-						linehl: lineHL}])
+  sign_define([
+        {
+            name: 'LspDiagError',
+            text: opt.lspOptions.diagSignErrorText,
+            texthl: opt.lspOptions.diagSignErrorTexthl,
+		    linehl: lineHL
+        },
+		{
+            name: 'LspDiagWarning',
+            text: opt.lspOptions.diagSignWarningText,
+            texthl: opt.lspOptions.diagSignWarningTexthl,
+            linehl: lineHL
+        },
+		{
+            name: 'LspDiagInfo',
+            text: opt.lspOptions.diagSignInfoText,
+            texthl: opt.lspOptions.diagSignInfoTexthl,
+            linehl: lineHL
+        },
+		{
+            name: 'LspDiagHint',
+            text: opt.lspOptions.diagSignHintText,
+            texthl: opt.lspOptions.diagSignHintTexthl,
+            linehl: lineHL
+        }
+  ])
 
   if opt.lspOptions.highlightDiagInline
     if !hlexists('LspDiagInlineError')
