@@ -3,7 +3,7 @@ vim9script
 
 source common.vim
 
-var lspOpts = {autoComplete: false}
+var lspOpts = {autoComplete: false, highlightDiagInline: true}
 g:LspOptionsSet(lspOpts)
 
 var lspServers = [{
@@ -269,6 +269,44 @@ def g:Test_LspDiag()
 
   popup_clear()
   :%bw!
+enddef
+
+# Test for highlight diag inline
+def g:Test_LspHighlightDiagInline()
+  :silent! edit Xtest.c
+  sleep 200m
+  setline(1, [
+    'int main()',
+    '{',
+      '    struct obj obj',
+      '',
+      '    return 1;',
+    '}',
+  ])
+
+  # TODO: Waiting count doesn't include Warning, Info, and Hint diags
+  g:WaitForDiags(2)
+
+  var props = prop_list(1)
+  assert_equal(0, props->len())
+  props = prop_list(2)
+  assert_equal(0, props->len())
+  props = prop_list(3)
+  assert_equal(2, props->len())
+  assert_equal([
+    {'id': 0, 'col': 12, 'type_bufnr': 0, 'end': 1, 'type': 'LspDiagInlineInfo', 'length': 3, 'start': 1},
+    {'id': 0, 'col': 16, 'type_bufnr': 0, 'end': 1, 'type': 'LspDiagInlineError', 'length': 3, 'start': 1}
+  ], props)
+  props = prop_list(4)
+  assert_equal(0, props->len())
+  props = prop_list(5)
+  assert_equal(1, props->len())
+  assert_equal([{'id': 0, 'col': 5, 'type_bufnr': 0, 'end': 1, 'type': 'LspDiagInlineError', 'length': 6, 'start': 1}], props)
+  props = prop_list(6)
+  assert_equal(0, props->len())
+
+  bw!
+
 enddef
 
 # Test for :LspCodeAction
