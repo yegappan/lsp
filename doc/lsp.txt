@@ -326,6 +326,9 @@ echoSignature		|Boolean| option.  In insert mode, echo the current
 			By default this is set to false.
 hideDisabledCodeActions |Boolean| option. Hide all the disabled code actions.
 			By default this is set to false.
+hoverInPreview		|Boolean| option. Show |:LspHover| in a preview window
+			instead of a popup
+			By default this is set to false.
 ignoreMissingServer	|Boolean| option.  Do not print a missing language
 			server executable.  By default this is set to false.
 keepFocusInReferences	|Boolean| option.  Focus on the location list window
