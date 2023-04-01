@@ -8,70 +8,70 @@ export var lspOptions: dict<any> = {
   autoComplete: true,
   # In normal mode, highlight the current symbol automatically
   autoHighlight: false,
-  # In insert mode, show the current symbol signature automatically
-  showSignature: true,
-  # In insert mode, echo the current symbol signature in the status line
-  # instead of showing it in a popup
-  echoSignature: false,
   # Automatically highlight diagnostics messages from LSP server
   autoHighlightDiags: true,
   # Automatically populate the location list with new diagnostics
   autoPopulateDiags: false,
-  # Show the symbol documentation in the preview window instead of in a popup
-  hoverInPreview: false,
-  # Focus on the location list window after LspShowReferences
-  keepFocusInReferences: false,
-  # Suppress adding a new line on completion selection with <CR>
-  noNewlineInCompletion: false,
-  # Outline window size
-  outlineWinSize: 20,
-  # Open outline window on right side
-  outlineOnRight: false,
-  # Suppress diagnostic hover from appearing when the mouse is over the line
-  # instead of the signature
-  noDiagHoverOnLine: true,
-  # Show a diagnostic message on a status line
-  showDiagOnStatusLine: false,
-  # Make diagnostics show in a popup instead of echoing
-  showDiagInPopup: true,
-  # Default diagnostic highlight on lines
-  diagLineHL: 'DiffAdd',
-  # Show a diagnostic messages with virtual text
-  showDiagWithVirtualText: false,
-  # The highlight group used for a diagnostics virtual text
-  diagVirtualTextHL: 'LineNr',
-  # Highlight diagnostics inline
-  highlightDiagInline: false,
-  # The highlight group used inline Error diagnostics
-  diagInlineErrorHL: 'SpellBad',
-  # The highlight group used inline Warning diagnostics
-  diagInlineWarningHL: 'SpellCap',
-  # The highlight group used inline Info diagnostics
-  diagInlineInfoHL: 'SpellRare',
-  # The highlight group used inline Hint diagnostics
-  diagInlineHintHL: 'SpellLocal',
-  # Don't print message when a configured language server is missing.
-  ignoreMissingServer: false,
-  # Use a floating menu to show the code action menu instead of asking for input
-  usePopupInCodeAction: false,
-  # enable snippet completion support
-  snippetSupport: false,
-  # enable inlay hints
-  showInlayHints: false,
-  # hide disabled code actions
-  hideDisabledCodeActions: false,
   # icase | fuzzy | case match for language servers that replies with a full
   # list of completion items
   completionMatcher: 'case',
+  # The highlight group used inline Error diagnostics
+  diagInlineErrorHL: 'SpellBad',
+  # The highlight group used inline Hint diagnostics
+  diagInlineHintHL: 'SpellLocal',
+  # The highlight group used inline Info diagnostics
+  diagInlineInfoHL: 'SpellRare',
+  # The highlight group used inline Warning diagnostics
+  diagInlineWarningHL: 'SpellCap',
+  # Default diagnostic highlight on lines
+  diagLineHL: 'DiffAdd',
   # diagnostics signs options
   diagSignErrorText: 'E>',
   diagSignErrorTexthl: 'ErrorMsg',
-  diagSignWarningText: 'W>',
-  diagSignWarningTexthl: 'Search',
-  diagSignInfoText: 'I>',
-  diagSignInfoTexthl: 'Pmenu',
   diagSignHintText: 'H>',
   diagSignHintTexthl: 'Question',
+  diagSignInfoText: 'I>',
+  diagSignInfoTexthl: 'Pmenu',
+  diagSignWarningText: 'W>',
+  diagSignWarningTexthl: 'Search',
+  # The highlight group used for a diagnostics virtual text
+  diagVirtualTextHL: 'LineNr',
+  # In insert mode, echo the current symbol signature in the status line
+  # instead of showing it in a popup
+  echoSignature: false,
+  # hide disabled code actions
+  hideDisabledCodeActions: false,
+  # Highlight diagnostics inline
+  highlightDiagInline: false,
+  # Show the symbol documentation in the preview window instead of in a popup
+  hoverInPreview: false,
+  # Don't print message when a configured language server is missing.
+  ignoreMissingServer: false,
+  # Focus on the location list window after LspShowReferences
+  keepFocusInReferences: false,
+  # instead of the signature
+  noDiagHoverOnLine: true,
+  # Suppress adding a new line on completion selection with <CR>
+  noNewlineInCompletion: false,
+  # Open outline window on right side
+  outlineOnRight: false,
+  # Outline window size
+  outlineWinSize: 20,
+  # Make diagnostics show in a popup instead of echoing
+  showDiagInPopup: true,
+  # Suppress diagnostic hover from appearing when the mouse is over the line
+  # Show a diagnostic message on a status line
+  showDiagOnStatusLine: false,
+  # Show a diagnostic messages with virtual text
+  showDiagWithVirtualText: false,
+  # enable inlay hints
+  showInlayHints: false,
+  # In insert mode, show the current symbol signature automatically
+  showSignature: true,
+  # enable snippet completion support
+  snippetSupport: false,
+  # Use a floating menu to show the code action menu instead of asking for input
+  usePopupInCodeAction: false,
   # ShowReferences in a quickfix list instead of a location list`
   useQuickfixForLocations: false
 }

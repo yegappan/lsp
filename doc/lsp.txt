@@ -300,6 +300,14 @@ completionMatcher	|String| option.  Enable fuzzy or case insensitive
 			    case  - case sensitive matching (default).
 			    fuzzy - fuzzy match completion items.
 			    icase - ignore case when matching items.
+diagInlineErrorHL	|String| option.  The highlight group used for
+			inline error highlight.  By default uses "SpellBad"
+diagInlineHintHL	|String| option.  The highlight group used for
+			inline hint highlight.  By default uses "SpellLocal"
+diagInlineInfoHL	|String| option.  The highlight group used for
+			inline info highlight.  By default uses "SpellRare"
+diagInlineWarningHL	|String| option.  The highlight group used for
+			inline warning highlight.  By default uses "SpellCap"
 diagLineHL		|String| option. The highlight group used for a line
 			with one or more diagnostics.  By default uses
 			"DiffAdd".  Use "NONE" to disable.
@@ -307,18 +315,18 @@ diagSignErrorText       |String| option. Change diag sign text for errors
                         By default 'E>'
 diagSignErrorTexthl     |String| option. Change diag sign highlight for errors
                         By default 'ErrorMsg',
-diagSignWarningText     |String| option. Change diag sign text for warnings
-                        By default 'W>',
-diagSignWarningTexthl   |String| option. Change diag sign highlight for warnings
-                        By default 'Search',
-diagSignInfoText        |String| option. Change diag sign text for info
-                        By default 'I>',
-diagSignInfoTexthl      |String| option. Change diag sign text highlight info
-                        By default 'Pmenu',
 diagSignHintText        |String| option. Change diag sign text for hints
                         By default 'H>',
 diagSignHintTexthl      |String| option. Change diag sign highlight for hints
                         By default 'Question',
+diagSignInfoText        |String| option. Change diag sign text for info
+                        By default 'I>',
+diagSignInfoTexthl      |String| option. Change diag sign text highlight info
+                        By default 'Pmenu',
+diagSignWarningText     |String| option. Change diag sign text for warnings
+                        By default 'W>',
+diagSignWarningTexthl   |String| option. Change diag sign highlight for warnings
+                        By default 'Search',
 diagVirtualTextHL	|String| option.  The highlight group used for a
 			diagnostics virtual text.  By default uses "LineNr".
 echoSignature		|Boolean| option.  In insert mode, echo the current
@@ -326,8 +334,10 @@ echoSignature		|Boolean| option.  In insert mode, echo the current
 			By default this is set to false.
 hideDisabledCodeActions |Boolean| option. Hide all the disabled code actions.
 			By default this is set to false.
+highlightDiagInline	|Boolean| option.  Highlight the diagnostics inline
+			By default this is set to false.
 hoverInPreview		|Boolean| option. Show |:LspHover| in a preview window
-			instead of a popup
+			instead of a popup.
 			By default this is set to false.
 ignoreMissingServer	|Boolean| option.  Do not print a missing language
 			server executable.  By default this is set to false.
@@ -354,15 +364,15 @@ showDiagInPopup		|Boolean| option.  When using the |:LspDiagCurrent|
 			By default this is set to true.
 showDiagOnStatusLine	|Boolean| option.  Show a diagnostic message on a
 			status line.  By default this is set to false.
-showInlayHints		|Boolean| option.  Show inlay hints from the language
-			server.  By default this is set to false.  The inlay
-			hint text is displayed as a virtual text.  Needs Vim
-			version 9.0.0178 or later.
 showDiagWithVirtualText	|Boolean| option.  Show diagnostic message text from
 			the language server with virtual text.  By default
 			this is set to false.  The "autoHighlightDiags" option
 			should be set to true.
 			Needs Vim version 9.0.1157 or later.
+showInlayHints		|Boolean| option.  Show inlay hints from the language
+			server.  By default this is set to false.  The inlay
+			hint text is displayed as a virtual text.  Needs Vim
+			version 9.0.0178 or later.
 showSignature		|Boolean| option.  In insert mode, automatically show
 			the current symbol signature in a popup.
 			By default this is set to true.
@@ -373,17 +383,6 @@ usePopupInCodeAction    |Boolean| option.  When using the |:LspCodeAction|
 			command to display the code action for the current
 			line, use a popup menu instead of echoing.
 			By default this is set to false.
-highlightDiagInline	|Boolean| option.  Highlight the diagnostics inline
-			By default this is set to false.
-diagInlineErrorHL	|String| option.  The highlight group used for
-			inline error highlight.  By default uses "SpellBad"
-diagInlineWarningHL	|String| option.  The highlight group used for
-			inline warning highlight.  By default uses "SpellCap"
-diagInlineInfoHL	|String| option.  The highlight group used for
-			inline info highlight.  By default uses "SpellRare"
-diagInlineHintHL	|String| option.  The highlight group used for
-			inline hint highlight.  By default uses "SpellLocal"
-
 
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file: >
@@ -984,10 +983,33 @@ The following highlight groups are used by the LSP plugin.  You can define
 these highlight groups in your .vimrc file before sourcing this plugin to
 override them.
 
+LspDiagInlineError		Used to highlight inline error diagnostics.
+				By default, linked to the "SpellBad" highlight
+				group.
+LspDiagInlineHint		Used to highlight inline hint diagnostics.
+				By default, linked to the "SpellLocal"
+				highlight group.
+LspDiagInlineInfo		Used to highlight inline info diagnostics.
+				By default, linked to the "SpellRare" highlight
+				group.
+LspDiagInlineWarning		Used to highlight inline warning diagnostics.
+				By default, linked to the "SpellCap" highlight
+				group.
+LspDiagVirtualText		Used to highlight diagnostic virtual text.
+				By default, linked to the "LineNr" highlight
+				group.
 LspInlayHintsParam		Used to highlight inlay hints of kind
-				"parameter".
+				"parameter".  By default, linked to the
+				"Label" highlight group.
 LspInlayHintsType		Used to highlight inlay hints of kind "type".
+				By default, linked to the "Conceal" highlight
+				group.
 
+For example, to override the highlight used for diagnostics virtual text, you
+can use the following:
+>
+    highlight LspDiagVirtualText ctermfg=Cyan guifg=Blue
+<
 ==============================================================================
 13. Debugging						*lsp-debug*
 
