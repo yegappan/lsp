@@ -119,12 +119,15 @@ The following commands are provided:
 :LspServerDebug		Enable or disable the language server debug messages.
 :LspServerRestart	Restart the language server for the current buffer.
 :LspServerTrace		Set the language server debug trace value.
+:LspShowAllServers	Display the status of all the registered language
+			servers.
 :LspShowReferences	Display the list of references to the keyword under
 			cursor in a new location list.
 :LspShowServerCapabilities
 			Display the language server capabilities for the
 			current buffer.
-:LspShowServers		Display the list of registered language servers
+:LspShowServer		Display the status of the language server for the
+			current buffer.
 :LspShowSignature	Display the signature of the symbol under cursor.
 :LspSubTypeHierarchy	Display the sub type hierarchy in a popup window.
 :LspSuperTypeHierarchy	Display the super type hierarchy in a popup window.
@@ -140,13 +143,17 @@ The following commands are provided:
 ==============================================================================
 4. Configuration				*lsp-configuration*
 
-To use the plugin features with a particular file type(s), you need to first register a language server for that file type(s).
+To use the plugin features with a particular file type(s), you need to first
+register a language server for that file type(s).
 
 To register one or more language servers, use the LspAddServer() function with
 a list of lanaguge server details in the .vimrc file.
 
-To register a language server, add the following lines to your .vimrc file (use only the language servers that you need from the below list).  If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, the steps are described later in this section:
-
+To register a language server, add the following lines to your .vimrc file
+(use only the language servers that you need from the below list).
+If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the
+LSP plugin, the steps are described later in this section:
+>
    let lspServers = [
 		\     #{
 		\	 filetype: ['javascript', 'typescript'],
@@ -162,7 +169,7 @@ To register a language server, add the following lines to your .vimrc file (use 
    call LspAddServer(lspServers)
 <
 Depending on the location of the typescript and python pyls language servers
-installed in your system, update the 'path' in the above snippet
+installed in your system, update the "path" in the above snippet
 appropriately.
 
 Another example, for adding the language servers for the C, C++, Golang, Rust, 
@@ -232,22 +239,24 @@ Aditionally the following configurations can be made:
 			typescript-language-server) will send additional
 			notifications which you might want to silence or handle.
 			The provided notification handlers will be called with a
-			reference to the 'lspserver' and the 'reply'.
+			reference to the "lspserver" and the "reply".
 	omnicompl	(Optional) a boolean value that enables (true)
 			or disables (false) omni-completion for this file
-			types. By default this is set to 'v:true'.
+			types. By default this is set to "v:true".
 	syncInit        (Optional) for language servers (e.g. rust analyzer,
 			gopls, etc.) that take time to initialize and reply to
-			a 'initialize' request message this should be set to
-			'v:true'. If this is set to true, then a synchronous
+			a "initialize" request message this should be set to
+			"v:true". If this is set to true, then a synchronous
 			call is used to initialize the language server,
 			otherwise the server is initialized asynchronously.
-			By default this is set to 'v:false'.
+			By default this is set to "v:false".
 
 The language servers are added using the LspAddServer() function. This function
 accepts a list of language servers with the above information.
 
-If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, then you need to use the VimEnter autocmd to initialize the language server and to set the language server options.  For example: >
+If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP
+plugin, then you need to use the VimEnter autocmd to initialize the language
+server and to set the language server options.  For example: >
 
     let lspServers = [
 		\     #{
@@ -278,11 +287,6 @@ autoHighlightDiags	|Boolean| option. Automatically place signs on the
 autoPopulateDiags	|Boolean| option. Automatically populate the location
 			list with diagnostics from the language server.
 			By default this is set to false.
-diagLineHL		|String| option. Highlight used for diagnostic line.
-			By default uses `Cursor`.  Use `NONE` to disable.
-echoSignature		|Boolean| option.  In insert mode, echo the current
-			symbol signature instead of showing it in a popup.
-			By default this is set to false.
 completionMatcher	|String| option.  Enable fuzzy or case insensitive
 			completion for language servers that replies with a
 			full list of completion items.  Some language servers
@@ -296,6 +300,30 @@ completionMatcher	|String| option.  Enable fuzzy or case insensitive
 			    case  - case sensitive matching (default).
 			    fuzzy - fuzzy match completion items.
 			    icase - ignore case when matching items.
+diagLineHL		|String| option. The highlight group used for a line
+			with one or more diagnostics.  By default uses
+			"DiffAdd".  Use "NONE" to disable.
+diagSignErrorText       |String| option. Change diag sign text for errors
+                        By default 'E>'
+diagSignErrorTexthl     |String| option. Change diag sign highlight for errors
+                        By default 'ErrorMsg',
+diagSignWarningText     |String| option. Change diag sign text for warnings
+                        By default 'W>',
+diagSignWarningTexthl   |String| option. Change diag sign highlight for warnings
+                        By default 'Search',
+diagSignInfoText        |String| option. Change diag sign text for info
+                        By default 'I>',
+diagSignInfoTexthl      |String| option. Change diag sign text highlight info
+                        By default 'Pmenu',
+diagSignHintText        |String| option. Change diag sign text for hints
+                        By default 'H>',
+diagSignHintTexthl      |String| option. Change diag sign highlight for hints
+                        By default 'Question',
+diagVirtualTextHL	|String| option.  The highlight group used for a
+			diagnostics virtual text.  By default uses "LineNr".
+echoSignature		|Boolean| option.  In insert mode, echo the current
+			symbol signature instead of showing it in a popup.
+			By default this is set to false.
 hideDisabledCodeActions |Boolean| option. Hide all the disabled code actions.
 			By default this is set to false.
 ignoreMissingServer	|Boolean| option.  Do not print a missing language
@@ -324,6 +352,11 @@ showInlayHints		|Boolean| option.  Show inlay hints from the language
 			server.  By default this is set to false.  The inlay
 			hint text is displayed as a virtual text.  Needs Vim
 			version 9.0.0178 or later.
+showDiagWithVirtualText	|Boolean| option.  Show diagnostic message text from
+			the language server with virtual text.  By default
+			this is set to false.  The "autoHighlightDiags" option
+			should be set to true.
+			Needs Vim version 9.0.1157 or later.
 showSignature		|Boolean| option.  In insert mode, automatically show
 			the current symbol signature in a popup.
 			By default this is set to true.
@@ -334,6 +367,17 @@ usePopupInCodeAction    |Boolean| option.  When using the |:LspCodeAction|
 			command to display the code action for the current
 			line, use a popup menu instead of echoing.
 			By default this is set to false.
+highlightDiagInline	|Boolean| option.  Highlight the diagnostics inline
+			By default this is set to false.
+diagInlineErrorHL	|String| option.  The highlight group used for
+			inline error highlight.  By default uses "SpellBad"
+diagInlineWarningHL	|String| option.  The highlight group used for
+			inline warning highlight.  By default uses "SpellCap"
+diagInlineInfoHL	|String| option.  The highlight group used for
+			inline info highlight.  By default uses "SpellRare"
+diagInlineHintHL	|String| option.  The highlight group used for
+			inline hint highlight.  By default uses "SpellLocal"
+
 
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file: >
@@ -412,7 +456,7 @@ can map these commands to keys and make it easier to invoke them.
 
 						*:LspFormat*
 :LspFormat		Format the current file using the language server. The
-			*shiftwidth* and *expandtab* values set for the current
+			'shiftwidth' and 'expandtab' values set for the current
 			buffer are used when format is applied.
 
 :{range}LspFormat	Format the specified range of lines in the current
@@ -611,6 +655,16 @@ can map these commands to keys and make it easier to invoke them.
 :LspServerTrace { off | messages | verbose }	*:LspServerTrace*
 			Set the language server debug trace value.
 
+						*:LspShowAllServers*
+:LspShowAllServers	Displays the list of registered language servers and
+			their status.  The language servers are registered
+			using the LspAddServer() function.  The output is
+			displayed in a scratch buffer.  The output shows the
+			Vim file type, the corresponding language server
+			status and the path to the language server executable.
+			The language server information for each buffer is
+			also shown.
+
 						*:LspShowReferences*
 :LspShowReferences	Creates a new location list with the list of locations
 			where the symbol under the cursor is referenced and
@@ -622,12 +676,10 @@ can map these commands to keys and make it easier to invoke them.
 			described in the LSP protocol specification under the
 			"ServerCapabilities" interface.
 
-						*:LspShowServers*
-:LspShowServers		Displays the list of registered language servers and
-			their status.  The language servers are registered
-			using the LspAddServer() function. The output shows
-			the Vim file type, the corresponding language server
-			status and the path to the language server executable.
+						*:LspShowServer*
+:LspShowServer		Displays the language server status for the current
+			buffer.  The output shows the path to the language
+			server executable and the server status.
 
 						*:LspShowSignature*
 :LspShowSignature	Displays the signature of the symbol (e.g. a function
@@ -803,7 +855,7 @@ message, you can set the 'autoHighlightDiags' option to v:false:
 <
 By default the 'autoHighlightDiags' option is set to v:true.
 
-The function lsp#lsp#Errorcount() function can be used to get the count of the
+The function lsp#lsp#ErrorCount() function can be used to get the count of the
 diagnostic messages in the current buffer by type.  This function returns a
 Dictionary with the following keys: Info, Hint, Warn and Error.  The value for
 these keys is the number of diagnostic messages of the corresponding type.
@@ -857,8 +909,8 @@ the symbol is defined in multiple places in the code.
 9. Code Formatting
 
 The |:LspFormat| command can be used to format either the entire file or a
-selected range of lines using the language server.  The *shiftwidth* and
-*expandtab* values set for the current buffer are used when format is applied.
+selected range of lines using the language server.  The 'shiftwidth' and
+'expandtab' values set for the current buffer are used when format is applied.
 
 To format code using the 'gq' command, you can set the 'formatexpr' option:
 >

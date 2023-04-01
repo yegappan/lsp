@@ -3,7 +3,7 @@ vim9script
 
 source common.vim
 
-var lspOpts = {autoComplete: false}
+var lspOpts = {autoComplete: false, highlightDiagInline: true}
 g:LspOptionsSet(lspOpts)
 
 var lspServers = [{
@@ -161,6 +161,7 @@ def g:Test_LspShowReferences()
   cursor(5, 2)
   var bnr: number = bufnr()
   :LspShowReferences
+  sleep 100m
   assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
   var qfl: list<dict<any>> = getloclist(0)
   assert_equal(bnr, qfl[0].bufnr)
@@ -184,7 +185,7 @@ def g:Test_LspShowReferences()
   setlocal nomodified
   cursor(10, 6)
   :LspPeekReferences
-  sleep 10m
+  sleep 50m
   var ids = popup_list()
   assert_equal(2, ids->len())
   var filePopupAttrs = ids[0]->popup_getoptions()
@@ -226,8 +227,7 @@ def g:Test_LspDiag()
     }
   END
   setline(1, lines)
-  :sleep 1
-  g:WaitForDiags(1)
+  g:WaitForServerFileLoad(1)
   var bnr: number = bufnr()
   :redraw!
   :LspDiagShow
@@ -268,7 +268,159 @@ def g:Test_LspDiag()
   assert_match('No diagnostic messages found for', output[0])
   g:LspOptionsSet({showDiagInPopup: true})
 
+  popup_clear()
   :%bw!
+enddef
+
+# Test that the client have been able to configure the server to speak utf-32
+def g:Test_UnicodeColumnCalc()
+  :silent! edit Xtest.c
+  sleep 200m
+  var lines: list<string> =<< trim END
+    int count;
+    int fn(int a)
+    {
+      int 😊😊😊😊;
+      😊😊😊😊 = a;
+
+      int b;
+      b = a;
+      return    count + 1;
+    }
+  END
+  setline(1, lines)
+  :redraw!
+
+  cursor(5, 1) # 😊😊😊😊 = a;
+  search('a')
+  assert_equal([],
+              execute('LspGotoDefinition')->split("\n"))
+  assert_equal([2, 12], [line('.'), col('.')])
+
+  cursor(8, 1) # b = a;
+  search('a')
+  assert_equal([],
+              execute('LspGotoDefinition')->split("\n"))
+  assert_equal([2, 12], [line('.'), col('.')])
+
+  bw!
+enddef
+
+# Test for multiple LSP diagnostics on the same line
+def g:Test_LspDiag_Multi()
+  :silent! edit Xtest.c
+  sleep 200m
+
+  var bnr: number = bufnr()
+
+  setline(1, [
+    'int i = "a";',
+    'int j = i;',
+    'int y = 0;'
+  ])
+  :redraw!
+  # TODO: Waiting count doesn't include Warning, Info, and Hint diags
+  g:WaitForServerFileLoad(2)
+  :LspDiagShow
+  var qfl: list<dict<any>> = getloclist(0)
+  assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
+  assert_equal(bnr, qfl[0].bufnr)
+  assert_equal(3, qfl->len())
+  assert_equal([1, 5, 'W'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
+  assert_equal([1, 9, 'E'], [qfl[1].lnum, qfl[1].col, qfl[1].type])
+  assert_equal([2, 9, 'E'], [qfl[2].lnum, qfl[2].col, qfl[2].type])
+  close
+
+  :sleep 100m
+  cursor(2, 1)
+  assert_equal('', execute('LspDiagPrev'))
+  assert_equal([1, 9], [line('.'), col('.')])
+
+  assert_equal('', execute('LspDiagPrev'))
+  assert_equal([1, 5], [line('.'), col('.')])
+
+  var output = execute('LspDiagPrev')->split("\n")
+  assert_equal('Error: No more diagnostics found', output[0])
+
+  cursor(2, 1)
+  assert_equal('', execute('LspDiagFirst'))
+  assert_equal([1, 5], [line('.'), col('.')])
+  assert_equal('', execute('LspDiagNext'))
+  assert_equal([1, 9], [line('.'), col('.')])
+  popup_clear()
+
+  # Test for :LspDiagHere on a line with multiple diagnostics
+  cursor(1, 1)
+  :LspDiagHere
+  assert_equal([1, 5], [line('.'), col('.')])
+  var ids = popup_list()
+  assert_equal(1, ids->len())
+  assert_match('Incompatible pointer to integer', getbufline(ids[0]->winbufnr(), 1, '$')[0])
+  popup_clear()
+  cursor(1, 6)
+  :LspDiagHere
+  assert_equal([1, 9], [line('.'), col('.')])
+  ids = popup_list()
+  assert_equal(1, ids->len())
+  assert_match('Initializer element is not', getbufline(ids[0]->winbufnr(), 1, '$')[0])
+  popup_clear()
+
+  # Line without diagnostics
+  cursor(3, 1)
+  output = execute('LspDiagHere')->split("\n")
+  assert_equal('Error: No more diagnostics found on this line', output[0])
+
+  g:LspOptionsSet({showDiagInPopup: false})
+  for i in range(1, 5)
+    cursor(1, i)
+    output = execute('LspDiagCurrent')->split('\n')
+    assert_match('Incompatible pointer to integer', output[0])
+  endfor
+  for i in range(6, 12)
+    cursor(1, i)
+    output = execute('LspDiagCurrent')->split('\n')
+    assert_match('Initializer element is not ', output[0])
+  endfor
+  g:LspOptionsSet({showDiagInPopup: true})
+
+  bw!
+enddef
+
+# Test for highlight diag inline
+def g:Test_LspHighlightDiagInline()
+  :silent! edit Xtest.c
+  sleep 200m
+  setline(1, [
+    'int main()',
+    '{',
+      '    struct obj obj',
+      '',
+      '    return 1;',
+    '}',
+  ])
+
+  # TODO: Waiting count doesn't include Warning, Info, and Hint diags
+  g:WaitForDiags(2)
+
+  var props = prop_list(1)
+  assert_equal(0, props->len())
+  props = prop_list(2)
+  assert_equal(0, props->len())
+  props = prop_list(3)
+  assert_equal(2, props->len())
+  assert_equal([
+    {'id': 0, 'col': 12, 'type_bufnr': 0, 'end': 1, 'type': 'LspDiagInlineInfo', 'length': 3, 'start': 1},
+    {'id': 0, 'col': 16, 'type_bufnr': 0, 'end': 1, 'type': 'LspDiagInlineError', 'length': 3, 'start': 1}
+  ], props)
+  props = prop_list(4)
+  assert_equal(0, props->len())
+  props = prop_list(5)
+  assert_equal(1, props->len())
+  assert_equal([{'id': 0, 'col': 5, 'type_bufnr': 0, 'end': 1, 'type': 'LspDiagInlineError', 'length': 6, 'start': 1}], props)
+  props = prop_list(6)
+  assert_equal(0, props->len())
+
+  bw!
 enddef
 
 # Test for :LspCodeAction
@@ -283,7 +435,7 @@ def g:Test_LspCodeAction()
     }
   END
   setline(1, lines)
-  sleep 1
+  g:WaitForServerFileLoad(0)
   cursor(4, 1)
   redraw!
   :LspCodeAction 1
@@ -316,7 +468,7 @@ def g:Test_LspCodeAction()
     }
   END
   setline(1, lines2)
-  sleep 1
+  g:WaitForServerFileLoad(0)
   cursor(4, 1)
   redraw!
   :LspCodeAction use
@@ -368,7 +520,7 @@ def g:Test_LspRename()
     }
   END
   setline(1, lines)
-  sleep 1
+  g:WaitForServerFileLoad(0)
   cursor(1, 1)
   search('count')
   redraw!
@@ -435,7 +587,7 @@ def g:Test_LspSelection()
     }
   END
   setline(1, lines)
-  sleep 1
+  g:WaitForServerFileLoad(0)
   # start a block-wise visual mode, LspSelectionExpand should change this to
   # a characterwise visual mode.
   exe "normal! 1G\<C-V>G\"_y"
@@ -526,9 +678,6 @@ def g:Test_LspGotoSymbol()
   silent! edit Xtest.cpp
   sleep 600m
   var lines: list<string> =<< trim END
-    #include <iostream>
-    using namespace std;
-
     class base {
 	public:
 	    virtual void print();
@@ -553,35 +702,35 @@ def g:Test_LspGotoSymbol()
     }
   END
   setline(1, lines)
-  :sleep 1
+  g:WaitForServerFileLoad(0)
 
-  cursor(24, 6)
+  cursor(21, 6)
   :LspGotoDeclaration
-  assert_equal([6, 19], [line('.'), col('.')])
+  assert_equal([3, 19], [line('.'), col('.')])
   exe "normal! \<C-t>"
-  assert_equal([24, 6], [line('.'), col('.')])
+  assert_equal([21, 6], [line('.'), col('.')])
   assert_equal(1, winnr('$'))
 
   :LspGotoDefinition
-  assert_equal([9, 12], [line('.'), col('.')])
+  assert_equal([6, 12], [line('.'), col('.')])
   exe "normal! \<C-t>"
-  assert_equal([24, 6], [line('.'), col('.')])
+  assert_equal([21, 6], [line('.'), col('.')])
   assert_equal(1, winnr('$'))
 
   # Command modifiers
   :topleft LspGotoDefinition
-  assert_equal([9, 12], [line('.'), col('.')])
+  assert_equal([6, 12], [line('.'), col('.')])
   assert_equal([1, 2], [winnr(), winnr('$')])
   close
   exe "normal! \<C-t>"
-  assert_equal([24, 6], [line('.'), col('.')])
+  assert_equal([21, 6], [line('.'), col('.')])
 
   :tab LspGotoDefinition
-  assert_equal([9, 12], [line('.'), col('.')])
+  assert_equal([6, 12], [line('.'), col('.')])
   assert_equal([2, 2, 1], [tabpagenr(), tabpagenr('$'), winnr('$')])
   tabclose
   exe "normal! \<C-t>"
-  assert_equal([24, 6], [line('.'), col('.')])
+  assert_equal([21, 6], [line('.'), col('.')])
 
   # FIXME: :LspGotoTypeDef and :LspGotoImpl are supported only with clang-14.
   # This clangd version is not available in Github CI.
@@ -590,7 +739,7 @@ def g:Test_LspGotoSymbol()
   # FIXME: The following tests are failing in Github CI. Comment out for now.
   if 0
   :messages clear
-  cursor(14, 5)
+  cursor(11, 5)
   :LspGotoDeclaration
   var m = execute('messages')->split("\n")
   assert_equal('Error: declaration is not found', m[1])
@@ -605,13 +754,13 @@ def g:Test_LspGotoSymbol()
   endif
 
   # Test for LspPeekDeclaration
-  cursor(24, 6)
+  cursor(21, 6)
   var bnum = bufnr()
   :LspPeekDeclaration
   var plist = popup_list()
   assert_true(1, plist->len())
   assert_equal(bnum, plist[0]->winbufnr())
-  assert_equal(6, line('.', plist[0]))
+  assert_equal(3, line('.', plist[0]))
   popup_clear()
   # tag stack should not be changed
   assert_fails("normal! \<C-t>", 'E555:')
@@ -621,7 +770,7 @@ def g:Test_LspGotoSymbol()
   plist = popup_list()
   assert_true(1, plist->len())
   assert_equal(bnum, plist[0]->winbufnr())
-  assert_equal(9, line('.', plist[0]))
+  assert_equal(6, line('.', plist[0]))
   popup_clear()
   # tag stack should not be changed
   assert_fails("normal! \<C-t>", 'E555:')
@@ -660,7 +809,7 @@ def g:Test_LspHighlight()
     }
   END
   setline(1, lines)
-  :sleep 1
+  g:WaitForServerFileLoad(0)
   cursor(1, 13)
   :LspHighlight
   var expected: dict<any>
@@ -696,7 +845,7 @@ def g:Test_LspHover()
     }
   END
   setline(1, lines)
-  :sleep 1
+  g:WaitForServerFileLoad(0)
   cursor(8, 4)
   :LspHover
   var p: list<number> = popup_list()
@@ -725,7 +874,7 @@ def g:Test_LspShowSignature()
     }
   END
   setline(1, lines)
-  :sleep 1
+  g:WaitForServerFileLoad(2)
   cursor(8, 10)
   :LspShowSignature
   var p: list<number> = popup_list()
@@ -770,7 +919,7 @@ def g:Test_LspSymbolSearch()
     }
   END
   setline(1, lines)
-  :sleep 1
+  g:WaitForServerFileLoad(0)
 
   cursor(1, 1)
   feedkeys(":LspSymbolSearch lsptest_funcB\<CR>\<CR>", "xt")
@@ -810,7 +959,7 @@ def g:Test_LspIncomingCalls()
     }
   END
   setline(1, lines)
-  :sleep 1
+  g:WaitForServerFileLoad(0)
   cursor(1, 6)
   :LspIncomingCalls
   assert_equal([1, 2], [winnr(), winnr('$')])
@@ -836,7 +985,7 @@ def g:Test_LspOutline()
     }
   END
   setline(1, lines)
-  :sleep 1
+  g:WaitForServerFileLoad(0)
   :LspOutline
   assert_equal(2, winnr('$'))
   var bnum = winbufnr(1)
@@ -864,7 +1013,7 @@ def g:Test_LspTagFunc()
   END
   writefile(lines, 'Xtest.c')
   :silent! edit Xtest.c
-  :sleep 1
+  g:WaitForServerFileLoad(1)
   :setlocal tagfunc=lsp#lsp#TagFunc
   cursor(3, 4)
   :exe "normal \<C-]>"
@@ -890,15 +1039,16 @@ def g:Test_LspDiagsUpdated_Autocmd()
     }
   END
   setline(1, lines)
-  :sleep 1
-  g:WaitForDiags(0)
+  g:WaitForServerFileLoad(0)
   setline(3, '    return:')
+  redraw!
   g:WaitForDiags(1)
   setline(3, '    return;')
+  redraw!
   g:WaitForDiags(0)
   :%bw!
   autocmd_delete([{event: 'User', pattern: 'LspDiagsUpdated'}])
-  assert_equal(3, g:LspAutoCmd)
+  assert_equal(6, g:LspAutoCmd)
 enddef
 
 # Test custom notification handlers
@@ -954,6 +1104,7 @@ def g:Test_ScanFindIdent()
   cursor(6, 10)
   assert_equal([],
 	       execute('LspRename counter')->split("\n"))
+  sleep 100m
   assert_equal('int counter;', getline(1))
   assert_equal('  return    counter + 1;', getline(6))
 
@@ -971,11 +1122,64 @@ def g:Test_OmniComplete_FirstColumn()
     #define FOO 1
   END
   setline(1, lines)
-  :sleep 1
+  g:WaitForServerFileLoad(0)
   redraw!
 
   feedkeys("G0i\<C-X>\<C-O>", 'xt')
   assert_equal('Foo_t#define FOO 1', getline('.'))
+  :bw!
+enddef
+
+# Test for doing omni completion from the first column
+def g:Test_OmniComplete_Multibyte()
+  :silent! edit Xtest.c
+  sleep 200m
+  var lines: list<string> =<< trim END
+    #include <string.h>
+    void Fn(void)
+    {
+      int thisVar = 1;
+      int len = strlen("©©©©©") + thisVar;
+    }
+  END
+  setline(1, lines)
+  g:WaitForServerFileLoad(0)
+  redraw!
+
+  cursor(5, 36)
+  feedkeys("cwthis\<C-X>\<C-O>", 'xt')
+  assert_equal('  int len = strlen("©©©©©") + thisVar;', getline('.'))
+  :bw!
+enddef
+
+# Test for doing omni completion from the first column
+def g:Test_OmniComplete_Struct()
+  :silent! edit Xtest.c
+  sleep 200m
+  var lines: list<string> =<< trim END
+    struct test_ {
+        int foo;
+        int bar;
+        int baz;
+    };
+    void Fn(void)
+    {
+        struct test_ myTest;
+        struct test_ *pTest;
+        myTest.bar = 10;
+        pTest->bar = 20;
+    }
+  END
+  setline(1, lines)
+  g:WaitForServerFileLoad(0)
+  redraw!
+
+  cursor(10, 12)
+  feedkeys("cwb\<C-X>\<C-O>\<C-N>\<C-Y>", 'xt')
+  assert_equal('    myTest.baz = 10;', getline('.'))
+  cursor(11, 12)
+  feedkeys("cw\<C-X>\<C-O>\<C-N>\<C-N>\<C-Y>", 'xt')
+  assert_equal('    pTest->foo = 20;', getline('.'))
   :bw!
 enddef
 

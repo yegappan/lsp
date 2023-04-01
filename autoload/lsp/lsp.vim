@@ -31,21 +31,11 @@ var ftypeServerMap: dict<dict<any>> = {}
 var lspInitializedOnce = false
 
 def LspInitOnce()
-  var lineHL: string = opt.lspOptions.diagLineHL
-  # Signs used for LSP diagnostics
-  sign_define([{name: 'LspDiagError', text: 'E>', texthl: 'ErrorMsg',
-						linehl: lineHL},
-		{name: 'LspDiagWarning', text: 'W>', texthl: 'Search',
-						linehl: lineHL},
-		{name: 'LspDiagInfo', text: 'I>', texthl: 'Pmenu',
-						linehl: lineHL},
-		{name: 'LspDiagHint', text: 'H>', texthl: 'Question',
-						linehl: lineHL}])
-
   prop_type_add('LspTextRef', {highlight: 'Search', override: true})
   prop_type_add('LspReadRef', {highlight: 'DiffChange', override: true})
   prop_type_add('LspWriteRef', {highlight: 'DiffDelete', override: true})
 
+  diag.InitOnce()
   inlayhints.InitOnce()
 
   :set ballooneval balloonevalterm
@@ -79,17 +69,64 @@ export def ServerDebug(arg: string)
 enddef
 
 # Show information about all the LSP servers
-export def ShowServers()
+export def ShowAllServers()
+  var lines = []
+  # Add filetype to server mapping information
+  lines->add('Filetype Information')
+  lines->add('====================')
   for [ftype, lspserver] in ftypeServerMap->items()
-    var msg = $'{ftype}    '
-    if lspserver.running
-      msg ..= 'running'
-    else
-      msg ..= 'not running'
-    endif
-    msg ..= $'    {lspserver.path}'
-    :echomsg msg
+    lines->add($"Filetype: '{ftype}'")
+    lines->add($"Server Path: '{lspserver.path}'")
+    lines->add($"Status: {lspserver.running ? 'Running' : 'Not running'}")
+    lines->add('')
   endfor
+
+  # Add buffer to server mapping information
+  lines->add('Buffer Information')
+  lines->add('==================')
+  for bnr in range(1, bufnr('$'))
+    if buf.BufHasLspServer(bnr)
+      lines->add($"Buffer: '{bufname(bnr)}'")
+      var lspserver = buf.BufLspServerGet(bnr)
+      lines->add($"Server Path: '{lspserver.path}'")
+      lines->add($"Status: {lspserver.running ? 'Running' : 'Not running'}")
+      lines->add('')
+    endif
+  endfor
+
+  var wid = bufwinid('Language-Servers')
+  if wid != -1
+    wid->win_gotoid()
+    :setlocal modifiable
+    :silent! :%d _
+  else
+    :new Language-Servers
+    :setlocal buftype=nofile
+    :setlocal bufhidden=wipe
+    :setlocal noswapfile
+    :setlocal nonumber nornu
+    :setlocal fdc=0 signcolumn=no
+  endif
+  setline(1, lines)
+  :setlocal nomodified
+  :setlocal nomodifiable
+enddef
+
+# Show the status of the LSP server for the current buffer
+export def ShowServer()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  if lspserver->empty()
+    :echomsg "LSP Server not found"
+    return
+  endif
+
+  var msg = $"LSP server '{lspserver.path}' is "
+  if lspserver.running
+    msg ..= 'running'
+  else
+    msg ..= 'not running'
+  endif
+  :echomsg msg
 enddef
 
 # Get LSP server running status for filetype 'ftype'
@@ -264,9 +301,8 @@ def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
   endif
 
   # Displaying inlay hints needs the Vim virtual text support.
-  if has('patch-9.0.0178') && opt.lspOptions.showInlayHints
-			      && (lspserver.isInlayHintProvider
-				  || lspserver.isClangdInlayHintsProvider)
+  if opt.lspOptions.showInlayHints && (lspserver.isInlayHintProvider
+				|| lspserver.isClangdInlayHintsProvider)
     inlayhints.BufferInit(bnr)
   endif
 
@@ -379,13 +415,15 @@ enddef
 
 # Restart the LSP server for the current buffer
 export def RestartServer()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServer()
   if lspserver->empty()
     return
   endif
 
-  # Stop the server
-  lspserver.stopServer()
+  # Stop the server (if running)
+  if lspserver.running
+    lspserver.stopServer()
+  endif
 
   # Remove all the buffers with the same file type as the current buffer
   var ftype: string = &filetype
@@ -718,7 +756,7 @@ export def Rename(a_newName: string)
     endif
 
     # clear the input prompt
-    echo "\r"
+    :echo "\r"
   endif
 
   lspserver.renameSymbol(newName)
@@ -751,7 +789,7 @@ export def SymbolSearch(queryArg: string)
       return
     endif
   endif
-  redraw!
+  :redraw!
 
   lspserver.workspaceQuery(query)
 enddef
@@ -763,7 +801,7 @@ export def ListWorkspaceFolders()
     return
   endif
 
-  echomsg $'Workspace Folders: {lspserver.workspaceFolders->string()}'
+  :echomsg $'Workspace Folders: {lspserver.workspaceFolders->string()}'
 enddef
 
 # Add a workspace folder. Default is to use the current folder.

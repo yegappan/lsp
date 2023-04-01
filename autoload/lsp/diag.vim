@@ -6,6 +6,66 @@ import './options.vim' as opt
 import './buffer.vim' as buf
 import './util.vim'
 
+# Initialize the signs and the text property type used for diagnostics.
+export def InitOnce()
+  var lineHL: string = opt.lspOptions.diagLineHL
+  # Signs used for LSP diagnostics
+  sign_define([
+        {
+            name: 'LspDiagError',
+            text: opt.lspOptions.diagSignErrorText,
+            texthl: opt.lspOptions.diagSignErrorTexthl,
+		    linehl: lineHL
+        },
+		{
+            name: 'LspDiagWarning',
+            text: opt.lspOptions.diagSignWarningText,
+            texthl: opt.lspOptions.diagSignWarningTexthl,
+            linehl: lineHL
+        },
+		{
+            name: 'LspDiagInfo',
+            text: opt.lspOptions.diagSignInfoText,
+            texthl: opt.lspOptions.diagSignInfoTexthl,
+            linehl: lineHL
+        },
+		{
+            name: 'LspDiagHint',
+            text: opt.lspOptions.diagSignHintText,
+            texthl: opt.lspOptions.diagSignHintTexthl,
+            linehl: lineHL
+        }
+  ])
+
+  if opt.lspOptions.highlightDiagInline
+    if !hlexists('LspDiagInlineError')
+      hlset([{name: 'LspDiagInlineError', linksto: opt.lspOptions.diagInlineErrorHL}])
+    endif
+    if !hlexists('LspDiagInlineWarning')
+      hlset([{name: 'LspDiagInlineWarning', linksto: opt.lspOptions.diagInlineWarningHL}])
+    endif
+    if !hlexists('LspDiagInlineInfo')
+      hlset([{name: 'LspDiagInlineInfo', linksto: opt.lspOptions.diagInlineInfoHL}])
+    endif
+    if !hlexists('LspDiagInlineHint')
+      hlset([{name: 'LspDiagInlineHint', linksto: opt.lspOptions.diagInlineHintHL}])
+    endif
+    prop_type_add('LspDiagInlineError', { highlight: 'LspDiagInlineError', override: true })
+    prop_type_add('LspDiagInlineWarning', { highlight: 'LspDiagInlineWarning', override: true })
+    prop_type_add('LspDiagInlineInfo', { highlight: 'LspDiagInlineInfo', override: true })
+    prop_type_add('LspDiagInlineHint', { highlight: 'LspDiagInlineHint', override: true })
+  endif
+
+  if opt.lspOptions.showDiagWithVirtualText
+    if !hlexists('LspDiagVirtualText')
+      hlset([{name: 'LspDiagVirtualText',
+	      linksto: opt.lspOptions.diagVirtualTextHL}])
+    endif
+    prop_type_add('LspDiagVirtualText', {highlight: 'LspDiagVirtualText',
+					 override: true})
+  endif
+enddef
+
 # Remove the diagnostics stored for buffer 'bnr'
 export def DiagRemoveFile(lspserver: dict<any>, bnr: number)
   if lspserver.diagsMap->has_key(bnr)
@@ -22,10 +82,37 @@ def DiagSevToSignName(severity: number): string
   return typeMap[severity - 1]
 enddef
 
+def DiagSevToInlineHLName(severity: number): string
+  var typeMap: list<string> = [
+    'LspDiagInlineError',
+    'LspDiagInlineWarning',
+    'LspDiagInlineInfo',
+    'LspDiagInlineHint'
+  ]
+  if severity > 4
+    return 'LspDiagInlineHint'
+  endif
+  return typeMap[severity - 1]
+enddef
+
 # Refresh the signs placed in buffer 'bnr' on lines with a diagnostic message.
 def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
+  bnr->bufload()
   # Remove all the existing diagnostic signs
   sign_unplace('LSPDiag', {buffer: bnr})
+
+  if opt.lspOptions.showDiagWithVirtualText
+    # Remove all the existing virtual text
+    prop_remove({type: 'LspDiagVirtualText', bufnr: bnr, all: true})
+  endif
+
+  if opt.lspOptions.highlightDiagInline
+    # Remove all the existing virtual text
+    prop_remove({type: 'LspDiagInlineError', bufnr: bnr, all: true})
+    prop_remove({type: 'LspDiagInlineWarning', bufnr: bnr, all: true})
+    prop_remove({type: 'LspDiagInlineInfo', bufnr: bnr, all: true})
+    prop_remove({type: 'LspDiagInlineHint', bufnr: bnr, all: true})
+  endif
 
   if !lspserver.diagsMap->has_key(bnr) ||
       lspserver.diagsMap[bnr].sortedDiagnostics->empty()
@@ -41,6 +128,28 @@ def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
     signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
 				lnum: lnum,
 				name: DiagSevToSignName(diag.severity)})
+
+    try
+      if opt.lspOptions.highlightDiagInline
+        prop_add(diag.range.start.line + 1,
+                  util.GetLineByteFromPos(bnr, diag.range.start) + 1,
+                  {end_lnum: diag.range.end.line + 1,
+                    end_col: util.GetLineByteFromPos(bnr, diag.range.end) + 1,
+                    bufnr: bnr,
+                    type: DiagSevToInlineHLName(diag.severity)})
+      endif
+
+      if opt.lspOptions.showDiagWithVirtualText
+        prop_add(lnum, 0, {bufnr: bnr,
+                           type: 'LspDiagVirtualText',
+                           text: $'┌─ {diag.message}',
+                           text_align: 'above',
+                           text_padding_left: diag.range.start.character})
+      endif
+    catch /E966\|E964/ # Invalid lnum | Invalid col
+      # Diagnostics arrive asynchronous and the document changed while they wore
+      # send. Ignore this as new once will arrive shortly.
+    endtry
   endfor
 
   signs->sign_placelist()
@@ -103,6 +212,7 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags: list<dict<
     diagWithinRange->add(diag)
   endfor
 
+  # sort the diagnostics by line number and column number
   var sortedDiags = diagWithinRange->sort((a, b) => {
     var linediff = a.range.start.line - b.range.start.line
     if linediff == 0
@@ -122,7 +232,7 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags: list<dict<
 
   # Notify user scripts that diags has been updated
   if exists('#User#LspDiagsUpdated')
-    doautocmd <nomodeline> User LspDiagsUpdated
+    :doautocmd <nomodeline> User LspDiagsUpdated
   endif
 enddef
 
@@ -175,7 +285,7 @@ def DiagsUpdateLocList(lspserver: dict<any>, bnr: number): bool
 
   var LspQfId: number = 0
   if bnr->getbufvar('LspQfId', 0) != 0 &&
-		  getloclist(0, {id: b:LspQfId}).id == b:LspQfId
+		getloclist(0, {id: b:LspQfId}).id == b:LspQfId
     LspQfId = b:LspQfId
   endif
 
@@ -249,13 +359,23 @@ def ShowDiagInPopup(diag: dict<any>)
   endif
 
   # Display a popup right below the diagnostics position
+  var msg = diag.message->split("\n")
+  var msglen = msg->reduce((acc, val) => max([acc, val->strcharlen()]), 0)
+
   var ppopts = {}
   ppopts.pos = 'topleft'
   ppopts.line = d.row + 1
-  ppopts.col = d.col
   ppopts.moved = 'any'
-  ppopts.wrap = false
-  popup_create(diag.message->split("\n"), ppopts)
+
+  if msglen > &columns
+    ppopts.wrap = true
+    ppopts.col = 1
+  else
+    ppopts.wrap = false
+    ppopts.col = d.col
+  endif
+
+  popup_create(msg, ppopts)
 enddef
 
 # Display the 'diag' message in a popup or in the status message area
@@ -265,7 +385,7 @@ def DisplayDiag(diag: dict<any>)
     ShowDiagInPopup(diag)
   else
     # Display the diagnostic message in the status message area
-    echo diag.message
+    :echo diag.message
   endif
 enddef
 
@@ -296,9 +416,9 @@ export def ShowCurrentDiagInStatusLine(lspserver: dict<any>)
       code = $'[{diag.code}] '
     endif
     var msgNoLineBreak = code .. substitute(substitute(diag.message, "\n", ' ', ''), "\\n", ' ', '')
-    echo msgNoLineBreak[ : max_width]
+    :echo msgNoLineBreak[ : max_width]
   else
-    echo ''
+    :echo ''
   endif
 enddef
 
@@ -323,8 +443,11 @@ enddef
 # Get all diagnostics from the LSP server for a particular line in a file
 export def GetDiagsByLine(lspserver: dict<any>, bnr: number, lnum: number): list<dict<any>>
   if lspserver.diagsMap->has_key(bnr)
-    if lspserver.diagsMap[bnr].diagnosticsByLnum->has_key(lnum)
-      return lspserver.diagsMap[bnr].diagnosticsByLnum[lnum]
+    var diagsbyLnum = lspserver.diagsMap[bnr].diagnosticsByLnum
+    if diagsbyLnum->has_key(lnum)
+      return diagsbyLnum[lnum]->sort((a, b) => {
+	  return a.range.start.character - b.range.start.character
+	})
     endif
   endif
   return []
@@ -344,11 +467,14 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
     return
   endif
 
-  # sort the diagnostics by line number
   var diags = lspserver.diagsMap[bnr].sortedDiagnostics
 
   if which == 'first'
     setcursorcharpos(diags[0].range.start.line + 1, diags[0].range.start.character + 1)
+    if !opt.lspOptions.showDiagWithVirtualText
+      :redraw
+      DisplayDiag(diags[0])
+    endif
     return
   endif
 
@@ -364,21 +490,45 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
 							&& col < curcol))
 	  || (which == 'here' && (lnum == curlnum && col >= curcol))
       setcursorcharpos(lnum, col)
-      if (which == 'here')
+      if !opt.lspOptions.showDiagWithVirtualText
+	:redraw
 	DisplayDiag(diag)
       endif
       return
     endif
   endfor
 
-  util.WarnMsg('Error: No more diagnostics found')
+  if which == 'here'
+    util.WarnMsg('Error: No more diagnostics found on this line')
+  else
+    util.WarnMsg('Error: No more diagnostics found')
+  endif
 enddef
 
 # Disable the LSP diagnostics highlighting in all the buffers
 export def DiagsHighlightDisable()
+  # turn off all diags highlight
+  opt.lspOptions.autoHighlightDiags = false
+
+  # Remove the diganostics virtual text in all the buffers.
+  if opt.lspOptions.showDiagWithVirtualText
+      || opt.lspOptions.highlightDiagInline
+    for binfo in getbufinfo({bufloaded: true})
+      # Remove all virtual text
+      if opt.lspOptions.showDiagWithVirtualText
+        prop_remove({type: 'LspDiagVirtualText', bufnr: binfo.bufnr, all: true})
+      endif
+      if opt.lspOptions.highlightDiagInline
+        prop_remove({type: 'LspDiagInlineError', bufnr: binfo.bufnr, all: true})
+        prop_remove({type: 'LspDiagInlineWarning', bufnr: binfo.bufnr, all: true})
+        prop_remove({type: 'LspDiagInlineInfo', bufnr: binfo.bufnr, all: true})
+        prop_remove({type: 'LspDiagInlineHint', bufnr: binfo.bufnr, all: true})
+      endif
+    endfor
+  endif
+
   # Remove all the existing diagnostic signs in all the buffers
   sign_unplace('LSPDiag')
-  opt.lspOptions.autoHighlightDiags = false
 enddef
 
 # Enable the LSP diagnostics highlighting

@@ -132,15 +132,15 @@ def CallHierarchyTreeShow(incoming: bool, prepareItem: dict<any>,
     :setlocal nonumber nornu
     :setlocal fdc=0 signcolumn=no
 
-    nnoremap <buffer> <CR> <ScriptCmd>CallHierarchyItemJump()<CR>
-    nnoremap <buffer> - <ScriptCmd>CallHierarchyTreeItemOpen()<CR>
-    nnoremap <buffer> + <ScriptCmd>CallHierarchyTreeItemClose()<CR>
-    command -buffer LspCallHierarchyRefresh CallHierarchyTreeRefreshCmd()
-    command -buffer LspCallHierarchyIncoming CallHierarchyTreeIncomingCmd()
-    command -buffer LspCallHierarchyOutgoing CallHierarchyTreeOutgoingCmd()
+    :nnoremap <buffer> <CR> <ScriptCmd>CallHierarchyItemJump()<CR>
+    :nnoremap <buffer> - <ScriptCmd>CallHierarchyTreeItemOpen()<CR>
+    :nnoremap <buffer> + <ScriptCmd>CallHierarchyTreeItemClose()<CR>
+    :command -buffer LspCallHierarchyRefresh CallHierarchyTreeRefreshCmd()
+    :command -buffer LspCallHierarchyIncoming CallHierarchyTreeIncomingCmd()
+    :command -buffer LspCallHierarchyOutgoing CallHierarchyTreeOutgoingCmd()
 
-    syntax match Comment '^#.*$'
-    syntax match Directory '(.*)$'
+    :syntax match Comment '^#.*$'
+    :syntax match Directory '(.*)$'
   endif
 
   w:LspBufnr = save_bufnr

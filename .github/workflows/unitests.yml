@@ -8,11 +8,17 @@ jobs:
       - name: Install packages
         run: |
           sudo apt update
+          # install clangd language server
           sudo apt install -y clangd-14
+          # install nodejs
           sudo apt install -y curl
           curl -fsSL https://deb.nodesource.com/setup_18.x | sudo bash -
           sudo apt install -y nodejs
+          # install typescript language server
           sudo npm install -g typescript-language-server typescript
+          # install golang language server
+          sudo apt install -y golang
+          sudo apt install -y gopls
       - name: Setup Vim
         uses: rhysd/action-setup-vim@v1
         id: vim

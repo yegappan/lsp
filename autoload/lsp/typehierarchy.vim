@@ -87,7 +87,7 @@ def UpdateTypeHierFileInPopup(lspserver: dict<any>, typeUriMap: list<dict<any>>)
   lspserver.typeHierFilePopup = popup_create(bnr, popupAttrs)
   var cmds =<< trim eval END
     [{typeUriMap[n].range.start.line + 1}, 1]->cursor()
-    normal! z.
+    :normal! z.
   END
   win_execute(lspserver.typeHierFilePopup, cmds)
 

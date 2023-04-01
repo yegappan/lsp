@@ -37,7 +37,7 @@ enddef
 
 # LSP server exit callback
 def Exit_cb(lspserver: dict<any>, job: job, status: number): void
-  util.WarnMsg($'LSP server exited with status {status}')
+  util.WarnMsg($'[{strftime("%m/%d/%y %T")}]: LSP server exited with status {status}')
   lspserver.running = false
   lspserver.ready = false
   lspserver.requests = {}
@@ -347,6 +347,14 @@ def ServerInitReply(lspserver: dict<any>, initResult: dict<any>): void
   var caps: dict<any> = initResult.capabilities
   lspserver.caps = caps
 
+  for [key, val] in initResult->items()
+    if key == 'capabilities'
+      continue
+    endif
+
+    lspserver.caps[$'~additionalInitResult_{key}'] = val
+  endfor
+
   ProcessServerCaps(lspserver, caps)
 
   if opt.lspOptions.autoComplete && caps->has_key('completionProvider')
@@ -429,10 +437,25 @@ def InitServer(lspserver: dict<any>)
       declaration: {linkSupport: true},
       definition: {linkSupport: true},
       typeDefinition: {linkSupport: true},
-      implementation: {linkSupport: true}
+      implementation: {linkSupport: true},
+      signatureHelp: {
+	signatureInformation: {
+	  documentationFormat: ['plaintext', 'markdown'],
+	  activeParameterSupport: true
+	}
+      }
     },
     window: {},
-    general: {}
+    general: {
+      # Currently we always send character count as position offset,
+      # which meanas only utf-32 is supported.
+      # Adding utf-16 simply for good mesure, as I'm scared some servers will
+      # give up if they don't support utf-32 only.
+      positionEncodings: ['utf-32', 'utf-16']
+    },
+    # This is the way clangd expects to be informated about supported encodings:
+    # https://clangd.llvm.org/extensions#utf-8-offsets
+    offsetEncoding: ['utf-32', 'utf-16']
   }
 
   # interface 'InitializeParams'
@@ -578,12 +601,12 @@ enddef
 
 # Send a request message to LSP server
 def SendMessage(lspserver: dict<any>, content: dict<any>): void
-  var ch = lspserver.job->job_getchannel()
-  if ch->ch_status() != 'open'
+  var job = lspserver.job
+  if job->job_status() != 'run'
     # LSP server has exited
     return
   endif
-  ch->ch_sendexpr(content)
+  job->ch_sendexpr(content)
   if content->has_key('id')
     util.TraceLog(false, $'Sent [{strftime("%m/%d/%y %T")}]: {content->string()}')
   endif
@@ -604,8 +627,8 @@ def Rpc(lspserver: dict<any>, method: string, params: any, handleError: bool = t
   req.params = {}
   req.params->extend(params)
 
-  var ch = lspserver.job->job_getchannel()
-  if ch->ch_status() != 'open'
+  var job = lspserver.job
+  if job->job_status() != 'run'
     # LSP server has exited
     return {}
   endif
@@ -613,7 +636,7 @@ def Rpc(lspserver: dict<any>, method: string, params: any, handleError: bool = t
   util.TraceLog(false, $'Sent [{strftime("%m/%d/%y %T")}]: {req->string()}')
 
   # Do the synchronous RPC call
-  var reply = ch->ch_evalexpr(req)
+  var reply = job->ch_evalexpr(req)
 
   util.TraceLog(false, $'Received [{strftime("%m/%d/%y %T")}]: {reply->string()}')
 
@@ -671,8 +694,8 @@ def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func): n
   req.params = {}
   req.params->extend(params)
 
-  var ch = lspserver.job->job_getchannel()
-  if ch->ch_status() != 'open'
+  var job = lspserver.job
+  if job->job_status() != 'run'
     # LSP server has exited
     return -1
   endif
@@ -689,7 +712,7 @@ def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func): n
     Fn(test_null_channel(), reply)
   else
     # Otherwise, make an asynchronous RPC call
-    reply = ch->ch_sendexpr(req, {callback: Fn})
+    reply = job->ch_sendexpr(req, {callback: Fn})
   endif
   if reply->empty()
     return -1

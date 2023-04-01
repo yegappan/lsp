@@ -320,7 +320,7 @@ def g:LspOmniFunc(findstart: number, base: string): any
       start -= 1
     endwhile
     lspserver.omniCompleteKeyword = keyword
-    return start
+    return line->byteidx(start)
   else
     # Wait for the list of matches from the LSP server
     var count: number = 0
@@ -361,7 +361,7 @@ def LspComplete()
     return
   endif
 
-  var cur_col: number = col('.')
+  var cur_col: number = charcol('.')
   var line: string = getline('.')
 
   if cur_col == 0 || line->empty()
@@ -375,13 +375,14 @@ def LspComplete()
   # If the character before the cursor is not a keyword character or is not
   # one of the LSP completion trigger characters, then do nothing.
   if line[cur_col - 2] !~ '\k'
-    var trigidx = lspserver.completionTriggerChars->index(line[cur_col - 2])
+    var trigChars = lspserver.completionTriggerChars
+    var trigidx = trigChars->index(line[cur_col - 2])
     if trigidx == -1
       return
     endif
     # completion triggered by one of the trigger characters
     triggerKind = 2
-    triggerChar = lspserver.completionTriggerChars[trigidx]
+    triggerChar = trigChars[trigidx]
   endif
 
   # first send all the changes in the current buffer to the LSP server
@@ -494,7 +495,7 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
     endif
     # <Enter> in insert mode stops completion and inserts a <Enter>
     if !opt.lspOptions.noNewlineInCompletion
-      inoremap <expr> <buffer> <CR> pumvisible() ? "\<C-Y>" : "\<CR>"
+      :inoremap <expr> <buffer> <CR> pumvisible() ? "\<C-Y>" : "\<CR>"
     endif
   else
     if LspOmniComplEnabled(ftype)
