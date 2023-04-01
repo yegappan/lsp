@@ -326,6 +326,9 @@ echoSignature		|Boolean| option.  In insert mode, echo the current
 			By default this is set to false.
 hideDisabledCodeActions |Boolean| option. Hide all the disabled code actions.
 			By default this is set to false.
+hoverInPreview		|Boolean| option. Show |:LspHover| in a preview window
+			instead of a popup
+			By default this is set to false.
 ignoreMissingServer	|Boolean| option.  Do not print a missing language
 			server executable.  By default this is set to false.
 keepFocusInReferences	|Boolean| option.  Focus on the location list window
@@ -341,6 +344,9 @@ outlineOnRight		|Boolean| option.  Open the outline window on the
 			right side, by default this is false.
 outlineWinSize		|Number| option.  The size of the symbol Outline
 			window.  By default this is set to 20.
+useQuickfixForLocations	|Boolean| option.  Show |:LspShowReferences| in a
+			quickfix list instead of a location list.
+			By default this is set to false.
 showDiagInPopup		|Boolean| option.  When using the |:LspDiagCurrent|
 			command to display the diagnostic message for the
 			current line, use a popup window to display the
@@ -668,7 +674,13 @@ can map these commands to keys and make it easier to invoke them.
 						*:LspShowReferences*
 :LspShowReferences	Creates a new location list with the list of locations
 			where the symbol under the cursor is referenced and
-			opens the location window.
+			opens the location window.  If you want to show the
+			references in a quickfix list instead of in a location
+			list set >
+
+				call LspOptionsSet({'useQuickfixForLocations': v:true})
+<
+			Set '
 
 :LspShowServerCapabilities			*:LspShowServerCapabilities*
 			Display the list of language server capabilities for

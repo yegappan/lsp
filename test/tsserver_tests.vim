@@ -49,14 +49,28 @@ def g:Test_LspGoto()
   cursor(7, 8)
   assert_equal('', execute('LspGotoDefinition'))
   sleep 200m
-  var qfl: list<dict<any>> = getloclist(0)
+  var loclist: list<dict<any>> = getloclist(0)
   assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
-  assert_equal(bufnr(), qfl[0].bufnr)
+  assert_equal(3, loclist->len())
+  assert_equal(bufnr(), loclist[0].bufnr)
+  assert_equal([1, 10, ''], [loclist[0].lnum, loclist[0].col, loclist[0].type])
+  assert_equal([2, 10, ''], [loclist[1].lnum, loclist[1].col, loclist[1].type])
+  assert_equal([3, 10, ''], [loclist[2].lnum, loclist[2].col, loclist[2].type])
+  lclose
+
+  g:LspOptionsSet({ useQuickfixForLocations: true })
+  cursor(7, 8)
+  assert_equal('', execute('LspGotoDefinition'))
+  sleep 200m
+  var qfl: list<dict<any>> = getqflist()
+  assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
   assert_equal(3, qfl->len())
+  assert_equal(bufnr(), qfl[0].bufnr)
   assert_equal([1, 10, ''], [qfl[0].lnum, qfl[0].col, qfl[0].type])
   assert_equal([2, 10, ''], [qfl[1].lnum, qfl[1].col, qfl[1].type])
   assert_equal([3, 10, ''], [qfl[2].lnum, qfl[2].col, qfl[2].type])
-  lclose
+  cclose
+  g:LspOptionsSet({ useQuickfixForLocations: false })
 
   # Opening the preview window with an unsaved buffer displays the "E37: No
   # write since last change" error message.  To disable this message, mark the

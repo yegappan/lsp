@@ -163,19 +163,40 @@ def g:Test_LspShowReferences()
   :LspShowReferences
   sleep 100m
   assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
-  var qfl: list<dict<any>> = getloclist(0)
-  assert_equal(bnr, qfl[0].bufnr)
+  var loclist: list<dict<any>> = getloclist(0)
+  assert_equal(bnr, loclist[0].bufnr)
+  assert_equal(3, loclist->len())
+  assert_equal([4, 6], [loclist[0].lnum, loclist[0].col])
+  assert_equal([5, 2], [loclist[1].lnum, loclist[1].col])
+  assert_equal([6, 6], [loclist[2].lnum, loclist[2].col])
+  :only
+  cursor(1, 5)
+  :LspShowReferences
+  assert_equal(1, getloclist(0)->len())
+  loclist = getloclist(0)
+  assert_equal([1, 5], [loclist[0].lnum, loclist[0].col])
+  :lclose
+
+  # Test for opening in qf list
+  g:LspOptionsSet({ useQuickfixForLocations: true })
+  cursor(5, 2)
+  :LspShowReferences
+  sleep 100m
+  assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
+  var qfl: list<dict<any>> = getqflist()
   assert_equal(3, qfl->len())
+  assert_equal(bufnr(), qfl[0].bufnr)
   assert_equal([4, 6], [qfl[0].lnum, qfl[0].col])
   assert_equal([5, 2], [qfl[1].lnum, qfl[1].col])
   assert_equal([6, 6], [qfl[2].lnum, qfl[2].col])
   :only
   cursor(1, 5)
   :LspShowReferences
-  assert_equal(1, getloclist(0)->len())
-  qfl = getloclist(0)
+  assert_equal(1, getqflist()->len())
+  qfl = getqflist()
   assert_equal([1, 5], [qfl[0].lnum, qfl[0].col])
-  :lclose
+  :cclose
+  g:LspOptionsSet({ useQuickfixForLocations: false })
 
   # Test for LspPeekReferences
 

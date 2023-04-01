@@ -72,6 +72,8 @@ export var lspOptions: dict<any> = {
   diagSignInfoTexthl: 'Pmenu',
   diagSignHintText: 'H>',
   diagSignHintTexthl: 'Question',
+  # ShowReferences in a quickfix list instead of a location list`
+  useQuickfixForLocations: false
 }
 
 # set the LSP plugin options from the user provided option values
