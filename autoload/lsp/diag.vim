@@ -128,10 +128,17 @@ def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
 
     try
       if opt.lspOptions.highlightDiagInline
+	var end_col: number = util.GetLineByteFromPos(bnr, diag.range.end) + 1
+	var end_lnum: number = diag.range.end.line + 1
+	var end_text: string = end_lnum->getline()
+	var end_len: number = end_text->len()
+	if end_col > end_len + 1
+	  end_col = end_len + 1
+	endif
         prop_add(diag.range.start.line + 1,
                   util.GetLineByteFromPos(bnr, diag.range.start) + 1,
-                  {end_lnum: diag.range.end.line + 1,
-                    end_col: util.GetLineByteFromPos(bnr, diag.range.end),
+                  {end_lnum: end_lnum,
+                    end_col: end_col,
                     bufnr: bnr,
                     type: DiagSevToInlineHLName(diag.severity)})
       endif
