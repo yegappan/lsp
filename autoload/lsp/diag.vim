@@ -132,6 +132,8 @@ def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
 	var end_lnum: number = diag.range.end.line + 1
 	var end_text: string = end_lnum->getline()
 	var end_len: number = end_text->len()
+	# TODO: Handle those maybe valid but incorrect cases
+	# those invalid should be handled by try-catch still
 	if end_col > end_len + 1
 	  end_col = end_len + 1
 	endif
