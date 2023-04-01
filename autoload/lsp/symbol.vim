@@ -376,9 +376,17 @@ export def ShowLocations(lspserver: dict<any>, locations: list<dict<any>>,
   endfor
 
   var save_winid = win_getid()
-  setloclist(0, [], ' ', {title: title, items: qflist})
-  var mods: string = ''
-  exe $'{mods} lopen'
+
+  if opt.lspOptions.useQuickfixForLocations
+    setqflist([], ' ', {title: title, items: qflist})
+    var mods: string = ''
+    exe $'{mods} copen'
+  else
+    setloclist(0, [], ' ', {title: title, items: qflist})
+    var mods: string = ''
+    exe $'{mods} lopen'
+  endif
+
   if !opt.lspOptions.keepFocusInReferences
     save_winid->win_gotoid()
   endif
