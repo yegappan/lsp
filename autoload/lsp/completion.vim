@@ -407,7 +407,7 @@ enddef
 
 # If the completion popup documentation window displays 'markdown' content,
 # then set the 'filetype' to 'lspgfm'.
-def LspSetFileType()
+def LspSetPopupFileType()
   var item = v:event.completed_item
   if !item->has_key('user_data') || item.user_data->empty()
     return
@@ -471,7 +471,7 @@ def AddAutocmds(lspserver: dict<any>, bnr: number)
   acmds->add({bufnr: bnr,
                  event: 'CompleteChanged',
                  group: 'LSPBufferAutocmds',
-                 cmd: 'LspSetFileType()'})
+                 cmd: 'LspSetPopupFileType()'})
 
   # Execute LSP server initiated text edits after completion
   acmds->add({bufnr: bnr,
