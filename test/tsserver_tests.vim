@@ -13,11 +13,6 @@ var lspServers = [{
 call LspAddServer(lspServers)
 echomsg systemlist($'{lspServers[0].path} --version')
 
-def g:Test_Empty()
-  # At least one test is needed for each file, delete this
-  # whenever a real test is created.
-enddef
-
 # Test for auto-completion.  Make sure that only keywords that matches with the
 # keyword before the cursor are shown.
 # def g:Test_LspCompletion1()
