@@ -22,11 +22,15 @@ def CloseCurBufSignaturePopup()
 enddef
 
 # Initialize the signature triggers for the current buffer
-export def SignatureInit(lspserver: dict<any>)
-  if !opt.lspOptions.showSignature
-	|| !lspserver.isSignatureHelpProvider
+export def BufferInit(lspserver: dict<any>)
+  if !lspserver.isSignatureHelpProvider
 	|| !lspserver.caps.signatureHelpProvider->has_key('triggerCharacters')
     # no support for signature help
+    return
+  endif
+
+  if !opt.lspOptions.showSignature
+    # Show signature are disabled
     return
   endif
 
@@ -34,6 +38,7 @@ export def SignatureInit(lspserver: dict<any>)
   for ch in lspserver.caps.signatureHelpProvider.triggerCharacters
     exe $"inoremap <buffer> <silent> {ch} {ch}<C-R>=LspShowSignature()<CR>"
   endfor
+
   # close the signature popup when leaving insert mode
   autocmd_add([{bufnr: bufnr(),
 		event: 'InsertLeave',

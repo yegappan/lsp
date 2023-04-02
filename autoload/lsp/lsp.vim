@@ -300,12 +300,6 @@ def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
 		cmd: 'call LspDocHighlightClear() | call LspDocHighlight()'})
   endif
 
-  # Displaying inlay hints needs the Vim virtual text support.
-  if opt.lspOptions.showInlayHints && (lspserver.isInlayHintProvider
-				|| lspserver.isClangdInlayHintsProvider)
-    inlayhints.BufferInit(bnr)
-  endif
-
   # Show diagnostics on the status line
   if opt.lspOptions.showDiagOnStatusLine
     acmds->add({bufnr: bnr,
@@ -329,14 +323,13 @@ def BufferInit(bnr: number): void
   # add a listener to track changes to this buffer
   listener_add(Bufchange_listener, bnr)
 
-  completion.BufferInit(lspserver, bnr, ftype)
+  AddBufLocalAutocmds(lspserver, bnr)
 
   setbufvar(bnr, '&balloonexpr', 'g:LspDiagExpr()')
 
-  # initialize signature help
-  signature.SignatureInit(lspserver)
-
-  AddBufLocalAutocmds(lspserver, bnr)
+  completion.BufferInit(lspserver, bnr, ftype)
+  signature.BufferInit(lspserver)
+  inlayhints.BufferInit(lspserver, bnr)
 
   if exists('#User#LspAttached')
     doautocmd <nomodeline> User LspAttached
