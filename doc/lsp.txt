@@ -154,8 +154,8 @@ a list of lanaguge server details in the .vimrc file.
 To register a language server, add the following lines to your .vimrc file
 (use only the language servers that you need from the below list).
 If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the
-LSP plugin, the steps are described later in this section:
->
+LSP plugin, the steps are described later in this section: >
+
    let lspServers = [
 		\     #{
 		\	 filetype: ['javascript', 'typescript'],
@@ -412,7 +412,7 @@ To get a particular option value you can use the following: >
 	echo LspOptionsGet()['autoHighlightDiags']
 <
 ==============================================================================
-5. Commands						*lsp-commands*
+5. Commands					*lsp-commands*
 
 A description of the various commands provided by this plugin is below.  You
 can map these commands to keys and make it easier to invoke them.
@@ -513,6 +513,7 @@ can map these commands to keys and make it easier to invoke them.
 			use the modifiers to specify whether a new window or
 			a new tab page is used and where the window is opened.
 			Example(s): >
+
 			    # Open a horizontally split window
 			    :topleft LspGotoDefinition
 			    # Open a vertically split window
@@ -696,7 +697,6 @@ can map these commands to keys and make it easier to invoke them.
 
 				call LspOptionsSet({'useQuickfixForLocations': v:true})
 <
-			Set '
 
 :LspShowServerCapabilities			*:LspShowServerCapabilities*
 			Display the list of language server capabilities for
@@ -877,8 +877,8 @@ using the |:LspDiagHighlightDisable| command and re-enable them using the
 |:LspDiagHighlightEnable| command.
 
 To disable the automatic placement of signs on the lines with a diagnostic
-message, you can set the 'autoHighlightDiags' option to v:false:
->
+message, you can set the 'autoHighlightDiags' option to v:false: >
+
 	call LspOptionsSet({'autoHighlightDiags': v:false})
 <
 By default the 'autoHighlightDiags' option is set to v:true.
@@ -940,8 +940,8 @@ The |:LspFormat| command can be used to format either the entire file or a
 selected range of lines using the language server.  The 'shiftwidth' and
 'expandtab' values set for the current buffer are used when format is applied.
 
-To format code using the 'gq' command, you can set the 'formatexpr' option:
->
+To format code using the 'gq' command, you can set the 'formatexpr' option: >
+
     setlocal formatexpr=lsp#lsp#FormatExpr()
 <
 ==============================================================================
@@ -997,7 +997,7 @@ LspDiagsUpdated			A |User| autocommand invoked when new
 				has processed the diagnostics.
 
 ==============================================================================
-12. Highlight Groups					*lsp-highlight-groups*
+12. Highlight Groups				*lsp-highlight-groups*
 
 The following highlight groups are used by the LSP plugin.  You can define
 these highlight groups in your .vimrc file before sourcing this plugin to
@@ -1038,19 +1038,17 @@ override them.
 				group.
 
 For example, to override the highlight used for diagnostics virtual text, you
-can use the following:
->
+can use the following: >
+
     highlight LspDiagVirtualText ctermfg=Cyan guifg=Blue
 <
+or >
 
-or
-
->
     highlight link LspDiagLine NONE
     highlight link LspDiagVirtualText WarningMsg
 <
 ==============================================================================
-13. Debugging						*lsp-debug*
+13. Debugging					*lsp-debug*
 
 To debug this plugin, you can log the language server protocol messages sent
 and received by the plugin from the language server.  The following command
