@@ -443,6 +443,14 @@ can map these commands to keys and make it easier to invoke them.
 			the cursor.  Otherwise works exactly like
 			|:LspDiagCurrent|
 
+			To show the current diagnotic under the cursor while
+			moving around the following autocmd can be used: >
+
+			    augroup LspCustom
+			    au!
+			    au CursorMoved * silent! LspDiagCurrent!
+			    augroup END
+<
 						*:LspDiagFirst*
 :LspDiagFirst		Jumps to the location of the first diagnostic message
 			for the current file.
