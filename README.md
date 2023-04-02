@@ -6,17 +6,17 @@ Language Server Protocol (LSP) plugin for Vim. You need Vim version 9.0 or above
 
 You can install this plugin directly from github using the following steps:
 
-```
-    $ mkdir -p $HOME/.vim/pack/downloads/opt
-    $ cd $HOME/.vim/pack/downloads/opt
-    $ git clone https://github.com/yegappan/lsp
+```bash
+$ mkdir -p $HOME/.vim/pack/downloads/opt
+$ cd $HOME/.vim/pack/downloads/opt
+$ git clone https://github.com/yegappan/lsp
 ```
 
 After installing the plugin using the above steps, add the following line to
 your $HOME/.vimrc file:
 
-```
-    packadd lsp
+```viml
+packadd lsp
 ```
 
 You can also install and manage this plugin using any one of the Vim plugin managers (dein.vim, pathogen, vam, vim-plug, volt, Vundle, etc.).
@@ -48,7 +48,7 @@ The following language server protocol (LSP) features are supported:
 To use the plugin features with a particular file type(s), you need to first register a LSP server for that file type(s).
 
 To register a LSP server, add the following lines to your .vimrc file (use only the LSP servers that you need from the below list).  If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, the steps are described later in this section.
-```
+```viml
    function! TypeScriptCustomNotificationHandler(lspserver, reply) abort
      echom printf("TypeScript Version = %s", a:reply.params.version)
    endfunction
@@ -126,7 +126,7 @@ customNotificationHandlers|A dictionary of notifications and functions that can 
 The LSP servers are added using the LspAddServer() function. This function accepts a list of LSP servers with the above information.
 
 If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, then you need to use the VimEnter autocmd to initialize the LSP server and to set the LSP server options.  For example:
-```
+```viml
     let lspServers = [
 		\     #{
 		\        filetype: ['c', 'cpp'],
