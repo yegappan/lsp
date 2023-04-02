@@ -4,6 +4,7 @@ vim9script
 
 import './util.vim'
 import './buffer.vim' as buf
+import './options.vim' as opt
 
 # Initialize the highlight group and the text property type used for
 # inlay hints.
@@ -103,7 +104,17 @@ def LspInlayHintsUpdateStop()
 enddef
 
 # Do buffer-local initialization for displaying inlay hints
-export def BufferInit(bnr: number)
+export def BufferInit(lspserver: dict<any>, bnr: number)
+  if !lspserver.isInlayHintProvider && !lspserver.isClangdInlayHintsProvider
+    # no support for inley hints
+    return
+  endif
+
+  # Inlays hints are disabled
+  if !opt.lspOptions.showInlayHints
+    return
+  endif
+
   var acmds: list<dict<any>> = []
 
   # Update the inlay hints (if needed) when the cursor is not moved for some
