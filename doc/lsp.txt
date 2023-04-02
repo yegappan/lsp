@@ -439,6 +439,10 @@ can map these commands to keys and make it easier to invoke them.
 			a popup window.  Otherwise the message is displayed in
 			the status message area.
 
+:LspDiagCurrent!	Only display a diagnostic message if it's directly under
+			the cursor.  Otherwise works exactly like
+			|:LspDiagCurrent|
+
 						*:LspDiagFirst*
 :LspDiagFirst		Jumps to the location of the first diagnostic message
 			for the current file.
