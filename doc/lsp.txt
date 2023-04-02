@@ -1005,8 +1005,8 @@ can use the following:
 or
 
 >
-    hi! link LspDiagLine NONE
-    hi! link LspDiagVirtualText WarningMsg
+    highlight link LspDiagLine NONE
+    highlight link LspDiagVirtualText WarningMsg
 <
 ==============================================================================
 13. Debugging						*lsp-debug*
