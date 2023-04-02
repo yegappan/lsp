@@ -323,14 +323,13 @@ def BufferInit(bnr: number): void
   # add a listener to track changes to this buffer
   listener_add(Bufchange_listener, bnr)
 
-  completion.BufferInit(lspserver, bnr, ftype)
+  AddBufLocalAutocmds(lspserver, bnr)
 
   setbufvar(bnr, '&balloonexpr', 'g:LspDiagExpr()')
 
-  # initialize signature help
-  signature.SignatureInit(lspserver)
-
-  AddBufLocalAutocmds(lspserver, bnr)
+  completion.BufferInit(lspserver, bnr, ftype)
+  signature.BufferInit(lspserver)
+  inlayhints.BufferInit(lspserver, bnr)
 
   if exists('#User#LspAttached')
     doautocmd <nomodeline> User LspAttached
