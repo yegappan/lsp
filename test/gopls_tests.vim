@@ -12,6 +12,8 @@ call LspAddServer(lspServers)
 echomsg systemlist($'{lspServers[0].path} version')
 
 # Test for :LspGotoDefinition, :LspGotoDeclaration, etc.
+# This test also tests that multiple locations will be
+# shown in a list or popup
 def g:Test_LspGoto()
   :silent! edit Xtest.go
   sleep 200m
@@ -19,11 +21,19 @@ def g:Test_LspGoto()
   var lines =<< trim END
     package main
 
-    func foo() {
+    type A/*goto implementation*/ interface {
+            Hello()
     }
 
-    func bar() {
-	foo();
+    type B struct{}
+
+    func (b *B) Hello() {}
+
+    type C struct{}
+
+    func (c *C) Hello() {}
+
+    func main() {
     }
   END
   
@@ -31,11 +41,62 @@ def g:Test_LspGoto()
   :redraw!
   g:WaitForServerFileLoad(0)
 
-  cursor(7, 1)
+  cursor(9, 10)
   :LspGotoDefinition
-  assert_equal([3, 6], [line('.'), col('.')])
+  assert_equal([7, 6], [line('.'), col('.')])
   exe "normal! \<C-t>"
-  assert_equal([7, 1], [line('.'), col('.')])
+  assert_equal([9, 10], [line('.'), col('.')])
+
+  cursor(9, 13)
+  :LspGotoImpl
+  assert_equal([4, 9], [line('.'), col('.')])
+
+  cursor(13, 13)
+  :LspGotoImpl
+  assert_equal([4, 9], [line('.'), col('.')])
+
+  # Two implementions needs to be shown in a location list
+  cursor(4, 9)
+  assert_equal('', execute('LspGotoImpl'))
+  sleep 200m
+  var loclist: list<dict<any>> = getloclist(0)
+  assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
+  assert_equal(2, loclist->len())
+  assert_equal(bufnr(), loclist[0].bufnr)
+  assert_equal([9, 13, ''], [loclist[0].lnum, loclist[0].col, loclist[0].type])
+  assert_equal([13, 13, ''], [loclist[1].lnum, loclist[1].col, loclist[1].type])
+  lclose
+
+  # Two implementions needs to be shown in a quickfix list
+  g:LspOptionsSet({ useQuickfixForLocations: true })
+  cursor(4, 9)
+  assert_equal('', execute('LspGotoImpl'))
+  sleep 200m
+  var qfl: list<dict<any>> = getqflist()
+  assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
+  assert_equal(2, qfl->len())
+  assert_equal(bufnr(), qfl[0].bufnr)
+  assert_equal([9, 13, ''], [qfl[0].lnum, qfl[0].col, qfl[0].type])
+  assert_equal([13, 13, ''], [qfl[1].lnum, qfl[1].col, qfl[1].type])
+  cclose
+  g:LspOptionsSet({ useQuickfixForLocations: false })
+
+  # Two implementions needs to be peeked in a popup
+  cursor(4, 9)
+  :LspPeekImpl
+  sleep 10m
+  var ids = popup_list()
+  assert_equal(2, ids->len())
+  var filePopupAttrs = ids[0]->popup_getoptions()
+  var refPopupAttrs = ids[1]->popup_getoptions()
+  assert_match('Xtest', filePopupAttrs.title)
+  assert_match('Implementation', refPopupAttrs.title)
+  assert_equal(9, line('.', ids[0])) # current line in left panel
+  assert_equal(2, line('$', ids[1])) # last line in right panel
+  feedkeys("j\<CR>", 'xt')
+  assert_equal(13, line('.'))
+  assert_equal([], popup_list())
+  popup_clear()
 
   bw!
 enddef
