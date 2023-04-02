@@ -555,13 +555,13 @@ export def ShowDiagnostics(): void
 enddef
 
 # Show the diagnostic message for the current line
-export def LspShowCurrentDiag()
+export def LspShowCurrentDiag(atPos: bool)
   var lspserver: dict<any> = buf.CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
 
-  diag.ShowCurrentDiag(lspserver)
+  diag.ShowCurrentDiag(lspserver, atPos)
 enddef
 
 # Display the diagnostics for the current line in the status line.

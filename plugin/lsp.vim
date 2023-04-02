@@ -78,7 +78,7 @@ augroup END
 
 # LSP commands
 command! -nargs=? -bar -range LspCodeAction lsp.CodeAction(<line1>, <line2>, <q-args>)
-command! -nargs=0 -bar LspDiagCurrent lsp.LspShowCurrentDiag()
+command! -nargs=0 -bar -bang LspDiagCurrent lsp.LspShowCurrentDiag(<bang>false)
 command! -nargs=0 -bar LspDiagFirst lsp.JumpToDiag('first')
 command! -nargs=0 -bar LspDiagHighlightDisable lsp.DiagHighlightDisable()
 command! -nargs=0 -bar LspDiagHighlightEnable lsp.DiagHighlightEnable()
