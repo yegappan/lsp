@@ -89,6 +89,7 @@ The following commands are provided:
 :LspFold		Fold the current file
 :LspFormat		Format a range of lines in the current file using the
 			language server.  The default range is the entire file.
+			See |lsp-format| for more information.
 :LspGotoDeclaration	Go to the declaration of the symbol under cursor
 :LspGotoDefinition	Go to the definition of the symbol under cursor
 :LspGotoImpl		Go to the implementation of the symbol under cursor
@@ -142,6 +143,7 @@ The following commands are provided:
 
 ==============================================================================
 4. Configuration				*lsp-configuration*
+						*LspAddServer* *g:LspAddServer*
 
 To use the plugin features with a particular file type(s), you need to first
 register a language server for that file type(s).
@@ -217,14 +219,18 @@ Shell script, Vim script and PHP file types: >
 <
 To add a language server, the following information is needed:
 
+						*lsp-cfg-path*
 	path		complete path to the language server executable
 			(without any arguments).
+						*lsp-cfg-args*
 	args		a list of command-line arguments passed to the
 			language server. Each argument is a separate List
 			item.
+						*lsp-cfg-filetype*
 	filetype	One or more file types supported by the language
 			server.  This can be a |String| or a |List|. To specify
 			multiple multiple file types, use a List.
+						*lsp-cfg-initializationOptions*
 	initializationOptions
 			(Optional) for lsp servers (e.g. intelephense) some
 			additional initialization options may be required
@@ -234,15 +240,18 @@ To add a language server, the following information is needed:
 
 Aditionally the following configurations can be made:
 
+						*lsp-cfg-customNotificationHandlers*
 	customNotificationHandlers
 			(Optional) some lsp servers (e.g.
 			typescript-language-server) will send additional
 			notifications which you might want to silence or handle.
 			The provided notification handlers will be called with a
 			reference to the "lspserver" and the "reply".
+						*lsp-cfg-omnicompl*
 	omnicompl	(Optional) a boolean value that enables (true)
 			or disables (false) omni-completion for this file
 			types. By default this is set to "v:true".
+						*lsp-cfg-syncInit*
 	syncInit        (Optional) for language servers (e.g. rust analyzer,
 			gopls, etc.) that take time to initialize and reply to
 			a "initialize" request message this should be set to
@@ -270,23 +279,30 @@ server and to set the language server options.  For example: >
     let lspOpts = {'autoHighlightDiags': v:true}
     autocmd VimEnter * call LspOptionsSet(lspOpts)
 <
-							*lsp-options*
+						*lsp-options* *LspOptionsSet*
+						*g:LspOptionsSet*
+
 Some of the LSP plugin features can be enabled or disabled by using the
 LspOptionsSet() function. This function accepts a dictionary argument with the
 following optional items:
 
+						*lsp-opt-autoComplete*
 autoComplete		|Boolean| option. In insert mode, automatically
 			complete the current symbol. Otherwise use
 			omni-completion. By default this is set to true.
+						*lsp-opt-autoHighlight*
 autoHighlight		|Boolean| option. In normal mode, automatically
 			highlight all the occurrences of the symbol under the
 			cursor. By default this is set to false.
+						*lsp-opt-autoHighlightDiags*
 autoHighlightDiags	|Boolean| option. Automatically place signs on the
 			lines with a diagnostic message from the language
 			server. By default this is set to true.
+						*lsp-opt-autoPopulateDiags*
 autoPopulateDiags	|Boolean| option. Automatically populate the location
 			list with diagnostics from the language server.
 			By default this is set to false.
+						*lsp-opt-completionMatcher*
 completionMatcher	|String| option.  Enable fuzzy or case insensitive
 			completion for language servers that replies with a
 			full list of completion items.  Some language servers
@@ -300,64 +316,86 @@ completionMatcher	|String| option.  Enable fuzzy or case insensitive
 			    case  - case sensitive matching (default).
 			    fuzzy - fuzzy match completion items.
 			    icase - ignore case when matching items.
+						*lsp-opt-diagSignErrorText*
 diagSignErrorText       |String| option. Change diag sign text for errors
                         By default 'E>'
+						*lsp-opt-diagSignHintText*
 diagSignHintText        |String| option. Change diag sign text for hints
                         By default 'H>',
+						*lsp-opt-diagSignInfoText*
 diagSignInfoText        |String| option. Change diag sign text for info
                         By default 'I>',
+						*lsp-opt-diagSignWarningText*
 diagSignWarningText     |String| option. Change diag sign text for warnings
                         By default 'W>',
+						*lsp-opt-echoSignature*
 echoSignature		|Boolean| option.  In insert mode, echo the current
 			symbol signature instead of showing it in a popup.
 			By default this is set to false.
+						*lsp-opt-hideDisabledCodeActions*
 hideDisabledCodeActions |Boolean| option. Hide all the disabled code actions.
 			By default this is set to false.
+						*lsp-opt-highlightDiagInline*
 highlightDiagInline	|Boolean| option.  Highlight the diagnostics inline
 			By default this is set to false.
+						*lsp-opt-hoverInPreview*
 hoverInPreview		|Boolean| option. Show |:LspHover| in a preview window
 			instead of a popup.
 			By default this is set to false.
+						*lsp-opt-ignoreMissingServer*
 ignoreMissingServer	|Boolean| option.  Do not print a missing language
 			server executable.  By default this is set to false.
+						*lsp-opt-keepFocusInReferences*
 keepFocusInReferences	|Boolean| option.  Focus on the location list window
 			after LspShowReferences.
 			By default this is set to false.
+						*lsp-opt-noDiagHoverOnLine*
 noDiagHoverOnLine	|Boolean| option.  Suppress diagnostic hover from
 			appearing when the mouse is over the line instead of
 			the signature.  By default this is set to true.
+						*lsp-opt-noNewlineInCompletion*
 noNewlineInCompletion	|Boolean| option.  Suppress adding a new line on
 			completion selection with <CR>.
 			By default this is set to false.
+						*lsp-opt-outlineOnRight*
 outlineOnRight		|Boolean| option.  Open the outline window on the
 			right side, by default this is false.
+						*lsp-opt-outlineWinSize*
 outlineWinSize		|Number| option.  The size of the symbol Outline
 			window.  By default this is set to 20.
+						*lsp-opt-useQuickfixForLocations*
 useQuickfixForLocations	|Boolean| option.  Show |:LspShowReferences| in a
 			quickfix list instead of a location list.
 			By default this is set to false.
+						*lsp-opt-showDiagInPopup*
 showDiagInPopup		|Boolean| option.  When using the |:LspDiagCurrent|
 			command to display the diagnostic message for the
 			current line, use a popup window to display the
 			message instead of echoing in the status area.
 			By default this is set to true.
+						*lsp-opt-showDiagOnStatusLine*
 showDiagOnStatusLine	|Boolean| option.  Show a diagnostic message on a
 			status line.  By default this is set to false.
+						*lsp-opt-showDiagWithVirtualText*
 showDiagWithVirtualText	|Boolean| option.  Show diagnostic message text from
 			the language server with virtual text.  By default
 			this is set to false.  The "autoHighlightDiags" option
 			should be set to true.
 			Needs Vim version 9.0.1157 or later.
+						*lsp-opt-showInlayHints*
 showInlayHints		|Boolean| option.  Show inlay hints from the language
 			server.  By default this is set to false.  The inlay
 			hint text is displayed as a virtual text.  Needs Vim
 			version 9.0.0178 or later.
+						*lsp-opt-showSignature*
 showSignature		|Boolean| option.  In insert mode, automatically show
 			the current symbol signature in a popup.
 			By default this is set to true.
+						*lsp-opt-snippetSupport*
 snippetSupport		|Boolean| option.  Enable snippet completion support.
 			Need a snippet completion plugin like vim-vsnip.
 			By default this is set to false.
+						*lsp-opt-usePopupInCodeAction*
 usePopupInCodeAction    |Boolean| option.  When using the |:LspCodeAction|
 			command to display the code action for the current
 			line, use a popup menu instead of echoing.
@@ -628,7 +666,7 @@ can map these commands to keys and make it easier to invoke them.
 			are logged to the /tmp/lsp-server.out and
 			/tmp/lsp-server.err file respectively.  On MS-Windows,
 			the %TEMP%/lsp-server.out and %TEMP%/lsp-server.err%
-			files are used.
+			files are used. See |lsp-debug| for more information.
 
 						*:LspServerRestart*
 :LspServerRestart	Restart (stop and then start) the language server for
@@ -880,7 +918,7 @@ message area instead, you can set the 'showDiagInPopup' option to false.  By
 default this is set to true.
 
 ==============================================================================
-8. Tag Function
+8. Tag Function					*lsp-tagfunc*
 
 The |:LspGotoDefinition| command can be used jump to the location where a
 symbol is defined.  To jump to the symbol definition using the Vim
@@ -896,7 +934,7 @@ Note that most of the language servers return only one symbol location even if
 the symbol is defined in multiple places in the code.
 
 ==============================================================================
-9. Code Formatting
+9. Code Formatting				*lsp-format*
 
 The |:LspFormat| command can be used to format either the entire file or a
 selected range of lines using the language server.  The 'shiftwidth' and
@@ -907,7 +945,7 @@ To format code using the 'gq' command, you can set the 'formatexpr' option:
     setlocal formatexpr=lsp#lsp#FormatExpr()
 <
 ==============================================================================
-10. Call Hierarchy					*lsp-call-hierarchy*
+10. Call Hierarchy				*lsp-call-hierarchy*
 
 The |:LspIncomingCalls| and the |:LspOutoingCalls| commands can be used to
 display the call hierarchy of a symbol.  For example, the functions calling a
@@ -929,27 +967,30 @@ hierarchy in this window.  You cannot display both at the same time.
 
 In the call hierarchy tree window, the following commands are supported:
 
+						*:LspCallHierarchyRefresh*
 :LspCallHierarchyRefresh	Query the language server again for the top
 				level symbol and refresh the call hierarchy
 				tree.
+						*:LspCallHierarchyIncoming*
 :LspCallHierarchyIncoming	Display the incoming call hierarchy for the
 				top level symbol.  If the window is currently
 				displaying the outgoing calls, then it is
 				refreshed to display the incoming calls.
+						*:LspCallHierarchyOutgoing*
 :LspCallHierarchyOutgoing	Display the outgoing call hierarchy for the
 				top level symbol.  If the window is currently
 				displaying the incoming calls, then it is
 				refreshed to display the outgoing calls.
 
 ==============================================================================
-11. Autocommands					*lsp-autocmds*
+11. Autocommands				*lsp-autocmds*
 
-							*LspAttached*
+						*LspAttached*
 LspAttached			A |User| autocommand fired when the LSP client
 				attaches to a buffer. Can be used to configure
 				buffer-local mappings or options.
 
-							*LspDiagsUpdated*
+						*LspDiagsUpdated*
 LspDiagsUpdated			A |User| autocommand invoked when new
 				diagnostics are received from the language
 				server.  This is invoked after the LSP client
@@ -962,37 +1003,37 @@ The following highlight groups are used by the LSP plugin.  You can define
 these highlight groups in your .vimrc file before sourcing this plugin to
 override them.
 
-LspDiagLine			Used to highlight a line with one or more
+*LspDiagLine*			Used to highlight a line with one or more
 				diagnostics.  By default linked to the
 				"DiffAdd" highlight group.  Use "NONE" to
 				disable.
-LspDiagInlineError		Used to highlight inline error diagnostics.
+*LspDiagInlineError*		Used to highlight inline error diagnostics.
 				By default, linked to the "SpellBad" highlight
 				group.
-LspDiagInlineHint		Used to highlight inline hint diagnostics.
+*LspDiagInlineHint*		Used to highlight inline hint diagnostics.
 				By default, linked to the "SpellLocal"
 				highlight group.
-LspDiagInlineInfo		Used to highlight inline info diagnostics.
+*LspDiagInlineInfo*		Used to highlight inline info diagnostics.
 				By default, linked to the "SpellRare" highlight
 				group.
-LspDiagInlineWarning		Used to highlight inline warning diagnostics.
+*LspDiagInlineWarning*		Used to highlight inline warning diagnostics.
 				By default, linked to the "SpellCap" highlight
 				group.
-LspDiagSignErrorText		Used to highlight the sign text for error
+*LspDiagSignErrorText*		Used to highlight the sign text for error
 				diags.  By default linked to 'ErrorMsg'.
-LspDiagSignHintText		Used to highlight the sign text for hint
+*LspDiagSignHintText*		Used to highlight the sign text for hint
 				diags.  By default linked to 'Question'.
-LspDiagSignInfoText		Used to highlight the sign text for info
+*LspDiagSignInfoText*		Used to highlight the sign text for info
 				diags.  By default linked to 'Pmenu'.
-LspDiagSignWarningText		Used to highlight the sign text for warning
+*LspDiagSignWarningText*	Used to highlight the sign text for warning
 				diags.  By default linked to 'Search'.
-LspDiagVirtualText		Used to highlight diagnostic virtual text.
+*LspDiagVirtualText*		Used to highlight diagnostic virtual text.
 				By default, linked to the "LineNr" highlight
 				group.
-LspInlayHintsParam		Used to highlight inlay hints of kind
+*LspInlayHintsParam*		Used to highlight inlay hints of kind
 				"parameter".  By default, linked to the
 				"Label" highlight group.
-LspInlayHintsType		Used to highlight inlay hints of kind "type".
+*LspInlayHintsType*		Used to highlight inlay hints of kind "type".
 				By default, linked to the "Conceal" highlight
 				group.
 
@@ -1041,7 +1082,7 @@ use the :LspServerTrace command to set the trace value: >
     :LspServerTrace { off | messages | verbose }
 <
 ==============================================================================
-14. Custom Command Handlers				*lsp-custom-commands*
+14. Custom Command Handlers			*lsp-custom-commands*
 
 When applying a code action, the language server may issue a non-standard
 command.  For example, the Java language server uses non-standard commands
