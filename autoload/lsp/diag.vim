@@ -8,59 +8,56 @@ import './util.vim'
 
 # Initialize the signs and the text property type used for diagnostics.
 export def InitOnce()
-  var lineHL: string = opt.lspOptions.diagLineHL
   # Signs used for LSP diagnostics
+  hlset([{name: 'LspDiagLine', default: true, linksto: 'DiffAdd'}])
+  hlset([{name: 'LspDiagSignErrorText', default: true, linksto: 'ErrorMsg'}])
+  hlset([{name: 'LspDiagSignWarningText', default: true, linksto: 'Search'}])
+  hlset([{name: 'LspDiagSignInfoText', default: true, linksto: 'Pmenu'}])
+  hlset([{name: 'LspDiagSignHintText', default: true, linksto: 'Question'}])
   sign_define([
-        {
-            name: 'LspDiagError',
-            text: opt.lspOptions.diagSignErrorText,
-            texthl: opt.lspOptions.diagSignErrorTexthl,
-		    linehl: lineHL
-        },
-		{
-            name: 'LspDiagWarning',
-            text: opt.lspOptions.diagSignWarningText,
-            texthl: opt.lspOptions.diagSignWarningTexthl,
-            linehl: lineHL
-        },
-		{
-            name: 'LspDiagInfo',
-            text: opt.lspOptions.diagSignInfoText,
-            texthl: opt.lspOptions.diagSignInfoTexthl,
-            linehl: lineHL
-        },
-		{
-            name: 'LspDiagHint',
-            text: opt.lspOptions.diagSignHintText,
-            texthl: opt.lspOptions.diagSignHintTexthl,
-            linehl: lineHL
-        }
+    {
+      name: 'LspDiagError',
+      text: opt.lspOptions.diagSignErrorText,
+      texthl: 'LspDiagSignErrorText',
+      linehl: 'LspDiagLine'
+    },
+    {
+      name: 'LspDiagWarning',
+      text: opt.lspOptions.diagSignWarningText,
+      texthl: 'LspDiagSignWarningText',
+      linehl: 'LspDiagLine'
+    },
+    {
+      name: 'LspDiagInfo',
+      text: opt.lspOptions.diagSignInfoText,
+      texthl: 'LspDiagSignInfoText',
+      linehl: 'LspDiagLine'
+    },
+    {
+      name: 'LspDiagHint',
+      text: opt.lspOptions.diagSignHintText,
+      texthl: 'LspDiagSignHintText',
+      linehl: 'LspDiagLine'
+    }
   ])
 
   if opt.lspOptions.highlightDiagInline
-    if !hlexists('LspDiagInlineError')
-      hlset([{name: 'LspDiagInlineError', linksto: opt.lspOptions.diagInlineErrorHL}])
-    endif
-    if !hlexists('LspDiagInlineWarning')
-      hlset([{name: 'LspDiagInlineWarning', linksto: opt.lspOptions.diagInlineWarningHL}])
-    endif
-    if !hlexists('LspDiagInlineInfo')
-      hlset([{name: 'LspDiagInlineInfo', linksto: opt.lspOptions.diagInlineInfoHL}])
-    endif
-    if !hlexists('LspDiagInlineHint')
-      hlset([{name: 'LspDiagInlineHint', linksto: opt.lspOptions.diagInlineHintHL}])
-    endif
-    prop_type_add('LspDiagInlineError', { highlight: 'LspDiagInlineError', override: true })
-    prop_type_add('LspDiagInlineWarning', { highlight: 'LspDiagInlineWarning', override: true })
-    prop_type_add('LspDiagInlineInfo', { highlight: 'LspDiagInlineInfo', override: true })
-    prop_type_add('LspDiagInlineHint', { highlight: 'LspDiagInlineHint', override: true })
+    hlset([{name: 'LspDiagInlineError', default: true, linksto: 'SpellBad'}])
+    hlset([{name: 'LspDiagInlineWarning', default: true, linksto: 'SpellCap'}])
+    hlset([{name: 'LspDiagInlineInfo', default: true, linksto: 'SpellRare'}])
+    hlset([{name: 'LspDiagInlineHint', default: true, linksto: 'SpellLocal'}])
+    prop_type_add('LspDiagInlineError',
+			{ highlight: 'LspDiagInlineError', override: true })
+    prop_type_add('LspDiagInlineWarning',
+			{ highlight: 'LspDiagInlineWarning', override: true })
+    prop_type_add('LspDiagInlineInfo',
+			{ highlight: 'LspDiagInlineInfo', override: true })
+    prop_type_add('LspDiagInlineHint',
+			{ highlight: 'LspDiagInlineHint', override: true })
   endif
 
   if opt.lspOptions.showDiagWithVirtualText
-    if !hlexists('LspDiagVirtualText')
-      hlset([{name: 'LspDiagVirtualText',
-	      linksto: opt.lspOptions.diagVirtualTextHL}])
-    endif
+    hlset([{name: 'LspDiagVirtualText', default: true, linksto: 'LineNr'}])
     prop_type_add('LspDiagVirtualText', {highlight: 'LspDiagVirtualText',
 					 override: true})
   endif

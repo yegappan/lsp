@@ -15,27 +15,11 @@ export var lspOptions: dict<any> = {
   # icase | fuzzy | case match for language servers that replies with a full
   # list of completion items
   completionMatcher: 'case',
-  # The highlight group used inline Error diagnostics
-  diagInlineErrorHL: 'SpellBad',
-  # The highlight group used inline Hint diagnostics
-  diagInlineHintHL: 'SpellLocal',
-  # The highlight group used inline Info diagnostics
-  diagInlineInfoHL: 'SpellRare',
-  # The highlight group used inline Warning diagnostics
-  diagInlineWarningHL: 'SpellCap',
-  # Default diagnostic highlight on lines
-  diagLineHL: 'DiffAdd',
   # diagnostics signs options
   diagSignErrorText: 'E>',
-  diagSignErrorTexthl: 'ErrorMsg',
   diagSignHintText: 'H>',
-  diagSignHintTexthl: 'Question',
   diagSignInfoText: 'I>',
-  diagSignInfoTexthl: 'Pmenu',
   diagSignWarningText: 'W>',
-  diagSignWarningTexthl: 'Search',
-  # The highlight group used for a diagnostics virtual text
-  diagVirtualTextHL: 'LineNr',
   # In insert mode, echo the current symbol signature in the status line
   # instead of showing it in a popup
   echoSignature: false,
