@@ -1001,6 +1001,13 @@ can use the following:
 >
     highlight LspDiagVirtualText ctermfg=Cyan guifg=Blue
 <
+
+or
+
+>
+    highlight link LspDiagLine NONE
+    highlight link LspDiagVirtualText WarningMsg
+<
 ==============================================================================
 13. Debugging						*lsp-debug*
 
