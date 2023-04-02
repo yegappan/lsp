@@ -6,17 +6,17 @@ Language Server Protocol (LSP) plugin for Vim. You need Vim version 9.0 or above
 
 You can install this plugin directly from github using the following steps:
 
-```
-    $ mkdir -p $HOME/.vim/pack/downloads/opt
-    $ cd $HOME/.vim/pack/downloads/opt
-    $ git clone https://github.com/yegappan/lsp
+```bash
+$ mkdir -p $HOME/.vim/pack/downloads/opt
+$ cd $HOME/.vim/pack/downloads/opt
+$ git clone https://github.com/yegappan/lsp
 ```
 
 After installing the plugin using the above steps, add the following line to
 your $HOME/.vimrc file:
 
-```
-    packadd lsp
+```viml
+packadd lsp
 ```
 
 You can also install and manage this plugin using any one of the Vim plugin managers (dein.vim, pathogen, vam, vim-plug, volt, Vundle, etc.).
@@ -48,67 +48,67 @@ The following language server protocol (LSP) features are supported:
 To use the plugin features with a particular file type(s), you need to first register a LSP server for that file type(s).
 
 To register a LSP server, add the following lines to your .vimrc file (use only the LSP servers that you need from the below list).  If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, the steps are described later in this section.
-```
-   function! TypeScriptCustomNotificationHandler(lspserver, reply) abort
-     echom printf("TypeScript Version = %s", a:reply.params.version)
-   endfunction
-   let lspServers = [
-		\     #{
-		\        filetype: ['c', 'cpp'],
-		\        path: '/usr/local/bin/clangd',
-		\        args: ['--background-index']
-		\      },
-		\     #{
-		\	 filetype: ['javascript', 'typescript'],
-		\	 path: '/usr/local/bin/typescript-language-server',
-		\	 args: ['--stdio'],
-		\	 customNotificationHandlers: {
-		\	   '$/typescriptVersion': function('TypeScriptCustomNotificationHandler')
-		\	 }
-		\      },
-		\     #{
-		\	 filetype: 'sh',
-		\	 path: '/usr/local/bin/bash-language-server',
-		\	 args: ['start']
-		\      },
-		\     #{
-		\	 filetype: 'vim',
-		\	 path: '/usr/local/bin/vim-language-server',
-		\	 args: ['--stdio']
-		\      },
-		\     #{
-		\	 filetype: ['go', 'gomod'],
-		\	 path: '/usr/local/bin/gopls',
-		\	 args: ['serve'],
-                \        syncInit: v:true
-		\      },
-		\     #{
-		\	 filetype: ['rust'],
-		\	 path: '/usr/local/bin/rust-analyzer',
-		\	 args: [],
-                \        syncInit: v:true
-		\      },
-		\     #{
-		\	 filetype: ['python'],
-		\	 path: '/usr/local/bin/pyls',
-		\	 args: []
-		\      },
-		\     #{
-		\	 filetype: ['fortran'],
-		\	 path: '/usr/local/bin/fortls',
-		\	 args: ['--nthreads=1', '--use_signature_help', '--hover_signature']
-		\      },
-		\     #{
-		\        filetype: ['php'],
-		\        path: '/usr/local/bin/intelephense',
-		\        args: ['--stdio'],
-		\        syncInit: v:true,
-		\        initializationOptions: #{
-		\          licenceKey: 'absolute path to file with key or key itself'
-		\        }
-		\      }
-		\   ]
-   call LspAddServer(lspServers)
+```viml
+function! TypeScriptCustomNotificationHandler(lspserver, reply) abort
+	echom printf("TypeScript Version = %s", a:reply.params.version)
+endfunction
+let lspServers = [
+	\     #{
+	\	 filetype: ['c', 'cpp'],
+	\	 path: '/usr/local/bin/clangd',
+	\	 args: ['--background-index']
+	\      },
+	\     #{
+	\	 filetype: ['javascript', 'typescript'],
+	\	 path: '/usr/local/bin/typescript-language-server',
+	\	 args: ['--stdio'],
+	\	 customNotificationHandlers: {
+	\	   '$/typescriptVersion': function('TypeScriptCustomNotificationHandler')
+	\	 }
+	\      },
+	\     #{
+	\	 filetype: 'sh',
+	\	 path: '/usr/local/bin/bash-language-server',
+	\	 args: ['start']
+	\      },
+	\     #{
+	\	 filetype: 'vim',
+	\	 path: '/usr/local/bin/vim-language-server',
+	\	 args: ['--stdio']
+	\      },
+	\     #{
+	\	 filetype: ['go', 'gomod'],
+	\	 path: '/usr/local/bin/gopls',
+	\	 args: ['serve'],
+	\	 syncInit: v:true
+	\      },
+	\     #{
+	\	 filetype: ['rust'],
+	\	 path: '/usr/local/bin/rust-analyzer',
+	\	 args: [],
+	\	 syncInit: v:true
+	\      },
+	\     #{
+	\	 filetype: ['python'],
+	\	 path: '/usr/local/bin/pyls',
+	\	 args: []
+	\      },
+	\     #{
+	\	 filetype: ['fortran'],
+	\	 path: '/usr/local/bin/fortls',
+	\	 args: ['--nthreads=1', '--use_signature_help', '--hover_signature']
+	\      },
+	\     #{
+	\	 filetype: ['php'],
+	\	 path: '/usr/local/bin/intelephense',
+	\	 args: ['--stdio'],
+	\	 syncInit: v:true,
+	\	 initializationOptions: #{
+	\	   licenceKey: 'absolute path to file with key or key itself'
+	\	 }
+	\      }
+	\   ]
+call LspAddServer(lspServers)
 ```
 
 The above lines add the LSP servers for C, C++, Javascript, Typescript, Shell script, Vim script, Go, Rust, Python, Fortran and PHP file types.  In addition to the above listed file types, this plugin also supports other file types.
@@ -126,18 +126,18 @@ customNotificationHandlers|A dictionary of notifications and functions that can 
 The LSP servers are added using the LspAddServer() function. This function accepts a list of LSP servers with the above information.
 
 If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, then you need to use the VimEnter autocmd to initialize the LSP server and to set the LSP server options.  For example:
-```
-    let lspServers = [
-		\     #{
-		\        filetype: ['c', 'cpp'],
-		\        path: '/usr/local/bin/clangd',
-		\        args: ['--background-index']
-		\      }
-		\   ]
-    autocmd VimEnter * call LspAddServer(lspServers)
+```viml
+let lspServers = [
+	\     #{
+	\	 filetype: ['c', 'cpp'],
+	\	 path: '/usr/local/bin/clangd',
+	\	 args: ['--background-index']
+	\      }
+	\   ]
+autocmd VimEnter * call LspAddServer(lspServers)
 
-    let lspOpts = {'autoHighlightDiags': v:true}
-    autocmd VimEnter * call LspOptionsSet(lspOpts)
+let lspOpts = {'autoHighlightDiags': v:true}
+autocmd VimEnter * call LspOptionsSet(lspOpts)
 ```
 
 ## Supported Commands
