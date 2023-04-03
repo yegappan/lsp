@@ -517,6 +517,12 @@ export def LspDiagsJump(lspserver: dict<any>, which: string, a_count: number = 0
     return
   endif
 
+  # If [count] exceeded the previous diags
+  if which == 'prev' && a_count > 1 && a_count != count
+    JumpDiag(diags[0])
+    return
+  endif
+
   if which == 'here'
     util.WarnMsg('Error: No more diagnostics found on this line')
   else
