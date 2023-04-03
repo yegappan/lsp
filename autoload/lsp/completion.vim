@@ -94,11 +94,9 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
           items->add({
               label: key,
               data: {
-                  #file: '/home/olex/TMP/test/test.js',
                   entryNames: [key],
               },
               kind: 15,
-              #detail: info,
               documentation: info,
           })
       endfor
