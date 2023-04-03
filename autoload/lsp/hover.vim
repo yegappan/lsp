@@ -22,6 +22,10 @@ def GetHoverText(hoverResult: any): list<any>
       return [hoverResult.contents.value->split("\n"), 'lspgfm']
     endif
 
+    util.TraceLog(
+      true,
+      $'{strftime("%m/%d/%y %T")}: Unsupported hover contents kind ({hoverResult.contents.kind})'
+    )
     return ['', '']
   endif
 
@@ -61,6 +65,10 @@ def GetHoverText(hoverResult: any): list<any>
     return [hoverText, 'lspgfm']
   endif
 
+  util.TraceLog(
+    true,
+    $'{strftime("%m/%d/%y %T")}: Unsupported hover reply ({hoverResult})'
+  )
   return ['', '']
 enddef
 
