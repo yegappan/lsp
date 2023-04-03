@@ -387,11 +387,11 @@ def DisplayDiag(diag: dict<any>)
 enddef
 
 # Show the diagnostic message for the current line
-export def ShowCurrentDiag(lspserver: dict<any>)
+export def ShowCurrentDiag(lspserver: dict<any>, atPos: bool)
   var bnr: number = bufnr()
   var lnum: number = line('.')
   var col: number = charcol('.')
-  var diag: dict<any> = lspserver.getDiagByPos(bnr, lnum, col)
+  var diag: dict<any> = lspserver.getDiagByPos(bnr, lnum, col, atPos)
   if diag->empty()
     util.WarnMsg('No diagnostic messages found for current line')
   else
@@ -421,16 +421,23 @@ enddef
 
 # Get the diagnostic from the LSP server for a particular line and character
 # offset in a file
-export def GetDiagByPos(lspserver: dict<any>, bnr: number, lnum: number, col: number): dict<any>
+export def GetDiagByPos(lspserver: dict<any>, bnr: number,
+			lnum: number, col: number,
+			atPos: bool = false): dict<any>
   var diags_in_line = GetDiagsByLine(lspserver, bnr, lnum)
 
   for diag in diags_in_line
-    if col <= diag.range.start.character + 1
+    if atPos
+      if col >= diag.range.start.character + 1 && col < diag.range.end.character + 1
+        return diag
+      endif
+    elseif col <= diag.range.start.character + 1
       return diag
     endif
   endfor
 
-  if diags_in_line->len() > 0
+  # No diagnostic to the right of the position, return the last one instead
+  if !atPos && diags_in_line->len() > 0
     return diags_in_line[-1]
   endif
 

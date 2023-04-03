@@ -404,6 +404,37 @@ def g:Test_LspDiag_Multi()
   endfor
   g:LspOptionsSet({showDiagInPopup: true})
 
+  # Check for exact diag ":LspDiagCurrent!"
+  g:LspOptionsSet({showDiagInPopup: false})
+  for i in range(1, 4)
+    cursor(1, i)
+    output = execute('LspDiagCurrent!')->split('\n')
+    assert_match('No diagnostic messages found for current line', output[0])
+  endfor
+
+  cursor(1, 5)
+  output = execute('LspDiagCurrent!')->split('\n')
+  assert_match('Incompatible pointer to integer', output[0])
+
+  for i in range(6, 8)
+    cursor(1, i)
+    output = execute('LspDiagCurrent!')->split('\n')
+    assert_match('No diagnostic messages found for current line', output[0])
+  endfor
+
+  for i in range(9, 11)
+    cursor(1, i)
+    output = execute('LspDiagCurrent!')->split('\n')
+    assert_match('Initializer element is not ', output[0])
+  endfor
+  for i in range(12, 12)
+    cursor(1, i)
+    output = execute('LspDiagCurrent!')->split('\n')
+    assert_match('No diagnostic messages found for current line', output[0])
+  endfor
+
+  g:LspOptionsSet({showDiagInPopup: true})
+
   bw!
 enddef
 
