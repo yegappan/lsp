@@ -2,12 +2,12 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: March 24, 2023
+Last change: April 2, 2023
 
 ==============================================================================
 						*lsp-license*
 License: MIT License
-Copyright (c) 2020-2022 Yegappan Lakshmanan
+Copyright (c) 2020-2023 Yegappan Lakshmanan
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to
@@ -682,11 +682,23 @@ can map these commands to keys and make it easier to invoke them.
 			successively to shrink the current symbol visual
 			region.
 
-:LspServerDebug { on | off }			*:LspServerDebug*
-			Enable or disable the logging of the messages emitted
-			by a language server in the standard output and
-			standard error.  On a Unix-like system, these messages
-			are logged to the /tmp/lsp-server.out and
+						*:LspServerDebug*
+:LspServerDebug { on | off | messages | errors }
+			The following arguments are supported:
+
+			errors	Open the log file containing the language
+				server error messages.
+			messages
+				Open the log file containing the language
+				server debug messages.
+			off	Disable the logging of the language server
+				messages.
+			on	Enable the logging of the messages emitted
+				by the language server in the standard output
+				and standard error.
+			By default, the language server messages are not
+			logged.  On a Unix-like system, when enabled, these
+			messages are logged to the /tmp/lsp-server.out and
 			/tmp/lsp-server.err file respectively.  On MS-Windows,
 			the %TEMP%/lsp-server.out and %TEMP%/lsp-server.err%
 			files are used. See |lsp-debug| for more information.
@@ -1091,6 +1103,22 @@ lsp-server.err file.  On a Unix-like system, these files are created in the
 /tmp directory.  On MS-Windows, these files are created in the %TEMP%
 directory.
 
+The following command opens the file containing the messages printed by the
+language server in the stdout: >
+
+    :LspServerDebug messages
+<
+The following command opens the file containing the messages printed by the
+language server in the stderr: >
+
+    :LspServerDebug errors
+<
+To debug language server initialization problems, after enabling the above
+server debug, you can restart the server for the file type in the current
+buffer using the following command: >
+
+    :LspServerRestart
+<
 The language servers typically support command line options to enable debug
 messages and to increase the verbosity of the messages.  You can refer to the
 language server documentation for information about this.  You can include

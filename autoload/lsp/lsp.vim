@@ -55,7 +55,7 @@ enddef
 
 # Enable/disable the logging of the language server protocol messages
 export def ServerDebug(arg: string)
-  if arg !=? 'on' && arg !=? 'off'
+  if arg !=? 'errors' && arg !=? 'messages' && arg !=? 'on' && arg !=? 'off'
     util.ErrMsg($'Error: Invalid argument ("{arg}") for LSP server debug')
     return
   endif
@@ -63,8 +63,12 @@ export def ServerDebug(arg: string)
   if arg ==? 'on'
     util.ClearTraceLogs()
     util.ServerTrace(true)
-  else
+  elseif arg ==? 'off'
     util.ServerTrace(false)
+  elseif arg ==? 'messages'
+    util.ServerMessagesShow(false)
+  else
+    util.ServerMessagesShow(true)
   endif
 enddef
 

@@ -56,7 +56,7 @@ enddef
 
 # Command line completion function for the LspSetTrace command.
 def LspServerDebugComplete(arglead: string, cmdline: string, cursorpos: number): list<string>
-  var l = ['off', 'on']
+  var l = ['errors', 'messages', 'off', 'on']
   if arglead->empty()
     return l
   else
