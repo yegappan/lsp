@@ -596,13 +596,13 @@ export def ErrorCount(): dict<number>
 enddef
 
 # jump to the next/previous/first diagnostic message in the current buffer
-export def JumpToDiag(which: string): void
+export def JumpToDiag(which: string, count: number = 0): void
   var lspserver: dict<any> = buf.CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
 
-  diag.LspDiagsJump(lspserver, which)
+  diag.LspDiagsJump(lspserver, which, count)
 enddef
 
 # Display the hover message from the LSP server for the current cursor
