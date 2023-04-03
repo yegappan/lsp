@@ -80,6 +80,8 @@ The following commands are provided:
 			for the current Vim session.
 :LspDiagHighlightEnable	Enable highlighting lines with a diagnostic message
 			for the current Vim session.
+:LspDiagLast		Jump to the last diagnostic message for the current
+			buffer.
 :LspDiagNext		Jump to the next diagnostic message for the current
 			buffer after the current cursor position.
 :LspDiagPrev		Jump to the previous diagnostic message for the current
@@ -469,6 +471,10 @@ can map these commands to keys and make it easier to invoke them.
 :LspDiagHighlightEnable	Enable highlighting lines with a diagnostic message
 			for the current Vim session.  Note that highlighting
 			lines with a diagnostic message is enabled by default.
+
+						*:LspDiagLast*
+:LspDiagLast		Jumps to the location of the first diagnostic message
+			for the current file.
 
 						*:LspDiagNext*
 :[count]LspDiagNext	Go to the [count] diagnostic message after the current
