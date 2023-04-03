@@ -455,6 +455,10 @@ can map these commands to keys and make it easier to invoke them.
 :LspDiagFirst		Jumps to the location of the first diagnostic message
 			for the current file.
 
+						*:LspDiagHere*
+:LspDiagHere		Jumps to the location of the diagnostic message in
+			the current line (start from current column).
+
 :LspDiagHighlightDisable			*:LspDiagHighlightDisable*
 			Disable highlighting lines with a diagnostic message
 			for the current Vim session.
@@ -480,10 +484,6 @@ can map these commands to keys and make it easier to invoke them.
 			current file and opens the location list window. You
 			can use the Vim location list commands to browse the
 			list.
-
-						*:LspDiagHere*
-:LspDiagHere		Jumps to the location of the diagnostic message in
-			the current line (start from current column).
 
 						*:LspFold*
 :LspFold		Create folds for the current buffer.
