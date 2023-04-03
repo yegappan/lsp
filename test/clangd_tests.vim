@@ -385,6 +385,9 @@ def g:Test_LspDiag_Multi()
   assert_equal([1, 5], [line('.'), col('.')])
   assert_equal('', execute('LspDiagNext'))
   assert_equal([1, 9], [line('.'), col('.')])
+  cursor(1, 1)
+  assert_equal('', execute('LspDiagLast'))
+  assert_equal([2, 9], [line('.'), col('.')])
   popup_clear()
 
   # Test for :LspDiagHere on a line with multiple diagnostics
