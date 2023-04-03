@@ -13,7 +13,7 @@ var ftypeOmniCtrlMap: dict<bool> = {}
 # Returns true if omni-completion is enabled for filetype 'ftype'.
 # Otherwise, returns false.
 def LspOmniComplEnabled(ftype: string): bool
-  return ftypeOmniCtrlMap->get(ftype, v:false)
+  return ftypeOmniCtrlMap->get(ftype, false)
 enddef
 
 # Enables or disables omni-completion for filetype 'fype'
@@ -320,7 +320,7 @@ def g:LspOmniFunc(findstart: number, base: string): any
     # first send all the changes in the current buffer to the LSP server
     listener_flush()
 
-    lspserver.omniCompletePending = v:true
+    lspserver.omniCompletePending = true
     lspserver.completeItems = []
     # initiate a request to LSP server to get list of completions
     lspserver.getCompletion(1, '')
@@ -352,18 +352,18 @@ def g:LspOmniFunc(findstart: number, base: string): any
 
     # Don't attempt to filter on the items, when "isIncomplete" is set
     if prefix == '' || lspserver.completeItemsIsIncomplete
-      return res->empty() ? v:none : res
+      return res
     endif
 
     if opt.lspOptions.completionMatcher == 'fuzzy'
-      return res->empty() ? v:none : res->matchfuzzy(prefix, { key: 'word' })
+      return res->matchfuzzy(prefix, { key: 'word' })
     endif
 
     if opt.lspOptions.completionMatcher == 'icase'
-      return res->empty() ? v:none : res->filter((i, v) => v.word->tolower()->stridx(prefix) == 0)
+      return res->filter((i, v) => v.word->tolower()->stridx(prefix) == 0)
     endif
 
-    return res->empty() ? v:none : res->filter((i, v) => v.word->stridx(prefix) == 0)
+    return res->filter((i, v) => v.word->stridx(prefix) == 0)
   endif
 enddef
 
