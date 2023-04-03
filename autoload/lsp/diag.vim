@@ -487,6 +487,11 @@ export def LspDiagsJump(lspserver: dict<any>, which: string, a_count: number = 0
     return
   endif
 
+  if which == 'last'
+    JumpDiag(diags[-1])
+    return
+  endif
+
   # Find the entry just before the current line (binary search)
   var count = a_count > 1 ? a_count : 1
   var curlnum: number = line('.')

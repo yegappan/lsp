@@ -82,6 +82,7 @@ command! -nargs=0 -bar -bang LspDiagCurrent lsp.LspShowCurrentDiag(<bang>false)
 command! -nargs=0 -bar LspDiagFirst lsp.JumpToDiag('first')
 command! -nargs=0 -bar LspDiagHighlightDisable lsp.DiagHighlightDisable()
 command! -nargs=0 -bar LspDiagHighlightEnable lsp.DiagHighlightEnable()
+command! -nargs=0 -bar LspDiagLast lsp.JumpToDiag('last')
 command! -nargs=0 -bar -count=1 LspDiagNext lsp.JumpToDiag('next', <count>)
 command! -nargs=0 -bar -count=1 LspDiagPrev lsp.JumpToDiag('prev', <count>)
 command! -nargs=0 -bar LspDiagShow lsp.ShowDiagnostics()
@@ -149,6 +150,7 @@ if has('gui_running')
   anoremenu <silent> L&sp.Diagnostics.Current :LspDiagCurrent<CR>
   anoremenu <silent> L&sp.Diagnostics.Show\ All :LspDiagShow<CR>
   anoremenu <silent> L&sp.Diagnostics.First :LspDiagFirst<CR>
+  anoremenu <silent> L&sp.Diagnostics.Last :LspDiagLast<CR>
   anoremenu <silent> L&sp.Diagnostics.Next :LspDiagNext<CR>
   anoremenu <silent> L&sp.Diagnostics.Prev :LspDiagPrev<CR>
   anoremenu <silent> L&sp.Diagnostics.This :LspDiagHere<CR>
