@@ -429,7 +429,7 @@ def g:Test_LspDiag_Multi()
   for i in range(1, 4)
     cursor(1, i)
     output = execute('LspDiagCurrent!')->split('\n')
-    assert_match('No diagnostic messages found for current line', output[0])
+    assert_match('No diagnostic messages found for current position', output[0])
   endfor
 
   cursor(1, 5)
@@ -439,7 +439,7 @@ def g:Test_LspDiag_Multi()
   for i in range(6, 8)
     cursor(1, i)
     output = execute('LspDiagCurrent!')->split('\n')
-    assert_match('No diagnostic messages found for current line', output[0])
+    assert_match('No diagnostic messages found for current position', output[0])
   endfor
 
   for i in range(9, 11)
@@ -450,7 +450,7 @@ def g:Test_LspDiag_Multi()
   for i in range(12, 12)
     cursor(1, i)
     output = execute('LspDiagCurrent!')->split('\n')
-    assert_match('No diagnostic messages found for current line', output[0])
+    assert_match('No diagnostic messages found for current position', output[0])
   endfor
 
   g:LspOptionsSet({showDiagInPopup: true})

@@ -393,7 +393,7 @@ export def ShowCurrentDiag(lspserver: dict<any>, atPos: bool)
   var col: number = charcol('.')
   var diag: dict<any> = lspserver.getDiagByPos(bnr, lnum, col, atPos)
   if diag->empty()
-    util.WarnMsg('No diagnostic messages found for current line')
+    util.WarnMsg($'No diagnostic messages found for current {atPos ? "position" : "line"}')
   else
     DisplayDiag(diag)
   endif
