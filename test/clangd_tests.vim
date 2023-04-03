@@ -947,6 +947,8 @@ def g:Test_LspHover()
     void f2(void)
     {
       f1(5);
+      char *z = "z";
+      f1(z);
     }
   END
   setline(1, lines)
@@ -960,7 +962,19 @@ def g:Test_LspHover()
   cursor(7, 1)
   :LspHover
   assert_equal([], popup_list())
+
+  # Show current diagnostic as to open another popup.
+  # Then we can test that LspHover closes all existing popups
+  cursor(10, 6)
+  :LspDiagCurrent
+  assert_equal(1, popup_list()->len())
+  :LspHover
+  assert_equal(1, popup_list()->len())
+  popup_clear()
+
   :%bw!
+
+
 enddef
 
 # Test for :LspShowSignature

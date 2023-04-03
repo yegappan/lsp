@@ -74,6 +74,7 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any): void
     exe $'setlocal ft={hoverKind}'
     :wincmd p
   else
+    popup_clear()
     var winid = hoverText->popup_atcursor({moved: 'word',
 					   maxwidth: 80,
 					   border: [0, 1, 0, 1],
