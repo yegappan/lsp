@@ -54,6 +54,8 @@ export var lspOptions: dict<any> = {
   showSignature: true,
   # enable snippet completion support
   snippetSupport: false,
+  # enable SirVer/ultisnips completion support
+  ultisnipsSupport: false,
   # Use a floating menu to show the code action menu instead of asking for input
   usePopupInCodeAction: false,
   # ShowReferences in a quickfix list instead of a location list`
