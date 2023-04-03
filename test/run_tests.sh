@@ -4,7 +4,7 @@
 
 VIMPRG=${VIMPRG:=$(which vim)}
 if [ -z "$VIMPRG" ]; then
-  echo "ERROR: $VIMPRG is not found in PATH"
+  echo "ERROR: vim (\$VIMPRG) is not found in PATH"
   exit 1
 fi
 
