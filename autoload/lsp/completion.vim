@@ -75,6 +75,10 @@ enddef
 # Result: CompletionItem[] | CompletionList | null
 export def CompletionReply(lspserver: dict<any>, cItems: any)
   if cItems->empty()
+    if lspserver.omniCompletePending
+      lspserver.completeItems = []
+      lspserver.omniCompletePending = false
+    endif
     return
   endif
 
