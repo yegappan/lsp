@@ -698,6 +698,7 @@ def SwitchSourceHeader(lspserver: dict<any>)
   param.uri = util.LspFileToUri(@%)
   var reply = lspserver.rpc('textDocument/switchSourceHeader', param)
   if reply->empty() || reply.result->empty()
+    util.WarnMsg('Error: No alternate file found')
     return
   endif
 
