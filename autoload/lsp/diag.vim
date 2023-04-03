@@ -280,10 +280,9 @@ def DiagsUpdateLocList(lspserver: dict<any>, bnr: number): bool
     return false
   endif
 
-  var LspQfId: number = 0
-  if bnr->getbufvar('LspQfId', 0) != 0 &&
-		getloclist(0, {id: b:LspQfId}).id == b:LspQfId
-    LspQfId = b:LspQfId
+  var LspQfId: number = bnr->getbufvar('LspQfId', 0)
+  if !LspQfId->empty() && getloclist(0, {id: LspQfId}).id != LspQfId
+    LspQfId = 0
   endif
 
   if !lspserver.diagsMap->has_key(bnr) ||
@@ -315,7 +314,7 @@ def DiagsUpdateLocList(lspserver: dict<any>, bnr: number): bool
   endif
   setloclist(0, [], op, props)
   if LspQfId == 0
-    b:LspQfId = getloclist(0, {id: 0}).id
+    setbufvar(bnr, 'LspQfId', getloclist(0, {id: 0}).id)
   endif
 
   return true
