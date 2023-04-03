@@ -471,8 +471,10 @@ can map these commands to keys and make it easier to invoke them.
 			lines with a diagnostic message is enabled by default.
 
 						*:LspDiagNext*
-:LspDiagNext		Jumps to the location of the diagnostic message after
-			the current cursor position.
+:[count]LspDiagNext	Go to the [count] diagnostic message after the current
+			cursor position.  If [count] is omitted, then 1 is used.
+			If [count] exceeds the number of diagnostics after the
+			current position, then the last diagnostic is selected.
 
 						*:LspDiagPrev*
 :LspDiagPrev		Jumps to the location of the diagnostic message before
