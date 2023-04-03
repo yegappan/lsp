@@ -88,19 +88,21 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     lspserver.completeItemsIsIncomplete = cItems.isIncomplete
   endif
 
-  var ultisniplist = UltiSnips#SnippetsInCurrentScope()
-
-  for [key, info] in items(ultisniplist)
-      echom key
-      items->add({
-          label: key,
-          data: {
-              entryNames: [key],
-          },
-          kind: 15,
-          info: info,
-      })
-  endfor
+  if opt.lspOptions.ultisnipsSupport
+      var ultisniplist = UltiSnips#SnippetsInCurrentScope()
+      for [key, info] in items(ultisniplist)
+          items->add({
+              label: key,
+              data: {
+                  #file: '/home/olex/TMP/test/test.js',
+                  entryNames: [key],
+              },
+              kind: 15,
+              #detail: info,
+              documentation: info,
+          })
+      endfor
+  endif
 
   # Get the keyword prefix before the current cursor column.
   var chcol = charcol('.')
@@ -202,10 +204,6 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
           d.info = item.documentation.value
         endif
       endif
-    endif
-
-    if item->has_key('info')
-        d.menu = item.info
     endif
 
     d.user_data = item
