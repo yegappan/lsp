@@ -282,6 +282,23 @@ def g:Test_LspDiag()
   :LspDiagPrev
   output = execute('LspDiagPrev')->split("\n")
   assert_equal('Error: No more diagnostics found', output[0])
+
+  # :[count]LspDiagNext
+  cursor(3, 1)
+  :2LspDiagNext
+  assert_equal([5, 2], [line('.'), col('.')])
+  :2LspDiagNext
+  assert_equal([7, 2], [line('.'), col('.')])
+  output = execute(':2LspDiagNext')->split("\n")
+  assert_equal('Error: No more diagnostics found', output[0])
+
+  # :[count]LspDiagPrev
+  cursor(7, 2)
+  :4LspDiagPrev
+  assert_equal([3, 14], [line('.'), col('.')])
+  output = execute(':4LspDiagPrev')->split("\n")
+  assert_equal('Error: No more diagnostics found', output[0])
+
   :%d
   setline(1, ['void blueFunc()', '{', '}'])
   g:WaitForDiags(0)
@@ -368,6 +385,9 @@ def g:Test_LspDiag_Multi()
   assert_equal([1, 5], [line('.'), col('.')])
   assert_equal('', execute('LspDiagNext'))
   assert_equal([1, 9], [line('.'), col('.')])
+  cursor(1, 1)
+  assert_equal('', execute('LspDiagLast'))
+  assert_equal([2, 9], [line('.'), col('.')])
   popup_clear()
 
   # Test for :LspDiagHere on a line with multiple diagnostics
@@ -433,6 +453,39 @@ def g:Test_LspDiag_Multi()
     assert_match('No diagnostic messages found for current line', output[0])
   endfor
 
+  g:LspOptionsSet({showDiagInPopup: true})
+
+  # :[count]LspDiagNext
+  g:LspOptionsSet({showDiagInPopup: false})
+  cursor(1, 1)
+  :2LspDiagNext
+  assert_equal([1, 9], [line('.'), col('.')])
+  :2LspDiagNext
+  assert_equal([2, 9], [line('.'), col('.')])
+  output = execute(':2LspDiagNext')->split("\n")
+  assert_equal('Error: No more diagnostics found', output[0])
+
+  cursor(1, 1)
+  :99LspDiagNext
+  assert_equal([2, 9], [line('.'), col('.')])
+  g:LspOptionsSet({showDiagInPopup: true})
+
+  # :[count]LspDiagPrev
+  g:LspOptionsSet({showDiagInPopup: false})
+  cursor(1, 1)
+  :2LspDiagPrev
+  assert_equal('Error: No more diagnostics found', output[0])
+  cursor(3, 3)
+  :2LspDiagPrev
+  assert_equal([1, 9], [line('.'), col('.')])
+  :2LspDiagPrev
+  assert_equal([1, 5], [line('.'), col('.')])
+  output = execute(':2LspDiagPrev')->split("\n")
+  assert_equal('Error: No more diagnostics found', output[0])
+
+  cursor(3, 3)
+  :99LspDiagPrev
+  assert_equal([1, 5], [line('.'), col('.')])
   g:LspOptionsSet({showDiagInPopup: true})
 
   bw!

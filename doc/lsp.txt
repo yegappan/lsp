@@ -80,6 +80,8 @@ The following commands are provided:
 			for the current Vim session.
 :LspDiagHighlightEnable	Enable highlighting lines with a diagnostic message
 			for the current Vim session.
+:LspDiagLast		Jump to the last diagnostic message for the current
+			buffer.
 :LspDiagNext		Jump to the next diagnostic message for the current
 			buffer after the current cursor position.
 :LspDiagPrev		Jump to the previous diagnostic message for the current
@@ -455,6 +457,10 @@ can map these commands to keys and make it easier to invoke them.
 :LspDiagFirst		Jumps to the location of the first diagnostic message
 			for the current file.
 
+						*:LspDiagHere*
+:LspDiagHere		Jumps to the location of the diagnostic message in
+			the current line (start from current column).
+
 :LspDiagHighlightDisable			*:LspDiagHighlightDisable*
 			Disable highlighting lines with a diagnostic message
 			for the current Vim session.
@@ -466,13 +472,21 @@ can map these commands to keys and make it easier to invoke them.
 			for the current Vim session.  Note that highlighting
 			lines with a diagnostic message is enabled by default.
 
+						*:LspDiagLast*
+:LspDiagLast		Jumps to the location of the first diagnostic message
+			for the current file.
+
 						*:LspDiagNext*
-:LspDiagNext		Jumps to the location of the diagnostic message after
-			the current cursor position.
+:[count]LspDiagNext	Go to the [count] diagnostic message after the current
+			cursor position.  If [count] is omitted, then 1 is used.
+			If [count] exceeds the number of diagnostics after the
+			current position, then the last diagnostic is selected.
 
 						*:LspDiagPrev*
-:LspDiagPrev		Jumps to the location of the diagnostic message before
-			the current cursor position.
+:[count]LspDiagPrev	Go to the [count] diagnostic message before the current
+			cursor position.  If [count] is omitted, then 1 is used.
+			If [count] exceeds the number of diagnostics before the
+			current position, then first last diagnostic is selected.
 
 						*:LspDiagShow*
 :LspDiagShow		Creates a new location list with the diagnostics
@@ -480,10 +494,6 @@ can map these commands to keys and make it easier to invoke them.
 			current file and opens the location list window. You
 			can use the Vim location list commands to browse the
 			list.
-
-						*:LspDiagHere*
-:LspDiagHere		Jumps to the location of the diagnostic message in
-			the current line (start from current column).
 
 						*:LspFold*
 :LspFold		Create folds for the current buffer.
