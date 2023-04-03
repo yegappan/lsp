@@ -477,8 +477,10 @@ can map these commands to keys and make it easier to invoke them.
 			current position, then the last diagnostic is selected.
 
 						*:LspDiagPrev*
-:LspDiagPrev		Jumps to the location of the diagnostic message before
-			the current cursor position.
+:[count]LspDiagPrev	Go to the [count] diagnostic message before the current
+			cursor position.  If [count] is omitted, then 1 is used.
+			If [count] exceeds the number of diagnostics before the
+			current position, then first last diagnostic is selected.
 
 						*:LspDiagShow*
 :LspDiagShow		Creates a new location list with the diagnostics
