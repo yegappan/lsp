@@ -26,7 +26,7 @@ import './inlayhints.vim'
 
 # LSP server standard output handler
 def Output_cb(lspserver: dict<any>, chan: channel, msg: any): void
-  util.TraceLog(false, $'Received [{strftime("%m/%d/%y %T")}]: {msg->string()}')
+  util.TraceLog(false, $'{strftime("%m/%d/%y %T")}: Received {msg->string()}')
   lspserver.data = msg
   lspserver.processMessages()
 enddef
@@ -38,7 +38,7 @@ enddef
 
 # LSP server exit callback
 def Exit_cb(lspserver: dict<any>, job: job, status: number): void
-  util.WarnMsg($'[{strftime("%m/%d/%y %T")}]: LSP server exited with status {status}')
+  util.WarnMsg($'{strftime("%m/%d/%y %T")}: LSP server exited with status {status}')
   lspserver.running = false
   lspserver.ready = false
   lspserver.requests = {}
@@ -290,7 +290,7 @@ def SendMessage(lspserver: dict<any>, content: dict<any>): void
   endif
   job->ch_sendexpr(content)
   if content->has_key('id')
-    util.TraceLog(false, $'Sent [{strftime("%m/%d/%y %T")}]: {content->string()}')
+    util.TraceLog(false, $'{strftime("%m/%d/%y %T")}: Sent {content->string()}')
   endif
 enddef
 
@@ -315,12 +315,12 @@ def Rpc(lspserver: dict<any>, method: string, params: any, handleError: bool = t
     return {}
   endif
 
-  util.TraceLog(false, $'Sent [{strftime("%m/%d/%y %T")}]: {req->string()}')
+  util.TraceLog(false, $'{strftime("%m/%d/%y %T")}: Sent {req->string()}')
 
   # Do the synchronous RPC call
   var reply = job->ch_evalexpr(req)
 
-  util.TraceLog(false, $'Received [{strftime("%m/%d/%y %T")}]: {reply->string()}')
+  util.TraceLog(false, $'{strftime("%m/%d/%y %T")}: Received {reply->string()}')
 
   if reply->has_key('result')
     # successful reply
@@ -342,7 +342,7 @@ enddef
 
 # LSP server asynchronous RPC callback
 def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel, reply: dict<any>)
-  util.TraceLog(false, $'Received [{strftime("%m/%d/%y %T")}]: {reply->string()}')
+  util.TraceLog(false, $'{strftime("%m/%d/%y %T")}: Received {reply->string()}')
 
   if reply->empty()
     return
@@ -382,7 +382,7 @@ def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func): n
     return -1
   endif
 
-  util.TraceLog(false, $'Sent [{strftime("%m/%d/%y %T")}]: {req->string()}')
+  util.TraceLog(false, $'{strftime("%m/%d/%y %T")}: Sent {req->string()}')
 
   # Do the asynchronous RPC call
   var Fn = function('AsyncRpcCb', [lspserver, method, Cbfunc])

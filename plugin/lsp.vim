@@ -56,7 +56,7 @@ enddef
 
 # Command line completion function for the LspSetTrace command.
 def LspServerDebugComplete(arglead: string, cmdline: string, cursorpos: number): list<string>
-  var l = ['off', 'on']
+  var l = ['errors', 'messages', 'off', 'on']
   if arglead->empty()
     return l
   else
@@ -78,12 +78,13 @@ augroup END
 
 # LSP commands
 command! -nargs=? -bar -range LspCodeAction lsp.CodeAction(<line1>, <line2>, <q-args>)
-command! -nargs=0 -bar LspDiagCurrent lsp.LspShowCurrentDiag()
+command! -nargs=0 -bar -bang LspDiagCurrent lsp.LspShowCurrentDiag(<bang>false)
 command! -nargs=0 -bar LspDiagFirst lsp.JumpToDiag('first')
 command! -nargs=0 -bar LspDiagHighlightDisable lsp.DiagHighlightDisable()
 command! -nargs=0 -bar LspDiagHighlightEnable lsp.DiagHighlightEnable()
-command! -nargs=0 -bar LspDiagNext lsp.JumpToDiag('next')
-command! -nargs=0 -bar LspDiagPrev lsp.JumpToDiag('prev')
+command! -nargs=0 -bar LspDiagLast lsp.JumpToDiag('last')
+command! -nargs=0 -bar -count=1 LspDiagNext lsp.JumpToDiag('next', <count>)
+command! -nargs=0 -bar -count=1 LspDiagPrev lsp.JumpToDiag('prev', <count>)
 command! -nargs=0 -bar LspDiagShow lsp.ShowDiagnostics()
 command! -nargs=0 -bar LspDiagHere lsp.JumpToDiag('here')
 command! -nargs=0 -bar LspFold lsp.FoldDocument()
@@ -149,6 +150,7 @@ if has('gui_running')
   anoremenu <silent> L&sp.Diagnostics.Current :LspDiagCurrent<CR>
   anoremenu <silent> L&sp.Diagnostics.Show\ All :LspDiagShow<CR>
   anoremenu <silent> L&sp.Diagnostics.First :LspDiagFirst<CR>
+  anoremenu <silent> L&sp.Diagnostics.Last :LspDiagLast<CR>
   anoremenu <silent> L&sp.Diagnostics.Next :LspDiagNext<CR>
   anoremenu <silent> L&sp.Diagnostics.Prev :LspDiagPrev<CR>
   anoremenu <silent> L&sp.Diagnostics.This :LspDiagHere<CR>

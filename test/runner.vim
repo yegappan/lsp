@@ -17,6 +17,11 @@ def LspRunTests()
 		    ->split("\n")
 		    ->map("v:val->substitute('^def ', '', '')")
 		    ->sort()
+  if fns->empty()
+    # No tests are found
+    writefile(['No tests are found'], 'results.txt')
+    return
+  endif
   for f in fns
     v:errors = []
     v:errmsg = ''

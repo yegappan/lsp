@@ -50,6 +50,28 @@ export def ClearTraceLogs()
   writefile([], $'{lsp_log_dir}lsp-server.err')
 enddef
 
+# Open the LSP server debug messages file.  If errors is true, then open the
+# error messages file.
+export def ServerMessagesShow(errors: bool = false)
+  var fname: string
+  if errors
+    fname = $'{lsp_log_dir}lsp-server.err'
+  else
+    fname = $'{lsp_log_dir}lsp-server.out'
+  endif
+  if filereadable(fname)
+    var wid = fname->bufwinid()
+    if wid == -1
+      exe $'split {fname}'
+    else
+      win_gotoid(wid)
+    endif
+    setlocal autoread
+    setlocal nomodified
+    setlocal nomodifiable
+  endif
+enddef
+
 # Parse a LSP Location or LocationLink type and return a List with two items.
 # The first item is the DocumentURI and the second item is the Range.
 export def LspLocationParse(lsploc: dict<any>): list<any>

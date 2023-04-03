@@ -423,7 +423,7 @@ enddef
 
 # If the completion popup documentation window displays 'markdown' content,
 # then set the 'filetype' to 'lspgfm'.
-def LspSetFileType()
+def LspSetPopupFileType()
   var item = v:event.completed_item
   if !item->has_key('user_data') || item.user_data->empty()
     return
@@ -464,42 +464,12 @@ def LspCompleteDone()
   textedit.ApplyTextEdits(bnr, completionData.additionalTextEdits)
 enddef
 
-# Add buffer-local autocmds for completion
-def AddAutocmds(lspserver: dict<any>, bnr: number)
-  var acmds: list<dict<any>> = []
-
-  # Insert-mode completion autocmds (if configured)
-  if opt.lspOptions.autoComplete
-    # Trigger 24x7 insert mode completion when text is changed
-    acmds->add({bufnr: bnr,
-		event: 'TextChangedI',
-		group: 'LSPBufferAutocmds',
-		cmd: 'LspComplete()'})
-    if lspserver.completionLazyDoc
-      # resolve additional documentation for a selected item
-      acmds->add({bufnr: bnr,
-		  event: 'CompleteChanged',
-		  group: 'LSPBufferAutocmds',
-		  cmd: 'LspResolve()'})
-    endif
-  endif
-
-  acmds->add({bufnr: bnr,
-                 event: 'CompleteChanged',
-                 group: 'LSPBufferAutocmds',
-                 cmd: 'LspSetFileType()'})
-
-  # Execute LSP server initiated text edits after completion
-  acmds->add({bufnr: bnr,
-	      event: 'CompleteDone',
-	      group: 'LSPBufferAutocmds',
-	      cmd: 'LspCompleteDone()'})
-
-  autocmd_add(acmds)
-enddef
-
 # Initialize buffer-local completion options and autocmds
 export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
+
+  # buffer-local autocmds for completion
+  var acmds: list<dict<any>> = []
+
   # set options for insert mode completion
   if opt.lspOptions.autoComplete
     if lspserver.completionLazyDoc
@@ -513,13 +483,37 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
     if !opt.lspOptions.noNewlineInCompletion
       :inoremap <expr> <buffer> <CR> pumvisible() ? "\<C-Y>\<CR>" : "\<CR>"
     endif
+
+    # Trigger 24x7 insert mode completion when text is changed
+    acmds->add({bufnr: bnr,
+		event: 'TextChangedI',
+		group: 'LSPBufferAutocmds',
+		cmd: 'LspComplete()'})
+    if lspserver.completionLazyDoc
+      # resolve additional documentation for a selected item
+      acmds->add({bufnr: bnr,
+		  event: 'CompleteChanged',
+		  group: 'LSPBufferAutocmds',
+		  cmd: 'LspResolve()'})
+    endif
   else
     if LspOmniComplEnabled(ftype)
       setbufvar(bnr, '&omnifunc', 'g:LspOmniFunc')
     endif
   endif
 
-  AddAutocmds(lspserver, bnr)
+  acmds->add({bufnr: bnr,
+                 event: 'CompleteChanged',
+                 group: 'LSPBufferAutocmds',
+                 cmd: 'LspSetPopupFileType()'})
+
+  # Execute LSP server initiated text edits after completion
+  acmds->add({bufnr: bnr,
+	      event: 'CompleteDone',
+	      group: 'LSPBufferAutocmds',
+	      cmd: 'LspCompleteDone()'})
+
+  autocmd_add(acmds)
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2

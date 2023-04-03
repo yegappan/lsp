@@ -387,13 +387,13 @@ def DisplayDiag(diag: dict<any>)
 enddef
 
 # Show the diagnostic message for the current line
-export def ShowCurrentDiag(lspserver: dict<any>)
+export def ShowCurrentDiag(lspserver: dict<any>, atPos: bool)
   var bnr: number = bufnr()
   var lnum: number = line('.')
   var col: number = charcol('.')
-  var diag: dict<any> = lspserver.getDiagByPos(bnr, lnum, col)
+  var diag: dict<any> = lspserver.getDiagByPos(bnr, lnum, col, atPos)
   if diag->empty()
-    util.WarnMsg('No diagnostic messages found for current line')
+    util.WarnMsg($'No diagnostic messages found for current {atPos ? "position" : "line"}')
   else
     DisplayDiag(diag)
   endif
@@ -421,16 +421,23 @@ enddef
 
 # Get the diagnostic from the LSP server for a particular line and character
 # offset in a file
-export def GetDiagByPos(lspserver: dict<any>, bnr: number, lnum: number, col: number): dict<any>
+export def GetDiagByPos(lspserver: dict<any>, bnr: number,
+			lnum: number, col: number,
+			atPos: bool = false): dict<any>
   var diags_in_line = GetDiagsByLine(lspserver, bnr, lnum)
 
   for diag in diags_in_line
-    if col <= diag.range.start.character + 1
+    if atPos
+      if col >= diag.range.start.character + 1 && col < diag.range.end.character + 1
+        return diag
+      endif
+    elseif col <= diag.range.start.character + 1
       return diag
     endif
   endfor
 
-  if diags_in_line->len() > 0
+  # No diagnostic to the right of the position, return the last one instead
+  if !atPos && diags_in_line->len() > 0
     return diags_in_line[-1]
   endif
 
@@ -450,8 +457,17 @@ export def GetDiagsByLine(lspserver: dict<any>, bnr: number, lnum: number): list
   return []
 enddef
 
+# Utility function to do the actual jump
+def JumpDiag(diag: dict<any>)
+    setcursorcharpos(diag.range.start.line + 1, diag.range.start.character + 1)
+    if !opt.lspOptions.showDiagWithVirtualText
+      :redraw
+      DisplayDiag(diag)
+    endif
+enddef
+
 # jump to the next/previous/first diagnostic message in the current buffer
-export def LspDiagsJump(lspserver: dict<any>, which: string): void
+export def LspDiagsJump(lspserver: dict<any>, which: string, a_count: number = 0): void
   var fname: string = expand('%:p')
   if fname == ''
     return
@@ -467,15 +483,17 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
   var diags = lspserver.diagsMap[bnr].sortedDiagnostics
 
   if which == 'first'
-    setcursorcharpos(diags[0].range.start.line + 1, diags[0].range.start.character + 1)
-    if !opt.lspOptions.showDiagWithVirtualText
-      :redraw
-      DisplayDiag(diags[0])
-    endif
+    JumpDiag(diags[0])
+    return
+  endif
+
+  if which == 'last'
+    JumpDiag(diags[-1])
     return
   endif
 
   # Find the entry just before the current line (binary search)
+  var count = a_count > 1 ? a_count : 1
   var curlnum: number = line('.')
   var curcol: number = charcol('.')
   for diag in (which == 'next' || which == 'here') ?
@@ -486,14 +504,29 @@ export def LspDiagsJump(lspserver: dict<any>, which: string): void
 	  || (which == 'prev' && (lnum < curlnum || lnum == curlnum
 							&& col < curcol))
 	  || (which == 'here' && (lnum == curlnum && col >= curcol))
-      setcursorcharpos(lnum, col)
-      if !opt.lspOptions.showDiagWithVirtualText
-	:redraw
-	DisplayDiag(diag)
+
+      # Skip over as many diags as "count" dictates
+      count = count - 1
+      if count > 0
+        continue
       endif
+
+      JumpDiag(diag)
       return
     endif
   endfor
+
+  # If [count] exceeded the remaining diags
+  if which == 'next' && a_count > 1 && a_count != count
+    JumpDiag(diags[-1])
+    return
+  endif
+
+  # If [count] exceeded the previous diags
+  if which == 'prev' && a_count > 1 && a_count != count
+    JumpDiag(diags[0])
+    return
+  endif
 
   if which == 'here'
     util.WarnMsg('Error: No more diagnostics found on this line')

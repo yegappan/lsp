@@ -55,7 +55,7 @@ enddef
 
 # Enable/disable the logging of the language server protocol messages
 export def ServerDebug(arg: string)
-  if arg !=? 'on' && arg !=? 'off'
+  if arg !=? 'errors' && arg !=? 'messages' && arg !=? 'on' && arg !=? 'off'
     util.ErrMsg($'Error: Invalid argument ("{arg}") for LSP server debug')
     return
   endif
@@ -63,8 +63,12 @@ export def ServerDebug(arg: string)
   if arg ==? 'on'
     util.ClearTraceLogs()
     util.ServerTrace(true)
-  else
+  elseif arg ==? 'off'
     util.ServerTrace(false)
+  elseif arg ==? 'messages'
+    util.ServerMessagesShow(false)
+  else
+    util.ServerMessagesShow(true)
   endif
 enddef
 
@@ -300,12 +304,6 @@ def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
 		cmd: 'call LspDocHighlightClear() | call LspDocHighlight()'})
   endif
 
-  # Displaying inlay hints needs the Vim virtual text support.
-  if opt.lspOptions.showInlayHints && (lspserver.isInlayHintProvider
-				|| lspserver.isClangdInlayHintsProvider)
-    inlayhints.BufferInit(bnr)
-  endif
-
   # Show diagnostics on the status line
   if opt.lspOptions.showDiagOnStatusLine
     acmds->add({bufnr: bnr,
@@ -329,14 +327,13 @@ def BufferInit(bnr: number): void
   # add a listener to track changes to this buffer
   listener_add(Bufchange_listener, bnr)
 
-  completion.BufferInit(lspserver, bnr, ftype)
+  AddBufLocalAutocmds(lspserver, bnr)
 
   setbufvar(bnr, '&balloonexpr', 'g:LspDiagExpr()')
 
-  # initialize signature help
-  signature.SignatureInit(lspserver)
-
-  AddBufLocalAutocmds(lspserver, bnr)
+  completion.BufferInit(lspserver, bnr, ftype)
+  signature.BufferInit(lspserver)
+  inlayhints.BufferInit(lspserver, bnr)
 
   if exists('#User#LspAttached')
     doautocmd <nomodeline> User LspAttached
@@ -562,13 +559,13 @@ export def ShowDiagnostics(): void
 enddef
 
 # Show the diagnostic message for the current line
-export def LspShowCurrentDiag()
+export def LspShowCurrentDiag(atPos: bool)
   var lspserver: dict<any> = buf.CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
 
-  diag.ShowCurrentDiag(lspserver)
+  diag.ShowCurrentDiag(lspserver, atPos)
 enddef
 
 # Display the diagnostics for the current line in the status line.
@@ -603,13 +600,13 @@ export def ErrorCount(): dict<number>
 enddef
 
 # jump to the next/previous/first diagnostic message in the current buffer
-export def JumpToDiag(which: string): void
+export def JumpToDiag(which: string, count: number = 0): void
   var lspserver: dict<any> = buf.CurbufGetServerChecked()
   if lspserver->empty()
     return
   endif
 
-  diag.LspDiagsJump(lspserver, which)
+  diag.LspDiagsJump(lspserver, which, count)
 enddef
 
 # Display the hover message from the LSP server for the current cursor
