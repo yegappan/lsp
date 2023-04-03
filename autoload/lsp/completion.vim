@@ -88,6 +88,22 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     lspserver.completeItemsIsIncomplete = cItems.isIncomplete
   endif
 
+  if opt.lspOptions.ultisnipsSupport
+      var ultisniplist = UltiSnips#SnippetsInCurrentScope()
+      for [key, info] in items(ultisniplist)
+          items->add({
+              label: key,
+              data: {
+                  #file: '/home/olex/TMP/test/test.js',
+                  entryNames: [key],
+              },
+              kind: 15,
+              #detail: info,
+              documentation: info,
+          })
+      endfor
+  endif
+
   # Get the keyword prefix before the current cursor column.
   var chcol = charcol('.')
   var starttext = chcol == 1 ? '' : getline('.')[ : chcol - 2]

@@ -358,6 +358,9 @@ showSignature		|Boolean| option.  In insert mode, automatically show
 snippetSupport		|Boolean| option.  Enable snippet completion support.
 			Need a snippet completion plugin like vim-vsnip.
 			By default this is set to false.
+ultisnipsSupport		|Boolean| option.  Enable SirVer/ultisnips support.
+			Need a snippet completion plugin SirVer/ultisnips.
+			By default this is set to false.
 usePopupInCodeAction    |Boolean| option.  When using the |:LspCodeAction|
 			command to display the code action for the current
 			line, use a popup menu instead of echoing.
