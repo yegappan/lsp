@@ -838,26 +838,35 @@ def g:Test_LspGotoSymbol()
   exe "normal! \<C-t>"
   assert_equal([21, 6], [line('.'), col('.')])
 
-  # FIXME: :LspGotoTypeDef and :LspGotoImpl are supported only with clang-14.
-  # This clangd version is not available in Github CI.
+  # :LspGotoTypeDef
+  cursor(21, 2)
+  :LspGotoTypeDef
+  assert_equal([1, 7], [line('.'), col('.')])
+  exe "normal! \<C-t>"
+  assert_equal([21, 2], [line('.'), col('.')])
+
+  # :LspGotoImpl
+  cursor(21, 6)
+  :LspGotoImpl
+  assert_equal([12, 11], [line('.'), col('.')])
+  exe "normal! \<C-t>"
+  assert_equal([21, 6], [line('.'), col('.')])
 
   # Error cases
-  # FIXME: The following tests are failing in Github CI. Comment out for now.
-  if 0
   :messages clear
   cursor(11, 5)
   :LspGotoDeclaration
   var m = execute('messages')->split("\n")
-  assert_equal('Error: declaration is not found', m[1])
+  assert_equal('Error: symbol declaration is not found', m[1])
   :messages clear
   :LspGotoDefinition
   m = execute('messages')->split("\n")
-  assert_equal('Error: definition is not found', m[1])
+  assert_equal('Error: symbol definition is not found', m[1])
   :messages clear
   :LspGotoImpl
   m = execute('messages')->split("\n")
-  assert_equal('Error: implementation is not found', m[1])
-  endif
+  assert_equal('Error: symbol implementation is not found', m[1])
+  :messages clear
 
   # Test for LspPeekDeclaration
   cursor(21, 6)
