@@ -54,11 +54,13 @@ function! TypeScriptCustomNotificationHandler(lspserver, reply) abort
 endfunction
 let lspServers = [
 	\     #{
+	\	 name: 'clangd',
 	\	 filetype: ['c', 'cpp'],
 	\	 path: '/usr/local/bin/clangd',
 	\	 args: ['--background-index']
 	\      },
 	\     #{
+	\	 name: 'typescriptlang',
 	\	 filetype: ['javascript', 'typescript'],
 	\	 path: '/usr/local/bin/typescript-language-server',
 	\	 args: ['--stdio'],
@@ -67,38 +69,45 @@ let lspServers = [
 	\	 }
 	\      },
 	\     #{
+	\	 name: 'bashlang',
 	\	 filetype: 'sh',
 	\	 path: '/usr/local/bin/bash-language-server',
 	\	 args: ['start']
 	\      },
 	\     #{
+	\	 name: 'vimlang',
 	\	 filetype: 'vim',
 	\	 path: '/usr/local/bin/vim-language-server',
 	\	 args: ['--stdio']
 	\      },
 	\     #{
+	\	 name: 'golang',
 	\	 filetype: ['go', 'gomod'],
 	\	 path: '/usr/local/bin/gopls',
 	\	 args: ['serve'],
 	\	 syncInit: v:true
 	\      },
 	\     #{
+	\	 name: 'rustlang',
 	\	 filetype: ['rust'],
 	\	 path: '/usr/local/bin/rust-analyzer',
 	\	 args: [],
 	\	 syncInit: v:true
 	\      },
 	\     #{
+	\	 name: 'pylang',
 	\	 filetype: ['python'],
 	\	 path: '/usr/local/bin/pyls',
 	\	 args: []
 	\      },
 	\     #{
+	\	 name: 'fortranls',
 	\	 filetype: ['fortran'],
 	\	 path: '/usr/local/bin/fortls',
 	\	 args: ['--nthreads=1', '--use_signature_help', '--hover_signature']
 	\      },
 	\     #{
+	\	 name: 'phplang',
 	\	 filetype: ['php'],
 	\	 path: '/usr/local/bin/intelephense',
 	\	 args: ['--stdio'],
@@ -129,6 +138,7 @@ If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP 
 ```viml
 let lspServers = [
 	\     #{
+	\	 name: 'clang',
 	\	 filetype: ['c', 'cpp'],
 	\	 path: '/usr/local/bin/clangd',
 	\	 args: ['--background-index']

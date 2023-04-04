@@ -60,15 +60,21 @@ export def ServerDebug(arg: string)
     return
   endif
 
+  var lspserver: dict<any> = buf.CurbufGetServer()
+  if lspserver->empty()
+    return
+  endif
+
   if arg ==? 'on'
-    util.ClearTraceLogs()
-    util.ServerTrace(true)
+    util.ClearTraceLogs(lspserver.logfile)
+    util.ClearTraceLogs(lspserver.errfile)
+    lspserver.debug = true
   elseif arg ==? 'off'
-    util.ServerTrace(false)
+    lspserver.debug = false
   elseif arg ==? 'messages'
-    util.ServerMessagesShow(false)
+    util.ServerMessagesShow(lspserver.logfile)
   else
-    util.ServerMessagesShow(true)
+    util.ServerMessagesShow(lspserver.errfile)
   endif
 enddef
 
@@ -471,8 +477,6 @@ export def AddServer(serverList: list<dict<any>>)
         return
       endif
       args = server.args
-    else
-
     endif
 
     var initializationOptions: dict<any> = {}
@@ -494,18 +498,27 @@ export def AddServer(serverList: list<dict<any>>)
       server.syncInit = v:false
     endif
 
-    var lspserver: dict<any> = lserver.NewLspServer(server.path,
-						    args,
-						    server.syncInit,
+    if !server->has_key('name') || server.name->type() != v:t_string
+							|| server.name == ''
+      # Use the executable name (without the extension) as the language server
+      # name.
+      server.name = server.path->fnamemodify(':t:r')
+    endif
+
+    if !server->has_key('debug') || server.debug->type() != v:t_bool
+      server.debug = false
+    endif
+
+    var lspserver: dict<any> = lserver.NewLspServer(server.name, server.path,
+						    args, server.syncInit,
 						    initializationOptions,
-						    customNotificationHandlers)
+						    customNotificationHandlers,
+						    server.debug)
 
     var ftypes = server.filetype
     if ftypes->type() == v:t_string
-      lspserver.name = ftypes->substitute('\w\+', '\L\u\0', '')
       AddServerForFiltype(lspserver, ftypes, server.omnicompl)
     elseif ftypes->type() == v:t_list
-      lspserver.name = ftypes[0]->substitute('\w\+', '\L\u\0', '')
       for ftype in ftypes
 	AddServerForFiltype(lspserver, ftype, server.omnicompl)
       endfor

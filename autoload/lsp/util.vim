@@ -21,55 +21,39 @@ if has('unix')
 else
   lsp_log_dir = $TEMP .. '\\'
 endif
-var lsp_server_trace: bool = false
-
-# Enable or disable LSP server trace messages
-export def ServerTrace(trace_enable: bool)
-  lsp_server_trace = trace_enable
-enddef
 
 # Log a message from the LSP server. stderr is true for logging messages
 # from the standard error and false for stdout.
-export def TraceLog(stderr: bool, msg: string)
-  if !lsp_server_trace
-    return
-  endif
+export def TraceLog(fname: string, stderr: bool, msg: string)
   if stderr
-    writefile(msg->split("\n"), $'{lsp_log_dir}lsp-server.err', 'a')
+    writefile(msg->split("\n"), $'{lsp_log_dir}{fname}', 'a')
   else
-    writefile([msg], $'{lsp_log_dir}lsp-server.out', 'a')
+    writefile([msg], $'{lsp_log_dir}{fname}', 'a')
   endif
 enddef
 
 # Empty out the LSP server trace logs
-export def ClearTraceLogs()
-  if !lsp_server_trace
-    return
-  endif
-  writefile([], $'{lsp_log_dir}lsp-server.out')
-  writefile([], $'{lsp_log_dir}lsp-server.err')
+export def ClearTraceLogs(fname: string)
+  writefile([], fname)
 enddef
 
-# Open the LSP server debug messages file.  If errors is true, then open the
-# error messages file.
-export def ServerMessagesShow(errors: bool = false)
-  var fname: string
-  if errors
-    fname = $'{lsp_log_dir}lsp-server.err'
+# Open the LSP server debug messages file.
+export def ServerMessagesShow(fname: string)
+  var fullname = $'{lsp_log_dir}{fname}'
+  if !filereadable(fullname)
+    WarnMsg($'File {fullname} is not found')
+    return
+  endif
+  var wid = fullname->bufwinid()
+  if wid == -1
+    exe $'split {fullname}'
   else
-    fname = $'{lsp_log_dir}lsp-server.out'
+    win_gotoid(wid)
   endif
-  if filereadable(fname)
-    var wid = fname->bufwinid()
-    if wid == -1
-      exe $'split {fname}'
-    else
-      win_gotoid(wid)
-    endif
-    setlocal autoread
-    setlocal nomodified
-    setlocal nomodifiable
-  endif
+  setlocal autoread
+  setlocal bufhidden=wipe
+  setlocal nomodified
+  setlocal nomodifiable
 enddef
 
 # Parse a LSP Location or LocationLink type and return a List with two items.

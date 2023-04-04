@@ -50,7 +50,7 @@ def ProcessLogMsgNotif(lspserver: dict<any>, reply: dict<any>)
     mtype = msgType[reply.params.type]
   endif
 
-  util.TraceLog(false, $'{strftime("%m/%d/%y %T")}: [{mtype}]: {reply.params.message}')
+  lspserver.traceLog($'{strftime("%m/%d/%y %T")}: [{mtype}]: {reply.params.message}')
 enddef
 
 # process unsupported notification messages

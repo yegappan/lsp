@@ -145,7 +145,7 @@ The following commands are provided:
 
 ==============================================================================
 4. Configuration				*lsp-configuration*
-						*LspAddServer* *g:LspAddServer*
+					*LspAddServer()* *g:LspAddServer()*
 
 To use the plugin features with a particular file type(s), you need to first
 register a language server for that file type(s).
@@ -160,11 +160,13 @@ LSP plugin, the steps are described later in this section: >
 
    let lspServers = [
 		\     #{
+		\	 name: 'typescriptls',
 		\	 filetype: ['javascript', 'typescript'],
 		\	 path: '/usr/local/bin/typescript-language-server',
 		\	 args: ['--stdio']
 		\      },
 		\     #{
+		\	 name: 'pythonls',
 		\	 filetype: 'python',
 		\	 path: '/usr/local/bin/pyls',
 		\	 args: ['--check-parent-process', '-v']
@@ -181,33 +183,39 @@ Shell script, Vim script and PHP file types: >
 
    let lspServers = [
 		\     #{
+		\	 name: 'clangd',
 		\        filetype: ['c', 'cpp'],
 		\        path: '/usr/local/bin/clangd',
 		\        args: ['--background-index']
 		\     },
                 \     #{ 
+		\	 name: 'golang',
                 \        filetype: ['go', 'gomod', 'gohtmltmpl', 'gotexttmpl'],
                 \        path: '/path/to/.go/bin/gopls',
                 \        args: [],
                 \        syncInit: v:true,
                 \      },
                 \     #{
+		\	 name: 'rustls',
                 \        filetype: ['rust'],
                 \        path: '/path/to/.cargo/bin/rust-analyzer',
                 \        args: [],
                 \        syncInit: v:true,
                 \      },
 		\     #{
+		\	 name: 'bashls',
 		\	 filetype: 'sh',
 		\	 path: '/usr/local/bin/bash-language-server',
 		\	 args: ['start']
 		\     },
 		\     #{
+		\	 name: 'vimls',
 		\	 filetype: ['vim'],
 		\	 path: '/usr/local/bin/vim-language-server',
 		\	 args: ['--stdio']
 		\     },
 		\     #{
+		\	 name: 'phpls',
 		\        filetype: ['php'],
 		\        path: '/usr/local/bin/intelephense',
 		\        args: ['--stdio'],
@@ -221,6 +229,9 @@ Shell script, Vim script and PHP file types: >
 <
 To add a language server, the following information is needed:
 
+						*lsp-cfg-name*
+	name		(Optional) name of the language server.  Can by any
+			string.  Used in LSP messages and log files.
 						*lsp-cfg-path*
 	path		complete path to the language server executable
 			(without any arguments).
@@ -239,10 +250,16 @@ To add a language server, the following information is needed:
 			or useful for initialization. Those can be provided in
 			this dictionary and if present will be transmitted to
 			the lsp server.
+						*lsp-cfg-debug*
+	debug		(Optional) log the messages printed by this language
+			server in stdout and stderr to a file.  Useful for
+			debugging a language server.  By default the
+			messages are not logged.  See |lsp-debug| for more
+			information.
 
 Aditionally the following configurations can be made:
 
-						*lsp-cfg-customNotificationHandlers*
+					*lsp-cfg-customNotificationHandlers*
 	customNotificationHandlers
 			(Optional) some lsp servers (e.g.
 			typescript-language-server) will send additional
@@ -702,10 +719,11 @@ can map these commands to keys and make it easier to invoke them.
 				and standard error.
 			By default, the language server messages are not
 			logged.  On a Unix-like system, when enabled, these
-			messages are logged to the /tmp/lsp-server.out and
-			/tmp/lsp-server.err file respectively.  On MS-Windows,
-			the %TEMP%/lsp-server.out and %TEMP%/lsp-server.err%
-			files are used. See |lsp-debug| for more information.
+			messages are logged to the /tmp/lsp-<server-name>.log
+			and /tmp/lsp-<server-name>.err file respectively.  On
+			MS-Windows, the %TEMP%/lsp-<server-name>.log and
+			%TEMP%/lsp-<server-name>.err% files are used. See
+			|lsp-debug| for more information.
 
 						*:LspServerRestart*
 :LspServerRestart	Restart (stop and then start) the language server for
@@ -1090,22 +1108,25 @@ or >
 
 To debug this plugin, you can log the language server protocol messages sent
 and received by the plugin from the language server.  The following command
-enables the logging of the messages: >
+enables the logging of the messages from the language server for the current
+buffer: >
 
     :LspServerDebug on
 <
 This command also clears the log files.  The following command disables the
-logging of the messages: >
+logging of the messages from the language server for the current buffer: >
 
     :LspServerDebug off
 <
-By default, the messages are not logged.
+By default, the messages are not logged.  Another method to enable the debug
+is to set the "debug" field to v:true when adding a language server
+using |LspAddServer()|.
 
 The messages printed by the language server in the stdout are logged to the
-lsp-server.out file and the messages printed in the stderr are logged to the
-lsp-server.err file.  On a Unix-like system, these files are created in the
-/tmp directory.  On MS-Windows, these files are created in the %TEMP%
-directory.
+lsp-<server-name>.log file and the messages printed in the stderr are logged
+to the lsp-<server-name>.err file.  On a Unix-like system, these files are
+created in the /tmp directory.  On MS-Windows, these files are created in the
+%TEMP% directory.
 
 The following command opens the file containing the messages printed by the
 language server in the stdout: >
@@ -1129,7 +1150,7 @@ language server documentation for information about this.  You can include
 these options when registering the language server with this plugin.
 
 If a language server supports the "$/logTrace" LSP notification, then you can
-use the :LspServerTrace command to set the trace value: >
+use the :LspServerTrace command to set the server trace value: >
 
     :LspServerTrace { off | messages | verbose }
 <

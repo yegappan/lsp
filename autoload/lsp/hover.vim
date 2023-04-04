@@ -6,7 +6,7 @@ import './util.vim'
 import './options.vim' as opt
 
 # Util used to compute the hoverText from textDocument/hover reply
-def GetHoverText(hoverResult: any): list<any>
+def GetHoverText(lspserver: dict<any>, hoverResult: any): list<any>
   if hoverResult->empty()
     return ['', '']
   endif
@@ -22,8 +22,7 @@ def GetHoverText(hoverResult: any): list<any>
       return [hoverResult.contents.value->split("\n"), 'lspgfm']
     endif
 
-    util.TraceLog(
-      true,
+    lspserver.errorLog(
       $'{strftime("%m/%d/%y %T")}: Unsupported hover contents kind ({hoverResult.contents.kind})'
     )
     return ['', '']
@@ -65,8 +64,7 @@ def GetHoverText(hoverResult: any): list<any>
     return [hoverText, 'lspgfm']
   endif
 
-  util.TraceLog(
-    true,
+  lspserver.errorLog(
     $'{strftime("%m/%d/%y %T")}: Unsupported hover reply ({hoverResult})'
   )
   return ['', '']
@@ -75,7 +73,7 @@ enddef
 # process the 'textDocument/hover' reply from the LSP server
 # Result: Hover | null
 export def HoverReply(lspserver: dict<any>, hoverResult: any): void
-  var [ hoverText, hoverKind ] = GetHoverText(hoverResult)
+  var [hoverText, hoverKind] = GetHoverText(lspserver, hoverResult)
 
   # Nothing to show
   if hoverText->empty()

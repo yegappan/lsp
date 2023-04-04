@@ -26,14 +26,14 @@ import './inlayhints.vim'
 
 # LSP server standard output handler
 def Output_cb(lspserver: dict<any>, chan: channel, msg: any): void
-  util.TraceLog(false, $'{strftime("%m/%d/%y %T")}: Received {msg->string()}')
+  lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Received {msg->string()}')
   lspserver.data = msg
   lspserver.processMessages()
 enddef
 
 # LSP server error output handler
-def Error_cb(lspserver: dict<any>, chan: channel, emsg: string,): void
-  util.TraceLog(true, emsg)
+def Error_cb(lspserver: dict<any>, chan: channel, emsg: string): void
+  lspserver.errorLog(emsg)
 enddef
 
 # LSP server exit callback
@@ -222,6 +222,20 @@ def SetTrace(lspserver: dict<any>, traceVal: string)
   lspserver.sendNotification('$/setTrace', params)
 enddef
 
+# Log a debug message to the LSP server debug file
+def TraceLog(lspserver: dict<any>, msg: string)
+  if lspserver.debug
+    util.TraceLog(lspserver.logfile, false, msg)
+  endif
+enddef
+
+# Log an error message to the LSP server error file
+def ErrorLog(lspserver: dict<any>, errmsg: string)
+  if lspserver.debug
+    util.TraceLog(lspserver.errfile, true, errmsg)
+  endif
+enddef
+
 # Return the next id for a LSP server request message
 def NextReqID(lspserver: dict<any>): number
   var id = lspserver.nextID
@@ -290,7 +304,7 @@ def SendMessage(lspserver: dict<any>, content: dict<any>): void
   endif
   job->ch_sendexpr(content)
   if content->has_key('id')
-    util.TraceLog(false, $'{strftime("%m/%d/%y %T")}: Sent {content->string()}')
+    lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Sent {content->string()}')
   endif
 enddef
 
@@ -315,12 +329,12 @@ def Rpc(lspserver: dict<any>, method: string, params: any, handleError: bool = t
     return {}
   endif
 
-  util.TraceLog(false, $'{strftime("%m/%d/%y %T")}: Sent {req->string()}')
+  lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Sent {req->string()}')
 
   # Do the synchronous RPC call
   var reply = job->ch_evalexpr(req)
 
-  util.TraceLog(false, $'{strftime("%m/%d/%y %T")}: Received {reply->string()}')
+  lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Received {reply->string()}')
 
   if reply->has_key('result')
     # successful reply
@@ -342,7 +356,7 @@ enddef
 
 # LSP server asynchronous RPC callback
 def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel, reply: dict<any>)
-  util.TraceLog(false, $'{strftime("%m/%d/%y %T")}: Received {reply->string()}')
+  lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Received {reply->string()}')
 
   if reply->empty()
     return
@@ -382,7 +396,7 @@ def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func): n
     return -1
   endif
 
-  util.TraceLog(false, $'{strftime("%m/%d/%y %T")}: Sent {req->string()}')
+  lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Sent {req->string()}')
 
   # Do the asynchronous RPC call
   var Fn = function('AsyncRpcCb', [lspserver, method, Cbfunc])
@@ -1336,9 +1350,13 @@ def TagFunc(lspserver: dict<any>, pat: string, flags: string, info: dict<any>): 
   return symbol.TagFunc(lspserver, taglocations, pat)
 enddef
 
-export def NewLspServer(path: string, args: list<string>, isSync: bool, initializationOptions: any, customNotificationHandlers: dict<func>): dict<any>
+export def NewLspServer(name_arg: string, path_arg: string, args: list<string>,
+			isSync: bool, initializationOptions: any,
+			customNotificationHandlers: dict<func>,
+			debug_arg: bool): dict<any>
   var lspserver: dict<any> = {
-    path: path,
+    name: name_arg,
+    path: path_arg,
     args: args,
     syncInit: isSync,
     initializationOptions: initializationOptions,
@@ -1361,8 +1379,12 @@ export def NewLspServer(path: string, args: list<string>, isSync: bool, initiali
     peekSymbolPopup: -1,
     peekSymbolFilePopup: -1,
     callHierarchyType: '',
-    selection: {}
+    selection: {},
+    debug: debug_arg
   }
+  lspserver.logfile = $'lsp-{lspserver.name}.log'
+  lspserver.errfile = $'lsp-{lspserver.name}.err'
+
   # Add the LSP server functions
   lspserver->extend({
     startServer: function(StartServer, [lspserver]),
@@ -1371,6 +1393,8 @@ export def NewLspServer(path: string, args: list<string>, isSync: bool, initiali
     shutdownServer: function(ShutdownServer, [lspserver]),
     exitServer: function(ExitServer, [lspserver]),
     setTrace: function(SetTrace, [lspserver]),
+    traceLog: function(TraceLog, [lspserver]),
+    errorLog: function(ErrorLog, [lspserver]),
     nextReqID: function(NextReqID, [lspserver]),
     createRequest: function(CreateRequest, [lspserver]),
     createResponse: function(CreateResponse, [lspserver]),
