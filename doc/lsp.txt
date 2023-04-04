@@ -1092,6 +1092,9 @@ override them.
 *LspInlayHintsType*		Used to highlight inlay hints of kind "type".
 				By default, linked to the "Conceal" highlight
 				group.
+*LspSigActiveParameter*		Used to highlight the active signature
+				parameter.  By default, linked to the "LineNr"
+				highlight group.
 
 For example, to override the highlight used for diagnostics virtual text, you
 can use the following: >

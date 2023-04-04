@@ -21,6 +21,10 @@ def CloseCurBufSignaturePopup()
   CloseSignaturePopup(lspserver)
 enddef
 
+export def InitOnce()
+  hlset([{name: 'LspSigActiveParameter', default: true, linksto: 'LineNr'}])
+enddef
+
 # Initialize the signature triggers for the current buffer
 export def BufferInit(lspserver: dict<any>)
   if !lspserver.isSignatureHelpProvider
@@ -81,7 +85,7 @@ export def SignatureHelp(lspserver: dict<any>, sighelp: any): void
     :echon "\r\r"
     :echon ''
     :echon text->strpart(0, startcol)
-    :echoh LineNr
+    :echoh LspSigActiveParameter
     :echon text->strpart(startcol, hllen)
     :echoh None
     :echon text->strpart(startcol + hllen)
@@ -91,7 +95,7 @@ export def SignatureHelp(lspserver: dict<any>, sighelp: any): void
 
     var popupID = text->popup_atcursor({moved: [col('.') - 1, 9999999]})
     var bnum: number = popupID->winbufnr()
-    prop_type_add('signature', {bufnr: bnum, highlight: 'LineNr'})
+    prop_type_add('signature', {bufnr: bnum, highlight: 'LspSigActiveParameter'})
     if hllen > 0
       prop_add(1, startcol + 1, {bufnr: bnum, length: hllen, type: 'signature'})
     endif
