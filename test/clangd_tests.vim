@@ -954,13 +954,15 @@ def g:Test_LspHover()
   setline(1, lines)
   g:WaitForServerFileLoad(0)
   cursor(8, 4)
-  :LspHover
+  var output = execute(':LspHover')->split("\n")
+  assert_equal([], output)
   var p: list<number> = popup_list()
   assert_equal(1, p->len())
   assert_equal(['function f1', '', '→ int', 'Parameters:', '- int a', '', 'int f1(int a)'], getbufline(winbufnr(p[0]), 1, '$'))
   popup_close(p[0])
   cursor(7, 1)
-  :LspHover
+  output = execute(':LspHover')->split("\n")
+  assert_equal('No hover messages found for current position', output[0])
   assert_equal([], popup_list())
 
   # Show current diagnostic as to open another popup.
