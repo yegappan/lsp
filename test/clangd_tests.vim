@@ -8,7 +8,7 @@ g:LspOptionsSet(lspOpts)
 
 var lspServers = [{
       filetype: ['c', 'cpp'],
-      path: (exepath('clangd-14') ?? exepath('clangd')),
+      path: (exepath('clangd-15') ?? exepath('clangd')),
       args: ['--background-index', '--clang-tidy'],
       initializationOptions: { clangdFileStatus: true },
       customNotificationHandlers: {
@@ -18,7 +18,7 @@ var lspServers = [{
       }
   }]
 call LspAddServer(lspServers)
-echomsg systemlist($'{lspServers[0].path} --version')
+echomsg systemlist($'{shellescape(lspServers[0].path)} --version')
 
 # Test for formatting a file using LspFormat
 def g:Test_LspFormat()
@@ -351,20 +351,21 @@ def g:Test_LspDiag_Multi()
 
   var bnr: number = bufnr()
 
-  setline(1, [
-    'int i = "a";',
-    'int j = i;',
-    'int y = 0;'
-  ])
+  var lines =<< trim END
+    int i = "a";
+    int j = i;
+    int y = 0;
+  END
+  setline(1, lines)
   :redraw!
   # TODO: Waiting count doesn't include Warning, Info, and Hint diags
-  g:WaitForServerFileLoad(2)
+  g:WaitForServerFileLoad(3)
   :LspDiagShow
   var qfl: list<dict<any>> = getloclist(0)
   assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
   assert_equal(bnr, qfl[0].bufnr)
   assert_equal(3, qfl->len())
-  assert_equal([1, 5, 'W'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
+  assert_equal([1, 5, 'E'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
   assert_equal([1, 9, 'E'], [qfl[1].lnum, qfl[1].col, qfl[1].type])
   assert_equal([2, 9, 'E'], [qfl[2].lnum, qfl[2].col, qfl[2].type])
   close
@@ -952,7 +953,7 @@ def g:Test_LspHover()
     }
   END
   setline(1, lines)
-  g:WaitForServerFileLoad(0)
+  g:WaitForServerFileLoad(1)
   cursor(8, 4)
   var output = execute(':LspHover')->split("\n")
   assert_equal([], output)

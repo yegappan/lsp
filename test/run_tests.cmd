@@ -6,7 +6,7 @@ SETLOCAL
 SET VIMPRG="vim.exe"
 SET VIM_CMD=%VIMPRG% -u NONE -U NONE -i NONE --noplugin -N --not-a-term
 
-%VIM_CMD% -c "let g:TestName=clangd_tests.vim" -S runner.vim
+%VIM_CMD% -c "let g:TestName='clangd_tests.vim'" -S runner.vim
 
 echo LSP unit test results
 type results.txt

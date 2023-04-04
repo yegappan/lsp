@@ -9,7 +9,7 @@ jobs:
         run: |
           sudo apt update
           # install clangd language server
-          sudo apt install -y clangd-14
+          sudo apt install -y clangd-15
           # install nodejs
           sudo apt install -y curl
           curl -fsSL https://deb.nodesource.com/setup_18.x | sudo bash -
