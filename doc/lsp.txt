@@ -1059,10 +1059,6 @@ The following highlight groups are used by the LSP plugin.  You can define
 these highlight groups in your .vimrc file before sourcing this plugin to
 override them.
 
-*LspDiagLine*			Used to highlight a line with one or more
-				diagnostics.  By default linked to the
-				"DiffAdd" highlight group.  Use "NONE" to
-				disable.
 *LspDiagInlineError*		Used to highlight inline error diagnostics.
 				By default, linked to the "SpellBad" highlight
 				group.
@@ -1075,6 +1071,10 @@ override them.
 *LspDiagInlineWarning*		Used to highlight inline warning diagnostics.
 				By default, linked to the "SpellCap" highlight
 				group.
+*LspDiagLine*			Used to highlight a line with one or more
+				diagnostics.  By default linked to the
+				"DiffAdd" highlight group.  Use "NONE" to
+				disable.
 *LspDiagSignErrorText*		Used to highlight the sign text for error
 				diags.  By default linked to 'ErrorMsg'.
 *LspDiagSignHintText*		Used to highlight the sign text for hint
