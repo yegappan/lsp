@@ -698,6 +698,7 @@ def SwitchSourceHeader(lspserver: dict<any>)
   param.uri = util.LspFileToUri(@%)
   var reply = lspserver.rpc('textDocument/switchSourceHeader', param)
   if reply->empty() || reply.result->empty()
+    util.WarnMsg('Error: No alternate file found')
     return
   endif
 
@@ -779,11 +780,7 @@ def ShowReferences(lspserver: dict<any>, peek: bool): void
   var reply = lspserver.rpc('textDocument/references', param)
 
   # Result: Location[] | null
-  if reply->empty()
-    return
-  endif
-
-  if reply.result->empty()
+  if reply->empty() || reply.result->empty()
     util.WarnMsg('Error: No references found')
     return
   endif
