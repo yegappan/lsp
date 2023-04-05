@@ -105,7 +105,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
                   restxt = restxt .. line .. "\n"
               endif
           endfor
-          echom restxt
+          #echom restxt
           items->add({
               label: key,
               data: {
