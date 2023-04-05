@@ -37,6 +37,7 @@ def LspInitOnce()
 
   diag.InitOnce()
   inlayhints.InitOnce()
+  signature.InitOnce()
 
   :set ballooneval balloonevalterm
   lspInitializedOnce = true
