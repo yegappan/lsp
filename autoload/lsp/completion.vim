@@ -93,15 +93,26 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
   endif
 
   if opt.lspOptions.ultisnipsSupport
-      var ultisniplist = UltiSnips#SnippetsInCurrentScope()
-      for [key, info] in items(ultisniplist)
+      call UltiSnips#SnippetsInCurrentScope(1)
+      for [key, info] in items(g:current_ulti_dict_info)
+          var parts = split(info.location, ':')
+          var txt = readfile(parts[0])[str2nr(parts[1]) : str2nr(parts[1]) + 20]
+          var restxt = info.description .. "\n\n"
+          for line in txt
+              if line == ""
+                  break
+              else
+                  restxt = restxt .. line .. "\n"
+              endif
+          endfor
+          #echom restxt
           items->add({
               label: key,
               data: {
                   entryNames: [key],
               },
               kind: 15,
-              documentation: info,
+              documentation: restxt,
           })
       endfor
   endif
