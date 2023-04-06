@@ -259,7 +259,7 @@ export def GetClientCaps(): dict<any>
     workspace: {
       workspaceFolders: true,
       applyEdit: true,
-      configuration: false
+      configuration: true
     },
     textDocument: {
       callHierarchy: {

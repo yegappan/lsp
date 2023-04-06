@@ -142,9 +142,11 @@ enddef
 
 # process the workspace/configuration LSP server request
 # Request: "workspace/configuration"
-# Param: none
+# Param: ConfigurationParams
 def ProcessWorkspaceConfiguration(lspserver: dict<any>, request: dict<any>)
-  lspserver.sendResponse(request, {}, {})
+  var items = request.params.items
+  var response = items->map((_, item) => lspserver.workspaceConfigGet(item))
+  lspserver.sendResponse(request, response, {})
 enddef
 
 # process the window/workDoneProgress/create LSP server request

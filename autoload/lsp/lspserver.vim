@@ -119,6 +119,10 @@ def ServerInitReply(lspserver: dict<any>, initResult: dict<any>): void
 
   # send a "initialized" notification to server
   lspserver.sendInitializedNotif()
+  # send any workspace configuration (optional)
+  if !lspserver.workspaceConfig->empty()
+    lspserver.sendWorkspaceConfig()
+  endif
   lspserver.ready = true
   if exists($'#User#LspServerReady{lspserver.name}')
     exe $'doautocmd <nomodeline> User LspServerReady{lspserver.name}'
@@ -427,6 +431,33 @@ def WaitForResponse(lspserver: dict<any>, req: dict<any>)
     sleep 2m
     maxCount -= 1
   endwhile
+enddef
+
+# Retrieve the Workspace configuration asked by the server.
+# Request: workspace/configuration
+def WorkspaceConfigGet(lspserver: dict<any>, configItem: dict<any>): dict<any>
+  if lspserver.workspaceConfig->empty()
+    return {}
+  endif
+  if !configItem->has_key('section') || configItem.section->empty()
+    return lspserver.workspaceConfig
+  endif
+  var config: dict<any> = lspserver.workspaceConfig
+  for part in configItem.section->split('\.')
+    if !config->has_key(part)
+      return {}
+    endif
+    config = config[part]
+  endfor
+  return config
+enddef
+
+# Send a "workspace/didChangeConfiguration" notification to the language
+# server.
+def SendWorkspaceConfig(lspserver: dict<any>)
+  # Params: DidChangeConfigurationParams
+  var params = {settings: lspserver.workspaceConfig}
+  lspserver.sendNotification('workspace/didChangeConfiguration', params)
 enddef
 
 # Send a file/document opened notification to the language server.
@@ -1352,6 +1383,7 @@ enddef
 
 export def NewLspServer(name_arg: string, path_arg: string, args: list<string>,
 			isSync: bool, initializationOptions: any,
+			workspaceConfig: dict<any>,
 			customNotificationHandlers: dict<func>,
 			debug_arg: bool): dict<any>
   var lspserver: dict<any> = {
@@ -1380,6 +1412,7 @@ export def NewLspServer(name_arg: string, path_arg: string, args: list<string>,
     peekSymbolFilePopup: -1,
     callHierarchyType: '',
     selection: {},
+    workspaceConfig: workspaceConfig,
     debug: debug_arg
   }
   lspserver.logfile = $'lsp-{lspserver.name}.log'
@@ -1414,6 +1447,7 @@ export def NewLspServer(name_arg: string, path_arg: string, args: list<string>,
     textdocDidClose: function(TextdocDidClose, [lspserver]),
     textdocDidChange: function(TextdocDidChange, [lspserver]),
     sendInitializedNotif: function(SendInitializedNotif, [lspserver]),
+    sendWorkspaceConfig: function(SendWorkspaceConfig, [lspserver]),
     getCompletion: function(GetCompletion, [lspserver]),
     resolveCompletion: function(ResolveCompletion, [lspserver]),
     gotoDefinition: function(GotoDefinition, [lspserver]),
@@ -1446,6 +1480,7 @@ export def NewLspServer(name_arg: string, path_arg: string, args: list<string>,
     selectionShrink: function(SelectionShrink, [lspserver]),
     foldRange: function(FoldRange, [lspserver]),
     executeCommand: function(ExecuteCommand, [lspserver]),
+    workspaceConfigGet: function(WorkspaceConfigGet, [lspserver]),
     showCapabilities: function(ShowCapabilities, [lspserver])
   })
 

@@ -250,12 +250,15 @@ To add a language server, the following information is needed:
 			or useful for initialization. Those can be provided in
 			this dictionary and if present will be transmitted to
 			the lsp server.
-						*lsp-cfg-debug*
-	debug		(Optional) log the messages printed by this language
-			server in stdout and stderr to a file.  Useful for
-			debugging a language server.  By default the
-			messages are not logged.  See |lsp-debug| for more
-			information.
+						*lsp-cfg-workspaceConfig*
+	workspaceConfig (Optional) a json encodable value that will be sent to
+			the language server after initialization as the
+			"settings" in a "workspace/didChangeConfiguration"
+			notification.  Refer to the language server
+			documentation for the values that will be accepted in
+			this notification.  This configuration is also used to
+			respond to the "workspace/configuration" request
+			message from the language server.
 
 Aditionally the following configurations can be made:
 
@@ -278,6 +281,12 @@ Aditionally the following configurations can be made:
 			call is used to initialize the language server,
 			otherwise the server is initialized asynchronously.
 			By default this is set to "v:false".
+						*lsp-cfg-debug*
+	debug		(Optional) log the messages printed by this language
+			server in stdout and stderr to a file.  Useful for
+			debugging a language server.  By default the
+			messages are not logged.  See |lsp-debug| for more
+			information.
 
 The language servers are added using the LspAddServer() function. This function
 accepts a list of language servers with the above information.
