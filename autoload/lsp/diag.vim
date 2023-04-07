@@ -137,11 +137,15 @@ def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
       endif
 
       if opt.lspOptions.showDiagWithVirtualText
+        var padding = diag.range.start.character
+        if padding > 0
+          padding = strdisplaywidth(getline(diag.range.start.line + 1)[ : diag.range.start.character - 1])
+        endif
         prop_add(lnum, 0, {bufnr: bnr,
                            type: 'LspDiagVirtualText',
                            text: $'┌─ {diag.message}',
                            text_align: 'above',
-                           text_padding_left: diag.range.start.character})
+                           text_padding_left: padding})
       endif
     catch /E966\|E964/ # Invalid lnum | Invalid col
       # Diagnostics arrive asynchronous and the document changed while they wore
