@@ -92,12 +92,23 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     lspserver.completeItemsIsIncomplete = cItems.isIncomplete
   endif
 
+  # Get the keyword prefix before the current cursor column.
+  var chcol = charcol('.')
+  var starttext = chcol == 1 ? '' : getline('.')[ : chcol - 2]
+  var [prefix, start_idx, end_idx] = starttext->matchstrpos('\k*$')
+  if opt.lspOptions.completionMatcher == 'icase'
+    prefix = prefix->tolower()
+  endif
+
+  var start_col = start_idx + 1
+
   if opt.lspOptions.ultisnipsSupport
       call UltiSnips#SnippetsInCurrentScope(1)
-      for [key, info] in items(g:current_ulti_dict_info)
-          var parts = split(info.location, ':')
+      for key in matchfuzzy(g:current_ulti_dict_info->keys(), prefix)
+          var item = g:current_ulti_dict_info[key]
+          var parts = split(item.location, ':')
           var txt = readfile(parts[0])[str2nr(parts[1]) : str2nr(parts[1]) + 20]
-          var restxt = info.description .. "\n\n"
+          var restxt = item.description .. "\n\n"
           for line in txt
               if line == ""
                   break
@@ -105,7 +116,6 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
                   restxt = restxt .. line .. "\n"
               endif
           endfor
-          #echom restxt
           items->add({
               label: key,
               data: {
@@ -116,16 +126,6 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
           })
       endfor
   endif
-
-  # Get the keyword prefix before the current cursor column.
-  var chcol = charcol('.')
-  var starttext = chcol == 1 ? '' : getline('.')[ : chcol - 2]
-  var [prefix, start_idx, end_idx] = starttext->matchstrpos('\k*$')
-  if opt.lspOptions.completionMatcher == 'icase'
-    prefix = prefix->tolower()
-  endif
-
-  var start_col = start_idx + 1
 
   #writefile([$'chcol = {chcol}, starttext = [{starttext}], prefix = [{prefix}], start_idx = {start_idx}, end_idx = {end_idx}, start_col = {start_col}'], '/tmp/lspcomplete.log', 'a')
 
