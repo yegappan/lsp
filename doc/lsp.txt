@@ -2,7 +2,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: April 2, 2023
+Last change: April 7, 2023
 
 ==============================================================================
 						*lsp-license*
@@ -259,6 +259,18 @@ To add a language server, the following information is needed:
 			this notification.  This configuration is also used to
 			respond to the "workspace/configuration" request
 			message from the language server.
+						*lsp-cfg-rootSearch*
+	rootSearch	(Optional) a List of file and directory names used to
+			locate the root path or uri of the workspace.  The
+			directory names in "rootSearch" must end in "/" or
+			"\".  Each file and directory name in "rootSearch" is
+			searched upwards in all the parent directories.  If
+			multiple directories are found, then the directory
+			closest to the directory of the current buffer is used
+			as the workspace root.  If this parameter is not
+			specified or the files are not found, then the
+			directory of the current buffer is used as the
+			workspace root.
 
 Aditionally the following configurations can be made:
 
@@ -297,6 +309,7 @@ server and to set the language server options.  For example: >
 
     let lspServers = [
 		\     #{
+		\        name: 'clangd',
 		\        filetype: ['c', 'cpp'],
 		\        path: '/usr/local/bin/clangd',
 		\        args: ['--background-index']

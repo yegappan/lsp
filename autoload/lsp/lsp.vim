@@ -371,7 +371,7 @@ export def AddFile(bnr: number): void
     if !lspInitializedOnce
       LspInitOnce()
     endif
-    lspserver.startServer()
+    lspserver.startServer(bnr)
   endif
   buf.BufLspServerSet(bnr, lspserver)
 
@@ -438,7 +438,7 @@ export def RestartServer()
   endfor
 
   # Start the server again
-  lspserver.startServer()
+  lspserver.startServer(bufnr(''))
 
   AddBuffersToLsp(ftype)
 enddef
@@ -514,10 +514,15 @@ export def AddServer(serverList: list<dict<any>>)
       server.workspaceConfig = {}
     endif
 
+    if !server->has_key('rootSearch') || server.rootSearch->type() != v:t_list
+      server.rootSearch = []
+    endif
+
     var lspserver: dict<any> = lserver.NewLspServer(server.name, server.path,
 						    args, server.syncInit,
 						    initializationOptions,
 						    server.workspaceConfig,
+						    server.rootSearch,
 						    customNotificationHandlers,
 						    server.debug)
 
