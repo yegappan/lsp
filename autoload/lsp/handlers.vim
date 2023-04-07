@@ -44,8 +44,8 @@ enddef
 # Notification: window/logMessage
 # Param: LogMessageParams
 def ProcessLogMsgNotif(lspserver: dict<any>, reply: dict<any>)
-  var msgType: list<string> = ['', 'Error: ', 'Warning: ', 'Info: ', 'Log: ']
-  var mtype: string = 'Log: '
+  var msgType: list<string> = ['', 'Error', 'Warning', 'Info', 'Log']
+  var mtype: string = 'Log'
   if reply.params.type > 0 && reply.params.type < 5
     mtype = msgType[reply.params.type]
   endif
@@ -84,16 +84,21 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       'telemetry/event': ProcessUnsupportedNotifOnce,
     }
 
+  # Explicitly ignored notification messages
   var lsp_ignored_notif_handlers: list<string> =
     [
       '$/progress',
       '$/status/report',
       '$/status/show',
+      # PHP intelephense server sends the 'indexingStarted' and
+      # 'indexingEnded' notifications which is not in the LSP specification.
+      'indexingStarted',
+      'indexingEnded',
       # Java language server sends the 'language/status' notification which is
-      # not in the LSP specification
+      # not in the LSP specification.
       'language/status',
-      # Typescript language server sends the '$/typescriptVersion' notification
-      # which is not in the LSP specification
+      # Typescript language server sends the '$/typescriptVersion'
+      # notification which is not in the LSP specification.
       '$/typescriptVersion'
     ]
 
