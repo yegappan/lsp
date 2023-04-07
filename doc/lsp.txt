@@ -271,8 +271,7 @@ To add a language server, the following information is needed:
 			closest to the directory of the current buffer is used
 			as the workspace root.  If this parameter is not
 			specified or the files are not found, then the
-			directory of the current buffer is used as the
-			workspace root.
+			current working directory is used as the workspace root.
 
 Aditionally the following configurations can be made:
 
