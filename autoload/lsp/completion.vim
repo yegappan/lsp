@@ -269,7 +269,7 @@ export def CompletionResolveReply(lspserver: dict<any>, cItem: any)
   var infoText: list<string>
   var infoKind: string
 
-  if cItem->has_key('detail')
+  if cItem->has_key('detail') && !cItem.detail->empty()
     # Solve a issue where if a server send the detail field with "\n",
     # on the completion popup, everything will be joined with "^@"
     # (example: typescript-language-server)
