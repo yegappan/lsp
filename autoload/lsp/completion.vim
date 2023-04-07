@@ -479,6 +479,10 @@ enddef
 
 # Initialize buffer-local completion options and autocmds
 export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
+  if !lspserver.isCompletionProvider
+    # no support for completion
+    return
+  endif
 
   # buffer-local autocmds for completion
   var acmds: list<dict<any>> = []
