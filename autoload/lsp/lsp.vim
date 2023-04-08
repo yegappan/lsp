@@ -162,7 +162,7 @@ export def ShowServer()
     return
   endif
 
-  var msg = $"LSP server '{lspserver.path}' is "
+  var msg = $"LSP server '{lspserver.name}' is "
   if lspserver.running
     msg ..= 'running'
   else
