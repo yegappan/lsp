@@ -26,7 +26,7 @@ import './inlayhints.vim'
 var lspServers: list<dict<any>> = []
 
 # filetype to LSP server map
-var ftypeServerMap: dict<dict<any>> = {}
+var ftypeServerMap: dict<list<dict<any>>> = {}
 
 var lspInitializedOnce = false
 
@@ -45,13 +45,41 @@ enddef
 
 # Returns the LSP server for the a specific filetype. Returns an empty dict if
 # the server is not found.
-def LspGetServer(ftype: string): dict<any>
-  return ftypeServerMap->get(ftype, {})
+def LspGetServer(bnr: number, ftype: string): dict<any>
+  if ftypeServerMap->has_key(ftype)
+    var lspservers = ftypeServerMap[ftype]
+
+    # The best language server for the current buffer
+    var bestMatch: dict<any> = {}
+    var bestScore: number = -1
+
+    var bufDir = bnr->bufname()->fnamemodify(':p:h')
+
+    for lspserver in lspservers
+      var score: number = 0
+      if !lspserver.rootSearchFiles->empty()
+        # The score is calculated by how deep the workspace root dir is, the
+        # deeper the better.
+        var path = util.FindNearestRootDir(bufDir, lspserver.rootSearchFiles)
+        score = path->strcharlen()
+      endif
+      if score > bestScore
+        bestMatch = lspserver
+        bestScore = score
+      endif
+    endfor
+
+    return bestMatch
+  endif
+
+  return {}
 enddef
 
 # Add a LSP server for a filetype
 def LspAddServer(ftype: string, lspsrv: dict<any>)
-  ftypeServerMap->extend({[ftype]: lspsrv})
+  var lspsrvlst = ftypeServerMap->has_key(ftype) ? ftypeServerMap[ftype] : []
+  lspsrvlst->add(lspsrv)
+  ftypeServerMap[ftype] = lspsrvlst
 enddef
 
 # Enable/disable the logging of the language server protocol messages
@@ -85,11 +113,14 @@ export def ShowAllServers()
   # Add filetype to server mapping information
   lines->add('Filetype Information')
   lines->add('====================')
-  for [ftype, lspserver] in ftypeServerMap->items()
-    lines->add($"Filetype: '{ftype}'")
-    lines->add($"Server Path: '{lspserver.path}'")
-    lines->add($"Status: {lspserver.running ? 'Running' : 'Not running'}")
-    lines->add('')
+  for [ftype, lspservers] in ftypeServerMap->items()
+    for lspserver in lspservers
+      lines->add($"Filetype: '{ftype}'")
+      lines->add($"Server Name: '{lspserver.name}'")
+      lines->add($"Server Path: '{lspserver.path}'")
+      lines->add($"Status: {lspserver.running ? 'Running' : 'Not running'}")
+      lines->add('')
+    endfor
   endfor
 
   # Add buffer to server mapping information
@@ -143,12 +174,16 @@ enddef
 # Get LSP server running status for filetype 'ftype'
 # Return true if running, or false if not found or not running
 export def ServerRunning(ftype: string): bool
-  for [ft, lspserver] in ftypeServerMap->items()
-    if ftype ==# ft
-      return lspserver.running
-    endif
-  endfor
-  return v:false
+  if ftypeServerMap->has_key(ftype)
+    var lspservers = ftypeServerMap[ftype]
+    for lspserver in lspservers
+      if lspserver.running
+        return true
+      endif
+    endfor
+  endif
+
+  return false
 enddef
 
 # Go to a definition using "textDocument/definition" LSP request
@@ -363,7 +398,7 @@ export def AddFile(bnr: number): void
   if ftype == ''
     return
   endif
-  var lspserver: dict<any> = LspGetServer(ftype)
+  var lspserver: dict<any> = LspGetServer(bnr, ftype)
   if lspserver->empty()
     return
   endif
