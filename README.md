@@ -157,6 +157,7 @@ The following commands are provided to use the LSP features.
 Command|Description
 -------|-----------
 :LspCodeAction|Apply the code action supplied by the language server to the diagnostic in the current line.
+:LspCodeLens|Display a list of code lens commands and apply a selected code lens command to the current file.
 :LspDiagCurrent|Display the diagnostic message for the current line.
 :LspDiagFirst|Jump to the first diagnostic message for the current buffer.
 :LspDiagHere|Jump to the next diagnostic message in the current line.

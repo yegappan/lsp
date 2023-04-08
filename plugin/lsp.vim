@@ -78,6 +78,7 @@ augroup END
 
 # LSP commands
 command! -nargs=? -bar -range LspCodeAction lsp.CodeAction(<line1>, <line2>, <q-args>)
+command! -nargs=0 -bar LspCodeLens lsp.CodeLens()
 command! -nargs=0 -bar -bang LspDiagCurrent lsp.LspShowCurrentDiag(<bang>false)
 command! -nargs=0 -bar LspDiagFirst lsp.JumpToDiag('first')
 command! -nargs=0 -bar LspDiagHighlightDisable lsp.DiagHighlightDisable()
@@ -115,10 +116,10 @@ command! -nargs=0 -bar LspShowServerCapabilities lsp.ShowServerCapabilities()
 command! -nargs=0 -bar LspShowServer lsp.ShowServer()
 command! -nargs=0 -bar LspShowAllServers lsp.ShowAllServers()
 command! -nargs=0 -bar LspShowSignature call LspShowSignature()
-# Clangd specifc extension to switch from one C/C++ source file to a
-# corresponding header file
 command! -nargs=0 -bar LspSubTypeHierarchy lsp.TypeHierarchy(0)
 command! -nargs=0 -bar LspSuperTypeHierarchy lsp.TypeHierarchy(1)
+# Clangd specifc extension to switch from one C/C++ source file to a
+# corresponding header file
 command! -nargs=0 -bar LspSwitchSourceHeader lsp.SwitchSourceHeader()
 command! -nargs=? -bar LspSymbolSearch lsp.SymbolSearch(<q-args>)
 command! -nargs=1 -bar -complete=dir LspWorkspaceAddFolder lsp.AddWorkspaceFolder(<q-args>)

@@ -70,6 +70,8 @@ The following commands are provided:
 
 :LspCodeAction		Apply the code action supplied by the language server
 			to the diagnostic in the current line.
+:LspCodeLens		Display all the code lens commands available for the
+			current file and apply the selected command.
 :LspDiagCurrent		Display the diagnostic message for the current line.
 :LspDiagFirst		Jump to the first diagnostic message for the current
 			buffer.
@@ -476,6 +478,11 @@ can map these commands to keys and make it easier to invoke them.
 
 			When [query] is not given you will be prompted to select
 			one of the actions supplied by the language server.
+
+						*:LspCodeLens*
+:LspCodeLens		Display a list of code lens commands available for the
+			current buffer and apply the selected code lens
+			command.
 
 						*:LspDiagCurrent*
 :LspDiagCurrent		Displays the diagnostic message (if any) for the

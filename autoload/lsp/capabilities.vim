@@ -170,6 +170,18 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
     lspserver.isCodeActionProvider = false
   endif
 
+  # codeLensProvider
+  if lspserver.caps->has_key('codeLensProvider')
+    lspserver.isCodeLensProvider = true
+    if lspserver.caps.codeLensProvider->has_key('resolveProvider')
+      lspserver.isCodeLensResolveProvider = true
+    else
+      lspserver.isCodeLensResolveProvider = false
+    endif
+  else
+    lspserver.isCodeLensProvider = false
+  endif
+
   # workspaceSymbolProvider
   if lspserver.caps->has_key('workspaceSymbolProvider')
     if lspserver.caps.workspaceSymbolProvider->type() == v:t_bool

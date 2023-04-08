@@ -20,6 +20,7 @@ import './completion.vim'
 import './hover.vim'
 import './signature.vim'
 import './codeaction.vim'
+import './codelens.vim'
 import './callhierarchy.vim' as callhier
 import './typehierarchy.vim' as typehier
 import './inlayhints.vim'
@@ -1165,6 +1166,38 @@ def CodeAction(lspserver: dict<any>, fname_arg: string, line1: number,
   codeaction.ApplyCodeAction(lspserver, reply.result, query)
 enddef
 
+# Request: "textDocument/codeLens"
+# Param: CodeLensParams
+def CodeLens(lspserver: dict<any>, fname: string)
+  # Check whether LSP server supports code lens operation
+  if !lspserver.isCodeLensProvider
+    util.ErrMsg('Error: LSP server does not support code lens operation')
+    return
+  endif
+
+  var params = {textDocument: {uri: util.LspFileToUri(fname)}}
+  var reply = lspserver.rpc('textDocument/codeLens', params)
+  if reply->empty() || reply.result->empty()
+    util.WarnMsg($'Error: No code lens actions found for the current file')
+    return
+  endif
+
+  codelens.ProcessCodeLens(lspserver, reply.result)
+enddef
+
+# Request: "codeLens/resolve"
+# Param: CodeLens
+def ResolveCodeLens(lspserver: dict<any>, codeLens: dict<any>): dict<any>
+  if !lspserver.isCodeLensResolveProvider
+    return {}
+  endif
+  var reply = lspserver.rpc('codeLens/resolve', codeLens)
+  if reply->empty()
+    return {}
+  endif
+  return reply.result
+enddef
+
 # List project-wide symbols matching query string
 # Request: "workspace/symbol"
 # Param: WorkspaceSymbolParams
@@ -1485,6 +1518,8 @@ export def NewLspServer(name_arg: string, path_arg: string, args: list<string>,
     typeHierarchy: function(TypeHiearchy, [lspserver]),
     renameSymbol: function(RenameSymbol, [lspserver]),
     codeAction: function(CodeAction, [lspserver]),
+    codeLens: function(CodeLens, [lspserver]),
+    resolveCodeLens: function(ResolveCodeLens, [lspserver]),
     workspaceQuery: function(WorkspaceQuerySymbols, [lspserver]),
     addWorkspaceFolder: function(AddWorkspaceFolder, [lspserver]),
     removeWorkspaceFolder: function(RemoveWorkspaceFolder, [lspserver]),

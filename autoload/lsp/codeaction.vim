@@ -12,10 +12,14 @@ export def RegisterCmdHandler(cmd: string, Handler: func)
   CommandHandlers[cmd] = Handler
 enddef
 
-def DoCommand(lspserver: dict<any>, cmd: dict<any>)
+export def DoCommand(lspserver: dict<any>, cmd: dict<any>)
   if cmd->has_key('command') && CommandHandlers->has_key(cmd.command)
     var CmdHandler: func = CommandHandlers[cmd.command]
-    call CmdHandler(cmd)
+    try
+      call CmdHandler(cmd)
+    catch
+      util.ErrMsg($'Error: "{cmd.command}" handler raised exception {v:exception}')
+    endtry
   else
     lspserver.executeCommand(cmd)
   endif

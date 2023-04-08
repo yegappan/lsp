@@ -795,6 +795,17 @@ export def CodeAction(line1: number, line2: number, query: string)
   lspserver.codeAction(fname, line1, line2, query)
 enddef
 
+# Code lens
+# Uses LSP "textDocument/codeLens" request
+export def CodeLens()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  if lspserver->empty()
+    return
+  endif
+
+  lspserver.codeLens(@%)
+enddef
+
 # Perform a workspace wide symbol lookup
 # Uses LSP "workspace/symbol" request
 export def SymbolSearch(queryArg: string)
