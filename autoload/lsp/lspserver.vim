@@ -72,7 +72,6 @@ def StartServer(lspserver: dict<any>, bnr: number): number
   lspserver.completionLazyDoc = false
   lspserver.completionTriggerChars = []
   lspserver.signaturePopup = -1
-  lspserver.workspaceFolders = [bnr->bufname()->fnamemodify(':p:h')]
 
   var job = cmd->job_start(opts)
   if job->job_status() == 'fail'
@@ -163,6 +162,9 @@ def InitServer(lspserver: dict<any>, bnr: number)
   if rootPath == ''
     rootPath = bufDir
   endif
+
+  lspserver.workspaceFolders = [rootPath]
+
   var rootUri = util.LspFileToUri(rootPath)
   initparams.rootPath = rootPath
   initparams.rootUri = rootUri
@@ -170,6 +172,7 @@ def InitServer(lspserver: dict<any>, bnr: number)
 	name: rootPath->fnamemodify(':t'),
 	uri: rootUri
      }]
+
   initparams.trace = 'off'
   initparams.capabilities = capabilities.GetClientCaps()
   if !lspserver.initializationOptions->empty()
