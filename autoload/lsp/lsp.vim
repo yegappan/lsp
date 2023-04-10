@@ -172,6 +172,8 @@ export def ShowServer(arg: string)
     :echomsg msg
   elseif arg ==? 'capabilities'
     lspserver.showCapabilities()
+  elseif arg ==? 'initializeRequest'
+    lspserver.showInitializeRequest()
   elseif arg ==? 'messages'
     lspserver.showMessages()
   else

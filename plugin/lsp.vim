@@ -66,7 +66,7 @@ enddef
 
 # Command line completion function for the LspShowServer command.
 def LspShowServerComplete(arglead: string, cmdline: string, cursorpos: number): list<string>
-  var l = ['capabilities', 'messages', 'status']
+  var l = ['capabilities', 'initializeRequest', 'messages', 'status']
   if arglead->empty()
     return l
   else
