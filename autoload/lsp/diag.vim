@@ -302,6 +302,8 @@ def DiagsUpdateLocList(lspserver: dict<any>, bnr: number): bool
     qflist->add({filename: fname,
 		    lnum: diag.range.start.line + 1,
 		    col: util.GetLineByteFromPos(bnr, diag.range.start) + 1,
+		    end_lnum: diag.range.end.line + 1,
+                    end_col: util.GetLineByteFromPos(bnr, diag.range.end) + 1,
 		    text: text,
 		    type: DiagSevToQfType(diag.severity)})
   endfor
