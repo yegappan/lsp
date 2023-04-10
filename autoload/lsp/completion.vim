@@ -248,6 +248,74 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
   endif
 enddef
 
+# process the completion documentation without LSP server request
+def ShowCompletionDocumentationNoLsp(cItem: any)
+  if cItem->empty() || cItem->type() != v:t_dict
+    return
+  endif
+
+  # check if completion item is still selected
+  var cInfo = complete_info()
+  if cInfo->empty()
+      || !cInfo.pum_visible
+      || cInfo.selected == -1
+      || cInfo.items[cInfo.selected]->type() != v:t_dict
+      || cInfo.items[cInfo.selected].user_data->type() != v:t_dict
+      || cInfo.items[cInfo.selected].user_data.label !=# cItem.label
+    return
+  endif
+
+  var infoText: list<string>
+  var infoKind: string
+
+  if cItem->has_key('documentation')
+    if !infoText->empty()
+      infoText->extend(['- - -'])
+    endif
+    if cItem.documentation->type() == v:t_dict
+      # MarkupContent
+      if cItem.documentation.kind == 'plaintext'
+        infoText->extend(cItem.documentation.value->split("\n"))
+        infoKind = 'text'
+      elseif cItem.documentation.kind == 'markdown'
+        infoText->extend(cItem.documentation.value->split("\n"))
+        infoKind = 'lspgfm'
+      else
+        util.ErrMsg($'Error: Unsupported documentation type ({cItem.documentation.kind})')
+        return
+      endif
+    elseif cItem.documentation->type() == v:t_string
+      infoText->extend(cItem.documentation->split("\n"))
+    else
+      util.ErrMsg($'Error: Unsupported documentation ({cItem.documentation->string()})')
+      return
+    endif
+  endif
+
+  if infoText->empty()
+    return
+  endif
+
+  # check if completion item is changed in meantime
+  cInfo = complete_info()
+  if cInfo->empty()
+      || !cInfo.pum_visible
+      || cInfo.selected == -1
+      || cInfo.items[cInfo.selected]->type() != v:t_dict
+      || cInfo.items[cInfo.selected].user_data->type() != v:t_dict
+      || cInfo.items[cInfo.selected].user_data.label !=# cItem.label
+    return
+  endif
+
+  var id = popup_findinfo()
+  if id > 0
+    var bufnr = id->winbufnr()
+    id->popup_settext(infoText)
+    infoKind->setbufvar(bufnr, '&ft')
+    id->popup_show()
+  endif
+enddef
+
 # process the 'completionItem/resolve' reply from the LSP server
 # Result: CompletionItem
 export def CompletionResolveReply(lspserver: dict<any>, cItem: any)
@@ -430,7 +498,11 @@ def LspResolve()
 
   var item = v:event.completed_item
   if item->has_key('user_data') && !item.user_data->empty()
-    lspserver.resolveCompletion(item.user_data)
+      if !item.user_data->has_key('documentation')
+        lspserver.resolveCompletion(item.user_data)
+      else
+        ShowCompletionDocumentationNoLsp(item.user_data)
+      endif
   endif
 enddef
 
