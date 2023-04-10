@@ -269,11 +269,18 @@ To add a language server, the following information is needed:
 			searched upwards in all the parent directories.  If
 			multiple directories are found, then the directory
 			closest to the directory of the current buffer is used
-			as the workspace root.  If this parameter is not
-			specified or the files are not found, then the current
-			working directory is used as the workspace root for
-			decendent files, for any other files the parent
-			directory of the file is used.
+			as the workspace root.
+
+			This option is also used to decide which server to run
+			when multiple servers are defined for a filetype. The
+			server with the longest found workspace root will be
+			selected as the relevant language server for a given
+			file.
+
+			If this parameter is not specified or the files are not
+			found, then the current working directory is used as the
+			workspace root for decendent files, for any other files
+			the parent directory of the file is used.
 
 Aditionally the following configurations can be made:
 
