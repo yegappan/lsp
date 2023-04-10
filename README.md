@@ -189,8 +189,7 @@ Command|Description
 :LspShowAllServers|Display information about all the registered language servers.
 :LspServerRestart|Restart the language server for the current buffer.
 :LspShowReferences|Display the list of references to the keyword under cursor in a new location list.
-:LspShowServer|Display the language server status for the current buffer.
-:LspShowServerCapabilities|Display the language server capabilities for the current buffer.
+:LspShowServer|Display the capabilities or messages or status of the language server for the current buffer.
 :LspShowSignature|Display the signature of the keyword under cursor.
 :LspSubTypeHierarchy|Display the sub type hierarchy in a popup window.
 :LspSuperTypeHierarchy|Display the super type hierarchy in a popup window.

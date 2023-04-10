@@ -128,11 +128,8 @@ The following commands are provided:
 			servers.
 :LspShowReferences	Display the list of references to the keyword under
 			cursor in a new location list.
-:LspShowServerCapabilities
-			Display the language server capabilities for the
-			current buffer.
-:LspShowServer		Display the status of the language server for the
-			current buffer.
+:LspShowServer		Display the capabilities, status and messages of the
+			language server for the current buffer.
 :LspShowSignature	Display the signature of the symbol under cursor.
 :LspSubTypeHierarchy	Display the sub type hierarchy in a popup window.
 :LspSuperTypeHierarchy	Display the super type hierarchy in a popup window.
@@ -790,17 +787,22 @@ can map these commands to keys and make it easier to invoke them.
 
 				call LspOptionsSet({'useQuickfixForLocations': v:true})
 <
-
-:LspShowServerCapabilities			*:LspShowServerCapabilities*
-			Display the list of language server capabilities for
-			the current buffer.  The server capabilities are
-			described in the LSP protocol specification under the
-			"ServerCapabilities" interface.
-
 						*:LspShowServer*
-:LspShowServer		Displays the language server status for the current
-			buffer.  The output shows the path to the language
-			server executable and the server status.
+:LspShowServer {capabilities | messages | status}
+			capabilities - Display the list of language server
+				       capabilities for the current buffer.
+				       The server capabilities are described
+				       in the LSP protocol specification under
+				       the "ServerCapabilities" interface.
+			messages     - Display the log messages received from
+				       the language server.  This includes the
+				       messages received using the
+				       "window/logMessage" and "$/logTrace"
+				       LSP notifications.
+			status       - Display the language server status for
+				       the current buffer.  The output shows
+				       the path to the language server
+				       executable and the server status.
 
 						*:LspShowSignature*
 :LspShowSignature	Displays the signature of the symbol (e.g. a function

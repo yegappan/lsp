@@ -20,11 +20,20 @@ def ProcessDiagNotif(lspserver: dict<any>, reply: dict<any>): void
   diag.DiagNotification(lspserver, reply.params.uri, reply.params.diagnostics)
 enddef
 
+# Convert LSP message type to a string
+def LspMsgTypeToString(lspMsgType: number): string
+  var msgStrMap: list<string> = ['', 'Error', 'Warning', 'Info', 'Log']
+  var mtype: string = 'Log'
+  if lspMsgType > 0 && lspMsgType < 5
+    mtype = msgStrMap[lspMsgType]
+  endif
+  return mtype
+enddef
+
 # process a show notification message from the LSP server
 # Notification: window/showMessage
 # Param: ShowMessageParams
 def ProcessShowMsgNotif(lspserver: dict<any>, reply: dict<any>)
-  var msgType: list<string> = ['', 'Error: ', 'Warning: ', 'Info: ', 'Log: ']
   if reply.params.type == 4
     # ignore log messages from the LSP server (too chatty)
     # TODO: Add a configuration to control the message level that will be
@@ -32,35 +41,41 @@ def ProcessShowMsgNotif(lspserver: dict<any>, reply: dict<any>)
     # them.
     return
   endif
-  var mtype: string = 'Log: '
-  if reply.params.type > 0 && reply.params.type < 5
-    mtype = msgType[reply.params.type]
-  endif
-
-  :echomsg $'Lsp {mtype} {reply.params.message}'
+  var mtype = LspMsgTypeToString(reply.params.type)
+  :echomsg $'Lsp({lspserver.name}):[{mtype}]: {reply.params.message}'
 enddef
 
 # process a log notification message from the LSP server
 # Notification: window/logMessage
 # Param: LogMessageParams
 def ProcessLogMsgNotif(lspserver: dict<any>, reply: dict<any>)
-  var msgType: list<string> = ['', 'Error', 'Warning', 'Info', 'Log']
-  var mtype: string = 'Log'
-  if reply.params.type > 0 && reply.params.type < 5
-    mtype = msgType[reply.params.type]
-  endif
+  var mtype = LspMsgTypeToString(reply.params.type)
+  var msgs = reply.params.message->split("\n")
 
-  lspserver.traceLog($'{strftime("%m/%d/%y %T")}: [{mtype}]: {reply.params.message}')
+  lspserver.messages->add($'{strftime("%m/%d/%y %T")}: [{mtype}]: {msgs[0]}')
+  lspserver.messages->extend(msgs[1 : ])
+  # Keep only the last 500 messages to reduce the memory usage
+  if lspserver.messages->len() > 500
+    lspserver.messages = lspserver.messages[-500 : ]
+  endif
+enddef
+
+# process the log trace notification messages
+# Notification: $/logTrace
+# Param: LogTraceParams
+def ProcessLogTraceNotif(lspserver: dict<any>, reply: dict<any>)
+  var msgs = reply.params.message->split("\n")
+  lspserver.messages->add($'{strftime("%m/%d/%y %T")}: [trace]: {msgs[0]}')
+  lspserver.messages->extend(msgs[1 : ])
+  # Keep only the last 500 messages to reduce the memory usage
+  if lspserver.messages->len() > 500
+    lspserver.messages = lspserver.messages[-500 : ]
+  endif
 enddef
 
 # process unsupported notification messages
 def ProcessUnsupportedNotif(lspserver: dict<any>, reply: dict<any>)
   util.ErrMsg($'Error: Unsupported notification message received from the LSP server ({lspserver.path}), message = {reply->string()}')
-enddef
-
-# process log trace notification messages
-def ProcessLogTraceNotif(lspserver: dict<any>, reply: dict<any>)
-  :echomsg $'Log trace notification: {reply->string()}'
 enddef
 
 # per-filetype private map inside to record if ntf once or not

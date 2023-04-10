@@ -155,20 +155,28 @@ export def ShowAllServers()
 enddef
 
 # Show the status of the LSP server for the current buffer
-export def ShowServer()
+export def ShowServer(arg: string)
   var lspserver: dict<any> = buf.CurbufGetServerChecked()
   if lspserver->empty()
     :echomsg "LSP Server not found"
     return
   endif
 
-  var msg = $"LSP server '{lspserver.name}' is "
-  if lspserver.running
-    msg ..= 'running'
+  if arg == '' || arg ==? 'status'
+    var msg = $"LSP server '{lspserver.name}' is "
+    if lspserver.running
+      msg ..= 'running'
+    else
+      msg ..= 'not running'
+    endif
+    :echomsg msg
+  elseif arg ==? 'capabilities'
+    lspserver.showCapabilities()
+  elseif arg ==? 'messages'
+    lspserver.showMessages()
   else
-    msg ..= 'not running'
+    util.ErrMsg($'Error: Unsupported argument "{arg}"')
   endif
-  :echomsg msg
 enddef
 
 # Get LSP server running status for filetype 'ftype'

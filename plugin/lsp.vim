@@ -44,7 +44,7 @@ def g:LspServerRunning(ftype: string): bool
   return lsp.ServerRunning(ftype)
 enddef
 
-# Command line completion function for the LspSetTrace command.
+# Command line completion function for the LspServerTrace command.
 def LspServerTraceComplete(arglead: string, cmdline: string, cursorpos: number): list<string>
   var l = ['off', 'messages', 'verbose']
   if arglead->empty()
@@ -54,9 +54,19 @@ def LspServerTraceComplete(arglead: string, cmdline: string, cursorpos: number):
   endif
 enddef
 
-# Command line completion function for the LspSetTrace command.
+# Command line completion function for the LspServerDebug command.
 def LspServerDebugComplete(arglead: string, cmdline: string, cursorpos: number): list<string>
   var l = ['errors', 'messages', 'off', 'on']
+  if arglead->empty()
+    return l
+  else
+    return filter(l, (_, val) => val =~ arglead)
+  endif
+enddef
+
+# Command line completion function for the LspShowServer command.
+def LspShowServerComplete(arglead: string, cmdline: string, cursorpos: number): list<string>
+  var l = ['capabilities', 'messages', 'status']
   if arglead->empty()
     return l
   else
@@ -112,8 +122,10 @@ command! -nargs=1 -complete=customlist,LspServerDebugComplete -bar LspServerDebu
 command! -nargs=0 -bar LspServerRestart lsp.RestartServer()
 command! -nargs=1 -complete=customlist,LspServerTraceComplete -bar LspServerTrace lsp.ServerTraceSet(<q-args>)
 command! -nargs=0 -bar LspShowReferences lsp.ShowReferences(v:false)
+# The :LspShowServerCapabilities command is retained for backward
+# compatibility.  Remove this in the future.
 command! -nargs=0 -bar LspShowServerCapabilities lsp.ShowServerCapabilities()
-command! -nargs=0 -bar LspShowServer lsp.ShowServer()
+command! -nargs=? -complete=customlist,LspShowServerComplete -bar LspShowServer lsp.ShowServer(<q-args>)
 command! -nargs=0 -bar LspShowAllServers lsp.ShowAllServers()
 command! -nargs=0 -bar LspShowSignature call LspShowSignature()
 command! -nargs=0 -bar LspSubTypeHierarchy lsp.TypeHierarchy(0)

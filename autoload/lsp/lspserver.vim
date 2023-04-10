@@ -1382,22 +1382,28 @@ def ExecuteCommand(lspserver: dict<any>, cmd: dict<any>)
   lspserver.rpc_a('workspace/executeCommand', params, WorkspaceExecuteReply)
 enddef
 
-# Display the LSP server capabilities (received during the initialization
-# stage).
-def ShowCapabilities(lspserver: dict<any>)
-  var wid = bufwinid('Language-Server-Capabilities')
+# Create a new window containing the buffer 'bname' or if the window is
+# already present then jump to it.
+def OpenScratchWindow(bname: string)
+  var wid = bufwinid(bname)
   if wid != -1
     wid->win_gotoid()
     :setlocal modifiable
     :silent! :%d _
   else
-    :new Language-Server-Capabilities
+    exe $':new {bname}'
     :setlocal buftype=nofile
     :setlocal bufhidden=wipe
     :setlocal noswapfile
     :setlocal nonumber nornu
     :setlocal fdc=0 signcolumn=no
   endif
+enddef
+
+# Display the LSP server capabilities (received during the initialization
+# stage).
+def ShowCapabilities(lspserver: dict<any>)
+  OpenScratchWindow($'LangServer-{lspserver.name}-Capabilities')
   var l = []
   var heading = $"'{lspserver.path}' Language Server Capabilities"
   var underlines = repeat('=', heading->len())
@@ -1406,6 +1412,18 @@ def ShowCapabilities(lspserver: dict<any>)
     l->add($'{k}: {lspserver.caps[k]->string()}')
   endfor
   setline(1, l)
+  :setlocal nomodified
+  :setlocal nomodifiable
+enddef
+
+# Display the log messages received from the LSP server (window/logMessage)
+def ShowMessages(lspserver: dict<any>)
+  if lspserver.messages->empty()
+    util.WarnMsg($'No messages received from "{lspserver.name}" server')
+    return
+  endif
+  OpenScratchWindow($'LangServer-{lspserver.name}-Messages')
+  setline(1, lspserver.messages)
   :setlocal nomodified
   :setlocal nomodifiable
 enddef
@@ -1472,6 +1490,7 @@ export def NewLspServer(name_arg: string, path_arg: string, args: list<string>,
     callHierarchyType: '',
     selection: {},
     workspaceConfig: workspaceConfig,
+    messages: [],
     debug: debug_arg
   }
   lspserver.logfile = $'lsp-{lspserver.name}.log'
@@ -1542,7 +1561,8 @@ export def NewLspServer(name_arg: string, path_arg: string, args: list<string>,
     foldRange: function(FoldRange, [lspserver]),
     executeCommand: function(ExecuteCommand, [lspserver]),
     workspaceConfigGet: function(WorkspaceConfigGet, [lspserver]),
-    showCapabilities: function(ShowCapabilities, [lspserver])
+    showCapabilities: function(ShowCapabilities, [lspserver]),
+    showMessages: function(ShowMessages, [lspserver])
   })
 
   return lspserver
