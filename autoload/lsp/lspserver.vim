@@ -1384,28 +1384,9 @@ def ExecuteCommand(lspserver: dict<any>, cmd: dict<any>)
   lspserver.rpc_a('workspace/executeCommand', params, WorkspaceExecuteReply)
 enddef
 
-# Create a new window containing the buffer 'bname' or if the window is
-# already present then jump to it.
-def OpenScratchWindow(bname: string)
-  var wid = bufwinid(bname)
-  if wid != -1
-    wid->win_gotoid()
-    :setlocal modifiable
-    :silent! :%d _
-  else
-    exe $':new {bname}'
-    :setlocal buftype=nofile
-    :setlocal bufhidden=wipe
-    :setlocal noswapfile
-    :setlocal nonumber nornu
-    :setlocal fdc=0 signcolumn=no
-  endif
-enddef
-
 # Display the LSP server capabilities (received during the initialization
 # stage).
-def ShowCapabilities(lspserver: dict<any>)
-  OpenScratchWindow($'LangServer-{lspserver.name}-Capabilities')
+def GetCapabilities(lspserver: dict<any>): list<string>
   var l = []
   var heading = $"'{lspserver.path}' Language Server Capabilities"
   var underlines = repeat('=', heading->len())
@@ -1413,14 +1394,11 @@ def ShowCapabilities(lspserver: dict<any>)
   for k in lspserver.caps->keys()->sort()
     l->add($'{k}: {lspserver.caps[k]->string()}')
   endfor
-  setline(1, l)
-  :setlocal nomodified
-  :setlocal nomodifiable
+  return l
 enddef
 
 # Display the LSP server initialize request and result
-def ShowInitializeRequest(lspserver: dict<any>)
-  OpenScratchWindow($'LangServer-{lspserver.name}-Initialize-Request')
+def GetInitializeRequest(lspserver: dict<any>): list<string>
   var l = []
   var heading = $"'{lspserver.path}' Language Server Initialize Requst"
   var underlines = repeat('=', heading->len())
@@ -1430,21 +1408,20 @@ def ShowInitializeRequest(lspserver: dict<any>)
       l->add($'{k}: {lspserver.rpcInitializeRequest[k]->string()}')
     endfor
   endif
-  setline(1, l)
-  :setlocal nomodified
-  :setlocal nomodifiable
+  return l
 enddef
 
 # Display the log messages received from the LSP server (window/logMessage)
-def ShowMessages(lspserver: dict<any>)
+def GetMessages(lspserver: dict<any>): list<string>
   if lspserver.messages->empty()
-    util.WarnMsg($'No messages received from "{lspserver.name}" server')
-    return
+    return [$'No messages received from "{lspserver.name}" server']
   endif
-  OpenScratchWindow($'LangServer-{lspserver.name}-Messages')
-  setline(1, lspserver.messages)
-  :setlocal nomodified
-  :setlocal nomodifiable
+
+  var l = []
+  var heading = $"'{lspserver.path}' Language Server Messages"
+  var underlines = repeat('=', heading->len())
+  l->extend(lspserver.messages)
+  return l
 enddef
 
 # Send a 'textDocument/definition' request to the LSP server to get the
@@ -1580,9 +1557,9 @@ export def NewLspServer(name_arg: string, path_arg: string, args: list<string>,
     foldRange: function(FoldRange, [lspserver]),
     executeCommand: function(ExecuteCommand, [lspserver]),
     workspaceConfigGet: function(WorkspaceConfigGet, [lspserver]),
-    showCapabilities: function(ShowCapabilities, [lspserver]),
-    showInitializeRequest: function(ShowInitializeRequest, [lspserver]),
-    showMessages: function(ShowMessages, [lspserver])
+    getCapabilities: function(GetCapabilities, [lspserver]),
+    getInitializeRequest: function(GetInitializeRequest, [lspserver]),
+    getMessages: function(GetMessages, [lspserver])
   })
 
   return lspserver
