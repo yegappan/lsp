@@ -1464,6 +1464,13 @@ def TagFunc(lspserver: dict<any>, pat: string, flags: string, info: dict<any>): 
   return symbol.TagFunc(lspserver, taglocations, pat)
 enddef
 
+# Returns unique ID used for identifying the various servers
+var UniqueServerIdCounter = 0
+def GetUniqueServerId(): number
+  UniqueServerIdCounter = UniqueServerIdCounter + 1
+  return UniqueServerIdCounter
+enddef
+
 export def NewLspServer(name_arg: string, path_arg: string, args: list<string>,
 			isSync: bool, initializationOptions: any,
 			workspaceConfig: dict<any>,
@@ -1471,6 +1478,7 @@ export def NewLspServer(name_arg: string, path_arg: string, args: list<string>,
 			customNotificationHandlers: dict<func>,
 			debug_arg: bool): dict<any>
   var lspserver: dict<any> = {
+    id: GetUniqueServerId(),
     name: name_arg,
     path: path_arg,
     args: args,
