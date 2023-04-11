@@ -59,7 +59,11 @@ export var lspOptions: dict<any> = {
   # Use a floating menu to show the code action menu instead of asking for input
   usePopupInCodeAction: false,
   # ShowReferences in a quickfix list instead of a location list`
-  useQuickfixForLocations: false
+  useQuickfixForLocations: false,
+  # Enable support for custom completion kinds
+  customCompletionKinds: false,
+  # A dictionary with all completion kinds that you want to customize
+  completionKinds: {}
 }
 
 # set the LSP plugin options from the user provided option values
