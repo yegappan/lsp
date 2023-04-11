@@ -267,8 +267,8 @@ To add a language server, the following information is needed:
 
 			This option is also used to decide which server to run
 			when multiple servers are defined for a filetype. The
-			server with the longest found workspace root will be
-			selected as the relevant language server for a given
+			servers that share the longest found workspace root will
+			be selected as the relevant language servers for a given
 			file.
 
 			If this parameter is not specified or the files are not
