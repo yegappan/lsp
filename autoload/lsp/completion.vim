@@ -248,9 +248,8 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
   endif
 enddef
 
-# process the 'completionItem/resolve' reply from the LSP server
-# Result: CompletionItem
-export def CompletionResolveReply(lspserver: dict<any>, cItem: any)
+# process the completion documentation
+def ShowCompletionDocumentation(cItem: any)
   if cItem->empty() || cItem->type() != v:t_dict
     return
   endif
@@ -322,6 +321,12 @@ export def CompletionResolveReply(lspserver: dict<any>, cItem: any)
     infoKind->setbufvar(bufnr, '&ft')
     id->popup_show()
   endif
+enddef
+
+# process the 'completionItem/resolve' reply from the LSP server
+# Result: CompletionItem
+export def CompletionResolveReply(lspserver: dict<any>, cItem: any)
+    ShowCompletionDocumentation(cItem)
 enddef
 
 # omni complete handler
@@ -430,7 +435,11 @@ def LspResolve()
 
   var item = v:event.completed_item
   if item->has_key('user_data') && !item.user_data->empty()
-    lspserver.resolveCompletion(item.user_data)
+      if !item.user_data->has_key('documentation')
+        lspserver.resolveCompletion(item.user_data)
+      else
+        ShowCompletionDocumentation(item.user_data)
+      endif
   endif
 enddef
 
