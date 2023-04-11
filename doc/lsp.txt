@@ -1238,31 +1238,31 @@ option *lsp-opt-completionKinds* . There is a table with all default LSP kinds:
 
  Kind Name		| Value
 ------------------------|--------------------
- Text			| t
- Method			| m
- Function		| f
- Constructor		| C
- Field			| F
- Variable		| v
- Class			| c
- Interface		| i
- Module			| M
- Property		| p
- Unit			| u
- Value			| V
- Enum			| e
- Keyword		| k
- Snippet		| S
- Color			| C
- File			| f
- Reference		| r
- Folder			| F
- EnumMember		| E
- Contant		| d
- Struct			| s
- Event			| E
- Operator		| o
- TypeParameter		| T
+ Text                   | t
+ Method                 | m
+ Function               | f
+ Constructor            | C
+ Field                  | F
+ Variable               | v
+ Class                  | c
+ Interface              | i
+ Module                 | M
+ Property               | p
+ Unit                   | u
+ Value                  | V
+ Enum                   | e
+ Keyword                | k
+ Snippet                | S
+ Color                  | C
+ File                   | f
+ Reference              | r
+ Folder                 | F
+ EnumMember             | E
+ Contant                | d
+ Struct                 | s
+ Event                  | E
+ Operator               | o
+ TypeParameter          | T
 
 For example, if you want to change the "Method" kind to the kind "method()":
 
