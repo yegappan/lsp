@@ -5,20 +5,54 @@ vim9script
 import './util.vim'
 
 # Buffer number to LSP server map
-var bufnrToServer: dict<dict<any>> = {}
+var bufnrToServers: dict<list<dict<any>>> = {}
 
 export def BufLspServerSet(bnr: number, lspserver: dict<any>)
-  bufnrToServer[bnr] = lspserver
+  if !bufnrToServers->has_key(bnr)
+    bufnrToServers[bnr] = []
+  endif
+
+  bufnrToServers[bnr]->add(lspserver)
 enddef
 
-export def BufLspServerRemove(bnr: number)
-  bufnrToServer->remove(bnr)
+export def BufLspServerRemove(bnr: number, lspserver: dict<any>)
+  if !bufnrToServers->has_key(bnr)
+    return
+  endif
+
+  var servers: list<dict<any>> = bufnrToServers[bnr]
+  servers = servers->filter((key, srv) => srv.id != lspserver.id)
+
+  if servers->empty()
+    bufnrToServers->remove(bnr)
+  else
+    bufnrToServers[bnr] = servers
+  endif
 enddef
 
 # Returns the LSP server for the buffer 'bnr'. Returns an empty dict if the
 # server is not found.
 export def BufLspServerGet(bnr: number): dict<any>
-  return bufnrToServer->get(bnr, {})
+  if !bufnrToServers->has_key(bnr)
+    return {}
+  endif
+
+  if bufnrToServers[bnr]->len() == 0
+    return {}
+  endif
+
+  # TODO implement logic to compute which server to return
+  return bufnrToServers[bnr][0]
+enddef
+
+# Returns the LSP servers for the buffer 'bnr'. Returns an empty list if the
+# servers are not found.
+export def BufLspServersGet(bnr: number): list<dict<any>>
+  if !bufnrToServers->has_key(bnr)
+    return []
+  endif
+
+  return bufnrToServers[bnr]
 enddef
 
 # Returns the LSP server for the current buffer. Returns an empty dict if the
@@ -27,8 +61,16 @@ export def CurbufGetServer(): dict<any>
   return BufLspServerGet(bufnr())
 enddef
 
+# Returns the LSP servers for the current buffer. Returns an empty list if the
+# servers are not found.
+export def CurbufGetServers(): list<dict<any>>
+  return BufLspServersGet(bufnr())
+enddef
+
 export def BufHasLspServer(bnr: number): bool
-  return bufnrToServer->has_key(bnr)
+  var lspserver = BufLspServerGet(bnr)
+
+  return !lspserver->empty()
 enddef
 
 # Returns the LSP server for the current buffer if it is running and is ready.
