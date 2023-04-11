@@ -63,6 +63,17 @@ export def InitOnce()
   endif
 enddef
 
+# Sort diagnostics ascending based on line and character offset
+def SortDiags(diags: list<dict<any>>): list<dict<any>>
+  return diags->sort((a, b) => {
+    var linediff = a.range.start.line - b.range.start.line
+    if linediff == 0
+      return a.range.start.character - b.range.start.character
+    endif
+    return linediff
+  })
+enddef
+
 # Remove the diagnostics stored for buffer 'bnr'
 export def DiagRemoveFile(lspserver: dict<any>, bnr: number)
   if lspserver.diagsMap->has_key(bnr)
@@ -214,13 +225,7 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags: list<dict<
   endfor
 
   # sort the diagnostics by line number and column number
-  var sortedDiags = diagWithinRange->sort((a, b) => {
-    var linediff = a.range.start.line - b.range.start.line
-    if linediff == 0
-      return a.range.start.character - b.range.start.character
-    endif
-    return linediff
-  })
+  var sortedDiags = SortDiags(diagWithinRange)
 
   lspserver.diagsMap->extend({
     [$'{bnr}']: {
