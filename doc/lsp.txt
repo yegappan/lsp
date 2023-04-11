@@ -1233,10 +1233,10 @@ more information about the "Command" interface.
 
 When a completion popup is triggered, the LSP client will use a default kind
 list to show in the completion "kind" section, to customize it, you need to
-use the option *lsp-opt-customCompletionKinds* and set all custom kinds in the
-option *lsp-opt-completionKinds* . There is a table with all default LSP kinds:
+use the option |lsp-opt-customCompletionKinds| and set all custom kinds in the
+option |lsp-opt-completionKinds| . There is a table with all default LSP kinds:
 
- Kind Name		| Value
+ Kind Name              | Value
 ------------------------|--------------------
  Text                   | t
  Method                 | m
@@ -1283,8 +1283,8 @@ In the completion popup, will show something like this:
 	var file = new File()
 
 	file.cre
-		| create		method() |
-		| createIfNotExists	method() |
+		| create                method() |
+		| createIfNotExists     method() |
 		| ...				 |
 
 
