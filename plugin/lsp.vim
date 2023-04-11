@@ -124,7 +124,7 @@ command! -nargs=1 -complete=customlist,LspServerTraceComplete -bar LspServerTrac
 command! -nargs=0 -bar LspShowReferences lsp.ShowReferences(v:false)
 # The :LspShowServerCapabilities command is retained for backward
 # compatibility.  Remove this in the future.
-command! -nargs=0 -bar LspShowServerCapabilities lsp.ShowServerCapabilities()
+command! -nargs=0 -bar LspShowServerCapabilities :LspShowServer capabilities
 command! -nargs=? -complete=customlist,LspShowServerComplete -bar LspShowServer lsp.ShowServer(<q-args>)
 command! -nargs=0 -bar LspShowAllServers lsp.ShowAllServers()
 command! -nargs=0 -bar LspShowSignature call LspShowSignature()

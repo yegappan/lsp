@@ -1007,16 +1007,6 @@ export def DiagHighlightDisable()
   diag.DiagsHighlightDisable()
 enddef
 
-# Display the LSP server capabilities
-export def ShowServerCapabilities()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
-  if lspserver->empty()
-    return
-  endif
-
-  lspserver.showCapabilities()
-enddef
-
 # Function to use with the 'tagfunc' option.
 export def TagFunc(pat: string, flags: string, info: dict<any>): any
   var lspserver: dict<any> = buf.CurbufGetServerChecked()
