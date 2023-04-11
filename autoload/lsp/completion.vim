@@ -248,7 +248,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
   endif
 enddef
 
-# process the completion documentation without LSP server request
+# process the completion documentation
 def ShowCompletionDocumentation(cItem: any)
   if cItem->empty() || cItem->type() != v:t_dict
     return
@@ -267,6 +267,13 @@ def ShowCompletionDocumentation(cItem: any)
 
   var infoText: list<string>
   var infoKind: string
+
+  if cItem->has_key('detail') && !cItem.detail->empty()
+    # Solve a issue where if a server send the detail field with "\n",
+    # on the completion popup, everything will be joined with "^@"
+    # (example: typescript-language-server)
+    infoText->extend(cItem.detail->split("\n"))
+  endif
 
   if cItem->has_key('documentation')
     if !infoText->empty()
