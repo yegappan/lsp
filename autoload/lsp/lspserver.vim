@@ -189,6 +189,8 @@ def InitServer(lspserver: dict<any>, bnr: number)
     initparams.initializationOptions = lspserver.initializationOptions
   endif
 
+  lspserver.rpcInitializeRequest = initparams
+
   lspserver.rpc_a('initialize', initparams, ServerInitReply)
 enddef
 
@@ -1416,6 +1418,23 @@ def ShowCapabilities(lspserver: dict<any>)
   :setlocal nomodifiable
 enddef
 
+# Display the LSP server initialize request and result
+def ShowInitializeRequest(lspserver: dict<any>)
+  OpenScratchWindow($'LangServer-{lspserver.name}-Initialize-Request')
+  var l = []
+  var heading = $"'{lspserver.path}' Language Server Initialize Requst"
+  var underlines = repeat('=', heading->len())
+  l->extend([heading, underlines])
+  if lspserver->has_key('rpcInitializeRequest')
+    for k in lspserver.rpcInitializeRequest->keys()->sort()
+      l->add($'{k}: {lspserver.rpcInitializeRequest[k]->string()}')
+    endfor
+  endif
+  setline(1, l)
+  :setlocal nomodified
+  :setlocal nomodifiable
+enddef
+
 # Display the log messages received from the LSP server (window/logMessage)
 def ShowMessages(lspserver: dict<any>)
   if lspserver.messages->empty()
@@ -1562,6 +1581,7 @@ export def NewLspServer(name_arg: string, path_arg: string, args: list<string>,
     executeCommand: function(ExecuteCommand, [lspserver]),
     workspaceConfigGet: function(WorkspaceConfigGet, [lspserver]),
     showCapabilities: function(ShowCapabilities, [lspserver]),
+    showInitializeRequest: function(ShowInitializeRequest, [lspserver]),
     showMessages: function(ShowMessages, [lspserver])
   })
 
