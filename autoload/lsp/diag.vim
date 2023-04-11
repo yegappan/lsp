@@ -103,8 +103,9 @@ def DiagSevToInlineHLName(severity: number): string
   return typeMap[severity - 1]
 enddef
 
-# Refresh the signs placed in buffer 'bnr' on lines with a diagnostic message.
-def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
+# Refresh the placed diagnostics in buffer 'bnr'
+# This inline signs, inline props, and virtual text diagnostics
+def DiagsRefresh(lspserver: dict<any>, bnr: number)
   bnr->bufload()
   # Remove all the existing diagnostic signs
   sign_unplace('LSPDiag', {buffer: bnr})
@@ -190,7 +191,7 @@ export def ProcessNewDiags(lspserver: dict<any>, bnr: number)
     return
   endif
 
-  DiagsRefreshSigns(lspserver, bnr)
+  DiagsRefresh(lspserver, bnr)
 enddef
 
 # process a diagnostic notification message from the LSP server
@@ -577,7 +578,7 @@ export def DiagsHighlightEnable()
   for binfo in getbufinfo({bufloaded: true})
     var lspserver: dict<any> = buf.BufLspServerGet(binfo.bufnr)
     if !lspserver->empty() && lspserver.running
-      DiagsRefreshSigns(lspserver, binfo.bufnr)
+      DiagsRefresh(lspserver, binfo.bufnr)
     endif
   endfor
 enddef
