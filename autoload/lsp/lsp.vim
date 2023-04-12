@@ -776,7 +776,7 @@ enddef
 
 # highlight all the places where a symbol is referenced
 def g:LspDocHighlight()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('documentHighlight')
   if lspserver->empty()
     return
   endif
@@ -786,7 +786,7 @@ enddef
 
 # clear the symbol reference highlight
 def g:LspDocHighlightClear()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('documentHighlight')
   if lspserver->empty()
     return
   endif
