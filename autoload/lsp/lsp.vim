@@ -883,7 +883,7 @@ enddef
 # Rename a symbol
 # Uses LSP "textDocument/rename" request
 export def Rename(a_newName: string)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('rename')
   if lspserver->empty()
     return
   endif

@@ -1371,7 +1371,8 @@ servers should be used for a given method.  The following flags are supported
 	implementation: true,
 	hover: true,
 	references: true,
-	documentFormatting: true
+	documentFormatting: true,
+	rename: true
 }
 <
 

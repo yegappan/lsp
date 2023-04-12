@@ -54,6 +54,7 @@ export def BufLspServerGet(bnr: number, domain: string = null_string): dict<any>
     'hover': (lspserver) => lspserver.isHoverProvider,
     'references': (lspserver) => lspserver.isReferencesProvider,
     'documentFormatting': (lspserver) => lspserver.isDocumentFormattingProvider,
+    'rename': (lspserver) => lspserver.isRenameProvider,
   }
 
   if !SupportedCheckFns->has_key(domain)
