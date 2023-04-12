@@ -1273,7 +1273,7 @@ option |lsp-opt-completionKinds| . There is a table with all default LSP kinds:
  Reference              | r
  Folder                 | F
  EnumMember             | E
- Contant                | d
+ Constant               | d
  Struct                 | s
  Event                  | E
  Operator               | o

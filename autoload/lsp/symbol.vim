@@ -216,11 +216,35 @@ enddef
 
 # map the LSP symbol kind number to string
 export def SymbolKindToName(symkind: number): string
-  var symbolMap: list<string> = ['', 'File', 'Module', 'Namespace', 'Package',
-	'Class', 'Method', 'Property', 'Field', 'Constructor', 'Enum',
-	'Interface', 'Function', 'Variable', 'Constant', 'String', 'Number',
-	'Boolean', 'Array', 'Object', 'Key', 'Null', 'EnumMember', 'Struct',
-	'Event', 'Operator', 'TypeParameter']
+  var symbolMap: list<string> = [
+    '',
+    'File',
+    'Module',
+    'Namespace',
+    'Package',
+    'Class',
+    'Method',
+    'Property',
+    'Field',
+    'Constructor',
+    'Enum',
+    'Interface',
+    'Function',
+    'Variable',
+    'Constant',
+    'String',
+    'Number',
+    'Boolean',
+    'Array',
+    'Object',
+    'Key',
+    'Null',
+    'EnumMember',
+    'Struct',
+    'Event',
+    'Operator',
+    'TypeParameter'
+  ]
   if symkind > 26
     return ''
   endif
