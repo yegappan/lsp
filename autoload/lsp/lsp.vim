@@ -23,7 +23,7 @@ import './codeaction.vim'
 import './inlayhints.vim'
 
 # LSP server information
-var lspServers: list<dict<any>> = []
+var LSPServers: list<dict<any>> = []
 
 # filetype to LSP server map
 var ftypeServerMap: dict<list<dict<any>>> = {}
@@ -479,7 +479,7 @@ enddef
 
 # Stop all the LSP servers
 export def StopAllServers()
-  for lspserver in lspServers
+  for lspserver in LSPServers
     if lspserver.running
       lspserver.stopServer()
     endif

@@ -63,6 +63,17 @@ export def InitOnce()
   endif
 enddef
 
+# Sort diagnostics ascending based on line and character offset
+def SortDiags(diags: list<dict<any>>): list<dict<any>>
+  return diags->sort((a, b) => {
+    var linediff = a.range.start.line - b.range.start.line
+    if linediff == 0
+      return a.range.start.character - b.range.start.character
+    endif
+    return linediff
+  })
+enddef
+
 # Remove the diagnostics stored for buffer 'bnr'
 export def DiagRemoveFile(lspserver: dict<any>, bnr: number)
   if lspserver.diagsMap->has_key(bnr)
@@ -92,8 +103,9 @@ def DiagSevToInlineHLName(severity: number): string
   return typeMap[severity - 1]
 enddef
 
-# Refresh the signs placed in buffer 'bnr' on lines with a diagnostic message.
-def DiagsRefreshSigns(lspserver: dict<any>, bnr: number)
+# Refresh the placed diagnostics in buffer 'bnr'
+# This inline signs, inline props, and virtual text diagnostics
+def DiagsRefresh(lspserver: dict<any>, bnr: number)
   bnr->bufload()
   # Remove all the existing diagnostic signs
   sign_unplace('LSPDiag', {buffer: bnr})
@@ -179,7 +191,7 @@ export def ProcessNewDiags(lspserver: dict<any>, bnr: number)
     return
   endif
 
-  DiagsRefreshSigns(lspserver, bnr)
+  DiagsRefresh(lspserver, bnr)
 enddef
 
 # process a diagnostic notification message from the LSP server
@@ -214,13 +226,7 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags: list<dict<
   endfor
 
   # sort the diagnostics by line number and column number
-  var sortedDiags = diagWithinRange->sort((a, b) => {
-    var linediff = a.range.start.line - b.range.start.line
-    if linediff == 0
-      return a.range.start.character - b.range.start.character
-    endif
-    return linediff
-  })
+  var sortedDiags = SortDiags(diagWithinRange)
 
   lspserver.diagsMap->extend({
     [$'{bnr}']: {
@@ -572,7 +578,7 @@ export def DiagsHighlightEnable()
   for binfo in getbufinfo({bufloaded: true})
     var lspserver: dict<any> = buf.BufLspServerGet(binfo.bufnr)
     if !lspserver->empty() && lspserver.running
-      DiagsRefreshSigns(lspserver, binfo.bufnr)
+      DiagsRefresh(lspserver, binfo.bufnr)
     endif
   endfor
 enddef
