@@ -299,6 +299,11 @@ Aditionally the following configurations can be made:
 			}
 		}])
 <
+					*lsp-cfg-features*
+	features
+			(Optional) toggle which features should be enabled for a
+			given langauge server. See |lsp-multiple-servers| for
+			more information.
 						*lsp-cfg-omnicompl*
 	omnicompl	(Optional) a boolean value that enables (true)
 			or disables (false) omni-completion for this file
@@ -1319,5 +1324,46 @@ In the completion popup, will show something like this: >
 		| create                method() |
 		| createIfNotExists     method() |
 		| ...				 |
+<
+==============================================================================
+16. Multiple Language Servers for a buffer	*lsp-multiple-servers*
+
+It's possible to run multiple language servers for a given buffer.
+
+By default the language server defined first will be used for as much as it
+supports, then the next and so on. With the exception that diagnostics from all
+running language servers will be joined together. This means that you can define
+a language server that only supports a subset of features at first and then
+define the general purpose language server after it: >
+
+		vim9script
+		g:LspAddServer([
+			# This language server reports that it only supports
+			# textDocument/documentFormatting, so it will be used
+			# for :LspFormat but nothing else.
+			{
+				filetype: ['html'],
+				path: 'html-pretty-lsp',
+				args: ['--stdio']
+			},
+			# This language server also supports
+			# textDocument/documentFormatting, but since it's been
+			# defined later, the one above will be used instead.
+			# However this server also supports
+			# textDocument/definition, textDocument/declaration,
+			# etc, so it will be used for :LspGotoDefinition,
+			# :LspGotoDeclaration, etc
+			{
+				filetype: ['html'],
+				path: 'html-language-server',
+				args: ['--stdio']
+			}
+		])
+<
+By proving the configuration |lsp-cfg-features| it's possible specify which
+servers should be used for a given method.  The following flags are supported
+>
+#{
+}
 <
 vim:tw=78:ts=8:noet:ft=help:norl:

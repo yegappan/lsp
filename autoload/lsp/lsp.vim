@@ -598,6 +598,11 @@ export def AddServer(serverList: list<dict<any>>)
       customNotificationHandlers = server.customNotificationHandlers
     endif
 
+    var features: dict<bool> = {}
+    if server->has_key('features')
+      features = server.features
+    endif
+
     if server.omnicompl->type() != v:t_bool
       util.ErrMsg($'Error: Setting of omnicompl {server.omnicompl} is not a Boolean')
       return
@@ -632,7 +637,7 @@ export def AddServer(serverList: list<dict<any>>)
 						    server.workspaceConfig,
 						    server.rootSearch,
 						    customNotificationHandlers,
-						    server.debug)
+						    features, server.debug)
 
     var ftypes = server.filetype
     if ftypes->type() == v:t_string

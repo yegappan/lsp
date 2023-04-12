@@ -1476,7 +1476,7 @@ export def NewLspServer(name_arg: string, path_arg: string, args: list<string>,
 			workspaceConfig: dict<any>,
 			rootSearchFiles: list<any>,
 			customNotificationHandlers: dict<func>,
-			debug_arg: bool): dict<any>
+			features: dict<bool>, debug_arg: bool): dict<any>
   var lspserver: dict<any> = {
     id: GetUniqueServerId(),
     name: name_arg,
@@ -1485,6 +1485,7 @@ export def NewLspServer(name_arg: string, path_arg: string, args: list<string>,
     syncInit: isSync,
     initializationOptions: initializationOptions,
     customNotificationHandlers: customNotificationHandlers,
+    features: features,
     running: false,
     ready: false,
     job: v:none,
