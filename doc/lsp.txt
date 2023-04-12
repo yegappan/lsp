@@ -444,7 +444,7 @@ snippetSupport		|Boolean| option.  Enable snippet completion support.
 			Need a snippet completion plugin like vim-vsnip.
 			By default this is set to false.
 						*lsp-opt-ultisnipsSupport*
-ultisnipsSupport		|Boolean| option.  Enable SirVer/ultisnips support.
+ultisnipsSupport	|Boolean| option.  Enable SirVer/ultisnips support.
 			Need a snippet completion plugin SirVer/ultisnips.
 			By default this is set to false.
 						*lsp-opt-usePopupInCodeAction*
@@ -452,6 +452,12 @@ usePopupInCodeAction    |Boolean| option.  When using the |:LspCodeAction|
 			command to display the code action for the current
 			line, use a popup menu instead of echoing.
 			By default this is set to false.
+                                                *lsp-opt-customCompletionKinds*
+customCompletionKinds   |Boolean| option.  If you set this to true, you can set
+			custom completion kinds using the option completionKinds.
+                                                *lsp-opt-completionKinds*
+completionKinds		|Dictionary| option. See |lsp-custom-kinds| for all
+                        completion kind names.
 
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file: >
@@ -1221,5 +1227,65 @@ this plugin.
 The callback function should accept a Dict argument.  The Dict argument
 contains the LSP Command interface fields.  Refer to the LSP specification for
 more information about the "Command" interface.
+
+==============================================================================
+15. Custom LSP Completion Kinds			*lsp-custom-kinds*
+
+When a completion popup is triggered, the LSP client will use a default kind
+list to show in the completion "kind" section, to customize it, you need to
+use the option |lsp-opt-customCompletionKinds| and set all custom kinds in the
+option |lsp-opt-completionKinds| . There is a table with all default LSP kinds:
+
+ Kind Name              | Value
+------------------------|--------------------
+ Text                   | t
+ Method                 | m
+ Function               | f
+ Constructor            | C
+ Field                  | F
+ Variable               | v
+ Class                  | c
+ Interface              | i
+ Module                 | M
+ Property               | p
+ Unit                   | u
+ Value                  | V
+ Enum                   | e
+ Keyword                | k
+ Snippet                | S
+ Color                  | C
+ File                   | f
+ Reference              | r
+ Folder                 | F
+ EnumMember             | E
+ Contant                | d
+ Struct                 | s
+ Event                  | E
+ Operator               | o
+ TypeParameter          | T
+
+For example, if you want to change the "Method" kind to the kind "method()":
+
+>
+	vim9script
+
+	LspOptionsSet({
+		customCompletionKinds: true,
+		completionKinds: {
+			"Method": "method()"
+		}
+	})
+<
+
+In the completion popup, will show something like this:
+>
+
+	var file = new File()
+
+	file.cre
+		| create                method() |
+		| createIfNotExists     method() |
+		| ...				 |
+
 
 vim:tw=78:ts=8:noet:ft=help:norl:

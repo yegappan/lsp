@@ -10,6 +10,34 @@ import './textedit.vim'
 # per-filetype omni-completion enabled/disabled table
 var ftypeOmniCtrlMap: dict<bool> = {}
 
+var defaultKinds: dict<string> = {
+  'Text': 't',
+  'Method': 'm',
+  'Function': 'f',
+  'Constructor': 'C',
+  'Field': 'F',
+  'Variable': 'v',
+  'Class': 'c',
+  'Interface': 'i',
+  'Module': 'M',
+  'Property': 'p',
+  'Unit': 'u',
+  'Value': 'V',
+  'Enum': 'e',
+  'Keyword': 'k',
+  'Snippet': 'S',
+  'Color': 'C',
+  'File': 'f',
+  'Reference': 'r',
+  'Folder': 'F',
+  'EnumMember': 'E',
+  'Contant': 'd',
+  'Struct': 's',
+  'Event': 'E',
+  'Operator': 'o',
+  'TypeParameter': 'T'
+}
+
 # Returns true if omni-completion is enabled for filetype 'ftype'.
 # Otherwise, returns false.
 def LspOmniComplEnabled(ftype: string): bool
@@ -24,36 +52,45 @@ enddef
 # Map LSP complete item kind to a character
 def LspCompleteItemKindChar(kind: number): string
   var kindMap: list<string> = ['',
-		't', # Text
-		'm', # Method
-		'f', # Function
-		'C', # Constructor
-		'F', # Field
-		'v', # Variable
-		'c', # Class
-		'i', # Interface
-		'M', # Module
-		'p', # Property
-		'u', # Unit
-		'V', # Value
-		'e', # Enum
-		'k', # Keyword
-		'S', # Snippet
-		'C', # Color
-		'f', # File
-		'r', # Reference
-		'F', # Folder
-		'E', # EnumMember
-		'd', # Contant
-		's', # Struct
-		'E', # Event
-		'o', # Operator
-		'T'  # TypeParameter
-	]
+	'Text',
+	'Method',
+	'Function',
+	'Constructor',
+	'Field',
+	'Variable',
+	'Class',
+	'Interface',
+	'Module',
+	'Property',
+	'Unit',
+	'Value',
+	'Enum',
+	'Keyword',
+	'Snippet',
+	'Color',
+	'File',
+	'Reference',
+	'Folder',
+	'EnumMember',
+	'Contant',
+	'Struct',
+	'Event',
+	'Operator',
+	'TypeParameter'
+  ]
+
   if kind > 25
     return ''
   endif
-  return kindMap[kind]
+
+  var kindName = kindMap[kind]
+  var kindValue = defaultKinds[kindName]
+
+  if opt.lspOptions.customCompletionKinds && opt.lspOptions.completionKinds->has_key(kindName)
+    kindValue = opt.lspOptions.completionKinds[kindName]
+  endif
+
+  return kindValue
 enddef
 
 # Remove all the snippet placeholders from 'str' and return the value.
