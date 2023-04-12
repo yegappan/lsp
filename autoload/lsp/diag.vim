@@ -484,7 +484,7 @@ export def GetDiagByPos(bnr: number, lnum: number, col: number,
 enddef
 
 # Get all diagnostics from the LSP server for a particular line in a file
-export def GetDiagsByLine(bnr: number, lnum: number): list<dict<any>>
+export def GetDiagsByLine(bnr: number, lnum: number, lspserver: dict<any> = null_dict): list<dict<any>>
   if !diagsMap->has_key(bnr)
     return []
   endif
@@ -493,11 +493,20 @@ export def GetDiagsByLine(bnr: number, lnum: number): list<dict<any>>
 
   var serverDiagsByLnum = diagsMap[bnr].serverDiagnosticsByLnum
 
-  for diagsByLnum in serverDiagsByLnum->values()
-    if diagsByLnum->has_key(lnum)
-      diags->extend(diagsByLnum[lnum])
+  if lspserver == null_dict
+    for diagsByLnum in serverDiagsByLnum->values()
+      if diagsByLnum->has_key(lnum)
+        diags->extend(diagsByLnum[lnum])
+      endif
+    endfor
+  else
+    if !serverDiagsByLnum->has_key(lspserver.id)
+      return []
     endif
-  endfor
+    if serverDiagsByLnum[lspserver.id]->has_key(lnum)
+      diags = serverDiagsByLnum[lspserver.id][lnum]
+    endif
+  endif
 
   return diags->sort((a, b) => {
     return a.range.start.character - b.range.start.character
