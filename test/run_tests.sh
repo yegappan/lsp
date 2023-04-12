@@ -10,7 +10,7 @@ fi
 
 VIM_CMD="$VIMPRG -u NONE -U NONE -i NONE --noplugin -N --not-a-term"
 
-TESTS="clangd_tests.vim tsserver_tests.vim gopls_tests.vim"
+TESTS="clangd_tests.vim tsserver_tests.vim gopls_tests.vim not_lspserver_related_tests.vim"
 
 for testfile in $TESTS
 do
