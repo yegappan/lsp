@@ -154,6 +154,24 @@ export def ShowAllServers()
   :setlocal nomodifiable
 enddef
 
+# Create a new window containing the buffer 'bname' or if the window is
+# already present then jump to it.
+def OpenScratchWindow(bname: string)
+  var wid = bufwinid(bname)
+  if wid != -1
+    wid->win_gotoid()
+    :setlocal modifiable
+    :silent! :%d _
+  else
+    exe $':new {bname}'
+    :setlocal buftype=nofile
+    :setlocal bufhidden=wipe
+    :setlocal noswapfile
+    :setlocal nonumber nornu
+    :setlocal fdc=0 signcolumn=no
+  endif
+enddef
+
 # Show the status of the LSP server for the current buffer
 export def ShowServer(arg: string)
   var lspserver: dict<any> = buf.CurbufGetServerChecked()
@@ -162,22 +180,38 @@ export def ShowServer(arg: string)
     return
   endif
 
+  var windowName: string = ''
+  var lines: list<string> = []
   if arg == '' || arg ==? 'status'
+    windowName = $'LangServer-Status'
     var msg = $"LSP server '{lspserver.name}' is "
     if lspserver.running
       msg ..= 'running'
     else
       msg ..= 'not running'
     endif
-    :echomsg msg
+    lines->add(msg)
   elseif arg ==? 'capabilities'
-    lspserver.showCapabilities()
+    windowName = $'LangServer-Capabilities'
+    lines->extend(lspserver.getCapabilities())
   elseif arg ==? 'initializeRequest'
-    lspserver.showInitializeRequest()
+    windowName = $'LangServer-InitializeRequest'
+    lines->extend(lspserver.getInitializeRequest())
   elseif arg ==? 'messages'
-    lspserver.showMessages()
+    windowName = $'LangServer-Messages'
+    lines->extend(lspserver.getMessages())
   else
     util.ErrMsg($'Error: Unsupported argument "{arg}"')
+    return
+  endif
+
+  if lines->len() > 1
+    OpenScratchWindow(windowName)
+    setline(1, lines)
+    :setlocal nomodified
+    :setlocal nomodifiable
+  else
+    :echomsg lines[0]
   endif
 enddef
 
@@ -971,16 +1005,6 @@ enddef
 # Disable diagnostic highlighting for all the buffers
 export def DiagHighlightDisable()
   diag.DiagsHighlightDisable()
-enddef
-
-# Display the LSP server capabilities
-export def ShowServerCapabilities()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
-  if lspserver->empty()
-    return
-  endif
-
-  lspserver.showCapabilities()
 enddef
 
 # Function to use with the 'tagfunc' option.
