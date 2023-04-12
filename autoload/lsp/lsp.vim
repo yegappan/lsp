@@ -424,7 +424,17 @@ def BufferInit(lspserverId: number, bnr: number): void
   inlayhints.BufferInit(lspserver, bnr)
 
   if exists('#User#LspAttached')
-    doautocmd <nomodeline> User LspAttached
+    var allServersReady = true
+    var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)
+    for lspsrv in lspservers
+      if !lspsrv.ready
+        allServersReady = false
+      endif
+    endfor
+
+    if allServersReady
+      doautocmd <nomodeline> User LspAttached
+    endif
   endif
 enddef
 
