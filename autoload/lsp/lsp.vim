@@ -938,21 +938,14 @@ enddef
 
 # Display the list of workspace folders
 export def ListWorkspaceFolders()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
-  if lspserver->empty()
-    return
-  endif
-
-  :echomsg $'Workspace Folders: {lspserver.workspaceFolders->string()}'
+  var lspservers: list<dict<any>> = buf.CurbufGetServers()
+  for lspserver in lspservers
+    :echomsg $'Workspace Folders: {lspserver.workspaceFolders->string()}'
+  endfor
 enddef
 
 # Add a workspace folder. Default is to use the current folder.
 export def AddWorkspaceFolder(dirArg: string)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
-  if lspserver->empty()
-    return
-  endif
-
   var dirName: string = dirArg
   if dirName == ''
     dirName = input('Add Workspace Folder: ', getcwd(), 'dir')
@@ -966,16 +959,15 @@ export def AddWorkspaceFolder(dirArg: string)
     return
   endif
 
-  lspserver.addWorkspaceFolder(dirName)
+  var lspservers: list<dict<any>> = buf.CurbufGetServers()
+
+  for lspserver in lspservers
+    lspserver.addWorkspaceFolder(dirName)
+  endfor
 enddef
 
 # Remove a workspace folder. Default is to use the current folder.
 export def RemoveWorkspaceFolder(dirArg: string)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
-  if lspserver->empty()
-    return
-  endif
-
   var dirName: string = dirArg
   if dirName == ''
     dirName = input('Remove Workspace Folder: ', getcwd(), 'dir')
@@ -989,7 +981,10 @@ export def RemoveWorkspaceFolder(dirArg: string)
     return
   endif
 
-  lspserver.removeWorkspaceFolder(dirName)
+  var lspservers: list<dict<any>> = buf.CurbufGetServers()
+  for lspserver in lspservers
+    lspserver.removeWorkspaceFolder(dirName)
+  endfor
 enddef
 
 # expand the previous selection or start a new selection
