@@ -1411,6 +1411,18 @@ def GetInitializeRequest(lspserver: dict<any>): list<string>
   return l
 enddef
 
+# Store a log or trace message received from the language server.
+def AddMessage(lspserver: dict<any>, msgType: string, newMsg: string)
+  # A single message may contain multiple lines separate by newline
+  var msgs = newMsg->split("\n")
+  lspserver.messages->add($'{strftime("%m/%d/%y %T")}: [{msgType}]: {msgs[0]}')
+  lspserver.messages->extend(msgs[1 : ])
+  # Keep only the last 500 messages to reduce the memory usage
+  if lspserver.messages->len() >= 600
+    lspserver.messages = lspserver.messages[-500 : ]
+  endif
+enddef
+
 # Display the log messages received from the LSP server (window/logMessage)
 def GetMessages(lspserver: dict<any>): list<string>
   if lspserver.messages->empty()
@@ -1559,6 +1571,7 @@ export def NewLspServer(name_arg: string, path_arg: string, args: list<string>,
     workspaceConfigGet: function(WorkspaceConfigGet, [lspserver]),
     getCapabilities: function(GetCapabilities, [lspserver]),
     getInitializeRequest: function(GetInitializeRequest, [lspserver]),
+    addMessage: function(AddMessage, [lspserver]),
     getMessages: function(GetMessages, [lspserver])
   })
 

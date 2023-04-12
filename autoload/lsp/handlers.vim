@@ -50,27 +50,14 @@ enddef
 # Param: LogMessageParams
 def ProcessLogMsgNotif(lspserver: dict<any>, reply: dict<any>)
   var mtype = LspMsgTypeToString(reply.params.type)
-  var msgs = reply.params.message->split("\n")
-
-  lspserver.messages->add($'{strftime("%m/%d/%y %T")}: [{mtype}]: {msgs[0]}')
-  lspserver.messages->extend(msgs[1 : ])
-  # Keep only the last 500 messages to reduce the memory usage
-  if lspserver.messages->len() > 500
-    lspserver.messages = lspserver.messages[-500 : ]
-  endif
+  lspserver.addMessage(mtype, reply.params.message)
 enddef
 
 # process the log trace notification messages
 # Notification: $/logTrace
 # Param: LogTraceParams
 def ProcessLogTraceNotif(lspserver: dict<any>, reply: dict<any>)
-  var msgs = reply.params.message->split("\n")
-  lspserver.messages->add($'{strftime("%m/%d/%y %T")}: [trace]: {msgs[0]}')
-  lspserver.messages->extend(msgs[1 : ])
-  # Keep only the last 500 messages to reduce the memory usage
-  if lspserver.messages->len() > 500
-    lspserver.messages = lspserver.messages[-500 : ]
-  endif
+  lspserver.addMessage('trace', reply.params.message)
 enddef
 
 # process unsupported notification messages

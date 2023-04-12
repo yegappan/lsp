@@ -83,9 +83,9 @@ def LspAddServer(ftype: string, lspsrv: dict<any>)
 enddef
 
 # Enable/disable the logging of the language server protocol messages
-export def ServerDebug(arg: string)
-  if arg !=? 'errors' && arg !=? 'messages' && arg !=? 'on' && arg !=? 'off'
-    util.ErrMsg($'Error: Invalid argument ("{arg}") for LSP server debug')
+def ServerDebug(arg: string)
+  if ['errors', 'messages', 'off', 'on']->index(arg) == -1
+    util.ErrMsg($'Error: Unsupported argument "{arg}" for LspServer debug')
     return
   endif
 
@@ -94,13 +94,13 @@ export def ServerDebug(arg: string)
     return
   endif
 
-  if arg ==? 'on'
+  if arg ==# 'on'
     util.ClearTraceLogs(lspserver.logfile)
     util.ClearTraceLogs(lspserver.errfile)
     lspserver.debug = true
-  elseif arg ==? 'off'
+  elseif arg ==# 'off'
     lspserver.debug = false
-  elseif arg ==? 'messages'
+  elseif arg ==# 'messages'
     util.ServerMessagesShow(lspserver.logfile)
   else
     util.ServerMessagesShow(lspserver.errfile)
@@ -173,7 +173,7 @@ def OpenScratchWindow(bname: string)
 enddef
 
 # Show the status of the LSP server for the current buffer
-export def ShowServer(arg: string)
+def ShowServer(arg: string)
   var lspserver: dict<any> = buf.CurbufGetServerChecked()
   if lspserver->empty()
     :echomsg "LSP Server not found"
@@ -182,7 +182,7 @@ export def ShowServer(arg: string)
 
   var windowName: string = ''
   var lines: list<string> = []
-  if arg == '' || arg ==? 'status'
+  if arg == '' || arg ==# 'status'
     windowName = $'LangServer-Status'
     var msg = $"LSP server '{lspserver.name}' is "
     if lspserver.running
@@ -191,13 +191,13 @@ export def ShowServer(arg: string)
       msg ..= 'not running'
     endif
     lines->add(msg)
-  elseif arg ==? 'capabilities'
+  elseif arg ==# 'capabilities'
     windowName = $'LangServer-Capabilities'
     lines->extend(lspserver.getCapabilities())
-  elseif arg ==? 'initializeRequest'
+  elseif arg ==# 'initializeRequest'
     windowName = $'LangServer-InitializeRequest'
     lines->extend(lspserver.getInitializeRequest())
-  elseif arg ==? 'messages'
+  elseif arg ==# 'messages'
     windowName = $'LangServer-Messages'
     lines->extend(lspserver.getMessages())
   else
@@ -497,7 +497,7 @@ def AddBuffersToLsp(ftype: string)
 enddef
 
 # Restart the LSP server for the current buffer
-export def RestartServer()
+def RestartServer()
   var lspserver: dict<any> = buf.CurbufGetServer()
   if lspserver->empty()
     return
@@ -636,7 +636,7 @@ enddef
 
 # set the LSP server trace level for the current buffer
 # Params: SetTraceParams
-export def ServerTraceSet(traceVal: string)
+def ServerTraceSet(traceVal: string)
   if ['off', 'messages', 'verbose']->index(traceVal) == -1
     util.ErrMsg($'Error: Unsupported LSP server trace value {traceVal}')
     return
@@ -1030,6 +1030,90 @@ enddef
 
 export def RegisterCmdHandler(cmd: string, Handler: func)
   codeaction.RegisterCmdHandler(cmd, Handler)
+enddef
+
+# Command-line completion for the ":LspServer <cmd>" sub command
+def LspServerSubCmdComplete(cmds: list<string>, arglead: string, cmdline: string, cursorPos: number): list<string>
+  var wordBegin = cmdline->match('\s\+\zs\S', cursorPos)
+  if wordBegin == -1
+    return cmds
+  endif
+
+  # Make sure there are no additional sub-commands
+  var wordEnd = cmdline->stridx(' ', wordBegin)
+  if wordEnd == -1
+    return cmds->filter((_, val) => val =~ $'^{arglead}')
+  endif
+
+  return []
+enddef
+
+# Command-line completion for the ":LspServer debug" command
+def LspServerDebugComplete(arglead: string, cmdline: string, cursorPos: number): list<string>
+  return LspServerSubCmdComplete(['errors', 'messages', 'off', 'on'],
+				 arglead, cmdline, cursorPos)
+enddef
+
+# Command-line completion for the ":LspServer show" command
+def LspServerShowComplete(arglead: string, cmdline: string, cursorPos: number): list<string>
+  return LspServerSubCmdComplete(['capabilities', 'initializeRequest',
+				  'messages', 'status'], arglead, cmdline,
+				  cursorPos)
+enddef
+
+# Command-line completion for the ":LspServer trace" command
+def LspServerTraceComplete(arglead: string, cmdline: string, cursorPos: number): list<string>
+  return LspServerSubCmdComplete(['messages', 'off', 'verbose'],
+				 arglead, cmdline, cursorPos)
+enddef
+
+# Command-line completion for the ":LspServer" command
+export def LspServerComplete(arglead: string, cmdline: string, cursorPos: number): list<string>
+  var wordBegin = -1
+  var wordEnd = -1
+  var l = ['debug', 'restart', 'show', 'trace']
+
+  # Skip the command name
+  var i = cmdline->stridx(' ', 0)
+  wordBegin = cmdline->match('\s\+\zs\S', i)
+  if wordBegin == -1
+    return l
+  endif
+
+  wordEnd = cmdline->stridx(' ', wordBegin)
+  if wordEnd == -1
+    return filter(l, (_, val) => val =~ $'^{arglead}')
+  endif
+
+  var cmd = cmdline->strpart(wordBegin, wordEnd - wordBegin)
+  if cmd ==# 'debug'
+    return LspServerDebugComplete(arglead, cmdline, wordEnd)
+  elseif cmd ==# 'restart'
+  elseif cmd ==# 'show'
+    return LspServerShowComplete(arglead, cmdline, wordEnd)
+  elseif cmd ==# 'trace'
+    return LspServerTraceComplete(arglead, cmdline, wordEnd)
+  endif
+
+  return []
+enddef
+
+# ":LspServer" command handler
+export def LspServerCmd(args: string)
+  if args->stridx('debug ') == 0
+    var subcmd = args[6 : ]->trim()
+    ServerDebug(subcmd)
+  elseif args ==# 'restart'
+    RestartServer()
+  elseif args->stridx('show ') == 0
+    var subcmd = args[5 : ]->trim()
+    ShowServer(subcmd)
+  elseif args->stridx('trace ') == 0
+    var subcmd = args[6 : ]->trim()
+    ServerTraceSet(subcmd)
+  else
+    util.ErrMsg($'Error: LspServer - Unsupported argument "{args}"')
+  endif
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2

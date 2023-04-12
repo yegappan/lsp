@@ -2,7 +2,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: April 7, 2023
+Last change: April 11, 2023
 
 ==============================================================================
 						*lsp-license*
@@ -121,15 +121,12 @@ The following commands are provided:
 :LspRename		Rename the current symbol
 :LspSelectionExpand	Expand the current symbol range visual selection
 :LspSelectionShrink	Shrink the current symbol range visual selection
-:LspServerDebug		Enable or disable the language server debug messages.
-:LspServerRestart	Restart the language server for the current buffer.
-:LspServerTrace		Set the language server debug trace value.
+:LspServer		Command to display the status and messages from a
+			language server and to restart the language server.
 :LspShowAllServers	Display the status of all the registered language
 			servers.
 :LspShowReferences	Display the list of references to the keyword under
 			cursor in a new location list.
-:LspShowServer		Display the capabilities, status and messages of the
-			language server for the current buffer.
 :LspShowSignature	Display the signature of the symbol under cursor.
 :LspSubTypeHierarchy	Display the sub type hierarchy in a popup window.
 :LspSuperTypeHierarchy	Display the super type hierarchy in a popup window.
@@ -743,36 +740,71 @@ can map these commands to keys and make it easier to invoke them.
 			successively to shrink the current symbol visual
 			region.
 
-						*:LspServerDebug*
-:LspServerDebug { on | off | messages | errors }
-			The following arguments are supported:
+						*:LspServer*
+:LspServer { debug | restart | show | trace }
+			Command to display and control the language server for
+			the current buffer.  Each argument has additional
+			sub-commands which are described below.
 
-			errors	Open the log file containing the language
-				server error messages.
-			messages
-				Open the log file containing the language
-				server debug messages.
-			off	Disable the logging of the language server
-				messages.
-			on	Enable the logging of the messages emitted
-				by the language server in the standard output
-				and standard error.
-			By default, the language server messages are not
-			logged.  On a Unix-like system, when enabled, these
-			messages are logged to the /tmp/lsp-<server-name>.log
-			and /tmp/lsp-<server-name>.err file respectively.  On
-			MS-Windows, the %TEMP%/lsp-<server-name>.log and
-			%TEMP%/lsp-<server-name>.err% files are used. See
-			|lsp-debug| for more information.
+			debug { on | off | messages | errors }
+			    Command to enable or disable the language server
+			    debug messages and to display the debug messages
+			    and error messages received from the language
+			    server.  The following sub-commands are supported:
+				errors	Open the log file containing the
+					language server error messages.
+				messages
+					Open the log file containing the
+					language server debug messages.
+				off	Disable the logging of the language
+					server messages.
+				on	Enable the logging of the messages
+					emitted by the language server in the
+					standard output and standard error.
+			    By default, the language server messages are not
+			    logged.  On a Unix-like system, when enabled,
+			    these messages are logged to the
+			    /tmp/lsp-<server-name>.log and
+			    /tmp/lsp-<server-name>.err file respectively.  On
+			    MS-Windows, the %TEMP%/lsp-<server-name>.log and
+			    %TEMP%/lsp-<server-name>.err% files are used. See
+			    |lsp-debug| for more information.
 
-						*:LspServerRestart*
-:LspServerRestart	Restart (stop and then start) the language server for
-			the current buffer. All the loaded buffers with the
-			same filetype as the current buffer are added back to
-			the server.
+			restart
+			    Restart (stop and then start) the language server
+			    for the current buffer. All the loaded buffers
+			    with the same filetype as the current buffer are
+			    added back to the server.
 
-:LspServerTrace { off | messages | verbose }	*:LspServerTrace*
-			Set the language server debug trace value.
+			show {capabilities | initializeRequest | messages
+								| status}
+			    The following sub-commands are supported:
+				capabilities
+					Display the list of language server
+					capabilities for the current buffer.
+					The server capabilities are described
+					in the LSP protocol specification
+					under the "ServerCapabilities"
+					interface.
+				initializeRequest
+					Display the contents of the language
+					server initialization request message
+					(initialize).
+				messages
+					Display the log messages received from
+					the language server.  This includes
+					the messages received using the
+					"window/logMessage" and "$/logTrace"
+					LSP notifications.
+				status
+					Display the language server status for
+					the current buffer.  The output shows
+					the path to the language server
+					executable and the server status.
+
+			trace { off | messages | verbose }
+			    Set the language server debug trace value using
+			    the "$/setTrace" command.
 
 						*:LspShowAllServers*
 :LspShowAllServers	Displays the list of registered language servers and
@@ -793,23 +825,6 @@ can map these commands to keys and make it easier to invoke them.
 
 				call LspOptionsSet({'useQuickfixForLocations': v:true})
 <
-						*:LspShowServer*
-:LspShowServer {capabilities | messages | status}
-			capabilities - Display the list of language server
-				       capabilities for the current buffer.
-				       The server capabilities are described
-				       in the LSP protocol specification under
-				       the "ServerCapabilities" interface.
-			messages     - Display the log messages received from
-				       the language server.  This includes the
-				       messages received using the
-				       "window/logMessage" and "$/logTrace"
-				       LSP notifications.
-			status       - Display the language server status for
-				       the current buffer.  The output shows
-				       the path to the language server
-				       executable and the server status.
-
 						*:LspShowSignature*
 :LspShowSignature	Displays the signature of the symbol (e.g. a function
 			or method) before the cursor in a popup.
@@ -1159,12 +1174,12 @@ and received by the plugin from the language server.  The following command
 enables the logging of the messages from the language server for the current
 buffer: >
 
-    :LspServerDebug on
+    :LspServer debug on
 <
 This command also clears the log files.  The following command disables the
 logging of the messages from the language server for the current buffer: >
 
-    :LspServerDebug off
+    :LspServer debug off
 <
 By default, the messages are not logged.  Another method to enable the debug
 is to set the "debug" field to v:true when adding a language server
@@ -1179,18 +1194,18 @@ created in the /tmp directory.  On MS-Windows, these files are created in the
 The following command opens the file containing the messages printed by the
 language server in the stdout: >
 
-    :LspServerDebug messages
+    :LspServer debug messages
 <
 The following command opens the file containing the messages printed by the
 language server in the stderr: >
 
-    :LspServerDebug errors
+    :LspServer debug errors
 <
 To debug language server initialization problems, after enabling the above
 server debug, you can restart the server for the file type in the current
 buffer using the following command: >
 
-    :LspServerRestart
+    :LspServer restart
 <
 The language servers typically support command line options to enable debug
 messages and to increase the verbosity of the messages.  You can refer to the
@@ -1200,7 +1215,7 @@ these options when registering the language server with this plugin.
 If a language server supports the "$/logTrace" LSP notification, then you can
 use the :LspServerTrace command to set the server trace value: >
 
-    :LspServerTrace { off | messages | verbose }
+    :LspServer trace { off | messages | verbose }
 <
 ==============================================================================
 14. Custom Command Handlers			*lsp-custom-commands*

@@ -7,11 +7,10 @@ vim9script
 
 # Language Server Protocol (LSP) plugin for vim
 
-g:loaded_lsp = 1
+g:loaded_lsp = true
 
 import '../autoload/lsp/options.vim'
 import autoload '../autoload/lsp/lsp.vim'
-
 
 # Set LSP plugin options from 'opts'.
 def g:LspOptionsSet(opts: dict<any>)
@@ -42,36 +41,6 @@ enddef
 # Returns true if the language server for 'ftype' file type is running
 def g:LspServerRunning(ftype: string): bool
   return lsp.ServerRunning(ftype)
-enddef
-
-# Command line completion function for the LspServerTrace command.
-def LspServerTraceComplete(arglead: string, cmdline: string, cursorpos: number): list<string>
-  var l = ['off', 'messages', 'verbose']
-  if arglead->empty()
-    return l
-  else
-    return filter(l, (_, val) => val =~ arglead)
-  endif
-enddef
-
-# Command line completion function for the LspServerDebug command.
-def LspServerDebugComplete(arglead: string, cmdline: string, cursorpos: number): list<string>
-  var l = ['errors', 'messages', 'off', 'on']
-  if arglead->empty()
-    return l
-  else
-    return filter(l, (_, val) => val =~ arglead)
-  endif
-enddef
-
-# Command line completion function for the LspShowServer command.
-def LspShowServerComplete(arglead: string, cmdline: string, cursorpos: number): list<string>
-  var l = ['capabilities', 'initializeRequest', 'messages', 'status']
-  if arglead->empty()
-    return l
-  else
-    return filter(l, (_, val) => val =~ arglead)
-  endif
 enddef
 
 augroup LSPAutoCmds
@@ -118,13 +87,8 @@ command! -nargs=0 -bar LspPeekTypeDef lsp.GotoTypedef(v:true, <q-mods>)
 command! -nargs=? -bar LspRename lsp.Rename(<q-args>)
 command! -nargs=0 -bar LspSelectionExpand lsp.SelectionExpand()
 command! -nargs=0 -bar LspSelectionShrink lsp.SelectionShrink()
-command! -nargs=1 -complete=customlist,LspServerDebugComplete -bar LspServerDebug lsp.ServerDebug(<q-args>)
-command! -nargs=0 -bar LspServerRestart lsp.RestartServer()
-command! -nargs=1 -complete=customlist,LspServerTraceComplete -bar LspServerTrace lsp.ServerTraceSet(<q-args>)
+command! -nargs=+ -bar -complete=customlist,lsp.LspServerComplete LspServer lsp.LspServerCmd(<q-args>)
 command! -nargs=0 -bar LspShowReferences lsp.ShowReferences(v:false)
-# The :LspShowServerCapabilities command is retained for backward
-# compatibility.  Remove this in the future.
-command! -nargs=0 -bar LspShowServerCapabilities :LspShowServer capabilities
 command! -nargs=? -complete=customlist,LspShowServerComplete -bar LspShowServer lsp.ShowServer(<q-args>)
 command! -nargs=0 -bar LspShowAllServers lsp.ShowAllServers()
 command! -nargs=0 -bar LspShowSignature call LspShowSignature()
