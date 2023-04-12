@@ -284,7 +284,21 @@ Aditionally the following configurations can be made:
 			typescript-language-server) will send additional
 			notifications which you might want to silence or handle.
 			The provided notification handlers will be called with a
-			reference to the "lspserver" and the "reply".
+			reference to the "lspserver" and the "reply". >
+
+		vim9script
+		g:LspAddServer([{
+			filetype: ['javascript', 'typescript'],
+			path: '/usr/local/bin/typescript-language-server',
+			args: ['--stdio'],
+			customNotificationHandlers: {
+				'$/typescriptVersion': (lspserver, reply) => {
+					echom printf("TypeScript Version = %s",
+						reply.params.version)
+				}
+			}
+		}])
+<
 						*lsp-cfg-omnicompl*
 	omnicompl	(Optional) a boolean value that enables (true)
 			or disables (false) omni-completion for this file
