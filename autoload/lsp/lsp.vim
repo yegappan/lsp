@@ -906,7 +906,7 @@ enddef
 # Perform a code action
 # Uses LSP "textDocument/codeAction" request
 export def CodeAction(line1: number, line2: number, query: string)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('codeAction')
   if lspserver->empty()
     return
   endif
