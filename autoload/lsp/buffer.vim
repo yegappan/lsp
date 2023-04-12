@@ -51,6 +51,7 @@ export def BufLspServerGet(bnr: number, domain: string = null_string): dict<any>
     'declaration': (lspserver) => lspserver.isDeclarationProvider,
     'typeDefinition': (lspserver) => lspserver.isTypeDefinitionProvider,
     'implementation': (lspserver) => lspserver.isImplementationProvider,
+    'hover': (lspserver) => lspserver.isHoverProvider,
     'documentFormatting': (lspserver) => lspserver.isDocumentFormattingProvider,
   }
 

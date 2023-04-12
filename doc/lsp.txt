@@ -1369,6 +1369,7 @@ servers should be used for a given method.  The following flags are supported
 	declaration: true,
 	typeDefinition: true,
 	implementation: true,
+	hover: true,
 	documentFormatting: true
 }
 <
