@@ -658,11 +658,18 @@ export def ServerReady(): bool
     return false
   endif
 
-  var lspserver: dict<any> = buf.CurbufGetServer()
-  if lspserver->empty()
+  var lspservers: list<dict<any>> = buf.CurbufGetServers()
+  if lspservers->empty()
     return false
   endif
-  return lspserver.ready
+
+  for lspserver in lspservers
+    if !lspserver.ready
+      return false
+    endif
+  endfor
+
+  return true
 enddef
 
 # set the LSP server trace level for the current buffer
