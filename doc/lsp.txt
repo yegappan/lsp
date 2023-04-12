@@ -1364,6 +1364,38 @@ By proving the configuration |lsp-cfg-features| it's possible specify which
 servers should be used for a given method.  The following flags are supported
 >
 #{
+	documentFormatting: true
 }
+<
+
+As shown above the order of when the language servers are being defined is taken
+into account for a given method.  However sometimes the language server that you
+want to use for formatting also reports that it supports other features, in such
+a case you can change the order of language servers, and specify that a given
+language server should be used for a given method.
+
+For example, if you want to use the efm-langserver for formatting, but the
+typescript-language-server for everything else:
+
+	vim9script
+
+	g:LspAddServer([
+		# this language server will be used by default, as it's defined
+		# as the first LSP for 'javascript' and 'typescript'
+		{
+			filetype: ['javascript', 'typescript'],
+			path: '/usr/local/bin/typescript-language-server',
+			args: ['--stdio']
+		},
+		# this language server will be used for documentFormatting
+		{
+			filetype: ['efm-langserver'],
+			path: '/usr/local/bin/efm-langserver',
+			args: [],
+			features: {
+				documentFormatting: true
+			}
+		}
+	])
 <
 vim:tw=78:ts=8:noet:ft=help:norl:

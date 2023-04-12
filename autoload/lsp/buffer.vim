@@ -46,6 +46,7 @@ export def BufLspServerGet(bnr: number, domain: string = null_string): dict<any>
   endif
 
   var SupportedCheckFns = {
+    'documentFormatting': (lspserver) => lspserver.isDocumentFormattingProvider,
   }
 
   if !SupportedCheckFns->has_key(domain)
