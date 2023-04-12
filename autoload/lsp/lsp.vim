@@ -255,7 +255,7 @@ enddef
 
 # Go to a definition using "textDocument/definition" LSP request
 export def GotoDefinition(peek: bool, cmdmods: string)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('definition')
   if lspserver->empty()
     return
   endif
@@ -265,7 +265,7 @@ enddef
 
 # Go to a declaration using "textDocument/declaration" LSP request
 export def GotoDeclaration(peek: bool, cmdmods: string)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('declaration')
   if lspserver->empty()
     return
   endif
@@ -275,7 +275,7 @@ enddef
 
 # Go to a type definition using "textDocument/typeDefinition" LSP request
 export def GotoTypedef(peek: bool, cmdmods: string)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('typeDefinition')
   if lspserver->empty()
     return
   endif
@@ -285,7 +285,7 @@ enddef
 
 # Go to a implementation using "textDocument/implementation" LSP request
 export def GotoImplementation(peek: bool, cmdmods: string)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('implementation')
   if lspserver->empty()
     return
   endif
@@ -1045,7 +1045,7 @@ enddef
 
 # Function to use with the 'tagfunc' option.
 export def TagFunc(pat: string, flags: string, info: dict<any>): any
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('definition')
   if lspserver->empty()
     return v:null
   endif

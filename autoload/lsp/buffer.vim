@@ -47,6 +47,10 @@ export def BufLspServerGet(bnr: number, domain: string = null_string): dict<any>
 
   var SupportedCheckFns = {
     'completion': (lspserver) => lspserver.isCompletionProvider,
+    'definition': (lspserver) => lspserver.isDefinitionProvider,
+    'declaration': (lspserver) => lspserver.isDeclarationProvider,
+    'typeDefinition': (lspserver) => lspserver.isTypeDefinitionProvider,
+    'implementation': (lspserver) => lspserver.isImplementationProvider,
     'documentFormatting': (lspserver) => lspserver.isDocumentFormattingProvider,
   }
 

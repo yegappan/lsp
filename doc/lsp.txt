@@ -1365,6 +1365,10 @@ servers should be used for a given method.  The following flags are supported
 >
 #{
 	completion: true,
+	definition: true,
+	declaration: true,
+	typeDefinition: true,
+	implementation: true,
 	documentFormatting: true
 }
 <
