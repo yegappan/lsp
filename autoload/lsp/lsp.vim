@@ -766,7 +766,7 @@ enddef
 
 # show symbol references
 export def ShowReferences(peek: bool)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('references')
   if lspserver->empty()
     return
   endif
