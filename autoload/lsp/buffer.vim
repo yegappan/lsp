@@ -59,6 +59,7 @@ export def BufLspServerGet(bnr: number, domain: string = null_string): dict<any>
     'codeAction': (lspserver) => lspserver.isCodeActionProvider,
     'codeLens': (lspserver) => lspserver.isCodeLensProvider,
     'selectionRange': (lspserver) => lspserver.isSelectionRangeProvider,
+    'foldingRange': (lspserver) => lspserver.isFoldingRangeProvider,
   }
 
   if !SupportedCheckFns->has_key(domain)

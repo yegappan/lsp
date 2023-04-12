@@ -1019,7 +1019,7 @@ enddef
 
 # fold the entire document
 export def FoldDocument()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('foldingRange')
   if lspserver->empty()
     return
   endif

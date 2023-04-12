@@ -1376,7 +1376,8 @@ servers should be used for a given method.  The following flags are supported
 	rename: true,
 	codeAction: true,
 	codeLens: true,
-	selectionRange: true
+	selectionRange: true,
+	foldingRange:  true
 }
 <
 
