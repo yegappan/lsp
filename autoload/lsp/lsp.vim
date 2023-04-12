@@ -918,7 +918,7 @@ enddef
 # Code lens
 # Uses LSP "textDocument/codeLens" request
 export def CodeLens()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('codeLens')
   if lspserver->empty()
     return
   endif

@@ -1373,7 +1373,8 @@ servers should be used for a given method.  The following flags are supported
 	references: true,
 	documentFormatting: true,
 	rename: true,
-	codeAction: true
+	codeAction: true,
+	codeLens: true
 }
 <
 
