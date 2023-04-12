@@ -1375,7 +1375,8 @@ servers should be used for a given method.  The following flags are supported
 	documentFormatting: true,
 	rename: true,
 	codeAction: true,
-	codeLens: true
+	codeLens: true,
+	selectionRange: true
 }
 <
 
