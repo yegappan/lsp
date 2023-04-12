@@ -531,16 +531,6 @@ enddef
 
 # Restart the LSP server for the current buffer
 def RestartServer()
-  var lspserver: dict<any> = buf.CurbufGetServer()
-  if lspserver->empty()
-    return
-  endif
-
-  # Stop the server (if running)
-  if lspserver.running
-    lspserver.stopServer()
-  endif
-
   # Remove all the buffers with the same file type as the current buffer
   var ftype: string = &filetype
   for binfo in getbufinfo()
@@ -549,8 +539,16 @@ def RestartServer()
     endif
   endfor
 
-  # Start the server again
-  lspserver.startServer(bufnr(''))
+  var lspservers: list<dict<any>> = buf.CurbufGetServers()
+  for lspserver in lspservers
+    # Stop the server (if running)
+    if lspserver.running
+      lspserver.stopServer()
+    endif
+
+    # Start the server again
+    lspserver.startServer(bufnr(''))
+  endfor
 
   AddBuffersToLsp(ftype)
 enddef
