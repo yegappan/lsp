@@ -5,8 +5,6 @@ vim9script
 
 source common.vim
 
-g:LoadLspPlugin()
-
 def LspRunTests()
   :set nomore
   :set debug=beep
@@ -44,18 +42,14 @@ def LspRunTests()
 enddef
 
 try
-
+  g:LoadLspPlugin()
   exe $'source {g:TestName}'
   g:StartLangServer()
-
+  LspRunTests()
 catch
-
-  call add(v:errors, $'Error: Failed to start language server for {g:TestName} with exception {v:exception} at {v:throwpoint}')
-  qall!
-
+  writefile([$'FAIL: Tests in {g:TestName} failed with exception {v:exception} at {v:throwpoint} '], 'results.txt', 'a')
 endtry
 
-LspRunTests()
 qall!
 
 # vim: shiftwidth=2 softtabstop=2 noexpandtab
