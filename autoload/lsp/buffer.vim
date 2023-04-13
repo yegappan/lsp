@@ -45,6 +45,22 @@ export def BufLspServerGet(bnr: number): dict<any>
   return bufnrToServers[bnr][0]
 enddef
 
+# Returns the LSP server for the buffer 'bnr' and with ID 'id'. Returns an empty
+# dict if the server is not found.
+export def BufLspServerGetById(bnr: number, id: number): dict<any>
+  if !bufnrToServers->has_key(bnr)
+    return {}
+  endif
+
+  for lspserver in bufnrToServers[bnr]
+    if lspserver.id == id
+      return lspserver
+    endif
+  endfor
+
+  return {}
+enddef
+
 # Returns the LSP servers for the buffer 'bnr'. Returns an empty list if the
 # servers are not found.
 export def BufLspServersGet(bnr: number): list<dict<any>>

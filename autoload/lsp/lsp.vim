@@ -43,36 +43,41 @@ def LspInitOnce()
   lspInitializedOnce = true
 enddef
 
-# Returns the LSP server for the a specific filetype. Returns an empty dict if
-# the server is not found.
-def LspGetServer(bnr: number, ftype: string): dict<any>
-  if ftypeServerMap->has_key(ftype)
-    var lspservers = ftypeServerMap[ftype]
-
-    # The best language server for the current buffer
-    var bestMatch: dict<any> = {}
-    var bestScore: number = -1
-
-    var bufDir = bnr->bufname()->fnamemodify(':p:h')
-
-    for lspserver in lspservers
-      var score: number = 0
-      if !lspserver.rootSearchFiles->empty()
-        # The score is calculated by how deep the workspace root dir is, the
-        # deeper the better.
-        var path = util.FindNearestRootDir(bufDir, lspserver.rootSearchFiles)
-        score = path->strcharlen()
-      endif
-      if score > bestScore
-        bestMatch = lspserver
-        bestScore = score
-      endif
-    endfor
-
-    return bestMatch
+# Returns the LSP servers for the a specific filetype. Based on how well there
+# score, LSP servers with the same score are being returned.
+# Returns an empty list if the servers is not found.
+def LspGetServers(bnr: number, ftype: string): list<dict<any>>
+  if !ftypeServerMap->has_key(ftype)
+    return []
   endif
 
-  return {}
+  var lspservers = ftypeServerMap[ftype]
+
+  # All the langauge servers with the same score are being used
+  var bestMatches: list<dict<any>> = []
+  var bestScore: number = 0
+
+  var bufDir = bnr->bufname()->fnamemodify(':p:h')
+
+  for lspserver in lspservers
+    var score: number = 0
+
+    if !lspserver.rootSearchFiles->empty()
+      # The score is calculated by how deep the workspace root dir is, the
+      # deeper the better.
+      var path = util.FindNearestRootDir(bufDir, lspserver.rootSearchFiles)
+      score = path->strcharlen()
+    endif
+
+    if score > bestScore
+      bestMatches = [lspserver]
+      bestScore = score
+    elseif score == bestScore
+      bestMatches->add(lspserver)
+    endif
+  endfor
+
+  return bestMatches
 enddef
 
 # Add a LSP server for a filetype
@@ -295,25 +300,20 @@ def g:LspShowSignature(): string
   return ''
 enddef
 
-# buffer change notification listener
-def Bufchange_listener(bnr: number, start: number, end: number, added: number, changes: list<dict<number>>)
-  var lspserver: dict<any> = buf.CurbufGetServer()
-  if lspserver->empty() || !lspserver.running
-    return
-  endif
-
-  lspserver.textdocDidChange(bnr, start, end, added, changes)
-enddef
-
 # A buffer is saved. Send the "textDocument/didSave" LSP notification
 def LspSavedFile()
   var bnr: number = expand('<abuf>')->str2nr()
-  var lspserver: dict<any> = buf.BufLspServerGet(bnr)
-  if lspserver->empty() || !lspserver.running
+  var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)->filter(
+    (key, lspsrv) => !lspsrv->empty() && lspsrv.running
+  )
+
+  if lspservers->empty()
     return
   endif
 
-  lspserver.didSaveFile(bnr)
+  for lspserver in lspservers
+    lspserver.didSaveFile(bnr)
+  endfor
 enddef
 
 # Return the diagnostic text from the LSP server for the current mouse line to
@@ -401,8 +401,8 @@ def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
   autocmd_add(acmds)
 enddef
 
-def BufferInit(bnr: number): void
-  var lspserver: dict<any> = buf.BufLspServerGet(bnr)
+def BufferInit(lspserverId: number, bnr: number): void
+  var lspserver = buf.BufLspServerGetById(bnr, lspserverId)
   if lspserver->empty() || !lspserver.running
     return
   endif
@@ -411,7 +411,9 @@ def BufferInit(bnr: number): void
   lspserver.textdocDidOpen(bnr, ftype)
 
   # add a listener to track changes to this buffer
-  listener_add(Bufchange_listener, bnr)
+  listener_add((_bnr: number, start: number, end: number, added: number, changes: list<dict<number>>) => {
+    lspserver.textdocDidChange(bnr, start, end, added, changes)
+  }, bnr)
 
   AddBufLocalAutocmds(lspserver, bnr)
 
@@ -422,7 +424,17 @@ def BufferInit(bnr: number): void
   inlayhints.BufferInit(lspserver, bnr)
 
   if exists('#User#LspAttached')
-    doautocmd <nomodeline> User LspAttached
+    var allServersReady = true
+    var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)
+    for lspsrv in lspservers
+      if !lspsrv.ready
+        allServersReady = false
+      endif
+    endfor
+
+    if allServersReady
+      doautocmd <nomodeline> User LspAttached
+    endif
   endif
 enddef
 
@@ -442,39 +454,42 @@ export def AddFile(bnr: number): void
   if ftype == ''
     return
   endif
-  var lspserver: dict<any> = LspGetServer(bnr, ftype)
-  if lspserver->empty()
+  var lspservers: list<dict<any>> = LspGetServers(bnr, ftype)
+  if lspservers->empty()
     return
   endif
-  if !lspserver.running
-    if !lspInitializedOnce
-      LspInitOnce()
+  for lspserver in lspservers
+    if !lspserver.running
+      if !lspInitializedOnce
+        LspInitOnce()
+      endif
+      lspserver.startServer(bnr)
     endif
-    lspserver.startServer(bnr)
-  endif
-  buf.BufLspServerSet(bnr, lspserver)
+    buf.BufLspServerSet(bnr, lspserver)
 
-  if lspserver.ready
-    BufferInit(bnr)
-  else
-    augroup LSPBufferAutocmds
-      exe $'autocmd User LspServerReady{lspserver.name} ++once BufferInit({bnr})'
-    augroup END
-  endif
-
+    if lspserver.ready
+      BufferInit(lspserver.id, bnr)
+    else
+      augroup LSPBufferAutocmds
+        exe $'autocmd User LspServerReady{lspserver.name} ++once BufferInit({lspserver.id}, {bnr})'
+      augroup END
+    endif
+  endfor
 enddef
 
 # Notify LSP server to remove a file
 export def RemoveFile(bnr: number): void
-  var lspserver: dict<any> = buf.BufLspServerGet(bnr)
-  if lspserver->empty()
-    return
-  endif
-  if lspserver.running
-    lspserver.textdocDidClose(bnr)
-  endif
-  diag.DiagRemoveFile(lspserver, bnr)
-  buf.BufLspServerRemove(bnr, lspserver)
+  var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)
+  for lspserver in lspservers->copy()
+    if lspserver->empty()
+      continue
+    endif
+    if lspserver.running
+      lspserver.textdocDidClose(bnr)
+    endif
+    diag.DiagRemoveFile(lspserver, bnr)
+    buf.BufLspServerRemove(bnr, lspserver)
+  endfor
 enddef
 
 # Stop all the LSP servers
