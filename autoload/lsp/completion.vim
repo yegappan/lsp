@@ -126,10 +126,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     items = cItems
   else
     items = cItems.items
-
-    if cItems->has_key("isIncomplete")
-      lspserver.completeItemsIsIncomplete = cItems.isIncomplete
-    endif
+    lspserver.completeItemsIsIncomplete = cItems->get('isIncomplete', false)
   endif
 
   # Get the keyword prefix before the current cursor column.
