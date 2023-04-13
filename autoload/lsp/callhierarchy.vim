@@ -39,7 +39,7 @@ def CallHierarchyTreeItemRefresh(idx: number)
     if !reply->empty()
       for item in reply
 	treeItem.children->add({item: w:LspCallHierIncoming ? item.from :
-			       item.to, open: false})
+				item.to, open: false})
       endfor
     endif
   endif

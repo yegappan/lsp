@@ -27,25 +27,33 @@ def LspRunTests()
     v:errmsg = ''
     try
       :%bw!
-      exe 'g:' .. f
+      exe $'g:{f}'
     catch
-      call add(v:errors, "Error: Test " .. f .. " failed with exception " .. v:exception .. " at " .. v:throwpoint)
+      call add(v:errors, $'Error: Test {f} failed with exception {v:exception} at {v:throwpoint}')
     endtry
     if v:errmsg != ''
-      call add(v:errors, "Error: Test " .. f .. " generated error " .. v:errmsg)
+      call add(v:errors, $'Error: Test {f} generated error {v:errmsg}')
     endif
     if !v:errors->empty()
       writefile(v:errors, 'results.txt', 'a')
-      writefile([f .. ': FAIL'], 'results.txt', 'a')
+      writefile([$'{f}: FAIL'], 'results.txt', 'a')
     else
-      writefile([f .. ': pass'], 'results.txt', 'a')
+      writefile([$'{f}: pass'], 'results.txt', 'a')
     endif
   endfor
 enddef
 
-exe 'source ' .. g:TestName
+try
 
-g:StartLangServer()
+  exe $'source {g:TestName}'
+  g:StartLangServer()
+
+catch
+
+  call add(v:errors, $'Error: Failed to start language server for {g:TestName} with exception {v:exception} at {v:throwpoint}')
+  qall!
+
+endtry
 
 LspRunTests()
 qall!
