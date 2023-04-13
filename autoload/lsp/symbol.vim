@@ -93,7 +93,7 @@ def JumpToWorkspaceSymbol(popupID: number, result: number): void
     var fname: string = symTbl[result - 1].file
     var bufnum = fname->bufnr()
     var winList: list<number> = bufnum->win_findbuf()
-    if winList->len() == 0
+    if winList->empty()
       # Not present in any window
       if &modified || &buftype != ''
 	# the current buffer is modified or is not a normal buffer, then open

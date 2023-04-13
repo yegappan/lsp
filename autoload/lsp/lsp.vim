@@ -554,10 +554,8 @@ export def AddServer(serverList: list<dict<any>>)
       util.ErrMsg('Error: LSP server information is missing filetype or path')
       continue
     endif
-    if !server->has_key('omnicompl')
-      # Enable omni-completion by default
-      server['omnicompl'] = v:true
-    endif
+    # Enable omni-completion by default
+    server.omnicompl = get(server, 'omnicompl', v:true)
 
     if !server.path->executable()
       if !opt.lspOptions.ignoreMissingServer

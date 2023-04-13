@@ -37,7 +37,7 @@ export def BufLspServerGet(bnr: number): dict<any>
     return {}
   endif
 
-  if bufnrToServers[bnr]->len() == 0
+  if bufnrToServers[bnr]->empty()
     return {}
   endif
 

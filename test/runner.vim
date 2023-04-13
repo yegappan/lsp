@@ -5,8 +5,6 @@ vim9script
 
 source common.vim
 
-g:LoadLspPlugin()
-
 def LspRunTests()
   :set nomore
   :set debug=beep
@@ -27,27 +25,31 @@ def LspRunTests()
     v:errmsg = ''
     try
       :%bw!
-      exe 'g:' .. f
+      exe $'g:{f}'
     catch
-      call add(v:errors, "Error: Test " .. f .. " failed with exception " .. v:exception .. " at " .. v:throwpoint)
+      call add(v:errors, $'Error: Test {f} failed with exception {v:exception} at {v:throwpoint}')
     endtry
     if v:errmsg != ''
-      call add(v:errors, "Error: Test " .. f .. " generated error " .. v:errmsg)
+      call add(v:errors, $'Error: Test {f} generated error {v:errmsg}')
     endif
     if !v:errors->empty()
       writefile(v:errors, 'results.txt', 'a')
-      writefile([f .. ': FAIL'], 'results.txt', 'a')
+      writefile([$'{f}: FAIL'], 'results.txt', 'a')
     else
-      writefile([f .. ': pass'], 'results.txt', 'a')
+      writefile([$'{f}: pass'], 'results.txt', 'a')
     endif
   endfor
 enddef
 
-exe 'source ' .. g:TestName
+try
+  g:LoadLspPlugin()
+  exe $'source {g:TestName}'
+  g:StartLangServer()
+  LspRunTests()
+catch
+  writefile([$'FAIL: Tests in {g:TestName} failed with exception {v:exception} at {v:throwpoint} '], 'results.txt', 'a')
+endtry
 
-g:StartLangServer()
-
-LspRunTests()
 qall!
 
 # vim: shiftwidth=2 softtabstop=2 noexpandtab
