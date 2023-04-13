@@ -33,9 +33,10 @@ export var lspOptions: dict<any> = {
   ignoreMissingServer: false,
   # Focus on the location list window after LspShowReferences
   keepFocusInReferences: false,
-  # If not apply LSP server-initiated actions after completion
-  # specially if some others plugins had registered to do that
-  noAdditionalTextEdits: false,
+  # If true, apply the LSP server supplied text edits after a completion.
+  # If a snippet plugin is going to apply the text edits, then set this to
+  # false to avoid applying the text edits twice.
+  completionTextEdit: true,
   # instead of the signature
   noDiagHoverOnLine: true,
   # Suppress adding a new line on completion selection with <CR>

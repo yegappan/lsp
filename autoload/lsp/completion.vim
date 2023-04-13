@@ -517,7 +517,7 @@ def LspCompleteDone()
   var completionData: any = v:completed_item->get('user_data', '')
   if completionData->type() != v:t_dict
       || !completionData->has_key('additionalTextEdits')
-      || opt.lspOptions.noAdditionalTextEdits
+      || !opt.lspOptions.completionTextEdit
     return
   endif
 

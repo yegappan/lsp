@@ -395,10 +395,11 @@ keepFocusInReferences	|Boolean| option.  Focus on the location list window
 			after LspShowReferences.
 			By default this is set to false.
 						*lsp-opt-noAdditionalTextEdits*
-noAdditionalTextEdits	|Boolean| option.  If not apply LSP server-initiated
-			actions after completion, specially if some others
-			plugins had registered to do that.
-			By default this is set to false.
+completionTextEdit	|Boolean| option.  If true, apply the LSP server
+			supplied text edits after a completion.  If a snippet
+			plugin is going to apply the text edits, then set
+			this to false to avoid applying the text edits twice.
+			By default this is set to true.
 						*lsp-opt-noDiagHoverOnLine*
 noDiagHoverOnLine	|Boolean| option.  Suppress diagnostic hover from
 			appearing when the mouse is over the line instead of
