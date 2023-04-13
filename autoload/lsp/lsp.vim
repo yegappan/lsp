@@ -55,7 +55,7 @@ def LspGetServers(bnr: number, ftype: string): list<dict<any>>
 
   # All the langauge servers with the same score are being used
   var bestMatches: list<dict<any>> = []
-  var bestScore: number = 0
+  var bestScore: number = -2
 
   var bufDir = bnr->bufname()->fnamemodify(':p:h')
 
@@ -66,7 +66,9 @@ def LspGetServers(bnr: number, ftype: string): list<dict<any>>
       # The score is calculated by how deep the workspace root dir is, the
       # deeper the better.
       var path = util.FindNearestRootDir(bufDir, lspserver.rootSearchFiles)
-      score = path->strcharlen()
+      # subtract one to make servers with a non matching 'rootSearch' rank below
+      # servers without a 'rootSearch'.
+      score = path->strcharlen() - 1
     endif
 
     if score > bestScore
