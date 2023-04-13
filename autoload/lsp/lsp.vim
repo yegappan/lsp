@@ -678,12 +678,10 @@ def ServerTraceSet(traceVal: string)
     return
   endif
 
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
-  if lspserver->empty()
-    return
-  endif
-
-  lspserver.setTrace(traceVal)
+  var lspservers: list<dict<any>> = buf.CurbufGetServers()
+  for lspserver in lspservers
+    lspserver.setTrace(traceVal)
+  endfor
 enddef
 
 # Display the diagnostic messages from the LSP server for the current buffer
