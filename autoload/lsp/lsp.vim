@@ -179,9 +179,9 @@ enddef
 
 # Show the status of the LSP server for the current buffer
 def ShowServer(arg: string)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
-  if lspserver->empty()
-    :echomsg "LSP Server not found"
+  var lspservers: list<dict<any>> = buf.CurbufGetServers()
+
+  if lspservers->empty()
     return
   endif
 
@@ -189,22 +189,42 @@ def ShowServer(arg: string)
   var lines: list<string> = []
   if arg == '' || arg ==# 'status'
     windowName = $'LangServer-Status'
-    var msg = $"LSP server '{lspserver.name}' is "
-    if lspserver.running
-      msg ..= 'running'
-    else
-      msg ..= 'not running'
-    endif
-    lines->add(msg)
-  elseif arg ==# 'capabilities'
+    for lspserver in lspservers
+      if !lines->empty()
+        lines->extend(['', repeat('=', &columns), ''])
+      endif
+      var msg = $"LSP server '{lspserver.name}' is "
+      if lspserver.running
+        msg ..= 'running'
+      else
+        msg ..= 'not running'
+      endif
+      lines->add(msg)
+    endfor
+  elseif arg ==? 'capabilities'
     windowName = $'LangServer-Capabilities'
-    lines->extend(lspserver.getCapabilities())
-  elseif arg ==# 'initializeRequest'
+    for lspserver in lspservers
+      if !lines->empty()
+        lines->extend(['', repeat('=', &columns), ''])
+      endif
+      lines->extend(lspserver.getCapabilities())
+    endfor
+  elseif arg ==? 'initializeRequest'
     windowName = $'LangServer-InitializeRequest'
-    lines->extend(lspserver.getInitializeRequest())
-  elseif arg ==# 'messages'
+    for lspserver in lspservers
+      if !lines->empty()
+        lines->extend(['', repeat('=', &columns), ''])
+      endif
+      lines->extend(lspserver.getInitializeRequest())
+    endfor
+  elseif arg ==? 'messages'
     windowName = $'LangServer-Messages'
-    lines->extend(lspserver.getMessages())
+    for lspserver in lspservers
+      if !lines->empty()
+        lines->extend(['', repeat('=', &columns), ''])
+      endif
+      lines->extend(lspserver.getMessages())
+    endfor
   else
     util.ErrMsg($'Error: Unsupported argument "{arg}"')
     return
