@@ -132,11 +132,13 @@ export def ShowAllServers()
   lines->add('Buffer Information')
   lines->add('==================')
   for bnr in range(1, bufnr('$'))
-    if buf.BufHasLspServer(bnr)
+    var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)
+    if !lspservers->empty()
       lines->add($"Buffer: '{bufname(bnr)}'")
-      var lspserver = buf.BufLspServerGet(bnr)
-      lines->add($"Server Path: '{lspserver.path}'")
-      lines->add($"Status: {lspserver.running ? 'Running' : 'Not running'}")
+      for lspserver in lspservers
+        lines->add($"Server Path: '{lspserver.path}'")
+        lines->add($"Status: {lspserver.running ? 'Running' : 'Not running'}")
+      endfor
       lines->add('')
     endif
   endfor
