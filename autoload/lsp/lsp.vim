@@ -474,7 +474,7 @@ export def RemoveFile(bnr: number): void
     lspserver.textdocDidClose(bnr)
   endif
   diag.DiagRemoveFile(lspserver, bnr)
-  buf.BufLspServerRemove(bnr)
+  buf.BufLspServerRemove(bnr, lspserver)
 enddef
 
 # Stop all the LSP servers
