@@ -286,7 +286,7 @@ export def GetClientCaps(): dict<any>
 			'source.organizeImports']
 	  }
 	},
-        isPreferredSupport: true,
+	isPreferredSupport: true,
 	disabledSupport: true
       },
       codeLens: {
@@ -307,7 +307,7 @@ export def GetClientCaps(): dict<any>
 	symbolKind: {valueSet: range(1, 25)}
       },
       hover: {
-        contentFormat: ['plaintext', 'markdown']
+	contentFormat: ['plaintext', 'markdown']
       },
       foldingRange: {lineFoldingOnly: true},
       inlayHint: {dynamicRegistration: false},
