@@ -16,7 +16,8 @@ def Edit_sort_func(a: dict<any>, b: dict<any>): number
     return b.A[1] - a.A[1]
   endif
 
-  return 0
+  # Assume that the LSP sorted the lines correctly to begin with
+  return b.idx - a.idx
 enddef
 
 # Replaces text in a range with new text.
@@ -117,6 +118,7 @@ export def ApplyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   var end_col: number
 
   # create a list of buffer positions where the edits have to be applied.
+  var idx = 0
   for e in text_edits
     # Adjust the start and end columns for multibyte characters
     start_row = e.range.start.line
@@ -128,7 +130,9 @@ export def ApplyTextEdits(bnr: number, text_edits: list<dict<any>>): void
 
     updated_edits->add({A: [start_row, start_col],
 			B: [end_row, end_col],
+                        idx: idx,
 			lines: e.newText->split("\n", true)})
+    idx += 1
   endfor
 
   # Reverse sort the edit operations by descending line and column numbers so
