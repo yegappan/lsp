@@ -408,10 +408,17 @@ ignoreMissingServer	|Boolean| option.  Do not print a missing language
 keepFocusInReferences	|Boolean| option.  Focus on the location list window
 			after LspShowReferences.
 			By default this is set to false.
+						*lsp-opt-noAdditionalTextEdits*
+completionTextEdit	|Boolean| option.  If true, apply the LSP server
+			supplied text edits after a completion.  If a snippet
+			plugin is going to apply the text edits, then set
+			this to false to avoid applying the text edits twice.
+			By default this is set to true.
 						*lsp-opt-noDiagHoverOnLine*
 noDiagHoverOnLine	|Boolean| option.  Suppress diagnostic hover from
 			appearing when the mouse is over the line instead of
-			the signature.  By default this is set to true.
+			the signature.
+			By default this is set to true.
 						*lsp-opt-noNewlineInCompletion*
 noNewlineInCompletion	|Boolean| option.  Suppress adding a new line on
 			completion selection with <CR>.
