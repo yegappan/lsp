@@ -94,22 +94,20 @@ def ServerDebug(arg: string)
     return
   endif
 
-  var lspserver: dict<any> = buf.CurbufGetServer()
-  if lspserver->empty()
-    return
-  endif
-
-  if arg ==# 'on'
-    util.ClearTraceLogs(lspserver.logfile)
-    util.ClearTraceLogs(lspserver.errfile)
-    lspserver.debug = true
-  elseif arg ==# 'off'
-    lspserver.debug = false
-  elseif arg ==# 'messages'
-    util.ServerMessagesShow(lspserver.logfile)
-  else
-    util.ServerMessagesShow(lspserver.errfile)
-  endif
+  var lspservers: list<dict<any>> = buf.CurbufGetServers()
+  for lspserver in lspservers
+    if arg ==# 'on'
+      util.ClearTraceLogs(lspserver.logfile)
+      util.ClearTraceLogs(lspserver.errfile)
+      lspserver.debug = true
+    elseif arg ==# 'off'
+      lspserver.debug = false
+    elseif arg ==# 'messages'
+      util.ServerMessagesShow(lspserver.logfile)
+    else
+      util.ServerMessagesShow(lspserver.errfile)
+    endif
+  endfor
 enddef
 
 # Show information about all the LSP servers
