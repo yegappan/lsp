@@ -432,20 +432,29 @@ def BufferInit(lspserverId: number, bnr: number): void
 
   setbufvar(bnr, '&balloonexpr', 'g:LspDiagExpr()')
 
-  completion.BufferInit(lspserver, bnr, ftype)
   signature.BufferInit(lspserver)
   inlayhints.BufferInit(lspserver, bnr)
 
-  if exists('#User#LspAttached')
-    var allServersReady = true
-    var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)
+  var allServersReady = true
+  var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)
+  for lspsrv in lspservers
+    if !lspsrv.ready
+      allServersReady = false
+      break
+    endif
+  endfor
+
+  if allServersReady
     for lspsrv in lspservers
-      if !lspsrv.ready
-        allServersReady = false
+      # It's only possible to initialize completion when all server capabilities
+      # are known.
+      var completionServer = buf.BufLspServerGet(bnr, 'completion')
+      if !completionServer->empty() && lspsrv.id == completionServer.id
+        completion.BufferInit(lspsrv, bnr, ftype)
       endif
     endfor
 
-    if allServersReady
+    if exists('#User#LspAttached')
       doautocmd <nomodeline> User LspAttached
     endif
   endif
