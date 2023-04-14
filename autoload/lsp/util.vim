@@ -34,7 +34,13 @@ enddef
 
 # Empty out the LSP server trace logs
 export def ClearTraceLogs(fname: string)
-  writefile([], fname)
+  var fullname = $'{lsp_log_dir}{fname}'
+  # If file existed but not writable
+  if filewritable(fullname) != 1 && filereadable(fullname)
+    ErrMsg($'File {fullname} is not writable')
+    return
+  endif
+  writefile([], fullname)
 enddef
 
 # Open the LSP server debug messages file.
