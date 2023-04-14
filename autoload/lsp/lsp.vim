@@ -339,18 +339,13 @@ enddef
 var lspDiagPopupID: number = 0
 var lspDiagPopupInfo: dict<any> = {}
 def g:LspDiagExpr(): any
-  var lspserver: dict<any> = buf.BufLspServerGet(v:beval_bufnr)
-  if lspserver->empty() || !lspserver.running
-    return ''
-  endif
-
   # Display the diagnostic message only if the mouse is over the gutter for
   # the signs.
   if opt.lspOptions.noDiagHoverOnLine && v:beval_col >= 2
     return ''
   endif
 
-  var diagsInfo: list<dict<any>> = lspserver.getDiagsByLine(
+  var diagsInfo: list<dict<any>> = diag.GetDiagsByLine(
     v:beval_bufnr,
     v:beval_lnum
   )
@@ -376,11 +371,7 @@ def LspLeftInsertMode()
   :unlet b:LspDiagsUpdatePending
 
   var bnr: number = bufnr()
-  var lspserver: dict<any> = buf.CurbufGetServer()
-  if lspserver->empty() || !lspserver.running
-    return
-  endif
-  diag.ProcessNewDiags(lspserver, bnr)
+  diag.ProcessNewDiags(bnr)
 enddef
 
 # Add buffer-local autocmds when attaching a LSP server to a buffer
@@ -505,7 +496,7 @@ export def RemoveFile(bnr: number): void
     if lspserver.running
       lspserver.textdocDidClose(bnr)
     endif
-    diag.DiagRemoveFile(lspserver, bnr)
+    diag.DiagRemoveFile(bnr)
     buf.BufLspServerRemove(bnr, lspserver)
   endfor
 enddef
@@ -689,22 +680,12 @@ enddef
 # Display the diagnostic messages from the LSP server for the current buffer
 # in a quickfix list
 export def ShowDiagnostics(): void
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
-  if lspserver->empty()
-    return
-  endif
-
-  diag.ShowAllDiags(lspserver)
+  diag.ShowAllDiags()
 enddef
 
 # Show the diagnostic message for the current line
 export def LspShowCurrentDiag(atPos: bool)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
-  if lspserver->empty()
-    return
-  endif
-
-  diag.ShowCurrentDiag(lspserver, atPos)
+  diag.ShowCurrentDiag(atPos)
 enddef
 
 # Display the diagnostics for the current line in the status line.
@@ -714,12 +695,7 @@ export def LspShowCurrentDiagInStatusLine()
     return
   endif
 
-  var lspserver: dict<any> = buf.CurbufGetServer()
-  if lspserver->empty() || !lspserver.running
-    return
-  endif
-
-  diag.ShowCurrentDiagInStatusLine(lspserver)
+  diag.ShowCurrentDiagInStatusLine()
 enddef
 
 # get the count of diagnostics in the current buffer
@@ -730,22 +706,12 @@ export def ErrorCount(): dict<number>
     return res
   endif
 
-  var lspserver: dict<any> = buf.CurbufGetServer()
-  if lspserver->empty() || !lspserver.running
-    return res
-  endif
-
-  return diag.DiagsGetErrorCount(lspserver)
+  return diag.DiagsGetErrorCount()
 enddef
 
 # jump to the next/previous/first diagnostic message in the current buffer
 export def JumpToDiag(which: string, count: number = 0): void
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
-  if lspserver->empty()
-    return
-  endif
-
-  diag.LspDiagsJump(lspserver, which, count)
+  diag.LspDiagsJump(which, count)
 enddef
 
 # Display the hover message from the LSP server for the current cursor
