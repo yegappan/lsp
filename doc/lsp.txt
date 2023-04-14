@@ -1398,6 +1398,23 @@ typescript-language-server for everything else: >
 		}
 	])
 <
+Another way is to disable the unwanted features: for example if you don't want
+diagnostics from the typescript-language-server, but want to use it for
+everything else: >
+
+	vim9script
+
+	g:LspAddServer([
+		{
+			filetype: ['javascript', 'typescript'],
+			path: '/usr/local/bin/typescript-language-server',
+			args: ['--stdio'],
+			features: {
+				diagnostics: false
+			}
+		},
+	])
+<
 ==============================================================================
 17. Language Server Features			*lsp-features*
 
@@ -1417,6 +1434,12 @@ declaration			Used by |:LspGotoDeclaration|, and
 						*lsp-features-definition*
 definition			Used by |:LspGotoDefinition|, and
 				|:LspPeekDefinition|
+						*lsp-features-diagnostics*
+diagnostics			Used to disable diagnostics for a single
+				language server, by default diagnostics are
+				combined from all running servers, by setting
+				this to |v:false| you can ignore diagnostics
+				from a specific server.
 						*lsp-features-documentFormatting*
 documentFormatting		Used by |:LspFormat|, and 'formatexpr'
 						*lsp-features-documentHighlight*
