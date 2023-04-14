@@ -369,7 +369,7 @@ enddef
 
 # omni complete handler
 def g:LspOmniFunc(findstart: number, base: string): any
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('completion')
   if lspserver->empty()
     return -2
   endif
@@ -428,7 +428,7 @@ enddef
 # Insert mode completion handler. Used when 24x7 completion is enabled
 # (default).
 def LspComplete()
-  var lspserver: dict<any> = buf.CurbufGetServer()
+  var lspserver: dict<any> = buf.CurbufGetServer('completion')
   if lspserver->empty() || !lspserver.running || !lspserver.ready
     return
   endif
@@ -466,7 +466,7 @@ enddef
 
 # Lazy complete documentation handler
 def LspResolve()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('completion')
   if lspserver->empty()
     return
   endif
@@ -505,7 +505,7 @@ enddef
 
 # complete done handler (LSP server-initiated actions after completion)
 def LspCompleteDone()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('completion')
   if lspserver->empty()
     return
   endif

@@ -255,7 +255,7 @@ enddef
 
 # Go to a definition using "textDocument/definition" LSP request
 export def GotoDefinition(peek: bool, cmdmods: string)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('definition')
   if lspserver->empty()
     return
   endif
@@ -265,7 +265,7 @@ enddef
 
 # Go to a declaration using "textDocument/declaration" LSP request
 export def GotoDeclaration(peek: bool, cmdmods: string)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('declaration')
   if lspserver->empty()
     return
   endif
@@ -275,7 +275,7 @@ enddef
 
 # Go to a type definition using "textDocument/typeDefinition" LSP request
 export def GotoTypedef(peek: bool, cmdmods: string)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('typeDefinition')
   if lspserver->empty()
     return
   endif
@@ -285,7 +285,7 @@ enddef
 
 # Go to a implementation using "textDocument/implementation" LSP request
 export def GotoImplementation(peek: bool, cmdmods: string)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('implementation')
   if lspserver->empty()
     return
   endif
@@ -589,6 +589,11 @@ export def AddServer(serverList: list<dict<any>>)
       customNotificationHandlers = server.customNotificationHandlers
     endif
 
+    var features: dict<bool> = {}
+    if server->has_key('features')
+      features = server.features
+    endif
+
     if server.omnicompl->type() != v:t_bool
       util.ErrMsg($'Error: Setting of omnicompl {server.omnicompl} is not a Boolean')
       return
@@ -623,7 +628,7 @@ export def AddServer(serverList: list<dict<any>>)
 						    server.workspaceConfig,
 						    server.rootSearch,
 						    customNotificationHandlers,
-						    server.debug)
+						    features, server.debug)
 
     var ftypes = server.filetype
     if ftypes->type() == v:t_string
@@ -717,7 +722,7 @@ enddef
 # Display the hover message from the LSP server for the current cursor
 # location
 export def Hover()
-  var lspserver: dict<any> = buf.CurbufGetServer()
+  var lspserver: dict<any> = buf.CurbufGetServer('hover')
   if lspserver->empty() || !lspserver.running || !lspserver.ready
     return
   endif
@@ -727,7 +732,7 @@ enddef
 
 # show symbol references
 export def ShowReferences(peek: bool)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('references')
   if lspserver->empty()
     return
   endif
@@ -737,7 +742,7 @@ enddef
 
 # highlight all the places where a symbol is referenced
 def g:LspDocHighlight()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('documentHighlight')
   if lspserver->empty()
     return
   endif
@@ -747,7 +752,7 @@ enddef
 
 # clear the symbol reference highlight
 def g:LspDocHighlightClear()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('documentHighlight')
   if lspserver->empty()
     return
   endif
@@ -792,7 +797,7 @@ export def TextDocFormat(range_args: number, line1: number, line2: number)
     return
   endif
 
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('documentFormatting')
   if lspserver->empty()
     return
   endif
@@ -844,7 +849,7 @@ enddef
 # Rename a symbol
 # Uses LSP "textDocument/rename" request
 export def Rename(a_newName: string)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('rename')
   if lspserver->empty()
     return
   endif
@@ -867,7 +872,7 @@ enddef
 # Perform a code action
 # Uses LSP "textDocument/codeAction" request
 export def CodeAction(line1: number, line2: number, query: string)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('codeAction')
   if lspserver->empty()
     return
   endif
@@ -879,7 +884,7 @@ enddef
 # Code lens
 # Uses LSP "textDocument/codeLens" request
 export def CodeLens()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('codeLens')
   if lspserver->empty()
     return
   endif
@@ -960,7 +965,7 @@ enddef
 
 # expand the previous selection or start a new selection
 export def SelectionExpand()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('selectionRange')
   if lspserver->empty()
     return
   endif
@@ -970,7 +975,7 @@ enddef
 
 # shrink the previous selection or start a new selection
 export def SelectionShrink()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('selectionRange')
   if lspserver->empty()
     return
   endif
@@ -980,7 +985,7 @@ enddef
 
 # fold the entire document
 export def FoldDocument()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('foldingRange')
   if lspserver->empty()
     return
   endif
@@ -1006,7 +1011,7 @@ enddef
 
 # Function to use with the 'tagfunc' option.
 export def TagFunc(pat: string, flags: string, info: dict<any>): any
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('definition')
   if lspserver->empty()
     return v:null
   endif
@@ -1016,7 +1021,7 @@ enddef
 
 # Function to use with the 'formatexpr' option.
 export def FormatExpr(): number
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('documentFormatting')
   if lspserver->empty()
     return 1
   endif
