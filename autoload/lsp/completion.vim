@@ -148,7 +148,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
       var txt = readfile(parts[0])[str2nr(parts[1]) : str2nr(parts[1]) + 20]
       var restxt = item.description .. "\n\n"
       for line in txt
-	if line == ""
+	if line == "" || line[0 : 6] == "snippet"
 	  break
 	else
 	  restxt = restxt .. line .. "\n"
