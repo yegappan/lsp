@@ -380,6 +380,18 @@ completionMatcher	|String| option.  Enable fuzzy or case insensitive
 			    case  - case sensitive matching (default).
 			    fuzzy - fuzzy match completion items.
 			    icase - ignore case when matching items.
+						*lsp-opt-completionTextEdit*
+completionTextEdit	|Boolean| option.  If true, apply the LSP server
+			supplied text edits after a completion.  If a snippet
+			plugin is going to apply the text edits, then set
+			this to false to avoid applying the text edits twice.
+			By default this is set to true.
+                                                *lsp-opt-completionKinds*
+completionKinds		|Dictionary| option. See |lsp-custom-kinds| for all
+                        completion kind names.
+                                                *lsp-opt-customCompletionKinds*
+customCompletionKinds   |Boolean| option.  If you set this to true, you can set
+			custom completion kinds using the option completionKinds.
 						*lsp-opt-diagSignErrorText*
 diagSignErrorText       |String| option. Change diag sign text for errors
                         By default 'E>'
@@ -413,12 +425,6 @@ ignoreMissingServer	|Boolean| option.  Do not print a missing language
 keepFocusInReferences	|Boolean| option.  Focus on the location list window
 			after LspShowReferences.
 			By default this is set to false.
-						*lsp-opt-noAdditionalTextEdits*
-completionTextEdit	|Boolean| option.  If true, apply the LSP server
-			supplied text edits after a completion.  If a snippet
-			plugin is going to apply the text edits, then set
-			this to false to avoid applying the text edits twice.
-			By default this is set to true.
 						*lsp-opt-noDiagHoverOnLine*
 noDiagHoverOnLine	|Boolean| option.  Suppress diagnostic hover from
 			appearing when the mouse is over the line instead of
@@ -475,12 +481,6 @@ usePopupInCodeAction    |Boolean| option.  When using the |:LspCodeAction|
 			command to display the code action for the current
 			line, use a popup menu instead of echoing.
 			By default this is set to false.
-                                                *lsp-opt-customCompletionKinds*
-customCompletionKinds   |Boolean| option.  If you set this to true, you can set
-			custom completion kinds using the option completionKinds.
-                                                *lsp-opt-completionKinds*
-completionKinds		|Dictionary| option. See |lsp-custom-kinds| for all
-                        completion kind names.
 
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file: >
@@ -668,7 +668,7 @@ can map these commands to keys and make it easier to invoke them.
 			documentation in the preview window instead of in a
 			popup set >
 
-				call LspOptionsSet({'hoverInPreview': v:true})
+			    call LspOptionsSet({'hoverInPreview': v:true})
 <
 			Default is false.
 
@@ -749,7 +749,7 @@ can map these commands to keys and make it easier to invoke them.
 			It is useful to create a visual map to use this
 			command.  Example: >
 
-			 xnoremap <silent> <Leader>e <Cmd>LspSelectionExpand<CR>
+			xnoremap <silent> <Leader>e <Cmd>LspSelectionExpand<CR>
 <
 			With the above map, you can press "\e" in visual mode
 			successively to expand the current symbol visual
@@ -760,7 +760,7 @@ can map these commands to keys and make it easier to invoke them.
 			is useful to create a visual map to use this command.
 			Example: >
 
-			 xnoremap <silent> <Leader>s <Cmd>LspSelectionShrink<CR>
+			xnoremap <silent> <Leader>s <Cmd>LspSelectionShrink<CR>
 <
 			With the above map, you can press "\s" in visual mode
 			successively to shrink the current symbol visual
@@ -849,7 +849,7 @@ can map these commands to keys and make it easier to invoke them.
 			references in a quickfix list instead of in a location
 			list set >
 
-				call LspOptionsSet({'useQuickfixForLocations': v:true})
+			call LspOptionsSet({'useQuickfixForLocations': v:true})
 <
 						*:LspShowSignature*
 :LspShowSignature	Displays the signature of the symbol (e.g. a function
@@ -861,14 +861,14 @@ can map these commands to keys and make it easier to invoke them.
 			this, you can set the showSignature option to false in
 			your .vimrc file: >
 
-			    call LspOptionsSet({'showSignature': v:false})
+			call LspOptionsSet({'showSignature': v:false})
 <
 			Default is true.
 
 			You can get the function signature echoed in cmdline
 			rather than displayed in popup if you use >
 
-			    call LspOptionsSet({'echoSignature': v:true})
+			call LspOptionsSet({'echoSignature': v:true})
 <
 			Default is false.
 
@@ -1336,51 +1336,51 @@ running language servers will be joined together. This means that you can define
 a language server that only supports a subset of features at first and then
 define the general purpose language server after it: >
 
-		vim9script
-		g:LspAddServer([
-			# This language server reports that it only supports
-			# textDocument/documentFormatting, so it will be used
-			# for :LspFormat but nothing else.
-			{
-				filetype: ['html'],
-				path: 'html-pretty-lsp',
-				args: ['--stdio']
-			},
-			# This language server also supports
-			# textDocument/documentFormatting, but since it's been
-			# defined later, the one above will be used instead.
-			# However this server also supports
-			# textDocument/definition, textDocument/declaration,
-			# etc, so it will be used for :LspGotoDefinition,
-			# :LspGotoDeclaration, etc
-			{
-				filetype: ['html'],
-				path: 'html-language-server',
-				args: ['--stdio']
-			}
-		])
+	vim9script
+
+	g:LspAddServer([
+		# This language server reports that it only supports
+		# textDocument/documentFormatting, so it will be used
+		# for :LspFormat but nothing else.
+		{
+			filetype: ['html'],
+			path: 'html-pretty-lsp',
+			args: ['--stdio']
+		},
+		# This language server also supports
+		# textDocument/documentFormatting, but since it's been
+		# defined later, the one above will be used instead.
+		# However this server also supports
+		# textDocument/definition, textDocument/declaration,
+		# etc, so it will be used for :LspGotoDefinition,
+		# :LspGotoDeclaration, etc
+		{
+			filetype: ['html'],
+			path: 'html-language-server',
+			args: ['--stdio']
+		}
+	])
 <
 By proving the configuration |lsp-cfg-features| it's possible specify which
-servers should be used for a given method.  The following flags are supported
->
-#{
-	completion: true,
-	definition: true,
-	declaration: true,
-	typeDefinition: true,
-	implementation: true,
-	hover: true,
-	references: true,
-	documentHighlight: true,
-	documentFormatting: true,
-	rename: true,
-	codeAction: true,
-	codeLens: true,
-	selectionRange: true,
-	foldingRange:  true
-}
-<
+servers should be used for a given method.  The following flags are supported: >
 
+	#{
+		completion: true,
+		definition: true,
+		declaration: true,
+		typeDefinition: true,
+		implementation: true,
+		hover: true,
+		references: true,
+		documentHighlight: true,
+		documentFormatting: true,
+		rename: true,
+		codeAction: true,
+		codeLens: true,
+		selectionRange: true,
+		foldingRange:  true
+	}
+<
 As shown above the order of when the language servers are being defined is taken
 into account for a given method.  However sometimes the language server that you
 want to use for formatting also reports that it supports other features, in such
@@ -1388,7 +1388,7 @@ a case you can change the order of language servers, and specify that a given
 language server should be used for a given method.
 
 For example, if you want to use the efm-langserver for formatting, but the
-typescript-language-server for everything else:
+typescript-language-server for everything else: >
 
 	vim9script
 
@@ -1411,4 +1411,5 @@ typescript-language-server for everything else:
 		}
 	])
 <
+
 vim:tw=78:ts=8:noet:ft=help:norl:

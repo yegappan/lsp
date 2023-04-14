@@ -34,7 +34,7 @@ enddef
 
 # Empty out the LSP server trace logs
 export def ClearTraceLogs(fname: string)
-  writefile([], fname)
+  writefile([], $'{lsp_log_dir}{fname}')
 enddef
 
 # Open the LSP server debug messages file.

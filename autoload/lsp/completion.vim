@@ -165,8 +165,6 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     endfor
   endif
 
-  #writefile([$'chcol = {chcol}, starttext = [{starttext}], prefix = [{prefix}], start_idx = {start_idx}, end_idx = {end_idx}, start_col = {start_col}'], '/tmp/lspcomplete.log', 'a')
-
   var completeItems: list<dict<any>> = []
   for item in items
     var d: dict<any> = {}
