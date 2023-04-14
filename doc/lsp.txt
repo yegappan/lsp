@@ -302,8 +302,8 @@ Aditionally the following configurations can be made:
 					*lsp-cfg-features*
 	features
 			(Optional) toggle which features should be enabled for a
-			given langauge server. See |lsp-multiple-servers| for
-			more information.
+			given langauge server. See |lsp-multiple-servers| and
+			|lsp-features| for more information.
 						*lsp-cfg-omnicompl*
 	omnicompl	(Optional) a boolean value that enables (true)
 			or disables (false) omni-completion for this file
@@ -1332,10 +1332,11 @@ It's possible to run multiple language servers for a given buffer.
 
 By default the language server defined first will be used for as much as it
 supports, then the next and so on. With the exception that diagnostics from all
-running language servers will be joined together. This means that you can define
-a language server that only supports a subset of features at first and then
-define the general purpose language server after it: >
+running language servers will be combined.
 
+This means that you can define a language server that only supports a subset of
+features at first and then define the general purpose language server after it:
+>
 	vim9script
 
 	g:LspAddServer([
@@ -1361,32 +1362,18 @@ define the general purpose language server after it: >
 		}
 	])
 <
-By proving the configuration |lsp-cfg-features| it's possible specify which
-servers should be used for a given method.  The following flags are supported: >
+As shown in the example above the order of when the language servers are being
+defined is taken into account for a given method.  However sometimes the
+language server that you want to use for formatting also reports that it
+supports other features. In such a case you can do one of two things:
 
-	#{
-		completion: true,
-		definition: true,
-		declaration: true,
-		typeDefinition: true,
-		implementation: true,
-		hover: true,
-		references: true,
-		documentHighlight: true,
-		documentFormatting: true,
-		rename: true,
-		codeAction: true,
-		codeLens: true,
-		selectionRange: true,
-		foldingRange:  true
-	}
+1. change the order of language servers, and specify that a given language
+server should be used for a given method.
+
+2. set the unwanted features to |v:false| in the features |Dictionary| >
+
+	features: { 'codeAction': v:false }
 <
-As shown above the order of when the language servers are being defined is taken
-into account for a given method.  However sometimes the language server that you
-want to use for formatting also reports that it supports other features, in such
-a case you can change the order of language servers, and specify that a given
-language server should be used for a given method.
-
 For example, if you want to use the efm-langserver for formatting, but the
 typescript-language-server for everything else: >
 
@@ -1411,5 +1398,42 @@ typescript-language-server for everything else: >
 		}
 	])
 <
+==============================================================================
+17. Language Server Featured			*lsp-features*
+
+By proving the configuration |lsp-cfg-features| it's possible specify which
+servers should be used for a given method.  The following feature flags are
+supported: See |lsp-multiple-servers| for examples.
+
+						*lsp-features-codeAction*
+codeAction			Used by |:LspCodeAction|
+						*lsp-features-codeLens*
+codeLens			Used by |:LspCodeLens|
+						*lsp-features-completion*
+completion			Used by 24/7 Completion and 'omnifunc'
+						*lsp-features-declaration*
+declaration			Used by |:LspGotoDeclaration|, and
+				|:LspPeekDeclaration|
+						*lsp-features-definition*
+definition			Used by |:LspGotoDefinition|, and
+				|:LspPeekDefinition|
+						*lsp-features-documentFormatting*
+documentFormatting		Used by |:LspFormat|, and 'formatexpr'
+						*lsp-features-documentHighlight*
+documentHighlight		Used by |:LspHighlight|, and |:LspHighlightClear|
+						*lsp-features-foldingRange*
+foldingRange			Used by |:LspFold|
+						*lsp-features-hover*
+hover				Used by |:LspHover|
+						*lsp-features-implementation*
+implementation			Used by |:LspGotoImpl|, and |:LspPeekImpl|
+						*lsp-features-references*
+references			Used by |:LspShowReferences|
+						*lsp-features-rename*
+rename				Used by |:LspRename|
+						*lsp-features-selectionRange*
+selectionRange			Used by |:LspSelectionExpand|, and |:LspSelectionShrink|
+						*lsp-features-typeDefinition*
+typeDefinition			Used by |:LspGotoTypeDef|, and |:LspPeekTypeDef|
 
 vim:tw=78:ts=8:noet:ft=help:norl:

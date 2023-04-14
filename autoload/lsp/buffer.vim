@@ -30,6 +30,23 @@ export def BufLspServerRemove(bnr: number, lspserver: dict<any>)
   endif
 enddef
 
+var SupportedCheckFns = {
+  codeAction: (lspserver) => lspserver.isCodeActionProvider,
+  codeLens: (lspserver) => lspserver.isCodeLensProvider,
+  completion: (lspserver) => lspserver.isCompletionProvider,
+  declaration: (lspserver) => lspserver.isDeclarationProvider,
+  definition: (lspserver) => lspserver.isDefinitionProvider,
+  documentFormatting: (lspserver) => lspserver.isDocumentFormattingProvider,
+  documentHighlight: (lspserver) => lspserver.isDocumentHighlightProvider,
+  foldingRange: (lspserver) => lspserver.isFoldingRangeProvider,
+  hover: (lspserver) => lspserver.isHoverProvider,
+  implementation: (lspserver) => lspserver.isImplementationProvider,
+  references: (lspserver) => lspserver.isReferencesProvider,
+  rename: (lspserver) => lspserver.isRenameProvider,
+  selectionRange: (lspserver) => lspserver.isSelectionRangeProvider,
+  typeDefinition: (lspserver) => lspserver.isTypeDefinitionProvider,
+}
+
 # Returns the LSP server for the buffer 'bnr' and optionally 'domain'.
 # Returns an empty dict if the server is not found.
 export def BufLspServerGet(bnr: number, domain: string = null_string): dict<any>
@@ -44,23 +61,6 @@ export def BufLspServerGet(bnr: number, domain: string = null_string): dict<any>
   if domain == null_string
     return bufnrToServers[bnr][0]
   endif
-
-  var SupportedCheckFns = {
-    'completion': (lspserver) => lspserver.isCompletionProvider,
-    'definition': (lspserver) => lspserver.isDefinitionProvider,
-    'declaration': (lspserver) => lspserver.isDeclarationProvider,
-    'typeDefinition': (lspserver) => lspserver.isTypeDefinitionProvider,
-    'implementation': (lspserver) => lspserver.isImplementationProvider,
-    'hover': (lspserver) => lspserver.isHoverProvider,
-    'references': (lspserver) => lspserver.isReferencesProvider,
-    'documentHighlight': (lspserver) => lspserver.isDocumentHighlightProvider,
-    'documentFormatting': (lspserver) => lspserver.isDocumentFormattingProvider,
-    'rename': (lspserver) => lspserver.isRenameProvider,
-    'codeAction': (lspserver) => lspserver.isCodeActionProvider,
-    'codeLens': (lspserver) => lspserver.isCodeLensProvider,
-    'selectionRange': (lspserver) => lspserver.isSelectionRangeProvider,
-    'foldingRange': (lspserver) => lspserver.isFoldingRangeProvider,
-  }
 
   if !SupportedCheckFns->has_key(domain)
     # If this happns it is a programming error, and should be fixed in the source code
@@ -91,8 +91,15 @@ export def BufLspServerGet(bnr: number, domain: string = null_string): dict<any>
     endif
   endfor
 
-  # Return the first LSP server that supports 'domain'
-  return possibleLSPs[0]
+  # Return the first LSP server that supports 'domain' and doesn't have it
+  # disabled
+  for lspserver in possibleLSPs
+    if !lspserver.features->has_key(domain)
+      return lspserver
+    endif
+  endfor
+
+  return {}
 enddef
 
 # Returns the LSP server for the buffer 'bnr' and with ID 'id'. Returns an empty
