@@ -155,12 +155,12 @@ def InitServer(lspserver: dict<any>, bnr: number)
   # Compute the rootpath (based on the directory of the buffer)
   var rootPath = ''
   var rootSearchFiles = lspserver.rootSearchFiles
-  var bufDir = bnr->bufname()->resolve()->fnamemodify(':p:h')
+  var bufDir = bnr->bufname()->fnamemodify(':p:h')
   if !rootSearchFiles->empty()
     rootPath = util.FindNearestRootDir(bufDir, rootSearchFiles)
   endif
   if rootPath == ''
-    var cwd = getcwd()->resolve()
+    var cwd = getcwd()
 
     # bufDir is within cwd
     var bufDirPrefix = bufDir[0 : cwd->strcharlen() - 1]
