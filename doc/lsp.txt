@@ -380,7 +380,7 @@ completionMatcher	|String| option.  Enable fuzzy or case insensitive
 			    case  - case sensitive matching (default).
 			    fuzzy - fuzzy match completion items.
 			    icase - ignore case when matching items.
-						*lsp-opt-noAdditionalTextEdits*
+						*lsp-opt-completionTextEdit*
 completionTextEdit	|Boolean| option.  If true, apply the LSP server
 			supplied text edits after a completion.  If a snippet
 			plugin is going to apply the text edits, then set
