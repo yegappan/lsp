@@ -282,7 +282,11 @@ To add a language server, the following information is needed:
 			started, otherwise it will not.
 
 			If this parameter is not specified or is an empty list,
-			then the server will always be started.
+			then the server will be started unless
+			|lsp-cfg-runUnlessSearch| prevents it.
+
+						*lsp-cfg-runUnlessSearch*
+	runUnlessSearch	(Optional) Opposite of |lsp-cfg-runIfSearch|.
 
 Additionally the following configurations can be made:
 

@@ -54,14 +54,26 @@ def LspGetServers(bnr: number, ftype: string): list<dict<any>>
   var bufDir = bnr->bufname()->fnamemodify(':p:h')
 
   return ftypeServerMap[ftype]->filter((key, lspserver) => {
-    if lspserver.runIfSearchFiles->empty()
-      return true
+    # Don't run the server if no path is found
+    if !lspserver.runIfSearchFiles->empty()
+      var path = util.FindNearestRootDir(bufDir, lspserver.runIfSearchFiles)
+
+      if path->empty()
+        return false
+      endif
     endif
 
-    var path = util.FindNearestRootDir(bufDir, lspserver.runIfSearchFiles)
+    # Don't run the server if a path is found
+    if !lspserver.runUnlessSearchFiles->empty()
+      var path = util.FindNearestRootDir(bufDir, lspserver.runUnlessSearchFiles)
 
-    # Run the server if the path is found
-    return !path->empty()
+      if !path->empty()
+        return false
+      endif
+    endif
+
+    # Run the server
+    return true
   })
 enddef
 
@@ -622,12 +634,17 @@ export def AddServer(serverList: list<dict<any>>)
       server.runIfSearch = []
     endif
 
+    if !server->has_key('runUnlessSearch') || server.runUnlessSearch->type() != v:t_list
+      server.runUnlessSearch = []
+    endif
+
     var lspserver: dict<any> = lserver.NewLspServer(server.name, server.path,
 						    args, server.syncInit,
 						    initializationOptions,
 						    server.workspaceConfig,
 						    server.rootSearch,
 						    server.runIfSearch,
+						    server.runUnlessSearch,
 						    customNotificationHandlers,
 						    features, server.debug)
 
