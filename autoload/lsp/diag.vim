@@ -211,6 +211,11 @@ enddef
 # Notification: textDocument/publishDiagnostics
 # Param: PublishDiagnosticsParams
 export def DiagNotification(lspserver: dict<any>, uri: string, newDiags: list<dict<any>>): void
+  # Diagnostics are disabled for this server
+  if lspserver.features->has_key('diagnostics') && !lspserver.features.diagnostics
+    return
+  endif
+
   var fname: string = util.LspUriToFile(uri)
   var bnr: number = fname->bufnr()
   if bnr == -1
