@@ -51,35 +51,30 @@ def LspGetServers(bnr: number, ftype: string): list<dict<any>>
     return []
   endif
 
-  var lspservers = ftypeServerMap[ftype]
-
-  # All the langauge servers with the same score are being used
-  var bestMatches: list<dict<any>> = []
-  var bestScore: number = -2
-
   var bufDir = bnr->bufname()->fnamemodify(':p:h')
 
-  for lspserver in lspservers
-    var score: number = 0
+  return ftypeServerMap[ftype]->filter((key, lspserver) => {
+    # Don't run the server if no path is found
+    if !lspserver.runIfSearchFiles->empty()
+      var path = util.FindNearestRootDir(bufDir, lspserver.runIfSearchFiles)
 
-    if !lspserver.rootSearchFiles->empty()
-      # The score is calculated by how deep the workspace root dir is, the
-      # deeper the better.
-      var path = util.FindNearestRootDir(bufDir, lspserver.rootSearchFiles)
-      # subtract one to make servers with a non matching 'rootSearch' rank below
-      # servers without a 'rootSearch'.
-      score = path->strcharlen() - 1
+      if path->empty()
+        return false
+      endif
     endif
 
-    if score > bestScore
-      bestMatches = [lspserver]
-      bestScore = score
-    elseif score == bestScore
-      bestMatches->add(lspserver)
-    endif
-  endfor
+    # Don't run the server if a path is found
+    if !lspserver.runUnlessSearchFiles->empty()
+      var path = util.FindNearestRootDir(bufDir, lspserver.runUnlessSearchFiles)
 
-  return bestMatches
+      if !path->empty()
+        return false
+      endif
+    endif
+
+    # Run the server
+    return true
+  })
 enddef
 
 # Add a LSP server for a filetype
@@ -635,11 +630,21 @@ export def AddServer(serverList: list<dict<any>>)
       server.rootSearch = []
     endif
 
+    if !server->has_key('runIfSearch') || server.runIfSearch->type() != v:t_list
+      server.runIfSearch = []
+    endif
+
+    if !server->has_key('runUnlessSearch') || server.runUnlessSearch->type() != v:t_list
+      server.runUnlessSearch = []
+    endif
+
     var lspserver: dict<any> = lserver.NewLspServer(server.name, server.path,
 						    args, server.syncInit,
 						    initializationOptions,
 						    server.workspaceConfig,
 						    server.rootSearch,
+						    server.runIfSearch,
+						    server.runUnlessSearch,
 						    customNotificationHandlers,
 						    features, server.debug)
 

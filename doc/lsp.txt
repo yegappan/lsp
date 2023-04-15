@@ -265,18 +265,30 @@ To add a language server, the following information is needed:
 			closest to the directory of the current buffer is used
 			as the workspace root.
 
-			This option is also used to decide which server to run
-			when multiple servers are defined for a filetype. The
-			servers that share the longest found workspace root will
-			be selected as the relevant language servers for a given
-			file.
-
 			If this parameter is not specified or the files are not
 			found, then the current working directory is used as the
 			workspace root for decendent files, for any other files
 			the parent directory of the file is used.
 
-Aditionally the following configurations can be made:
+						*lsp-cfg-runIfSearch*
+	runIfSearch	(Optional) a List of file and directory names used to
+			determinate if a server should run or not. The directory
+			names in "runIfSearch" must end in "/" or "\".  Each
+			file and directory name in "runIfSearch" is searched
+			upwards in all the parent directories.  Exactly like
+			|lsp-cfg-rootSearch|.
+
+			If a file or directory is found then the server will be
+			started, otherwise it will not.
+
+			If this parameter is not specified or is an empty list,
+			then the server will be started unless
+			|lsp-cfg-runUnlessSearch| prevents it.
+
+						*lsp-cfg-runUnlessSearch*
+	runUnlessSearch	(Optional) Opposite of |lsp-cfg-runIfSearch|.
+
+Additionally the following configurations can be made:
 
 					*lsp-cfg-customNotificationHandlers*
 	customNotificationHandlers
