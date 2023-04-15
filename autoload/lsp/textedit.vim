@@ -189,7 +189,7 @@ enddef
 def ApplyTextDocumentEdit(textDocEdit: dict<any>)
   var bnr: number = bufnr(util.LspUriToFile(textDocEdit.textDocument.uri))
   if bnr == -1
-    util.ErrMsg($'Error: Text Document edit, buffer {textDocEdit.textDocument.uri} is not found')
+    util.ErrMsg($'Text Document edit, buffer {textDocEdit.textDocument.uri} is not found')
     return
   endif
   ApplyTextEdits(bnr, textDocEdit.edits)
@@ -200,7 +200,7 @@ export def ApplyWorkspaceEdit(workspaceEdit: dict<any>)
   if workspaceEdit->has_key('documentChanges')
     for change in workspaceEdit.documentChanges
       if change->has_key('kind')
-	util.ErrMsg($'Error: Unsupported change in workspace edit [{change.kind}]')
+	util.ErrMsg($'Unsupported change in workspace edit [{change.kind}]')
       else
 	ApplyTextDocumentEdit(change)
       endif

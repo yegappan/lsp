@@ -87,7 +87,7 @@ enddef
 # Enable/disable the logging of the language server protocol messages
 def ServerDebug(arg: string)
   if ['errors', 'messages', 'off', 'on']->index(arg) == -1
-    util.ErrMsg($'Error: Unsupported argument "{arg}" for LspServer debug')
+    util.ErrMsg($'Unsupported argument "{arg}" for LspServer debug')
     return
   endif
 
@@ -223,7 +223,7 @@ def ShowServer(arg: string)
       lines->extend(lspserver.getMessages())
     endfor
   else
-    util.ErrMsg($'Error: Unsupported argument "{arg}"')
+    util.ErrMsg($'Unsupported argument "{arg}"')
     return
   endif
 
@@ -566,7 +566,7 @@ enddef
 export def AddServer(serverList: list<dict<any>>)
   for server in serverList
     if !server->has_key('filetype') || !server->has_key('path')
-      util.ErrMsg('Error: LSP server information is missing filetype or path')
+      util.ErrMsg('LSP server information is missing filetype or path')
       continue
     endif
     # Enable omni-completion by default
@@ -574,14 +574,14 @@ export def AddServer(serverList: list<dict<any>>)
 
     if !server.path->executable()
       if !opt.lspOptions.ignoreMissingServer
-        util.ErrMsg($'Error: LSP server {server.path} is not found')
+        util.ErrMsg($'LSP server {server.path} is not found')
       endif
       return
     endif
     var args: list<string> = []
     if server->has_key('args')
       if server.args->type() != v:t_list
-        util.ErrMsg($'Error: Arguments for LSP server {server.args} is not a List')
+        util.ErrMsg($'Arguments for LSP server {server.args} is not a List')
         return
       endif
       args = server.args
@@ -603,7 +603,7 @@ export def AddServer(serverList: list<dict<any>>)
     endif
 
     if server.omnicompl->type() != v:t_bool
-      util.ErrMsg($'Error: Setting of omnicompl {server.omnicompl} is not a Boolean')
+      util.ErrMsg($'Setting of omnicompl {server.omnicompl} is not a Boolean')
       return
     endif
 
@@ -656,7 +656,7 @@ export def AddServer(serverList: list<dict<any>>)
 	AddServerForFiltype(lspserver, ftype, server.omnicompl)
       endfor
     else
-      util.ErrMsg($'Error: Unsupported file type information "{ftypes->string()}" in LSP server registration')
+      util.ErrMsg($'Unsupported file type information "{ftypes->string()}" in LSP server registration')
       continue
     endif
   endfor
@@ -688,7 +688,7 @@ enddef
 # Params: SetTraceParams
 def ServerTraceSet(traceVal: string)
   if ['off', 'messages', 'verbose']->index(traceVal) == -1
-    util.ErrMsg($'Error: Unsupported LSP server trace value {traceVal}')
+    util.ErrMsg($'Unsupported LSP server trace value {traceVal}')
     return
   endif
 
@@ -809,7 +809,7 @@ enddef
 # Format the entire file
 export def TextDocFormat(range_args: number, line1: number, line2: number)
   if !&modifiable
-    util.ErrMsg('Error: Current file is not a modifiable file')
+    util.ErrMsg('Current file is not a modifiable file')
     return
   endif
 
@@ -947,7 +947,7 @@ export def AddWorkspaceFolder(dirArg: string)
   endif
   :redraw!
   if !dirName->isdirectory()
-    util.ErrMsg($'Error: {dirName} is not a directory')
+    util.ErrMsg($'{dirName} is not a directory')
     return
   endif
 
@@ -969,7 +969,7 @@ export def RemoveWorkspaceFolder(dirArg: string)
   endif
   :redraw!
   if !dirName->isdirectory()
-    util.ErrMsg($'Error: {dirName} is not a directory')
+    util.ErrMsg($'{dirName} is not a directory')
     return
   endif
 
@@ -1007,7 +1007,7 @@ export def FoldDocument()
   endif
 
   if &foldmethod != 'manual'
-    util.ErrMsg("Error: Only works when 'foldmethod' is 'manual'")
+    util.ErrMsg("Only works when 'foldmethod' is 'manual'")
     return
   endif
 
@@ -1130,7 +1130,7 @@ export def LspServerCmd(args: string)
     var subcmd = args[6 : ]->trim()
     ServerTraceSet(subcmd)
   else
-    util.ErrMsg($'Error: LspServer - Unsupported argument "{args}"')
+    util.ErrMsg($'LspServer - Unsupported argument "{args}"')
   endif
 enddef
 

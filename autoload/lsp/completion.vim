@@ -324,13 +324,13 @@ def ShowCompletionDocumentation(cItem: any)
 	infoText->extend(cItem.documentation.value->split("\n"))
 	infoKind = 'lspgfm'
       else
-	util.ErrMsg($'Error: Unsupported documentation type ({cItem.documentation.kind})')
+	util.ErrMsg($'Unsupported documentation type ({cItem.documentation.kind})')
 	return
       endif
     elseif cItem.documentation->type() == v:t_string
       infoText->extend(cItem.documentation->split("\n"))
     else
-      util.ErrMsg($'Error: Unsupported documentation ({cItem.documentation->string()})')
+      util.ErrMsg($'Unsupported documentation ({cItem.documentation->string()})')
       return
     endif
   endif

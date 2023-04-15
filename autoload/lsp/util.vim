@@ -3,14 +3,14 @@ vim9script
 # Display a warning message
 export def WarnMsg(msg: string)
   :echohl WarningMsg
-  :echomsg msg
+  :echomsg $'Warn: [Lsp] {msg}'
   :echohl None
 enddef
 
 # Display an error message
 export def ErrMsg(msg: string)
   :echohl Error
-  :echomsg msg
+  :echomsg $'Error: [Lsp] {msg}'
   :echohl None
 enddef
 

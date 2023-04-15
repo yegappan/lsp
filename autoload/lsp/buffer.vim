@@ -157,15 +157,15 @@ export def CurbufGetServerChecked(domain: string = null_string): dict<any>
 
   var lspserver: dict<any> = CurbufGetServer(domain)
   if lspserver->empty()
-    util.ErrMsg($'Error: Language server for "{&filetype}" file type is not found')
+    util.ErrMsg($'Language server for "{&filetype}" file type is not found')
     return {}
   endif
   if !lspserver.running
-    util.ErrMsg($'Error: Language server for "{&filetype}" file type is not running')
+    util.ErrMsg($'Language server for "{&filetype}" file type is not running')
     return {}
   endif
   if !lspserver.ready
-    util.ErrMsg($'Error: Language server for "{&filetype}" file type is not ready')
+    util.ErrMsg($'Language server for "{&filetype}" file type is not ready')
     return {}
   endif
 
