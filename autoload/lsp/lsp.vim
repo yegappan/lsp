@@ -179,6 +179,7 @@ def ShowServer(arg: string)
   var lspservers: list<dict<any>> = buf.CurbufGetServers()
 
   if lspservers->empty()
+    util.InfoMsg($'No Lsp servers found for this buf')
     return
   endif
 
