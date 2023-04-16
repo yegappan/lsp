@@ -416,6 +416,11 @@ diagSignInfoText        |String| option. Change diag sign text for info
 						*lsp-opt-diagSignWarningText*
 diagSignWarningText     |String| option. Change diag sign text for warnings
                         By default 'W>',
+						*lsp-opt-diagVirtualTextAlign*
+diagVirtualTextAlign	|String| option.   Alignment of diagnostics messages
+			if |lsp-opt-showDiagWithVirtualText| is set to true. 
+			Allowed values are 'above', 'below' or 'after'
+			By default this is set to 'above',
 						*lsp-opt-echoSignature*
 echoSignature		|Boolean| option.  In insert mode, echo the current
 			symbol signature instead of showing it in a popup.

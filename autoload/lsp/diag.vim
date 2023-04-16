@@ -116,6 +116,19 @@ def DiagSevToInlineHLName(severity: number): string
   return typeMap[severity - 1]
 enddef
 
+def DiagSevToSymbolText(severity: number): string
+  var typeMap: list<string> = [
+    opt.lspOptions.diagSignErrorText,
+    opt.lspOptions.diagSignWarningText,
+    opt.lspOptions.diagSignInfoText,
+    opt.lspOptions.diagSignHintText
+  ]
+  if severity > 4
+    return opt.lspOptions.diagSignHintText
+  endif
+  return typeMap[severity - 1]
+enddef
+
 # Refresh the placed diagnostics in buffer 'bnr'
 # This inline signs, inline props, and virtual text diagnostics
 def DiagsRefresh(bnr: number)
@@ -141,6 +154,24 @@ def DiagsRefresh(bnr: number)
     return
   endif
 
+  # Initialize default/fallback properties for diagnostic virtual text:
+  var diag_align: string = 'above'
+  var diag_wrap: string = 'truncate'
+  var diag_symbol: string = '┌─'
+  var diag_padding: number = 0
+
+  if opt.lspOptions.diagVirtualTextAlign ==? 'below'
+    diag_align = 'below'
+    diag_wrap = 'truncate'
+    diag_symbol = '└─'
+    diag_padding = 0
+  elseif opt.lspOptions.diagVirtualTextAlign ==? 'after'
+    diag_align = 'after'
+    diag_wrap = 'wrap'
+    diag_symbol = 'E>'
+    diag_padding = 3
+  endif
+
   var signs: list<dict<any>> = []
   var diags: list<dict<any>> = diagsMap[bnr].sortedDiagnostics
   for diag in diags
@@ -162,14 +193,24 @@ def DiagsRefresh(bnr: number)
       endif
 
       if opt.lspOptions.showDiagWithVirtualText
+
         var padding = diag.range.start.character
         if padding > 0
           padding = strdisplaywidth(getline(diag.range.start.line + 1)[ : diag.range.start.character - 1])
         endif
+
+        var symbol = diag_symbol
+
+        if diag_align ==? 'after'
+          padding = diag_padding
+          symbol = DiagSevToSymbolText(diag.severity)
+        endif
+
         prop_add(lnum, 0, {bufnr: bnr,
                            type: 'LspDiagVirtualText',
-                           text: $'┌─ {diag.message}',
-                           text_align: 'above',
+                           text: $'{symbol} {diag.message}',
+                           text_align: diag_align,
+                           text_wrap: diag_wrap,
                            text_padding_left: padding})
       endif
     catch /E966\|E964/ # Invalid lnum | Invalid col

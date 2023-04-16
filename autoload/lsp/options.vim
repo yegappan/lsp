@@ -37,6 +37,9 @@ export var lspOptions: dict<any> = {
   # If a snippet plugin is going to apply the text edits, then set this to
   # false to avoid applying the text edits twice.
   completionTextEdit: true,
+  # Alignment of virtual diagnostic text, when showDiagWithVirtualText is true
+  # Allowed values: 'above' | 'below' | 'after' (default is 'above')
+  diagVirtualTextAlign: 'above',
   # instead of the signature
   noDiagHoverOnLine: true,
   # Suppress adding a new line on completion selection with <CR>
