@@ -738,8 +738,8 @@ enddef
 # Display the hover message from the LSP server for the current cursor
 # location
 export def Hover(cmdmods: string)
-  var lspserver: dict<any> = buf.CurbufGetServer('hover')
-  if lspserver->empty() || !lspserver.running || !lspserver.ready
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('hover')
+  if lspserver->empty()
     return
   endif
 
