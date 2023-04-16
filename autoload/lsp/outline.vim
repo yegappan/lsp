@@ -229,13 +229,13 @@ export def OpenOutlineWindow(cmdmods: string)
   var mods = cmdmods
   if mods == ''
     if opt.lspOptions.outlineOnRight
-      mods = ':botright'
+      mods = ':vert :botright'
     else
-      mods = ':topleft'
+      mods = ':vert :topleft'
     endif
   endif
 
-  execute $'{mods} :{opt.lspOptions.outlineWinSize}vnew LSP-Outline'
+  execute $'{mods} :{opt.lspOptions.outlineWinSize}new LSP-Outline'
   :setlocal modifiable
   :setlocal noreadonly
   :silent! :%d _
