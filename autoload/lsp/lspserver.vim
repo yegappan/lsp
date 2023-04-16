@@ -928,8 +928,9 @@ def GetDocSymbols(lspserver: dict<any>, fname: string): void
   # interface DocumentSymbolParams
   # interface TextDocumentIdentifier
   var params = {textDocument: {uri: util.LspFileToUri(fname)}}
-  lspserver.rpc_a('textDocument/documentSymbol', params,
-			function(symbol.DocSymbolReply, [fname]))
+  lspserver.rpc_a('textDocument/documentSymbol', params, (_, reply) => {
+    symbol.DocSymbolReply(lspserver, reply, fname)
+  })
 enddef
 
 # Request: "textDocument/formatting"
