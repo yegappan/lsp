@@ -708,6 +708,24 @@ can map these commands to keys and make it easier to invoke them.
 			the symbols in the new file.  Folds are created in the
 			outline window for the various group of symbols.
 
+			You can use |lsp-opt-outlineOnRight| and
+			|lsp-opt-outlineWinSize| to customize the placement and
+			size of the window.
+
+			This command also supports |:command-modifiers|.  You
+			can use the modifiers specify the position of the
+			window.  Note that the default is ":vert :topleft" or
+			":vert :botright" depending on |lsp-opt-outlineOnRight|
+			Example: >
+
+			    # Open the outline window just above the current window
+			    :aboveleft LspOutline
+
+			    # Open the outline window just next to the current
+			    # window, this is different from the default, when
+			    # you have multiple splits already
+			    :vert aboveleft LspOutline
+<
 						*:LspPeekDeclaration*
 :LspPeekDeclaration	Displays the line where the symbol under the
 			cursor is declared in a popup window. The
