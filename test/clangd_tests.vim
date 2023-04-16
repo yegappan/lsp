@@ -1136,11 +1136,37 @@ def g:Test_LspOutline()
   END
   setline(1, lines)
   g:WaitForServerFileLoad(0)
+  var winid = win_getid()
   :LspOutline
   assert_equal(2, winnr('$'))
   var bnum = winbufnr(1)
   assert_equal('LSP-Outline', bufname(bnum))
   assert_equal(['Function', '  aFunc', '  bFunc'], getbufline(bnum, 4, '$'))
+
+  # Validate position vert topleft
+  assert_equal(['row', [['leaf', winid + 1], ['leaf', winid]]], winlayout())
+  execute $':{bnum}bw'
+
+  # Validate position vert botright
+  g:LspOptionsSet({ outlineOnRight: true })
+  :LspOutline
+  assert_equal(2, winnr('$'))
+  bnum = winbufnr(2)
+  assert_equal('LSP-Outline', bufname(bnum))
+  assert_equal(['Function', '  aFunc', '  bFunc'], getbufline(bnum, 4, '$'))
+  assert_equal(['row', [['leaf', winid], ['leaf', winid + 2]]], winlayout())
+  g:LspOptionsSet({ outlineOnRight: false })
+  execute $':{bnum}bw'
+
+  # Validate <mods> position botright (below)
+  :botright LspOutline
+  assert_equal(2, winnr('$'))
+  bnum = winbufnr(2)
+  assert_equal('LSP-Outline', bufname(bnum))
+  assert_equal(['Function', '  aFunc', '  bFunc'], getbufline(bnum, 4, '$'))
+  assert_equal(['col', [['leaf', winid], ['leaf', winid + 3]]], winlayout())
+  execute $':{bnum}bw'
+
   :%bw!
 enddef
 
