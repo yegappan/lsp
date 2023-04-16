@@ -697,7 +697,7 @@ can map these commands to keys and make it easier to invoke them.
 			not all the language servers support this feature.
 
 						*:LspOutline*
-:LspOutline		Opens a vertically split window with the list of
+:[count]LspOutline	Opens a vertically split window with the list of
 			symbols defined in the current file. The current
 			symbol is highlighted. The symbols are grouped by
 			their type. You can select a symbol and press <Enter>
@@ -716,6 +716,10 @@ can map these commands to keys and make it easier to invoke them.
 			can use the modifiers specify the position of the
 			window.  Note that the default is ":vert :topleft" or
 			":vert :botright" depending on |lsp-opt-outlineOnRight|
+
+			This command also supports providing a [count] to
+			specify the size of the window.  Note that this
+			overrides the values defined in |lsp-opt-outlineWinSize|
 			Example: >
 
 			    # Open the outline window just above the current window
@@ -725,6 +729,9 @@ can map these commands to keys and make it easier to invoke them.
 			    # window, this is different from the default, when
 			    # you have multiple splits already
 			    :vert aboveleft LspOutline
+
+			    # Same as above, but with a width of 50
+			    :vert aboveleft 50LspOutline
 <
 						*:LspPeekDeclaration*
 :LspPeekDeclaration	Displays the line where the symbol under the
