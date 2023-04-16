@@ -18,7 +18,11 @@ var lspServers = [{
       }
   }]
 call LspAddServer(lspServers)
-echomsg systemlist($'{shellescape(lspServers[0].path)} --version')
+
+var clangdVerDetail = systemlist($'{shellescape(lspServers[0].path)} --version')
+var clangdVerMajor = clangdVerDetail->matchstr('.*version \d\+\..*')->substitute('.* \(\d\+\)\..*', '\1', 'g')->str2nr()
+echomsg clangdVerDetail
+
 
 # Test for formatting a file using LspFormat
 def g:Test_LspFormat()
@@ -359,13 +363,21 @@ def g:Test_LspDiag_Multi()
   setline(1, lines)
   :redraw!
   # TODO: Waiting count doesn't include Warning, Info, and Hint diags
-  g:WaitForServerFileLoad(3)
+  if clangdVerMajor > 14
+	g:WaitForServerFileLoad(3)
+  else
+	g:WaitForServerFileLoad(2)
+  endif
   :LspDiagShow
   var qfl: list<dict<any>> = getloclist(0)
   assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
   assert_equal(bnr, qfl[0].bufnr)
   assert_equal(3, qfl->len())
-  assert_equal([1, 5, 'E'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
+  if clangdVerMajor > 14
+	assert_equal([1, 5, 'E'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
+  else
+	assert_equal([1, 5, 'W'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
+  endif
   assert_equal([1, 9, 'E'], [qfl[1].lnum, qfl[1].col, qfl[1].type])
   assert_equal([2, 9, 'E'], [qfl[2].lnum, qfl[2].col, qfl[2].type])
   close
@@ -965,7 +977,11 @@ def g:Test_LspHover()
     }
   END
   setline(1, lines)
-  g:WaitForServerFileLoad(1)
+  if clangdVerMajor > 14
+	g:WaitForServerFileLoad(1)
+  else
+	g:WaitForServerFileLoad(0)
+  endif
   cursor(8, 4)
   var output = execute(':LspHover')->split("\n")
   assert_equal([], output)
