@@ -992,6 +992,8 @@ def g:Test_LspHover()
   cursor(7, 1)
   output = execute(':LspHover')->split("\n")
   assert_equal('No hover messages found for current position', output[0])
+  output = execute(':silent LspHover')->split("\n")
+  assert_equal([], output)
   assert_equal([], popup_list())
 
   # Show current diagnostic as to open another popup.
