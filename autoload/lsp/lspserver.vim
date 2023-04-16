@@ -39,7 +39,7 @@ enddef
 
 # LSP server exit callback
 def Exit_cb(lspserver: dict<any>, job: job, status: number): void
-  util.WarnMsg($'{strftime("%m/%d/%y %T")}: LSP server exited with status {status}')
+  util.WarnMsg($'{strftime("%m/%d/%y %T")}: LSP server ({lspserver.name}) exited with status {status}')
   lspserver.running = false
   lspserver.ready = false
   lspserver.requests = {}
@@ -49,7 +49,7 @@ enddef
 #
 def StartServer(lspserver: dict<any>, bnr: number): number
   if lspserver.running
-    util.WarnMsg('LSP server for is already running')
+    util.WarnMsg($'LSP server "{lspserver.name}" is already running')
     return 0
   endif
 
@@ -221,7 +221,7 @@ enddef
 # Stop a LSP server
 def StopServer(lspserver: dict<any>): number
   if !lspserver.running
-    util.WarnMsg('LSP server is not running')
+    util.WarnMsg($'LSP server {lspserver.name} is not running')
     return 0
   endif
 

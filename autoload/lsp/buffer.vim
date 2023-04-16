@@ -47,9 +47,10 @@ var SupportedCheckFns = {
   typeDefinition: (lspserver) => lspserver.isTypeDefinitionProvider,
 }
 
-# Returns the LSP server for the buffer 'bnr' and optionally 'domain'.
+# Returns the LSP server for the buffer "bnr".  If "feature" is specified,
+# then returns the LSP server that provides the "feature".
 # Returns an empty dict if the server is not found.
-export def BufLspServerGet(bnr: number, domain: string = null_string): dict<any>
+export def BufLspServerGet(bnr: number, feature: string = null_string): dict<any>
   if !bufnrToServers->has_key(bnr)
     return {}
   endif
@@ -58,17 +59,17 @@ export def BufLspServerGet(bnr: number, domain: string = null_string): dict<any>
     return {}
   endif
 
-  if domain == null_string
+  if feature == null_string
     return bufnrToServers[bnr][0]
   endif
 
-  if !SupportedCheckFns->has_key(domain)
+  if !SupportedCheckFns->has_key(feature)
     # If this happns it is a programming error, and should be fixed in the source code
-    :throw $'Error: ''{domain}'' is not a valid domain'
+    :throw $'Error: ''{feature}'' is not a valid feature'
     return {}
   endif
 
-  var SupportedCheckFn = SupportedCheckFns[domain]
+  var SupportedCheckFn = SupportedCheckFns[feature]
 
   var possibleLSPs: list<dict<any>> = []
 
@@ -80,21 +81,21 @@ export def BufLspServerGet(bnr: number, domain: string = null_string): dict<any>
     possibleLSPs->add(lspserver)
   endfor
 
-  if possibleLSPs->len() == 0
+  if possibleLSPs->empty()
     return {}
   endif
 
-  # LSP server is configured to be a provider for 'domain'
+  # LSP server is configured to be a provider for 'feature'
   for lspserver in possibleLSPs
-    if lspserver.features->has_key(domain) && lspserver.features[domain]
+    if lspserver.features->has_key(feature) && lspserver.features[feature]
       return lspserver
     endif
   endfor
 
-  # Return the first LSP server that supports 'domain' and doesn't have it
+  # Return the first LSP server that supports "feature" and doesn't have it
   # disabled
   for lspserver in possibleLSPs
-    if !lspserver.features->has_key(domain)
+    if !lspserver.features->has_key(feature)
       return lspserver
     endif
   endfor
@@ -128,10 +129,10 @@ export def BufLspServersGet(bnr: number): list<dict<any>>
   return bufnrToServers[bnr]
 enddef
 
-# Returns the LSP server for the current buffer with the optionally 'domain'.
+# Returns the LSP server for the current buffer with the optionally 'feature'.
 # Returns an empty dict if the server is not found.
-export def CurbufGetServer(domain: string = null_string): dict<any>
-  return BufLspServerGet(bufnr(), domain)
+export def CurbufGetServer(feature: string = null_string): dict<any>
+  return BufLspServerGet(bufnr(), feature)
 enddef
 
 # Returns the LSP servers for the current buffer. Returns an empty list if the
@@ -146,16 +147,16 @@ export def BufHasLspServer(bnr: number): bool
   return !lspserver->empty()
 enddef
 
-# Returns the LSP server for the current buffer with the optinally 'domain' if
+# Returns the LSP server for the current buffer with the optinally 'feature' if
 # it is running and is ready.
 # Returns an empty dict if the server is not found or is not ready.
-export def CurbufGetServerChecked(domain: string = null_string): dict<any>
+export def CurbufGetServerChecked(feature: string = null_string): dict<any>
   var fname: string = @%
   if fname == ''
     return {}
   endif
 
-  var lspserver: dict<any> = CurbufGetServer(domain)
+  var lspserver: dict<any> = CurbufGetServer(feature)
   if lspserver->empty()
     util.ErrMsg($'Language server for "{&filetype}" file type is not found')
     return {}
