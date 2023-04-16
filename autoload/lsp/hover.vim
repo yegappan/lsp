@@ -72,17 +72,19 @@ enddef
 
 # process the 'textDocument/hover' reply from the LSP server
 # Result: Hover | null
-export def HoverReply(lspserver: dict<any>, hoverResult: any): void
+export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string): void
   var [hoverText, hoverKind] = GetHoverText(lspserver, hoverResult)
 
   # Nothing to show
   if hoverText->empty()
-    util.WarnMsg($'No hover messages found for current position')
+    if cmdmods !~ 'silent'
+      util.WarnMsg($'No hover messages found for current position')
+    endif
     return
   endif
 
   if opt.lspOptions.hoverInPreview
-    :silent! pedit LspHoverReply
+    execute $':silent! {cmdmods} pedit LspHoverReply'
     :wincmd P
     :setlocal buftype=nofile
     :setlocal bufhidden=delete
