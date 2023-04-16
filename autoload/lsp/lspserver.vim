@@ -868,9 +868,12 @@ enddef
 
 # process the 'textDocument/documentHighlight' reply from the LSP server
 # Result: DocumentHighlight[] | null
-def DocHighlightReply(bnr: number, lspserver: dict<any>, docHighlightReply: any): void
+def DocHighlightReply(lspserver: dict<any>, docHighlightReply: any,
+                      bnr: number, cmdmods: string): void
   if docHighlightReply->empty()
-    util.WarnMsg($'No highlight for the current position')
+    if cmdmods !~ 'silent'
+      util.WarnMsg($'No highlight for the current position')
+    endif
     return
   endif
 
@@ -898,7 +901,7 @@ enddef
 
 # Request: "textDocument/documentHighlight"
 # Param: DocumentHighlightParams
-def DocHighlight(lspserver: dict<any>): void
+def DocHighlight(lspserver: dict<any>, cmdmods: string): void
   # Check whether LSP server supports getting highlight information
   if !lspserver.isDocumentHighlightProvider
     util.ErrMsg('Error: LSP server does not support document highlight')
@@ -908,8 +911,9 @@ def DocHighlight(lspserver: dict<any>): void
   # interface DocumentHighlightParams
   #   interface TextDocumentPositionParams
   var params = GetLspTextDocPosition(false)
-  lspserver.rpc_a('textDocument/documentHighlight', params,
-			function('DocHighlightReply', [bufnr()]))
+  lspserver.rpc_a('textDocument/documentHighlight', params, (_, reply) => {
+    DocHighlightReply(lspserver, reply, bufnr(), cmdmods)
+  })
 enddef
 
 # Request: "textDocument/documentSymbol"
