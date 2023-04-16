@@ -642,8 +642,13 @@ can map these commands to keys and make it easier to invoke them.
 <
 			You may want to map a key to invoke this command: >
 
-			    nnoremap <buffer> gd <Cmd>LspGotoDefinition<CR>
-			    nnoremap <buffer> <C-W>gd <Cmd>topleft LspGotoDefinition<CR>
+	    nnoremap <buffer> gd <Cmd>LspGotoDefinition<CR>
+	    nnoremap <buffer> <C-W>gd <Cmd>topleft LspGotoDefinition<CR>
+<
+			Or if you want to support [count]gd >
+
+	    nnoremap <buffer> gd <Cmd>execute v:count .. 'LspGotoDefinition'<CR>
+	    nnoremap <buffer> <C-W>gd <Cmd>execute 'topleft ' .. v:count .. 'LspGotoDefinition'<CR>
 <
 						*:LspGotoImpl*
 :[count]LspGotoImpl	Jumps to the implementation of the symbol under the
