@@ -113,8 +113,8 @@ def g:Test_LspFormat()
 
   # file without an LSP server
   edit a.raku
-  assert_match(['Language server for "raku" file type is not found'],
-	       execute('LspFormat')->split("\n"))
+  assert_match('Language server for "raku" file type is not found',
+	       execute('LspFormat')->split("\n")[0])
 
   :%bw!
 enddef
@@ -231,8 +231,8 @@ def g:Test_LspShowReferences()
 
   # file without an LSP server
   edit a.raku
-  assert_match(['Language server for "raku" file type is not found'],
-	       execute('LspShowReferences')->split("\n"))
+  assert_match('Language server for "raku" file type is not found',
+	       execute('LspShowReferences')->split("\n")[0])
 
   :%bw!
 enddef
@@ -487,7 +487,7 @@ def g:Test_LspDiag_Multi()
   g:LspOptionsSet({showDiagInPopup: false})
   cursor(1, 1)
   :2LspDiagPrev
-  assert_equal('Error: No more diagnostics found', output[0])
+  assert_match('No more diagnostics found', output[0])
   cursor(3, 3)
   :2LspDiagPrev
   assert_equal([1, 9], [line('.'), col('.')])
@@ -614,8 +614,8 @@ def g:Test_LspCodeAction()
 
   # file without an LSP server
   edit a.raku
-  assert_match(['Language server for "raku" file type is not found'],
-	       execute('LspCodeAction')->split("\n"))
+  assert_match('Language server for "raku" file type is not found',
+	       execute('LspCodeAction')->split("\n")[0])
 
   :%bw!
 enddef
@@ -684,8 +684,8 @@ def g:Test_LspRename()
 
   # file without an LSP server
   edit a.raku
-  assert_match(['Language server for "raku" file type is not found'],
-	       execute('LspRename')->split("\n"))
+  assert_match('Language server for "raku" file type is not found',
+	       execute('LspRename')->split("\n")[0])
 
   :%bw!
 enddef
@@ -784,8 +784,8 @@ def g:Test_LspSelection()
 
   # file without an LSP server
   edit a.raku
-  assert_match(['Language server for "raku" file type is not found'],
-	       execute('LspSelectionExpand')->split("\n"))
+  assert_match('Language server for "raku" file type is not found',
+	       execute('LspSelectionExpand')->split("\n")[0])
 
   :%bw!
 enddef
@@ -917,12 +917,12 @@ def g:Test_LspGotoSymbol()
 
   # file without an LSP server
   edit a.raku
-  assert_match(['Language server for "raku" file type is not found'],
-	       execute('LspGotoDefinition')->split("\n"))
-  assert_match(['Language server for "raku" file type is not found'],
-	       execute('LspGotoDeclaration')->split("\n"))
-  assert_match(['Language server for "raku" file type is not found'],
-	       execute('LspGotoImpl')->split("\n"))
+  assert_match('Language server for "raku" file type is not found',
+	       execute('LspGotoDefinition')->split("\n")[0])
+  assert_match('Language server for "raku" file type is not found',
+	       execute('LspGotoDeclaration')->split("\n")[0])
+  assert_match('Language server for "raku" file type is not found',
+	       execute('LspGotoImpl')->split("\n")[0])
 
   :%bw!
 enddef
@@ -1093,7 +1093,7 @@ def g:Test_LspSymbolSearch()
   assert_equal([5, 6], [line('.'), col('.')])
 
   var output = execute(':LspSymbolSearch lsptest_nonexist')->split("\n")
-  assert_match(['Symbol "lsptest_nonexist" is not found'], output)
+  assert_match('Symbol "lsptest_nonexist" is not found', output[0])
 
   :%bw!
 enddef
