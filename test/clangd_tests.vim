@@ -936,6 +936,9 @@ def g:Test_LspHighlight()
     {
       int i = arg;
       arg = 2;
+      if (arg == 2) {
+        arg = 3;
+      }
     }
   END
   setline(1, lines)
@@ -956,6 +959,10 @@ def g:Test_LspHighlight()
   assert_equal([], prop_list(1))
   assert_equal([], prop_list(3))
   assert_equal([], prop_list(4))
+
+  cursor(5, 3) # if (arg == 2) {
+  var output = execute('LspHighlight')->split("\n")
+  assert_match('No highlight for the current position', output[0])
   :%bw!
 enddef
 

@@ -395,7 +395,7 @@ def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
     acmds->add({bufnr: bnr,
 		event: 'CursorMoved',
 		group: 'LSPBufferAutocmds',
-		cmd: 'call LspDocHighlightClear() | call LspDocHighlight()'})
+		cmd: 'call LspDocHighlightClear() | call LspDocHighlight("silent")'})
   endif
 
   # Show diagnostics on the status line
@@ -757,13 +757,13 @@ export def ShowReferences(peek: bool)
 enddef
 
 # highlight all the places where a symbol is referenced
-def g:LspDocHighlight()
+def g:LspDocHighlight(cmdmods: string = '')
   var lspserver: dict<any> = buf.CurbufGetServerChecked('documentHighlight')
   if lspserver->empty()
     return
   endif
 
-  lspserver.docHighlight()
+  lspserver.docHighlight(cmdmods)
 enddef
 
 # clear the symbol reference highlight
