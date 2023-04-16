@@ -98,6 +98,15 @@ def g:Test_LspGoto()
   assert_equal([], popup_list())
   popup_clear()
 
+  # Jump to the first implementation
+  cursor(4, 9)
+  assert_equal('', execute(':1LspGotoImpl'))
+  assert_equal([9, 13], [line('.'), col('.')])
+
+  # Jump to the second implementation
+  cursor(4, 9)
+  assert_equal('', execute(':2LspGotoImpl'))
+  assert_equal([13, 13], [line('.'), col('.')])
   bw!
 enddef
 
