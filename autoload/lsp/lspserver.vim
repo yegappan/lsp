@@ -127,6 +127,10 @@ def ServerInitReply(lspserver: dict<any>, initResult: dict<any>): void
   if exists($'#User#LspServerReady{lspserver.name}')
     exe $'doautocmd <nomodeline> User LspServerReady{lspserver.name}'
   endif
+  # Used internally, and shouldn't be used by users
+  if exists($'#User#LspServerReady_{lspserver.id}')
+    exe $'doautocmd <nomodeline> User LspServerReady_{lspserver.id}'
+  endif
 
   # if the outline window is opened, then request the symbols for the current
   # buffer

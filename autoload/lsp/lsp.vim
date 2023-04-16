@@ -488,7 +488,7 @@ export def AddFile(bnr: number): void
       BufferInit(lspserver.id, bnr)
     else
       augroup LSPBufferAutocmds
-        exe $'autocmd User LspServerReady{lspserver.name} ++once BufferInit({lspserver.id}, {bnr})'
+        exe $'autocmd User LspServerReady_{lspserver.id} ++once BufferInit({lspserver.id}, {bnr})'
       augroup END
     endif
   endfor
