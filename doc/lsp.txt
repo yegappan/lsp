@@ -603,19 +603,20 @@ can map these commands to keys and make it easier to invoke them.
 			file using the language server.
 
 						*:LspGotoDeclaration*
-:LspGotoDeclaration	Jumps to the declaration of the symbol under the
+:[count]LspGotoDeclaration
+			Jumps to the declaration of the symbol under the
 			cursor. The behavior of this command is similar to the
 			|:LspGotoDefinition| command.
 
 						*:LspGotoDefinition*
-:LspGotoDefinition	Jumps to the definition of the symbol under the
-			cursor.
+:[count]LspGotoDefinition
+			Jumps to the [count] definition of the symbol under the
+			cursor.  If there are multiple matches and [count] isn't
+			specified, then a location list will be created with the
+			list of locations.
 
-			If there are multiple matches, then a location list will
-			be created with the list of locations.
-
-			If there is only one location then the following will
-			apply:
+			If there is only one location, or [count] is provided
+			then the following will apply:
 
 			If the file is already present in a window, then jumps
 			to that window.  Otherwise, opens the file in a new
@@ -645,7 +646,7 @@ can map these commands to keys and make it easier to invoke them.
 			    nnoremap <buffer> <C-W>gd <Cmd>topleft LspGotoDefinition<CR>
 <
 						*:LspGotoImpl*
-:LspGotoImpl		Jumps to the implementation of the symbol under the
+:[count]LspGotoImpl	Jumps to the implementation of the symbol under the
 			cursor. The behavior of this command is similar to the
 			|:LspGotoDefinition| command. Note that not all the
 			language servers support this feature.
@@ -655,7 +656,7 @@ can map these commands to keys and make it easier to invoke them.
 			    nnoremap <buffer> gi <Cmd>LspGotoImpl<CR>
 <
 						*:LspGotoTypeDef*
-:LspGotoTypeDef		Jumps to the type definition of the symbol under the
+:[count]LspGotoTypeDef	Jumps to the type definition of the symbol under the
 			cursor. The behavior of this command is similar to the
 			|:LspGotoDefinition| command. Note that not all the
 			language servers support this feature.
@@ -734,19 +735,28 @@ can map these commands to keys and make it easier to invoke them.
 			    :vert aboveleft 50LspOutline
 <
 						*:LspPeekDeclaration*
-:LspPeekDeclaration	Displays the line where the symbol under the
+:[count]LspPeekDeclaration
+			Displays the line where the symbol under the
 			cursor is declared in a popup window. The
 			behavior of this command is similar to the
 			|:LspPeekDefinition| command.
 
 						*:LspPeekDefinition*
-:LspPeekDefinition	Displays the line where the symbol under the cursor is
+:[count]LspPeekDefinition
+			Displays the line where the symbol under the cursor is
 			defined in a popup window. The symbol is highlighted
 			in the popup window. Moving the cursor or pressing
 			<Esc> will close the popup window.
+			When more than one symbol is found all of them will be
+			shown.  The corresponding file for the symbol is
+			displayed in another popup window.  As the selection in
+			the symbol popup menu changes, the file in the popup is
+			updated.
+			When [count] is provided only the [count] symbol will be
+			shown.
 
 						*:LspPeekImpl*
-:LspPeekImpl		Displays the implementation of the symbol under the
+:[count]LspPeekImpl	Displays the implementation of the symbol under the
 			cursor in a popup window. The behavior of this
 			command is similar to the |:LspPeekDefinition|
 			command. Note that not all the language servers
@@ -760,7 +770,7 @@ can map these commands to keys and make it easier to invoke them.
 			the file in the popup is updated.
 
 						*:LspPeekTypeDef*
-:LspPeekTypeDef		Displays the line where the type of the symbol under
+:[count]LspPeekTypeDef	Displays the line where the type of the symbol under
 			the cursor is defined in a popup window. The
 			behavior of this command is similar to the
 			|:LspPeekDefinition| command. Note that not all the

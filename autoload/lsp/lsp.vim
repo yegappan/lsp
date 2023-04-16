@@ -254,43 +254,43 @@ export def ServerRunning(ftype: string): bool
 enddef
 
 # Go to a definition using "textDocument/definition" LSP request
-export def GotoDefinition(peek: bool, cmdmods: string)
+export def GotoDefinition(peek: bool, cmdmods: string, count: number)
   var lspserver: dict<any> = buf.CurbufGetServerChecked('definition')
   if lspserver->empty()
     return
   endif
 
-  lspserver.gotoDefinition(peek, cmdmods)
+  lspserver.gotoDefinition(peek, cmdmods, count)
 enddef
 
 # Go to a declaration using "textDocument/declaration" LSP request
-export def GotoDeclaration(peek: bool, cmdmods: string)
+export def GotoDeclaration(peek: bool, cmdmods: string, count: number)
   var lspserver: dict<any> = buf.CurbufGetServerChecked('declaration')
   if lspserver->empty()
     return
   endif
 
-  lspserver.gotoDeclaration(peek, cmdmods)
+  lspserver.gotoDeclaration(peek, cmdmods, count)
 enddef
 
 # Go to a type definition using "textDocument/typeDefinition" LSP request
-export def GotoTypedef(peek: bool, cmdmods: string)
+export def GotoTypedef(peek: bool, cmdmods: string, count: number)
   var lspserver: dict<any> = buf.CurbufGetServerChecked('typeDefinition')
   if lspserver->empty()
     return
   endif
 
-  lspserver.gotoTypeDef(peek, cmdmods)
+  lspserver.gotoTypeDef(peek, cmdmods, count)
 enddef
 
 # Go to a implementation using "textDocument/implementation" LSP request
-export def GotoImplementation(peek: bool, cmdmods: string)
+export def GotoImplementation(peek: bool, cmdmods: string, count: number)
   var lspserver: dict<any> = buf.CurbufGetServerChecked('implementation')
   if lspserver->empty()
     return
   endif
 
-  lspserver.gotoImplementation(peek, cmdmods)
+  lspserver.gotoImplementation(peek, cmdmods, count)
 enddef
 
 # Switch source header using "textDocument/switchSourceHeader" LSP request

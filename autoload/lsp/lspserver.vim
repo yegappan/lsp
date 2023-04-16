@@ -663,7 +663,7 @@ enddef
 #
 # Result: Location | Location[] | LocationLink[] | null
 def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
-		  cmdmods: string)
+		  cmdmods: string, count: number)
   var reply = lspserver.rpc(msg, GetLspTextDocPosition(true), false)
   if reply->empty() || reply.result->empty()
     var emsg: string
@@ -683,26 +683,32 @@ def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
 
   var location: dict<any>
   if reply.result->type() == v:t_list
-    # When there are multiple symbol locations, display the locations in a
-    # location list.
-    if reply.result->len() > 1
-      var title: string = ''
-      if msg ==# 'textDocument/declaration'
-	title = 'Declarations'
-      elseif msg ==# 'textDocument/typeDefinition'
-	title = 'Type Definitions'
-      elseif msg ==# 'textDocument/implementation'
-	title = 'Implementations'
-      else
-	title = 'Definitions'
-      endif
+    if count == 0
+      # When there are multiple symbol locations, and a specific one isn't
+      # requested with 'count', display the locations in a location list.
+      if reply.result->len() > 1
+        var title: string = ''
+        if msg ==# 'textDocument/declaration'
+          title = 'Declarations'
+        elseif msg ==# 'textDocument/typeDefinition'
+          title = 'Type Definitions'
+        elseif msg ==# 'textDocument/implementation'
+          title = 'Implementations'
+        else
+          title = 'Definitions'
+        endif
 
-      symbol.ShowLocations(lspserver, reply.result, peekSymbol, title)
-      return
+        symbol.ShowLocations(lspserver, reply.result, peekSymbol, title)
+        return
+      endif
     endif
 
-    # Only one location
-    location = reply.result[0]
+    # Select the location requsted in 'count'
+    var idx = count - 1
+    if idx >= reply.result->len()
+      idx = reply.result->len() - 1
+    endif
+    location = reply.result[idx]
   else
     location = reply.result
   endif
@@ -712,7 +718,7 @@ enddef
 
 # Request: "textDocument/definition"
 # Param: DefinitionParams
-def GotoDefinition(lspserver: dict<any>, peek: bool, cmdmods: string)
+def GotoDefinition(lspserver: dict<any>, peek: bool, cmdmods: string, count: number)
   # Check whether LSP server supports jumping to a definition
   if !lspserver.isDefinitionProvider
     util.ErrMsg('Jumping to a symbol definition is not supported')
@@ -721,12 +727,12 @@ def GotoDefinition(lspserver: dict<any>, peek: bool, cmdmods: string)
 
   # interface DefinitionParams
   #   interface TextDocumentPositionParams
-  GotoSymbolLoc(lspserver, 'textDocument/definition', peek, cmdmods)
+  GotoSymbolLoc(lspserver, 'textDocument/definition', peek, cmdmods, count)
 enddef
 
 # Request: "textDocument/declaration"
 # Param: DeclarationParams
-def GotoDeclaration(lspserver: dict<any>, peek: bool, cmdmods: string)
+def GotoDeclaration(lspserver: dict<any>, peek: bool, cmdmods: string, count: number)
   # Check whether LSP server supports jumping to a declaration
   if !lspserver.isDeclarationProvider
     util.ErrMsg('Jumping to a symbol declaration is not supported')
@@ -735,12 +741,12 @@ def GotoDeclaration(lspserver: dict<any>, peek: bool, cmdmods: string)
 
   # interface DeclarationParams
   #   interface TextDocumentPositionParams
-  GotoSymbolLoc(lspserver, 'textDocument/declaration', peek, cmdmods)
+  GotoSymbolLoc(lspserver, 'textDocument/declaration', peek, cmdmods, count)
 enddef
 
 # Request: "textDocument/typeDefinition"
 # Param: TypeDefinitionParams
-def GotoTypeDef(lspserver: dict<any>, peek: bool, cmdmods: string)
+def GotoTypeDef(lspserver: dict<any>, peek: bool, cmdmods: string, count: number)
   # Check whether LSP server supports jumping to a type definition
   if !lspserver.isTypeDefinitionProvider
     util.ErrMsg('Jumping to a symbol type definition is not supported')
@@ -749,12 +755,12 @@ def GotoTypeDef(lspserver: dict<any>, peek: bool, cmdmods: string)
 
   # interface TypeDefinitionParams
   #   interface TextDocumentPositionParams
-  GotoSymbolLoc(lspserver, 'textDocument/typeDefinition', peek, cmdmods)
+  GotoSymbolLoc(lspserver, 'textDocument/typeDefinition', peek, cmdmods, count)
 enddef
 
 # Request: "textDocument/implementation"
 # Param: ImplementationParams
-def GotoImplementation(lspserver: dict<any>, peek: bool, cmdmods: string)
+def GotoImplementation(lspserver: dict<any>, peek: bool, cmdmods: string, count: number)
   # Check whether LSP server supports jumping to a implementation
   if !lspserver.isImplementationProvider
     util.ErrMsg('Jumping to a symbol implementation is not supported')
@@ -763,7 +769,7 @@ def GotoImplementation(lspserver: dict<any>, peek: bool, cmdmods: string)
 
   # interface ImplementationParams
   #   interface TextDocumentPositionParams
-  GotoSymbolLoc(lspserver, 'textDocument/implementation', peek, cmdmods)
+  GotoSymbolLoc(lspserver, 'textDocument/implementation', peek, cmdmods, count)
 enddef
 
 # Request: "textDocument/switchSourceHeader"
