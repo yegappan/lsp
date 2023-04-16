@@ -870,6 +870,7 @@ enddef
 # Result: DocumentHighlight[] | null
 def DocHighlightReply(bnr: number, lspserver: dict<any>, docHighlightReply: any): void
   if docHighlightReply->empty()
+    util.WarnMsg($'No highlight for the current position')
     return
   endif
 
