@@ -1392,6 +1392,40 @@ def g:Test_OmniComplete_Struct()
   :bw!
 enddef
 
+# Test for the :LspServer command.
+def g:Test_LspServer()
+  new a.raku
+  assert_equal(['Warn: No Lsp servers found for "a.raku"'],
+	       execute('LspServer debug on')->split("\n"))
+  assert_equal(['Warn: No Lsp servers found for "a.raku"'],
+	       execute('LspServer restart')->split("\n"))
+  assert_equal(['Warn: No Lsp servers found for "a.raku"'],
+	       execute('LspServer show status')->split("\n"))
+  assert_equal(['Warn: No Lsp servers found for "a.raku"'],
+	       execute('LspServer trace verbose')->split("\n"))
+  assert_equal(['Error: LspServer - Unsupported argument "xyz"'],
+	       execute('LspServer xyz')->split("\n"))
+  assert_equal(['Error: Argument required'],
+	       execute('LspServer debug')->split("\n"))
+  assert_equal(['Error: Unsupported argument "xyz"'],
+	       execute('LspServer debug xyz')->split("\n"))
+  assert_equal(['Error: Unsupported argument "on xyz"'],
+	       execute('LspServer debug on xyz')->split("\n"))
+  assert_equal(['Error: Argument required'],
+	       execute('LspServer show')->split("\n"))
+  assert_equal(['Error: Unsupported argument "xyz"'],
+	       execute('LspServer show xyz')->split("\n"))
+  assert_equal(['Error: Unsupported argument "status xyz"'],
+	       execute('LspServer show status xyz')->split("\n"))
+  assert_equal(['Error: Argument required'],
+	       execute('LspServer trace')->split("\n"))
+  assert_equal(['Error: Unsupported argument "xyz"'],
+	       execute('LspServer trace xyz')->split("\n"))
+  assert_equal(['Error: Unsupported argument "verbose xyz"'],
+	       execute('LspServer trace verbose xyz')->split("\n"))
+  :bw!
+enddef
+
 # TODO:
 # 1. Add a test for autocompletion with a single match while ignoring case.
 #    After the full matched name is typed, the completion popup should still

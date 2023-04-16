@@ -87,11 +87,16 @@ enddef
 # Enable/disable the logging of the language server protocol messages
 def ServerDebug(arg: string)
   if ['errors', 'messages', 'off', 'on']->index(arg) == -1
-    util.ErrMsg($'Unsupported argument "{arg}" for LspServer debug')
+    util.ErrMsg($'Unsupported argument "{arg}"')
     return
   endif
 
   var lspservers: list<dict<any>> = buf.CurbufGetServers()
+  if lspservers->empty()
+    util.WarnMsg($'No Lsp servers found for "{@%}"')
+    return
+  endif
+
   for lspserver in lspservers
     if arg ==# 'on'
       util.ClearTraceLogs(lspserver.logfile)
@@ -176,10 +181,14 @@ enddef
 
 # Show the status of the LSP server for the current buffer
 def ShowServer(arg: string)
-  var lspservers: list<dict<any>> = buf.CurbufGetServers()
+  if ['status', 'capabilities', 'initializeRequest', 'messages']->index(arg) == -1
+    util.ErrMsg($'Unsupported argument "{arg}"')
+    return
+  endif
 
+  var lspservers: list<dict<any>> = buf.CurbufGetServers()
   if lspservers->empty()
-    util.InfoMsg($'No Lsp servers found for this buf')
+    util.WarnMsg($'No Lsp servers found for "{@%}"')
     return
   endif
 
@@ -531,6 +540,12 @@ enddef
 
 # Restart the LSP server for the current buffer
 def RestartServer()
+  var lspservers: list<dict<any>> = buf.CurbufGetServers()
+  if lspservers->empty()
+    util.WarnMsg($'No Lsp servers found for "{@%}"')
+    return
+  endif
+
   # Remove all the buffers with the same file type as the current buffer
   var ftype: string = &filetype
   for binfo in getbufinfo()
@@ -539,7 +554,6 @@ def RestartServer()
     endif
   endfor
 
-  var lspservers: list<dict<any>> = buf.CurbufGetServers()
   for lspserver in lspservers
     # Stop the server (if running)
     if lspserver.running
@@ -689,11 +703,16 @@ enddef
 # Params: SetTraceParams
 def ServerTraceSet(traceVal: string)
   if ['off', 'messages', 'verbose']->index(traceVal) == -1
-    util.ErrMsg($'Unsupported LSP server trace value {traceVal}')
+    util.ErrMsg($'Unsupported argument "{traceVal}"')
     return
   endif
 
   var lspservers: list<dict<any>> = buf.CurbufGetServers()
+  if lspservers->empty()
+    util.WarnMsg($'No Lsp servers found for "{@%}"')
+    return
+  endif
+
   for lspserver in lspservers
     lspserver.setTrace(traceVal)
   endfor
@@ -1119,17 +1138,29 @@ enddef
 
 # ":LspServer" command handler
 export def LspServerCmd(args: string)
-  if args->stridx('debug ') == 0
-    var subcmd = args[6 : ]->trim()
-    ServerDebug(subcmd)
+  if args->stridx('debug') == 0
+    if args[5] ==# ' '
+      var subcmd = args[6 : ]->trim()
+      ServerDebug(subcmd)
+    else
+      util.ErrMsg('Argument required')
+    endif
   elseif args ==# 'restart'
     RestartServer()
-  elseif args->stridx('show ') == 0
-    var subcmd = args[5 : ]->trim()
-    ShowServer(subcmd)
-  elseif args->stridx('trace ') == 0
-    var subcmd = args[6 : ]->trim()
-    ServerTraceSet(subcmd)
+  elseif args->stridx('show') == 0
+    if args[4] ==# ' '
+      var subcmd = args[5 : ]->trim()
+      ShowServer(subcmd)
+    else
+      util.ErrMsg('Argument required')
+    endif
+  elseif args->stridx('trace') == 0
+    if args[5] ==# ' '
+      var subcmd = args[6 : ]->trim()
+      ServerTraceSet(subcmd)
+    else
+      util.ErrMsg('Argument required')
+    endif
   else
     util.ErrMsg($'LspServer - Unsupported argument "{args}"')
   endif
