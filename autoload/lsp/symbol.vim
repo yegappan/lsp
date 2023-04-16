@@ -578,7 +578,7 @@ enddef
 # process the 'textDocument/documentSymbol' reply from the LSP server
 # Open a symbols window and display the symbols as a tree
 # Result: DocumentSymbol[] | SymbolInformation[] | null
-export def DocSymbolReply(fname: string, lspserver: dict<any>, docsymbol: any)
+export def DocSymbolReply(lspserver: dict<any>, docsymbol: any, fname: string)
   var symbolTypeTable: dict<list<dict<any>>> = {}
   var symbolLineTable: list<dict<any>> = []
 
