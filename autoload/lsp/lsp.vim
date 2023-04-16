@@ -234,7 +234,7 @@ def ShowServer(arg: string)
     :setlocal nomodified
     :setlocal nomodifiable
   else
-    :echomsg lines[0]
+    util.InfoMsg(lines[0])
   endif
 enddef
 
