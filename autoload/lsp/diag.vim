@@ -158,18 +158,15 @@ def DiagsRefresh(bnr: number)
   var diag_align: string = 'above'
   var diag_wrap: string = 'truncate'
   var diag_symbol: string = '┌─'
-  var diag_padding: number = 0
 
   if opt.lspOptions.diagVirtualTextAlign ==? 'below'
     diag_align = 'below'
     diag_wrap = 'truncate'
     diag_symbol = '└─'
-    diag_padding = 0
   elseif opt.lspOptions.diagVirtualTextAlign ==? 'after'
     diag_align = 'after'
     diag_wrap = 'wrap'
     diag_symbol = 'E>'
-    diag_padding = 3
   endif
 
   var signs: list<dict<any>> = []
@@ -194,16 +191,17 @@ def DiagsRefresh(bnr: number)
 
       if opt.lspOptions.showDiagWithVirtualText
 
-        var padding = diag.range.start.character
-        if padding > 0
-          padding = strdisplaywidth(getline(diag.range.start.line + 1)[ : diag.range.start.character - 1])
-        endif
+        var padding: number
+        var symbol: string = diag_symbol
 
-        var symbol = diag_symbol
-
-        if diag_align ==? 'after'
-          padding = diag_padding
+        if diag_align == 'after'
+          padding = 3
           symbol = DiagSevToSymbolText(diag.severity)
+        else
+          padding = diag.range.start.character
+          if padding > 0
+            padding = strdisplaywidth(getline(diag.range.start.line + 1)[ : diag.range.start.character - 1])
+          endif
         endif
 
         prop_add(lnum, 0, {bufnr: bnr,
