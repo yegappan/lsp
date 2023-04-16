@@ -822,7 +822,7 @@ enddef
 # get the hover information
 # Request: "textDocument/hover"
 # Param: HoverParams
-def ShowHoverInfo(lspserver: dict<any>, noEcho: bool): void
+def ShowHoverInfo(lspserver: dict<any>, silent: bool): void
   # Check whether LSP server supports getting hover information.
   # caps->hoverProvider can be a "boolean" or "HoverOptions"
   if !lspserver.isHoverProvider
@@ -833,7 +833,7 @@ def ShowHoverInfo(lspserver: dict<any>, noEcho: bool): void
   #   interface TextDocumentPositionParams
   var params = GetLspTextDocPosition(false)
   lspserver.rpc_a('textDocument/hover', params,
-			function(hover.HoverReply, [noEcho]))
+			function(hover.HoverReply, [silent]))
 enddef
 
 # Request: "textDocument/references"

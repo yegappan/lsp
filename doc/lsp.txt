@@ -676,11 +676,11 @@ can map these commands to keys and make it easier to invoke them.
 
 						*:LspHover*
 :LspHover[!]		Show the documentation for the symbol under the cursor
-			in a popup window. When "!" used, then no info message
-			about no hover found would be echoed, that helped to
-			less interrupt other cmd's messages. If you want to
-			show the symbol documentation in the preview window
-			instead of in a popup set >
+			in a popup window. When "!" is used, if no hover
+			information is found at the current position, then
+			the command will not echo any message (silent). If you
+			want to show the symbol documentation in the preview
+			window instead of in a popup set >
 
 			    call LspOptionsSet({'hoverInPreview': v:true})
 <

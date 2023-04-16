@@ -737,13 +737,13 @@ enddef
 
 # Display the hover message from the LSP server for the current cursor
 # location
-export def Hover(noEcho: bool)
+export def Hover(silent: bool)
   var lspserver: dict<any> = buf.CurbufGetServer('hover')
   if lspserver->empty() || !lspserver.running || !lspserver.ready
     return
   endif
 
-  lspserver.hover(noEcho)
+  lspserver.hover(silent)
 enddef
 
 # show symbol references

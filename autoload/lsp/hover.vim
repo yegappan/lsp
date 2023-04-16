@@ -72,13 +72,13 @@ enddef
 
 # process the 'textDocument/hover' reply from the LSP server
 # Result: Hover | null
-export def HoverReply(noEcho: bool, lspserver: dict<any>, hoverResult: any): void
+export def HoverReply(silent: bool, lspserver: dict<any>, hoverResult: any): void
   var [hoverText, hoverKind] = GetHoverText(lspserver, hoverResult)
 
   # Nothing to show
   if hoverText->empty()
-    if !noEcho
-      util.InfoMsg($'No hover messages found for current position')
+    if !silent
+      util.WarnMsg($'No hover messages found for current position')
     endif
     return
   endif
