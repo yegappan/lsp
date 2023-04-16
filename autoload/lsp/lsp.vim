@@ -801,8 +801,8 @@ def g:LspRequestDocSymbols()
 enddef
 
 # open a window and display all the symbols in a file (outline)
-export def Outline(cmdmods: string)
-  outline.OpenOutlineWindow(cmdmods)
+export def Outline(cmdmods: string, winsize: number)
+  outline.OpenOutlineWindow(cmdmods, winsize)
   g:LspRequestDocSymbols()
 enddef
 

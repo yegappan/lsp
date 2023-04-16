@@ -1191,6 +1191,15 @@ def g:Test_LspOutline()
   execute $':{bnum}bw'
   g:LspOptionsSet({ outlineWinSize: 20 })
 
+  # Validate that <count> works for LspOutline
+  :37LspOutline
+  assert_equal(2, winnr('$'))
+  bnum = winbufnr(winid + 5)
+  assert_equal('LSP-Outline', bufname(bnum))
+  assert_equal(['Function', '  aFunc', '  bFunc'], getbufline(bnum, 4, '$'))
+  assert_equal(37, winwidth(winid + 5))
+  execute $':{bnum}bw'
+
   :%bw!
 enddef
 
