@@ -34,15 +34,20 @@ enddef
 # Notification: window/showMessage
 # Param: ShowMessageParams
 def ProcessShowMsgNotif(lspserver: dict<any>, reply: dict<any>)
-  if reply.params.type == 4
+  if reply.params.type >= 4
     # ignore log messages from the LSP server (too chatty)
     # TODO: Add a configuration to control the message level that will be
     # displayed. Also store these messages and provide a command to display
     # them.
     return
   endif
-  var mtype = LspMsgTypeToString(reply.params.type)
-  :echomsg $'Lsp({lspserver.name}):[{mtype}]: {reply.params.message}'
+  if reply.params.type == 1
+    util.ErrMsg($'Lsp({lspserver.name}) {reply.params.message}')
+  elseif reply.params.type == 2
+    util.WarnMsg($'Lsp({lspserver.name}) {reply.params.message}')
+  elseif reply.params.type == 3
+    util.InfoMsg($'Lsp({lspserver.name}) {reply.params.message}')
+  endif
 enddef
 
 # process a log notification message from the LSP server
@@ -123,7 +128,7 @@ def ProcessApplyEditReq(lspserver: dict<any>, request: dict<any>)
   endif
   var workspaceEditParams: dict<any> = request.params
   if workspaceEditParams->has_key('label')
-    :echomsg $'Workspace edit {workspaceEditParams.label}'
+    util.InfoMsg($'Workspace edit {workspaceEditParams.label}')
   endif
   textedit.ApplyWorkspaceEdit(workspaceEditParams.edit)
   # TODO: Need to return the proper result of the edit operation

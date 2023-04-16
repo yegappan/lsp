@@ -1,5 +1,12 @@
 vim9script
 
+# Display an info message
+export def InfoMsg(msg: string)
+  :echohl Question
+  :echomsg $'Info: [Lsp] {msg}'
+  :echohl None
+enddef
+
 # Display a warning message
 export def WarnMsg(msg: string)
   :echohl WarningMsg

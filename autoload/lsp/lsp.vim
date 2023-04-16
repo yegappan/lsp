@@ -179,6 +179,7 @@ def ShowServer(arg: string)
   var lspservers: list<dict<any>> = buf.CurbufGetServers()
 
   if lspservers->empty()
+    util.InfoMsg($'No Lsp servers found for this buf')
     return
   endif
 
@@ -233,7 +234,7 @@ def ShowServer(arg: string)
     :setlocal nomodified
     :setlocal nomodifiable
   else
-    :echomsg lines[0]
+    util.InfoMsg(lines[0])
   endif
 enddef
 
@@ -932,7 +933,7 @@ enddef
 export def ListWorkspaceFolders()
   var lspservers: list<dict<any>> = buf.CurbufGetServers()
   for lspserver in lspservers
-    :echomsg $'Workspace Folders: "{lspserver.name}" {lspserver.workspaceFolders->string()}'
+    util.InfoMsg($'Workspace Folders: "{lspserver.name}" {lspserver.workspaceFolders->string()}')
   endfor
 enddef
 

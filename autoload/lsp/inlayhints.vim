@@ -27,8 +27,6 @@ export def InlayHintsReply(lspserver: dict<any>, inlayHints: any)
     return
   endif
 
-  #echomsg inlayHints->string
-
   InlayHintsClear(lspserver)
 
   if mode() !=# 'n'
