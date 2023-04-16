@@ -34,7 +34,7 @@ enddef
 # Notification: window/showMessage
 # Param: ShowMessageParams
 def ProcessShowMsgNotif(lspserver: dict<any>, reply: dict<any>)
-  if reply.params.type == 4
+  if reply.params.type >= 4
     # ignore log messages from the LSP server (too chatty)
     # TODO: Add a configuration to control the message level that will be
     # displayed. Also store these messages and provide a command to display
