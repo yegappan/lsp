@@ -18,7 +18,7 @@ export def DoCommand(lspserver: dict<any>, cmd: dict<any>)
     try
       call CmdHandler(cmd)
     catch
-      util.ErrMsg($'Error: "{cmd.command}" handler raised exception {v:exception}')
+      util.ErrMsg($'"{cmd.command}" handler raised exception {v:exception}')
     endtry
   else
     lspserver.executeCommand(cmd)

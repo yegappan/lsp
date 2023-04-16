@@ -75,7 +75,7 @@ def StartServer(lspserver: dict<any>, bnr: number): number
 
   var job = cmd->job_start(opts)
   if job->job_status() == 'fail'
-    util.ErrMsg($'Error: Failed to start LSP server {lspserver.path}')
+    util.ErrMsg($'Failed to start LSP server {lspserver.path}')
     return 1
   endif
 
@@ -317,7 +317,7 @@ def SendResponse(lspserver: dict<any>, request: dict<any>, result: any, error: d
 	&& (request.id->trim() =~ '[^[:digit:]]\+'
 	    || request.id->trim() == ''))
     || (request.id->type() != v:t_string && request.id->type() != v:t_number)
-    util.ErrMsg('Error: request.id of response to LSP server is not a correct number')
+    util.ErrMsg('request.id of response to LSP server is not a correct number')
     return
   endif
   var resp: dict<any> = lspserver.createResponse(
@@ -383,7 +383,7 @@ def Rpc(lspserver: dict<any>, method: string, params: any, handleError: bool = t
     if reply.error->has_key('data')
       emsg ..= $', data = {reply.error.data->string()}'
     endif
-    util.ErrMsg($'Error(LSP): request {method} failed ({emsg})')
+    util.ErrMsg($'request {method} failed ({emsg})')
   endif
 
   return {}
@@ -404,12 +404,12 @@ def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel,
     if reply.error->has_key('data')
       emsg ..= $', data = {reply.error.data->string()}'
     endif
-    util.ErrMsg($'Error(LSP): request {method} failed ({emsg})')
+    util.ErrMsg($'request {method} failed ({emsg})')
     return
   endif
 
   if !reply->has_key('result')
-    util.ErrMsg($'Error(LSP): request {method} failed (no result)')
+    util.ErrMsg($'request {method} failed (no result)')
     return
   endif
 
@@ -611,7 +611,7 @@ enddef
 def GetCompletion(lspserver: dict<any>, triggerKind_arg: number, triggerChar: string): void
   # Check whether LSP server supports completion
   if !lspserver.isCompletionProvider
-    util.ErrMsg('Error: LSP server does not support completion')
+    util.ErrMsg('LSP server does not support completion')
     return
   endif
 
@@ -636,7 +636,7 @@ enddef
 def ResolveCompletion(lspserver: dict<any>, item: dict<any>): void
   # Check whether LSP server supports completion item resolve
   if !lspserver.isCompletionResolveProvider
-    util.ErrMsg('Error: LSP server does not support completion item resolve')
+    util.ErrMsg('LSP server does not support completion item resolve')
     return
   endif
 
@@ -668,13 +668,13 @@ def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
   if reply->empty() || reply.result->empty()
     var emsg: string
     if msg ==# 'textDocument/declaration'
-      emsg = 'Error: symbol declaration is not found'
+      emsg = 'symbol declaration is not found'
     elseif msg ==# 'textDocument/typeDefinition'
-      emsg = 'Error: symbol type definition is not found'
+      emsg = 'symbol type definition is not found'
     elseif msg ==# 'textDocument/implementation'
-      emsg = 'Error: symbol implementation is not found'
+      emsg = 'symbol implementation is not found'
     else
-      emsg = 'Error: symbol definition is not found'
+      emsg = 'symbol definition is not found'
     endif
 
     util.WarnMsg(emsg)
@@ -715,7 +715,7 @@ enddef
 def GotoDefinition(lspserver: dict<any>, peek: bool, cmdmods: string)
   # Check whether LSP server supports jumping to a definition
   if !lspserver.isDefinitionProvider
-    util.ErrMsg('Error: Jumping to a symbol definition is not supported')
+    util.ErrMsg('Jumping to a symbol definition is not supported')
     return
   endif
 
@@ -729,7 +729,7 @@ enddef
 def GotoDeclaration(lspserver: dict<any>, peek: bool, cmdmods: string)
   # Check whether LSP server supports jumping to a declaration
   if !lspserver.isDeclarationProvider
-    util.ErrMsg('Error: Jumping to a symbol declaration is not supported')
+    util.ErrMsg('Jumping to a symbol declaration is not supported')
     return
   endif
 
@@ -743,7 +743,7 @@ enddef
 def GotoTypeDef(lspserver: dict<any>, peek: bool, cmdmods: string)
   # Check whether LSP server supports jumping to a type definition
   if !lspserver.isTypeDefinitionProvider
-    util.ErrMsg('Error: Jumping to a symbol type definition is not supported')
+    util.ErrMsg('Jumping to a symbol type definition is not supported')
     return
   endif
 
@@ -757,7 +757,7 @@ enddef
 def GotoImplementation(lspserver: dict<any>, peek: bool, cmdmods: string)
   # Check whether LSP server supports jumping to a implementation
   if !lspserver.isImplementationProvider
-    util.ErrMsg('Error: Jumping to a symbol implementation is not supported')
+    util.ErrMsg('Jumping to a symbol implementation is not supported')
     return
   endif
 
@@ -774,7 +774,7 @@ def SwitchSourceHeader(lspserver: dict<any>)
   param.uri = util.LspFileToUri(@%)
   var reply = lspserver.rpc('textDocument/switchSourceHeader', param)
   if reply->empty() || reply.result->empty()
-    util.WarnMsg('Error: No alternate file found')
+    util.WarnMsg('No alternate file found')
     return
   endif
 
@@ -796,7 +796,7 @@ enddef
 def ShowSignature(lspserver: dict<any>): void
   # Check whether LSP server supports signature help
   if !lspserver.isSignatureHelpProvider
-    util.ErrMsg('Error: LSP server does not support signature help')
+    util.ErrMsg('LSP server does not support signature help')
     return
   endif
 
@@ -846,7 +846,7 @@ enddef
 def ShowReferences(lspserver: dict<any>, peek: bool): void
   # Check whether LSP server supports getting reference information
   if !lspserver.isReferencesProvider
-    util.ErrMsg('Error: LSP server does not support showing references')
+    util.ErrMsg('LSP server does not support showing references')
     return
   endif
 
@@ -859,7 +859,7 @@ def ShowReferences(lspserver: dict<any>, peek: bool): void
 
   # Result: Location[] | null
   if reply->empty() || reply.result->empty()
-    util.WarnMsg('Error: No references found')
+    util.WarnMsg('No references found')
     return
   endif
 
@@ -904,7 +904,7 @@ enddef
 def DocHighlight(lspserver: dict<any>, cmdmods: string): void
   # Check whether LSP server supports getting highlight information
   if !lspserver.isDocumentHighlightProvider
-    util.ErrMsg('Error: LSP server does not support document highlight')
+    util.ErrMsg('LSP server does not support document highlight')
     return
   endif
 
@@ -921,7 +921,7 @@ enddef
 def GetDocSymbols(lspserver: dict<any>, fname: string): void
   # Check whether LSP server supports getting document symbol information
   if !lspserver.isDocumentSymbolProvider
-    util.ErrMsg('Error: LSP server does not support getting list of symbols')
+    util.ErrMsg('LSP server does not support getting list of symbols')
     return
   endif
 
@@ -942,7 +942,7 @@ def TextDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
 				start_lnum: number, end_lnum: number)
   # Check whether LSP server supports formatting documents
   if !lspserver.isDocumentFormattingProvider
-    util.ErrMsg('Error: LSP server does not support formatting documents')
+    util.ErrMsg('LSP server does not support formatting documents')
     return
   endif
 
@@ -1024,7 +1024,7 @@ enddef
 def IncomingCalls(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports call hierarchy
   if !lspserver.isCallHierarchyProvider
-    util.ErrMsg('Error: LSP server does not support call hierarchy')
+    util.ErrMsg('LSP server does not support call hierarchy')
     return
   endif
 
@@ -1047,7 +1047,7 @@ enddef
 def OutgoingCalls(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports call hierarchy
   if !lspserver.isCallHierarchyProvider
-    util.ErrMsg('Error: LSP server does not support call hierarchy')
+    util.ErrMsg('LSP server does not support call hierarchy')
     return
   endif
 
@@ -1071,7 +1071,7 @@ enddef
 def InlayHintsShow(lspserver: dict<any>)
   # Check whether LSP server supports type hierarchy
   if !lspserver.isInlayHintProvider && !lspserver.isClangdInlayHintsProvider
-    util.ErrMsg('Error: LSP server does not support inlay hint')
+    util.ErrMsg('LSP server does not support inlay hint')
     return
   endif
 
@@ -1102,7 +1102,7 @@ enddef
 def TypeHiearchy(lspserver: dict<any>, direction: number)
   # Check whether LSP server supports type hierarchy
   if !lspserver.isTypeHierarchyProvider
-    util.ErrMsg('Error: LSP server does not support type hierarchy')
+    util.ErrMsg('LSP server does not support type hierarchy')
     return
   endif
 
@@ -1127,7 +1127,7 @@ enddef
 def RenameSymbol(lspserver: dict<any>, newName: string)
   # Check whether LSP server supports rename operation
   if !lspserver.isRenameProvider
-    util.ErrMsg('Error: LSP server does not support rename operation')
+    util.ErrMsg('LSP server does not support rename operation')
     return
   endif
 
@@ -1155,7 +1155,7 @@ def CodeAction(lspserver: dict<any>, fname_arg: string, line1: number,
 		line2: number, query: string)
   # Check whether LSP server supports code action operation
   if !lspserver.isCodeActionProvider
-    util.ErrMsg('Error: LSP server does not support code action operation')
+    util.ErrMsg('LSP server does not support code action operation')
     return
   endif
 
@@ -1198,14 +1198,14 @@ enddef
 def CodeLens(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports code lens operation
   if !lspserver.isCodeLensProvider
-    util.ErrMsg('Error: LSP server does not support code lens operation')
+    util.ErrMsg('LSP server does not support code lens operation')
     return
   endif
 
   var params = {textDocument: {uri: util.LspFileToUri(fname)}}
   var reply = lspserver.rpc('textDocument/codeLens', params)
   if reply->empty() || reply.result->empty()
-    util.WarnMsg($'Error: No code lens actions found for the current file')
+    util.WarnMsg($'No code lens actions found for the current file')
     return
   endif
 
@@ -1231,7 +1231,7 @@ enddef
 def WorkspaceQuerySymbols(lspserver: dict<any>, query: string)
   # Check whether the LSP server supports listing workspace symbols
   if !lspserver.isWorkspaceSymbolProvider
-    util.ErrMsg('Error: LSP server does not support listing workspace symbols')
+    util.ErrMsg('LSP server does not support listing workspace symbols')
     return
   endif
 
@@ -1240,7 +1240,7 @@ def WorkspaceQuerySymbols(lspserver: dict<any>, query: string)
   param.query = query
   var reply = lspserver.rpc('workspace/symbol', param)
   if reply->empty() || reply.result->empty()
-    util.WarnMsg($'Error: Symbol "{query}" is not found')
+    util.WarnMsg($'Symbol "{query}" is not found')
     return
   endif
 
@@ -1253,12 +1253,12 @@ def AddWorkspaceFolder(lspserver: dict<any>, dirName: string): void
 	  || !lspserver.caps.workspace->has_key('workspaceFolders')
 	  || !lspserver.caps.workspace.workspaceFolders->has_key('supported')
 	  || !lspserver.caps.workspace.workspaceFolders.supported
-      util.ErrMsg('Error: LSP server does not support workspace folders')
+      util.ErrMsg('LSP server does not support workspace folders')
     return
   endif
 
   if lspserver.workspaceFolders->index(dirName) != -1
-    util.ErrMsg($'Error: {dirName} is already part of this workspace')
+    util.ErrMsg($'{dirName} is already part of this workspace')
     return
   endif
 
@@ -1276,13 +1276,13 @@ def RemoveWorkspaceFolder(lspserver: dict<any>, dirName: string): void
 	  || !lspserver.caps.workspace->has_key('workspaceFolders')
 	  || !lspserver.caps.workspace.workspaceFolders->has_key('supported')
 	  || !lspserver.caps.workspace.workspaceFolders.supported
-      util.ErrMsg('Error: LSP server does not support workspace folders')
+      util.ErrMsg('LSP server does not support workspace folders')
     return
   endif
 
   var idx: number = lspserver.workspaceFolders->index(dirName)
   if idx == -1
-    util.ErrMsg($'Error: {dirName} is not currently part of this workspace')
+    util.ErrMsg($'{dirName} is not currently part of this workspace')
     return
   endif
 
@@ -1300,7 +1300,7 @@ enddef
 def SelectionRange(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports selection ranges
   if !lspserver.isSelectionRangeProvider
-    util.ErrMsg('Error: LSP server does not support selection ranges')
+    util.ErrMsg('LSP server does not support selection ranges')
     return
   endif
 
@@ -1326,7 +1326,7 @@ enddef
 def SelectionExpand(lspserver: dict<any>)
   # Check whether LSP server supports selection ranges
   if !lspserver.isSelectionRangeProvider
-    util.ErrMsg('Error: LSP server does not support selection ranges')
+    util.ErrMsg('LSP server does not support selection ranges')
     return
   endif
 
@@ -1337,7 +1337,7 @@ enddef
 def SelectionShrink(lspserver: dict<any>)
   # Check whether LSP server supports selection ranges
   if !lspserver.isSelectionRangeProvider
-    util.ErrMsg('Error: LSP server does not support selection ranges')
+    util.ErrMsg('LSP server does not support selection ranges')
     return
   endif
 
@@ -1350,7 +1350,7 @@ enddef
 def FoldRange(lspserver: dict<any>, fname: string)
   # Check whether LSP server supports fold ranges
   if !lspserver.isFoldingRangeProvider
-    util.ErrMsg('Error: LSP server does not support folding')
+    util.ErrMsg('LSP server does not support folding')
     return
   endif
 

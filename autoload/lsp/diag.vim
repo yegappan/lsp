@@ -590,9 +590,9 @@ export def LspDiagsJump(which: string, a_count: number = 0): void
   endif
 
   if which == 'here'
-    util.WarnMsg('Error: No more diagnostics found on this line')
+    util.WarnMsg('No more diagnostics found on this line')
   else
-    util.WarnMsg('Error: No more diagnostics found')
+    util.WarnMsg('No more diagnostics found')
   endif
 enddef
 

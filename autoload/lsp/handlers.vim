@@ -10,7 +10,7 @@ import './textedit.vim'
 
 # Process various reply messages from the LSP server
 export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
-  util.ErrMsg($'Error: Unsupported reply received from LSP server: {reply->string()} for request: {req->string()}')
+  util.ErrMsg($'Unsupported reply received from LSP server: {reply->string()} for request: {req->string()}')
 enddef
 
 # process a diagnostic notification message from the LSP server
@@ -67,7 +67,7 @@ enddef
 
 # process unsupported notification messages
 def ProcessUnsupportedNotif(lspserver: dict<any>, reply: dict<any>)
-  util.ErrMsg($'Error: Unsupported notification message received from the LSP server ({lspserver.path}), message = {reply->string()}')
+  util.ErrMsg($'Unsupported notification message received from the LSP server ({lspserver.path}), message = {reply->string()}')
 enddef
 
 # per-filetype private map inside to record if ntf once or not
@@ -114,7 +114,7 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
   elseif lspserver.customNotificationHandlers->has_key(reply.method)
     lspserver.customNotificationHandlers[reply.method](lspserver, reply)
   elseif lsp_ignored_notif_handlers->index(reply.method) == -1
-    util.ErrMsg($'Error: Unsupported notification received from LSP server {reply->string()}')
+    util.ErrMsg($'Unsupported notification received from LSP server {reply->string()}')
   endif
 enddef
 
@@ -183,7 +183,7 @@ def ProcessClientUnregisterCap(lspserver: dict<any>, request: dict<any>)
 enddef
 
 def ProcessUnsupportedReq(lspserver: dict<any>, request: dict<any>)
-  util.ErrMsg($'Error: Unsupported request message received from the LSP server ({lspserver.path}), message = {request->string()}')
+  util.ErrMsg($'Unsupported request message received from the LSP server ({lspserver.path}), message = {request->string()}')
 enddef
 
 # process a request message from the server
@@ -203,7 +203,7 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
   if lspRequestHandlers->has_key(request.method)
     lspRequestHandlers[request.method](lspserver, request)
   else
-    util.ErrMsg($'Error: Unsupported request message received from the LSP server ({lspserver.path}), message = {request->string()}')
+    util.ErrMsg($'Unsupported request message received from the LSP server ({lspserver.path}), message = {request->string()}')
   endif
 enddef
 
@@ -232,7 +232,7 @@ export def ProcessMessages(lspserver: dict<any>): void
 	if msg.error->has_key('data')
 	  emsg ..= $', data = {msg.error.data->string()}'
 	endif
-	util.ErrMsg($'Error(LSP): request {req.method} failed ({emsg})')
+	util.ErrMsg($'request {req.method} failed ({emsg})')
       endif
     endif
   elseif msg->has_key('id') && msg->has_key('method')
@@ -242,7 +242,7 @@ export def ProcessMessages(lspserver: dict<any>): void
     # notification message from the server
     lspserver.processNotif(msg)
   else
-    util.ErrMsg($'Error(LSP): Unsupported message ({msg->string()})')
+    util.ErrMsg($'Unsupported message ({msg->string()})')
   endif
 enddef
 
