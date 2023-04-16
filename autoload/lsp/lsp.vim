@@ -932,7 +932,7 @@ enddef
 export def ListWorkspaceFolders()
   var lspservers: list<dict<any>> = buf.CurbufGetServers()
   for lspserver in lspservers
-    :echomsg $'Workspace Folders: "{lspserver.name}" {lspserver.workspaceFolders->string()}'
+    util.InfoMsg($'Workspace Folders: "{lspserver.name}" {lspserver.workspaceFolders->string()}')
   endfor
 enddef
 
