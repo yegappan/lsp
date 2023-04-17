@@ -159,11 +159,11 @@ def DiagsRefresh(bnr: number)
   var diag_wrap: string = 'truncate'
   var diag_symbol: string = '┌─'
 
-  if opt.lspOptions.diagVirtualTextAlign ==? 'below'
+  if opt.lspOptions.diagVirtualTextAlign ==# 'below'
     diag_align = 'below'
     diag_wrap = 'truncate'
     diag_symbol = '└─'
-  elseif opt.lspOptions.diagVirtualTextAlign ==? 'after'
+  elseif opt.lspOptions.diagVirtualTextAlign ==# 'after'
     diag_align = 'after'
     diag_wrap = 'wrap'
     diag_symbol = 'E>'

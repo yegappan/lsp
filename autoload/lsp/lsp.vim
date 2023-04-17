@@ -208,7 +208,7 @@ def ShowServer(arg: string)
       endif
       lines->add(msg)
     endfor
-  elseif arg ==? 'capabilities'
+  elseif arg ==# 'capabilities'
     windowName = $'LangServer-Capabilities'
     for lspserver in lspservers
       if !lines->empty()
@@ -216,7 +216,7 @@ def ShowServer(arg: string)
       endif
       lines->extend(lspserver.getCapabilities())
     endfor
-  elseif arg ==? 'initializeRequest'
+  elseif arg ==# 'initializeRequest'
     windowName = $'LangServer-InitializeRequest'
     for lspserver in lspservers
       if !lines->empty()
@@ -224,7 +224,7 @@ def ShowServer(arg: string)
       endif
       lines->extend(lspserver.getInitializeRequest())
     endfor
-  elseif arg ==? 'messages'
+  elseif arg ==# 'messages'
     windowName = $'LangServer-Messages'
     for lspserver in lspservers
       if !lines->empty()
