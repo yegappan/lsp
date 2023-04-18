@@ -402,6 +402,10 @@ def g:LspOmniFunc(findstart: number, base: string): any
       count += 1
     endwhile
 
+    if lspserver.omniCompletePending
+      return v:none
+    endif
+
     var res: list<dict<any>> = lspserver.completeItems
 
     var prefix = lspserver.omniCompleteKeyword
