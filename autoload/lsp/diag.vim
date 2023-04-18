@@ -666,7 +666,6 @@ export def DiagsHighlightEnable()
   opt.lspOptions.autoHighlightDiags = true
   for binfo in getbufinfo({bufloaded: true})
     DiagsRefresh(binfo.bufnr)
-    endif
   endfor
 enddef
 
