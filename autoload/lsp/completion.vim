@@ -35,7 +35,8 @@ var defaultKinds: dict<string> = {
   'Struct':         's',
   'Event':          'E',
   'Operator':       'o',
-  'TypeParameter':  'T'
+  'TypeParameter':  'T',
+  'Buffer':         'B',
 }
 
 # Returns true if omni-completion is enabled for filetype 'ftype'.
@@ -77,10 +78,11 @@ def LspCompleteItemKindChar(kind: number): string
     'Struct',
     'Event',
     'Operator',
-    'TypeParameter'
+    'TypeParameter',
+    'Buffer'
   ]
 
-  if kind > 25
+  if kind > 26
     return ''
   endif
 
@@ -169,6 +171,23 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
   if opt.lspOptions.ultisnipsSupport
     CompletionUltiSnips(prefix, items)
   endif
+
+  # add completion from current buf
+  var words = {}
+  var text = join(getline(1, '$'), "\n")
+  for word in split(text, '\W\+')
+      if !has_key(words, word) && len(word) > 1
+          words[word] = 1
+          items->add({
+              label: word,
+              data: {
+                  entryNames: [word],
+              },
+              kind: 26,
+              documentation: "",
+          })
+      endif
+  endfor
 
   var completeItems: list<dict<any>> = []
   for item in items

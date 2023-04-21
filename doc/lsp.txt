@@ -1362,6 +1362,7 @@ option |lsp-opt-completionKinds| . There is a table with all default LSP kinds:
  Event                  | E
  Operator               | o
  TypeParameter          | T
+ Buffer                 | B
 
 For example, if you want to change the "Method" kind to the kind "method()": >
 
