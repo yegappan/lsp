@@ -1012,21 +1012,22 @@ By default, in insert mode, the LSP plugin automatically displays the matches
 for the symbol under the cursor in an insert-completion popup menu. You can
 use the keys described in |popupmenu-keys| with this menu.
 
-To disable the auto-compeltion, you can set the autoComplete option to v:false
-in your .vimrc file: >
+To disable the auto-completion for all the files, you can set the
+'autoComplete' option to v:false in your .vimrc file: >
 
 	call LspOptionsSet({'autoComplete': v:false})
 <
-If this variable is set, then the LSP plugin doesn't automatically start
+If this variable is set, then the LSP plugin will not automatically start
 completion in insert mode and instead supports omni-completion (|compl-omni|).
 It sets the 'omnifunc' option for the buffers which have a registered language
 server. To complete a symbol in insert mode manually, you can press CTRL-X
 CTRL-O to invoke completion using the items suggested by the language server.
 
-You can also enable or disable omni-completion based on a file type by setting
-the 'omnicompl' item to 'false' when registering a lsp server for the
-filetype. If this item is not specified, then omni-completion is enabled by
-default. The following example disables omni-completion for python: >
+You can also enable or disable omni-completion for a specific language
+server by setting the 'omnicompl' item to 'false' when registering a lsp
+server for the filetype. If this item is not specified, then omni-completion
+is enabled by default. The following example disables omni-completion for
+python: >
 
 	let lspServers = [
 		\     {

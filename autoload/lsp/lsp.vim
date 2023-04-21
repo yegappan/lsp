@@ -98,13 +98,13 @@ def ServerDebug(arg: string)
   endif
 
   for lspserver in lspservers
-    if arg ==# 'on'
+    if arg == 'on'
       util.ClearTraceLogs(lspserver.logfile)
       util.ClearTraceLogs(lspserver.errfile)
       lspserver.debug = true
-    elseif arg ==# 'off'
+    elseif arg == 'off'
       lspserver.debug = false
-    elseif arg ==# 'messages'
+    elseif arg == 'messages'
       util.ServerMessagesShow(lspserver.logfile)
     else
       util.ServerMessagesShow(lspserver.errfile)
@@ -194,7 +194,7 @@ def ShowServer(arg: string)
 
   var windowName: string = ''
   var lines: list<string> = []
-  if arg == '' || arg ==# 'status'
+  if arg == '' || arg == 'status'
     windowName = $'LangServer-Status'
     for lspserver in lspservers
       if !lines->empty()
@@ -208,7 +208,7 @@ def ShowServer(arg: string)
       endif
       lines->add(msg)
     endfor
-  elseif arg ==# 'capabilities'
+  elseif arg == 'capabilities'
     windowName = $'LangServer-Capabilities'
     for lspserver in lspservers
       if !lines->empty()
@@ -216,7 +216,7 @@ def ShowServer(arg: string)
       endif
       lines->extend(lspserver.getCapabilities())
     endfor
-  elseif arg ==# 'initializeRequest'
+  elseif arg == 'initializeRequest'
     windowName = $'LangServer-InitializeRequest'
     for lspserver in lspservers
       if !lines->empty()
@@ -224,7 +224,7 @@ def ShowServer(arg: string)
       endif
       lines->extend(lspserver.getInitializeRequest())
     endfor
-  elseif arg ==# 'messages'
+  elseif arg == 'messages'
     windowName = $'LangServer-Messages'
     for lspserver in lspservers
       if !lines->empty()
@@ -1124,12 +1124,12 @@ export def LspServerComplete(arglead: string, cmdline: string, cursorPos: number
   endif
 
   var cmd = cmdline->strpart(wordBegin, wordEnd - wordBegin)
-  if cmd ==# 'debug'
+  if cmd == 'debug'
     return LspServerDebugComplete(arglead, cmdline, wordEnd)
-  elseif cmd ==# 'restart'
-  elseif cmd ==# 'show'
+  elseif cmd == 'restart'
+  elseif cmd == 'show'
     return LspServerShowComplete(arglead, cmdline, wordEnd)
-  elseif cmd ==# 'trace'
+  elseif cmd == 'trace'
     return LspServerTraceComplete(arglead, cmdline, wordEnd)
   endif
 
@@ -1139,23 +1139,23 @@ enddef
 # ":LspServer" command handler
 export def LspServerCmd(args: string)
   if args->stridx('debug') == 0
-    if args[5] ==# ' '
+    if args[5] == ' '
       var subcmd = args[6 : ]->trim()
       ServerDebug(subcmd)
     else
       util.ErrMsg('Argument required')
     endif
-  elseif args ==# 'restart'
+  elseif args == 'restart'
     RestartServer()
   elseif args->stridx('show') == 0
-    if args[4] ==# ' '
+    if args[4] == ' '
       var subcmd = args[5 : ]->trim()
       ShowServer(subcmd)
     else
       util.ErrMsg('Argument required')
     endif
   elseif args->stridx('trace') == 0
-    if args[5] ==# ' '
+    if args[5] == ' '
       var subcmd = args[6 : ]->trim()
       ServerTraceSet(subcmd)
     else

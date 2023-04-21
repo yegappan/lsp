@@ -170,7 +170,7 @@ def InitServer(lspserver: dict<any>, bnr: number)
     var bufDirPrefix = bufDir[0 : cwd->strcharlen() - 1]
     if &fileignorecase
         ? bufDirPrefix ==? cwd
-        : bufDirPrefix ==# cwd
+        : bufDirPrefix == cwd
       rootPath = cwd
     else
       rootPath = bufDir
@@ -667,11 +667,11 @@ def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
   var reply = lspserver.rpc(msg, GetLspTextDocPosition(true), false)
   if reply->empty() || reply.result->empty()
     var emsg: string
-    if msg ==# 'textDocument/declaration'
+    if msg == 'textDocument/declaration'
       emsg = 'symbol declaration is not found'
-    elseif msg ==# 'textDocument/typeDefinition'
+    elseif msg == 'textDocument/typeDefinition'
       emsg = 'symbol type definition is not found'
-    elseif msg ==# 'textDocument/implementation'
+    elseif msg == 'textDocument/implementation'
       emsg = 'symbol implementation is not found'
     else
       emsg = 'symbol definition is not found'
@@ -688,11 +688,11 @@ def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
       # requested with 'count', display the locations in a location list.
       if reply.result->len() > 1
         var title: string = ''
-        if msg ==# 'textDocument/declaration'
+        if msg == 'textDocument/declaration'
           title = 'Declarations'
-        elseif msg ==# 'textDocument/typeDefinition'
+        elseif msg == 'textDocument/typeDefinition'
           title = 'Type Definitions'
-        elseif msg ==# 'textDocument/implementation'
+        elseif msg == 'textDocument/implementation'
           title = 'Implementations'
         else
           title = 'Definitions'
@@ -904,8 +904,9 @@ def DocHighlightReply(lspserver: dict<any>, docHighlightReply: any,
                     bufnr: bnr,
                     type: propName})
     catch /E966\|E964/ # Invalid lnum | Invalid col
-      # Highlight arrive asynchronous and the document changed while they wore
-      # send.
+      # Highlight replies arrive asynchronously and the document might have
+      # been modified in the mean time.  As the reply is stale, ignore invalid
+      # line number and column number errors.
     endtry
   endfor
 enddef

@@ -29,7 +29,7 @@ export def InlayHintsReply(lspserver: dict<any>, inlayHints: any)
 
   InlayHintsClear(lspserver)
 
-  if mode() !=# 'n'
+  if mode() != 'n'
     # Update inlay hints only in normal mode
     return
   endif
@@ -44,10 +44,10 @@ export def InlayHintsReply(lspserver: dict<any>, inlayHints: any)
     endif
 
     var kind = hint->has_key('kind') ? hint.kind->string() : '1'
-    if kind ==# "'type'" || kind ==# '1'
+    if kind == "'type'" || kind == '1'
       prop_add(hint.position.line + 1, hint.position.character + 1,
 		{type: 'LspInlayHintsType', text: label, bufnr: bufnum})
-    elseif kind ==# "'parameter'" || kind ==# '2'
+    elseif kind == "'parameter'" || kind == '2'
       prop_add(hint.position.line + 1, hint.position.character + 1,
 		{type: 'LspInlayHintsParam', text: label, bufnr: bufnum})
     endif

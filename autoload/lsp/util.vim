@@ -104,7 +104,7 @@ enddef
 # Returns if the URI refers to a remote file (e.g. ssh://)
 # Credit: vim-lsp plugin
 export def LspUriRemote(uri: string): bool
-  return uri =~# '^\w\+::' || uri =~# '^[a-z][a-z0-9+.-]*://'
+  return uri =~ '^\w\+::' || uri =~ '^[a-z][a-z0-9+.-]*://'
 enddef
 
 # Convert a Vim filename to an LSP URI (file://<absolute_path>)
@@ -248,7 +248,7 @@ export def FindNearestRootDir(startDir: string, files: list<any>): string
     if file->type() != v:t_string || file == ''
       continue
     endif
-    var isDir = file[-1 : ] ==# '/' || file[-1 : ] ==# '\'
+    var isDir = file[-1 : ] == '/' || file[-1 : ] == '\'
     var relPath: string
     if isDir
       relPath = finddir(file, $'{startDir};')

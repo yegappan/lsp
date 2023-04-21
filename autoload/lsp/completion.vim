@@ -103,7 +103,7 @@ def MakeValidWord(str_arg: string): string
   if valid->empty()
     return str
   endif
-  if valid =~# ':$'
+  if valid =~ ':$'
     return valid[: -2]
   endif
   return valid
@@ -268,7 +268,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
   if opt.lspOptions.completionMatcher != 'fuzzy'
     # Lexographical sort (case-insensitive).
     completeItems->sort((a, b) =>
-      a.score ==# b.score ? 0 : a.score >? b.score ? 1 : -1)
+      a.score == b.score ? 0 : a.score >? b.score ? 1 : -1)
   endif
 
   if opt.lspOptions.autoComplete && !lspserver.omniCompletePending
@@ -309,7 +309,7 @@ def ShowCompletionDocumentation(cItem: any)
       || cInfo.selected == -1
       || cInfo.items[cInfo.selected]->type() != v:t_dict
       || cInfo.items[cInfo.selected].user_data->type() != v:t_dict
-      || cInfo.items[cInfo.selected].user_data.label !=# cItem.label
+      || cInfo.items[cInfo.selected].user_data.label != cItem.label
     return
   endif
 
@@ -358,7 +358,7 @@ def ShowCompletionDocumentation(cItem: any)
       || cInfo.selected == -1
       || cInfo.items[cInfo.selected]->type() != v:t_dict
       || cInfo.items[cInfo.selected].user_data->type() != v:t_dict
-      || cInfo.items[cInfo.selected].user_data.label !=# cItem.label
+      || cInfo.items[cInfo.selected].user_data.label != cItem.label
     return
   endif
 
