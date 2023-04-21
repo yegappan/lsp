@@ -129,10 +129,8 @@ def DiagSevToSymbolText(severity: number): string
   return typeMap[severity - 1]
 enddef
 
-# Refresh the placed diagnostics in buffer 'bnr'
-# This inline signs, inline props, and virtual text diagnostics
-def DiagsRefresh(bnr: number)
-  bnr->bufload()
+# Remove signs and text properties for diagnostics in buffer
+def RemoveDiagVisualsForBuffer(bnr: number)
   # Remove all the existing diagnostic signs
   sign_unplace('LSPDiag', {buffer: bnr})
 
@@ -148,6 +146,14 @@ def DiagsRefresh(bnr: number)
     prop_remove({type: 'LspDiagInlineInfo', bufnr: bnr, all: true})
     prop_remove({type: 'LspDiagInlineHint', bufnr: bnr, all: true})
   endif
+enddef
+
+# Refresh the placed diagnostics in buffer 'bnr'
+# This inline signs, inline props, and virtual text diagnostics
+def DiagsRefresh(bnr: number)
+  bnr->bufload()
+
+  RemoveDiagVisualsForBuffer(bnr)
 
   if !diagsMap->has_key(bnr) ||
       diagsMap[bnr].sortedDiagnostics->empty()
@@ -639,26 +645,9 @@ enddef
 export def DiagsHighlightDisable()
   # turn off all diags highlight
   opt.lspOptions.autoHighlightDiags = false
-
-  # Remove the diganostics virtual text in all the buffers.
-  if opt.lspOptions.showDiagWithVirtualText
-      || opt.lspOptions.highlightDiagInline
-    for binfo in getbufinfo({bufloaded: true})
-      # Remove all virtual text
-      if opt.lspOptions.showDiagWithVirtualText
-        prop_remove({type: 'LspDiagVirtualText', bufnr: binfo.bufnr, all: true})
-      endif
-      if opt.lspOptions.highlightDiagInline
-        prop_remove({type: 'LspDiagInlineError', bufnr: binfo.bufnr, all: true})
-        prop_remove({type: 'LspDiagInlineWarning', bufnr: binfo.bufnr, all: true})
-        prop_remove({type: 'LspDiagInlineInfo', bufnr: binfo.bufnr, all: true})
-        prop_remove({type: 'LspDiagInlineHint', bufnr: binfo.bufnr, all: true})
-      endif
-    endfor
-  endif
-
-  # Remove all the existing diagnostic signs in all the buffers
-  sign_unplace('LSPDiag')
+  for binfo in getbufinfo({bufloaded: true})
+      RemoveDiagVisualsForBuffer(binfo.bufnr)
+  endfor
 enddef
 
 # Enable the LSP diagnostics highlighting
