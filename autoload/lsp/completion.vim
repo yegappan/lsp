@@ -109,6 +109,32 @@ def MakeValidWord(str_arg: string): string
   return valid
 enddef
 
+# Integration with the UltiSnips plugin
+def CompletionUltiSnips(prefix: string, items: list<dict<any>>)
+  call UltiSnips#SnippetsInCurrentScope(1)
+  for key in matchfuzzy(g:current_ulti_dict_info->keys(), prefix)
+    var item = g:current_ulti_dict_info[key]
+    var parts = split(item.location, ':')
+    var txt = readfile(parts[0])[str2nr(parts[1]) : str2nr(parts[1]) + 20]
+    var restxt = item.description .. "\n\n"
+    for line in txt
+      if line == "" || line[0 : 6] == "snippet"
+	break
+      else
+	restxt = restxt .. line .. "\n"
+      endif
+    endfor
+    items->add({
+      label: key,
+      data: {
+	entryNames: [key],
+      },
+      kind: 15,
+      documentation: restxt,
+    })
+  endfor
+enddef
+
 # process the 'textDocument/completion' reply from the LSP server
 # Result: CompletionItem[] | CompletionList | null
 export def CompletionReply(lspserver: dict<any>, cItems: any)
@@ -141,28 +167,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
   var start_col = start_idx + 1
 
   if opt.lspOptions.ultisnipsSupport
-    call UltiSnips#SnippetsInCurrentScope(1)
-    for key in matchfuzzy(g:current_ulti_dict_info->keys(), prefix)
-      var item = g:current_ulti_dict_info[key]
-      var parts = split(item.location, ':')
-      var txt = readfile(parts[0])[str2nr(parts[1]) : str2nr(parts[1]) + 20]
-      var restxt = item.description .. "\n\n"
-      for line in txt
-	if line == "" || line[0 : 6] == "snippet"
-	  break
-	else
-	  restxt = restxt .. line .. "\n"
-	endif
-      endfor
-      items->add({
-	label: key,
-	data: {
-	  entryNames: [key],
-	},
-	kind: 15,
-	documentation: restxt,
-      })
-    endfor
+    CompletionUltiSnips(prefix, items)
   endif
 
   var completeItems: list<dict<any>> = []
@@ -170,7 +175,8 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     var d: dict<any> = {}
 
     # TODO: Add proper support for item.textEdit.newText and item.textEdit.range
-    # Keep in mind that item.textEdit.range can start be way before the typed keyword.
+    # Keep in mind that item.textEdit.range can start be way before the typed
+    # keyword.
     if item->has_key('textEdit') && opt.lspOptions.completionMatcher != 'fuzzy'
       var start_charcol: number
       if prefix != ''
@@ -203,20 +209,21 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
       if prefix != ''
 	# If the completion item text doesn't start with the current (case
 	# ignored) keyword prefix, skip it.
+	var filterText: string = item->get('filterText', d.word)
 	if opt.lspOptions.completionMatcher == 'icase'
-	  if d.word->tolower()->stridx(prefix) != 0
+	  if filterText->tolower()->stridx(prefix) != 0
 	    continue
 	  endif
 	# If the completion item text doesn't fuzzy match with the current
 	# keyword prefix, skip it.
 	elseif opt.lspOptions.completionMatcher == 'fuzzy'
-	  if matchfuzzy([d.word], prefix)->empty()
+	  if matchfuzzy([filterText], prefix)->empty()
 	    continue
 	  endif
 	# If the completion item text doesn't start with the current keyword
 	# prefix, skip it.
 	else
-	  if d.word->stridx(prefix) != 0
+	  if filterText->stridx(prefix) != 0
 	    continue
 	  endif
 	endif
