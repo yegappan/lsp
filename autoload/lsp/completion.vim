@@ -255,9 +255,21 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
       endif
     endif
 
+    # Score is used for sorting.
+    d.score = item->get('sortText')
+    if d.score->empty()
+      d.score = item->get('label', '')
+    endif
+
     d.user_data = item
     completeItems->add(d)
   endfor
+
+  if opt.lspOptions.completionMatcher != 'fuzzy'
+    # Lexographical sort (case-insensitive).
+    completeItems->sort((a, b) =>
+      a.score ==# b.score ? 0 : a.score >? b.score ? 1 : -1)
+  endif
 
   if opt.lspOptions.autoComplete && !lspserver.omniCompletePending
     if completeItems->empty()
