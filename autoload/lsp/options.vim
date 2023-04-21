@@ -67,6 +67,8 @@ export var lspOptions: dict<any> = {
   usePopupInCodeAction: false,
   # ShowReferences in a quickfix list instead of a location list`
   useQuickfixForLocations: false,
+  # add to autocomplition list current buffer words
+  useBufferCompletion: false,
   # Enable support for custom completion kinds
   customCompletionKinds: false,
   # A dictionary with all completion kinds that you want to customize

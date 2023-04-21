@@ -172,22 +172,24 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     CompletionUltiSnips(prefix, items)
   endif
 
-  # add completion from current buf
-  var words = {}
-  var text = join(getline(1, '$'), "\n")
-  for word in split(text, '\W\+')
-      if !has_key(words, word) && len(word) > 1
-          words[word] = 1
-          items->add({
-              label: word,
-              data: {
-                  entryNames: [word],
-              },
-              kind: 26,
-              documentation: "",
-          })
-      endif
-  endfor
+  if opt.lspOptions.useBufferCompletion
+      # add completion from current buf
+      var words = {}
+      var text = join(getline(1, '$'), "\n")
+      for word in split(text, '\W\+')
+          if !has_key(words, word) && len(word) > 1
+              words[word] = 1
+              items->add({
+                  label: word,
+                  data: {
+                      entryNames: [word],
+                  },
+                  kind: 26,
+                  documentation: "",
+              })
+          endif
+      endfor
+  endif
 
   var completeItems: list<dict<any>> = []
   for item in items
