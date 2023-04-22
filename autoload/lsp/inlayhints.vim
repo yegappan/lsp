@@ -44,13 +44,19 @@ export def InlayHintsReply(lspserver: dict<any>, inlayHints: any)
     endif
 
     var kind = hint->has_key('kind') ? hint.kind->string() : '1'
-    if kind == "'type'" || kind == '1'
-      prop_add(hint.position.line + 1, hint.position.character + 1,
-		{type: 'LspInlayHintsType', text: label, bufnr: bufnum})
-    elseif kind == "'parameter'" || kind == '2'
-      prop_add(hint.position.line + 1, hint.position.character + 1,
-		{type: 'LspInlayHintsParam', text: label, bufnr: bufnum})
-    endif
+    try
+      if kind == "'type'" || kind == '1'
+	prop_add(hint.position.line + 1, hint.position.character + 1,
+	  {type: 'LspInlayHintsType', text: label, bufnr: bufnum})
+      elseif kind == "'parameter'" || kind == '2'
+	prop_add(hint.position.line + 1, hint.position.character + 1,
+	  {type: 'LspInlayHintsParam', text: label, bufnr: bufnum})
+      endif
+    catch /E966\|E964/ # Invalid lnum | Invalid col
+      # Inlay hints replies arrive asynchronously and the document might have
+      # been modified in the mean time.  As the reply is stale, ignore invalid
+      # line number and column number errors.
+    endtry
   endfor
 enddef
 
