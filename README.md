@@ -41,88 +41,56 @@ The following language server protocol (LSP) features are supported:
 * Display Type hierarchy
 * Formatting code
 * Folding code
+* Inlay hints
 * Visually select symbol block/region
 
 ## Configuration
 
 To use the plugin features with a particular file type(s), you need to first register a LSP server for that file type(s).
 
+The LSP servers are registered using the LspAddServer() function. This function accepts a list of LSP servers.
+
 To register a LSP server, add the following lines to your .vimrc file (use only the LSP servers that you need from the below list).  If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, the steps are described later in this section.
 ```viml
-function! TypeScriptCustomNotificationHandler(lspserver, reply) abort
-	echom printf("TypeScript Version = %s", a:reply.params.version)
-endfunction
-let lspServers = [
-	\     #{
-	\	 name: 'clangd',
-	\	 filetype: ['c', 'cpp'],
-	\	 path: '/usr/local/bin/clangd',
-	\	 args: ['--background-index']
-	\      },
-	\     #{
-	\	 name: 'typescriptlang',
-	\	 filetype: ['javascript', 'typescript'],
-	\	 path: '/usr/local/bin/typescript-language-server',
-	\	 args: ['--stdio'],
-	\	 customNotificationHandlers: {
-	\	   '$/typescriptVersion': function('TypeScriptCustomNotificationHandler')
-	\	 }
-	\      },
-	\     #{
-	\	 name: 'bashlang',
-	\	 filetype: 'sh',
-	\	 path: '/usr/local/bin/bash-language-server',
-	\	 args: ['start']
-	\      },
-	\     #{
-	\	 name: 'vimlang',
-	\	 filetype: 'vim',
-	\	 path: '/usr/local/bin/vim-language-server',
-	\	 args: ['--stdio']
-	\      },
-	\     #{
-	\	 name: 'golang',
-	\	 filetype: ['go', 'gomod'],
-	\	 path: '/usr/local/bin/gopls',
-	\	 args: ['serve'],
-	\	 syncInit: v:true
-	\      },
-	\     #{
-	\	 name: 'rustlang',
-	\	 filetype: ['rust'],
-	\	 path: '/usr/local/bin/rust-analyzer',
-	\	 args: [],
-	\	 syncInit: v:true
-	\      },
-	\     #{
-	\	 name: 'pylang',
-	\	 filetype: ['python'],
-	\	 path: '/usr/local/bin/pyls',
-	\	 args: []
-	\      },
-	\     #{
-	\	 name: 'fortranls',
-	\	 filetype: ['fortran'],
-	\	 path: '/usr/local/bin/fortls',
-	\	 args: ['--nthreads=1', '--use_signature_help', '--hover_signature']
-	\      },
-	\     #{
-	\	 name: 'phplang',
-	\	 filetype: ['php'],
-	\	 path: '/usr/local/bin/intelephense',
-	\	 args: ['--stdio'],
-	\	 syncInit: v:true,
-	\	 initializationOptions: #{
-	\	   licenceKey: 'absolute path to file with key or key itself'
-	\	 }
-	\      }
-	\   ]
-call LspAddServer(lspServers)
+
+" Clangd language server
+call LspAddServer([#{
+	\    name: 'clangd',
+	\    filetype: ['c', 'cpp'],
+	\    path: '/usr/local/bin/clangd',
+	\    args: ['--background-index']
+	\  }])
+
+" Javascript/Typescript language server
+call LspAddServer([#{
+	\    name: 'typescriptlang',
+	\    filetype: ['javascript', 'typescript'],
+	\    path: '/usr/local/bin/typescript-language-server',
+	\    args: ['--stdio'],
+	\  }])
+
+" Go language server
+call LspAddServer([#{
+	\    name: 'golang',
+	\    filetype: ['go', 'gomod'],
+	\    path: '/usr/local/bin/gopls',
+	\    args: ['serve'],
+	\    syncInit: v:true
+	\  }])
+
+" Rust language server
+call LspAddServer([#{
+	\    name: 'rustlang',
+	\    filetype: ['rust'],
+	\    path: '/usr/local/bin/rust-analyzer',
+	\    args: [],
+	\    syncInit: v:true
+	\  }])
 ```
 
-The above lines add the LSP servers for C, C++, Javascript, Typescript, Shell script, Vim script, Go, Rust, Python, Fortran and PHP file types.  In addition to the above listed file types, this plugin also supports other file types.
+The above lines register the language servers for C/C++, Javascript/Typescript, Go and Rust file types.  Refer to the Wiki (https://github.com/yegappan/lsp/wiki) page for various language server specific configuration.
 
-To add a LSP server, the following information is needed:
+To register a LSP server, the following information is needed:
 
 Field|Description
 -----|-----------
@@ -133,7 +101,7 @@ initializationOptions|User provided initialization options. May be of any type. 
 customNotificationHandlers|A dictionary of notifications and functions that can be specified to add support for custom language server notifications.
 features|A dictionary of booleans that can be specified to toggle what things a given LSP is providing (folding, goto definition, etc) This is useful when running multiple servers in one buffer.
 
-The LSP servers are added using the LspAddServer() function. This function accepts a list of LSP servers with the above information.
+The LspAddServer() function accepts a list of LSP servers with the above information.
 
 If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, then you need to use the VimEnter autocmd to initialize the LSP server and to set the LSP server options.  For example:
 ```viml
