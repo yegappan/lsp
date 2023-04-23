@@ -142,7 +142,7 @@ def CompletionFromBuffer(items: list<dict<any>>)
     var words = {}
     for line in getline(1, '$')
         for word in line->split('\W\+')
-            if !has_key(words, word) && len(word) > 1
+            if !words->has_key(word) && word->len() > 1
                 words[word] = 1
                 items->add({
                     label: word,
