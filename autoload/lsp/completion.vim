@@ -35,7 +35,8 @@ var defaultKinds: dict<string> = {
   'Struct':         's',
   'Event':          'E',
   'Operator':       'o',
-  'TypeParameter':  'T'
+  'TypeParameter':  'T',
+  'Buffer':         'B',
 }
 
 # Returns true if omni-completion is enabled for filetype 'ftype'.
@@ -77,10 +78,11 @@ def LspCompleteItemKindChar(kind: number): string
     'Struct',
     'Event',
     'Operator',
-    'TypeParameter'
+    'TypeParameter',
+    'Buffer'
   ]
 
-  if kind > 25
+  if kind > 26
     return ''
   endif
 
@@ -135,6 +137,26 @@ def CompletionUltiSnips(prefix: string, items: list<dict<any>>)
   endfor
 enddef
 
+# add completion from current buf
+def CompletionFromBuffer(items: list<dict<any>>)
+    var words = {}
+    for line in getline(1, '$')
+        for word in line->split('\W\+')
+            if !words->has_key(word) && word->len() > 1
+                words[word] = 1
+                items->add({
+                    label: word,
+                    data: {
+                        entryNames: [word],
+                    },
+                    kind: 26,
+                    documentation: "",
+                })
+            endif
+        endfor
+    endfor
+enddef
+
 # process the 'textDocument/completion' reply from the LSP server
 # Result: CompletionItem[] | CompletionList | null
 export def CompletionReply(lspserver: dict<any>, cItems: any)
@@ -168,6 +190,10 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
 
   if opt.lspOptions.ultisnipsSupport
     CompletionUltiSnips(prefix, items)
+  endif
+
+  if opt.lspOptions.useBufferCompletion
+    CompletionFromBuffer(items)
   endif
 
   var completeItems: list<dict<any>> = []

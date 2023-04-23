@@ -498,6 +498,12 @@ usePopupInCodeAction    |Boolean| option.  When using the |:LspCodeAction|
 			command to display the code action for the current
 			line, use a popup menu instead of echoing.
 			By default this is set to false.
+						*lsp-opt-useBufferCompletion*
+useBufferCompletion     |Boolean| option. If enabled, the words from the current
+			buffer are added to the auto completion list. This may degrade Vim performance
+			as the current buffer contents are processed every time the completion
+			menu is displayed.
+			By default this is set to false.
 
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file: >
@@ -1362,6 +1368,7 @@ option |lsp-opt-completionKinds| . There is a table with all default LSP kinds:
  Event                  | E
  Operator               | o
  TypeParameter          | T
+ Buffer                 | B
 
 For example, if you want to change the "Method" kind to the kind "method()": >
 
