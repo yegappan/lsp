@@ -499,8 +499,10 @@ usePopupInCodeAction    |Boolean| option.  When using the |:LspCodeAction|
 			line, use a popup menu instead of echoing.
 			By default this is set to false.
 						*lsp-opt-useBufferCompletion*
-useBufferCompletion     |Boolean| option. If enable adds current buffer words
-			to autocompletion list. Мay degrade vim performance.
+useBufferCompletion     |Boolean| option. If enabled, the words from the current
+			buffer are added to the auto completion list. This may degrade Vim performance
+			as the current buffer contents are processed every time the completion
+			menu is displayed.
 			By default this is set to false.
 
 For example, to disable the automatic placement of signs for the LSP

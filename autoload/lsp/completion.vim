@@ -137,6 +137,26 @@ def CompletionUltiSnips(prefix: string, items: list<dict<any>>)
   endfor
 enddef
 
+# add completion from current buf
+def CompletionFromBuffer(items: list<dict<any>>)
+    var words = {}
+    for line in getline(1, '$')
+        for word in line->split('\W\+')
+            if !has_key(words, word) && len(word) > 1
+                words[word] = 1
+                items->add({
+                    label: word,
+                    data: {
+                        entryNames: [word],
+                    },
+                    kind: 26,
+                    documentation: "",
+                })
+            endif
+        endfor
+    endfor
+enddef
+
 # process the 'textDocument/completion' reply from the LSP server
 # Result: CompletionItem[] | CompletionList | null
 export def CompletionReply(lspserver: dict<any>, cItems: any)
@@ -173,22 +193,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
   endif
 
   if opt.lspOptions.useBufferCompletion
-      # add completion from current buf
-      var words = {}
-      var text = join(getline(1, '$'), "\n")
-      for word in split(text, '\W\+')
-          if !has_key(words, word) && len(word) > 1
-              words[word] = 1
-              items->add({
-                  label: word,
-                  data: {
-                      entryNames: [word],
-                  },
-                  kind: 26,
-                  documentation: "",
-              })
-          endif
-      endfor
+    CompletionFromBuffer(items)
   endif
 
   var completeItems: list<dict<any>> = []
