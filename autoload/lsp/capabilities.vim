@@ -236,31 +236,30 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
     lspserver.isClangdInlayHintsProvider = false
   endif
 
-  # textDocument/didSave notification
+  # textDocumentSync capabilities
+  lspserver.supportsDidSave = false
+  # Default to TextDocumentSyncKind.None
+  lspserver.textDocumentSync = 0
   if lspserver.caps->has_key('textDocumentSync')
     if lspserver.caps.textDocumentSync->type() == v:t_bool
-		|| lspserver.caps.textDocumentSync->type() == v:t_number
+	|| lspserver.caps.textDocumentSync->type() == v:t_number
       lspserver.supportsDidSave = lspserver.caps.textDocumentSync
-    else
-      if lspserver.caps.textDocumentSync->type() == v:t_dict
-	if lspserver.caps.textDocumentSync->has_key('save')
-	  if lspserver.caps.textDocumentSync.save->type() == v:t_bool
+      lspserver.textDocumentSync = lspserver.caps.textDocumentSync
+    elseif lspserver.caps.textDocumentSync->type() == v:t_dict
+      # "save"
+      if lspserver.caps.textDocumentSync->has_key('save')
+	if lspserver.caps.textDocumentSync.save->type() == v:t_bool
 	    || lspserver.caps.textDocumentSync.save->type() == v:t_number
-	    lspserver.supportsDidSave = lspserver.caps.textDocumentSync.save
-	  elseif lspserver.caps.textDocumentSync.save->type() == v:t_dict
-	    lspserver.supportsDidSave = true
-	  else
-	    lspserver.supportsDidSave = false
-	  endif
-	else
-	  lspserver.supportsDidSave = false
+	  lspserver.supportsDidSave = lspserver.caps.textDocumentSync.save
+	elseif lspserver.caps.textDocumentSync.save->type() == v:t_dict
+	  lspserver.supportsDidSave = true
 	endif
-      else
-	lspserver.supportsDidSave = false
+      endif
+      # "change"
+      if lspserver.caps.textDocumentSync->has_key('change')
+	lspserver.textDocumentSync = lspserver.caps.textDocumentSync.change
       endif
     endif
-  else
-    lspserver.supportsDidSave = false
   endif
 enddef
 
