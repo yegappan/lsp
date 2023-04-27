@@ -54,26 +54,22 @@ export def InitOnce()
     }
   ])
 
-  if opt.lspOptions.highlightDiagInline
-    hlset([{name: 'LspDiagInlineError', default: true, linksto: 'SpellBad'}])
-    hlset([{name: 'LspDiagInlineWarning', default: true, linksto: 'SpellCap'}])
-    hlset([{name: 'LspDiagInlineInfo', default: true, linksto: 'SpellRare'}])
-    hlset([{name: 'LspDiagInlineHint', default: true, linksto: 'SpellLocal'}])
-    prop_type_add('LspDiagInlineError',
-			{ highlight: 'LspDiagInlineError' })
-    prop_type_add('LspDiagInlineWarning',
-			{ highlight: 'LspDiagInlineWarning' })
-    prop_type_add('LspDiagInlineInfo',
-			{ highlight: 'LspDiagInlineInfo' })
-    prop_type_add('LspDiagInlineHint',
-			{ highlight: 'LspDiagInlineHint' })
-  endif
+  hlset([{name: 'LspDiagInlineError', default: true, linksto: 'SpellBad'}])
+  hlset([{name: 'LspDiagInlineWarning', default: true, linksto: 'SpellCap'}])
+  hlset([{name: 'LspDiagInlineInfo', default: true, linksto: 'SpellRare'}])
+  hlset([{name: 'LspDiagInlineHint', default: true, linksto: 'SpellLocal'}])
+  prop_type_add('LspDiagInlineError',
+                      { highlight: 'LspDiagInlineError' })
+  prop_type_add('LspDiagInlineWarning',
+                      { highlight: 'LspDiagInlineWarning' })
+  prop_type_add('LspDiagInlineInfo',
+                      { highlight: 'LspDiagInlineInfo' })
+  prop_type_add('LspDiagInlineHint',
+                      { highlight: 'LspDiagInlineHint' })
 
-  if opt.lspOptions.showDiagWithVirtualText
-    hlset([{name: 'LspDiagVirtualText', default: true, linksto: 'LineNr'}])
-    prop_type_add('LspDiagVirtualText', {highlight: 'LspDiagVirtualText',
-					 override: true})
-  endif
+  hlset([{name: 'LspDiagVirtualText', default: true, linksto: 'LineNr'}])
+  prop_type_add('LspDiagVirtualText', {highlight: 'LspDiagVirtualText',
+                                       override: true})
 enddef
 
 # Sort diagnostics ascending based on line and character offset
