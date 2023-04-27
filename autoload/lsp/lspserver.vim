@@ -191,6 +191,8 @@ def InitServer(lspserver: dict<any>, bnr: number)
   initparams.capabilities = capabilities.GetClientCaps()
   if !lspserver.initializationOptions->empty()
     initparams.initializationOptions = lspserver.initializationOptions
+  else
+    initparams.initializationOptions = {}
   endif
 
   lspserver.rpcInitializeRequest = initparams
