@@ -1458,6 +1458,7 @@ def GetMessages(lspserver: dict<any>): list<string>
   var l = []
   var heading = $"'{lspserver.path}' Language Server Messages"
   var underlines = repeat('=', heading->len())
+  l->extend([heading, underlines])
   l->extend(lspserver.messages)
   return l
 enddef
