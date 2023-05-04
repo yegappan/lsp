@@ -311,7 +311,13 @@ Additionally the following configurations can be made:
 			}
 		}])
 <
-					*lsp-cfg-features*
+						*lsp-cfg-customRequestHandlers*
+	customRequestHandlers
+			(Optional) some lsp servers will send additional
+			request replies which you might want to silence or
+			handle.  The provided request handlers will be called
+			with a reference to the "lspserver" and the "request".
+						*lsp-cfg-features*
 	features
 			(Optional) toggle which features should be enabled for a
 			given language server. See |lsp-multiple-servers| and
