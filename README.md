@@ -175,3 +175,4 @@ Command|Description
 1. [LanguageClient-neovim](https://github.com/autozimu/LanguageClient-neovim)
 1. [ALE: Asynchronous Lint Engine](https://github.com/dense-analysis/ale)
 1. [Neovim built-in LSP client](https://neovim.io/doc/user/lsp.html)
+2. [Omnisharp LSP client](https://github.com/OmniSharp/omnisharp-vim)
