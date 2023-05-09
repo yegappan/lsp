@@ -141,13 +141,17 @@ enddef
 # Convert POSIX paths as used in Cygwin to native Windows paths
 def CygwinToWindowsPath(path: string): string
   if path =~? '^\/cygdrive\/'
-    # Convert paths of the form "/cygdrive/c/foo/bar" to "C:/foo/bar"
-    return substitute(path, '^\/cygdrive\/\(\a\)\/', '\=submatch(1) .. ":/"', "")
+    # Convert paths of the form "/cygdrive/c/foo/bar" to "c:/foo/bar"
+
+    return path->substitute('^\/cygdrive\/\(\a\)\/', '\=submatch(1) .. ":/"', "")
   elseif path =~? '^\/'
     # Convert paths of the form "/home/pete/foo" to "C:/cygwin64/home/pete/foo"
-    if len(g:cygwinroot) == 0
+
+    if g:cygwinroot->len() == 0
       # https://stackoverflow.com/a/7449029/273348
-      g:cygwinroot = substitute(system("reg query HKEY_LOCAL_MACHINE\\\\SOFTWARE\\\\Cygwin\\\\setup /v rootdir | grep rootdir"),
+      var query: string = "reg query HKEY_LOCAL_MACHINE\\\\SOFTWARE\\\\Cygwin\\\\setup /v rootdir | grep rootdir"
+
+      g:cygwinroot = system(query)->substitute(
             \ '^\s*\S\+\s\+\S\+\s\+\(\p\+\).*$',
             \ '\=submatch(1)',
             \ "")
