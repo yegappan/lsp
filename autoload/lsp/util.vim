@@ -111,6 +111,11 @@ enddef
 export def LspFileToUri(fname: string): string
   var uri: string = fname->fnamemodify(':p')
 
+  if has("win32unix")
+    # We're in Cygwin
+    uri = CygwinToWindowsPath(uri)
+  endif
+
   var on_windows: bool = false
   if uri =~? '^\a:'
     on_windows = true
@@ -131,6 +136,31 @@ export def LspFileToUri(fname: string): string
   endif
 
   return uri
+enddef
+
+# Convert POSIX paths as used in Cygwin to native Windows paths
+def CygwinToWindowsPath(path: string): string
+  if path =~? '^\/cygdrive\/'
+    # Convert paths of the form "/cygdrive/c/foo/bar" to "c:/foo/bar"
+
+    return path->substitute('^\/cygdrive\/\(\a\)\/', '\=submatch(1) .. ":/"', "")
+  elseif path =~? '^\/'
+    # Convert paths of the form "/home/pete/foo" to "C:/cygwin64/home/pete/foo"
+
+    if g:cygwinroot->len() == 0
+      # https://stackoverflow.com/a/7449029/273348
+      var query: string = "reg query HKEY_LOCAL_MACHINE\\\\SOFTWARE\\\\Cygwin\\\\setup /v rootdir | grep rootdir"
+
+      g:cygwinroot = system(query)->substitute(
+            \ '^\s*\S\+\s\+\S\+\s\+\(\p\+\).*$',
+            \ '\=submatch(1)',
+            \ "")
+    endif
+
+    return $'{g:cygwinroot}{path}'
+  else
+    return path
+  endif
 enddef
 
 # Convert a Vim buffer number to an LSP URI (file://<absolute_path>)
