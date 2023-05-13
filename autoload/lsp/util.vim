@@ -112,9 +112,9 @@ export def LspFileToUri(fname: string): string
   var uri: string = fname->fnamemodify(':p')
 
   if has("win32unix")
-    # We're in Cygwin, we need to convert POSIX style paths to Windows style.
-    # `cygpath -m` converts paths of the form "/cygdrive/c/foo/bar" to "C:/foo/bar", and
-    # paths of the form "/home/pete/foo" to "C:/cygwin64/home/pete/foo".
+    # We're in Cygwin, convert POSIX style paths to Windows style.
+    # The substitution is to remove the '^@' escape character from the end of
+    # line.
     uri = system($'cygpath -m {uri}')->substitute('^\(\p*\).*$', '\=submatch(1)', "")
   endif
 
