@@ -404,8 +404,11 @@ def DiagsUpdateLocList(bnr: number): bool
     setbufvar(bnr, 'LspQfId', getloclist(0, {id: 0}).id)
   endif
 
-  var LspQfNr: number = getloclist(0, {id: LspQfId, nr: 0}).nr
-  silent! exe $':{LspQfNr} lhistory'
+  # if pre-existing error list, make current
+  if LspQfId != 0
+    var LspQfNr: number = getloclist(0, {id: LspQfId, nr: 0}).nr
+    silent! exe $':{LspQfNr} lhistory'
+  endif
 
   return true
 enddef
