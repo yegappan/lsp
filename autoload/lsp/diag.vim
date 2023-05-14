@@ -404,6 +404,9 @@ def DiagsUpdateLocList(bnr: number): bool
     setbufvar(bnr, 'LspQfId', getloclist(0, {id: 0}).id)
   endif
 
+  var LspQfNr: number = getloclist(0, {id: LspQfId, nr: 0}).nr
+  silent! exe $':{LspQfNr} lhistory'
+
   return true
 enddef
 
