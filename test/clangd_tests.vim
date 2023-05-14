@@ -202,6 +202,13 @@ def g:Test_LspShowReferences()
   :cclose
   g:LspOptionsSet({ useQuickfixForLocations: false })
 
+  # Test for moving buffer focus to loclist
+  g:LspOptionsSet({ keepFocusInReferences: true })
+  :LspShowReferences
+  assert_equal('quickfix', getwinvar(0, '&buftype'))
+  :lclose
+  g:LspOptionsSet({ keepFocusInReferences: false })
+
   # Test for LspPeekReferences
 
   # Opening the preview window with an unsaved buffer displays the "E37: No
@@ -286,6 +293,13 @@ def g:Test_LspDiag()
   :LspDiagPrev
   output = execute('LspDiagPrev')->split("\n")
   assert_equal('Warn: No more diagnostics found', output[0])
+
+  # Test for maintaining buffer focus
+  g:LspOptionsSet({ keepFocusInDiags: false })
+  :LspDiagShow
+  assert_equal('', getwinvar(0, '&buftype'))
+  :lclose
+  g:LspOptionsSet({ keepFocusInDiags: true })
 
   # :[count]LspDiagNext
   cursor(3, 1)
