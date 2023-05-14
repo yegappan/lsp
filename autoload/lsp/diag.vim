@@ -410,12 +410,17 @@ enddef
 # Display the diagnostic messages from the LSP server for the current buffer
 # in a location list
 export def ShowAllDiags(): void
+  var save_winid = win_getid()
+
   if !DiagsUpdateLocList(bufnr())
     util.WarnMsg($'No diagnostic messages found for {@%}')
     return
   endif
 
   :lopen
+  if !opt.lspOptions.keepFocusInDiags
+    save_winid->win_gotoid()
+  endif
 enddef
 
 # Display the message of 'diag' in a popup window right below the position in
