@@ -270,7 +270,7 @@ def g:Test_LspDiag()
   assert_equal([3, 14, 'E'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
   assert_equal([5, 2, 'W'], [qfl[1].lnum, qfl[1].col, qfl[1].type])
   assert_equal([7, 2, 'W'], [qfl[2].lnum, qfl[2].col, qfl[2].type])
-  close
+  :lclose
   g:LspOptionsSet({showDiagInPopup: false})
   normal gg
   var output = execute('LspDiagCurrent')->split("\n")
@@ -294,12 +294,12 @@ def g:Test_LspDiag()
   output = execute('LspDiagPrev')->split("\n")
   assert_equal('Warn: No more diagnostics found', output[0])
 
-  # Test for maintaining buffer focus
-  g:LspOptionsSet({ keepFocusInDiags: false })
-  :LspDiagShow
-  assert_equal('', getwinvar(0, '&buftype'))
-  :lclose
+  # Test for moving buffer focus to loclist
   g:LspOptionsSet({ keepFocusInDiags: true })
+  :LspDiagShow
+  assert_equal('quickfix', getwinvar(0, '&buftype'))
+  :lclose
+  g:LspOptionsSet({ keepFocusInDiags: false })
 
   # :[count]LspDiagNext
   cursor(3, 1)
@@ -394,7 +394,7 @@ def g:Test_LspDiag_Multi()
   endif
   assert_equal([1, 9, 'E'], [qfl[1].lnum, qfl[1].col, qfl[1].type])
   assert_equal([2, 9, 'E'], [qfl[2].lnum, qfl[2].col, qfl[2].type])
-  close
+  :lclose
 
   :sleep 100m
   cursor(2, 1)
