@@ -31,9 +31,13 @@ var ftypeServerMap: dict<list<dict<any>>> = {}
 var lspInitializedOnce = false
 
 def LspInitOnce()
-  prop_type_add('LspTextRef', {highlight: 'Search', override: true})
-  prop_type_add('LspReadRef', {highlight: 'DiffChange', override: true})
-  prop_type_add('LspWriteRef', {highlight: 'DiffDelete', override: true})
+  hlset([{name: 'LspTextRef', default: true, linksto: 'Search'}])
+  hlset([{name: 'LspReadRef', default: true, linksto: 'DiffChange'}])
+  hlset([{name: 'LspWriteRef', default: true, linksto: 'DiffDelete'}])
+
+  prop_type_add('LspTextRef', {highlight: 'LspTextRef', override: true})
+  prop_type_add('LspReadRef', {highlight: 'LspReadRef', override: true})
+  prop_type_add('LspWriteRef', {highlight: 'LspWriteRef', override: true})
 
   diag.InitOnce()
   inlayhints.InitOnce()
