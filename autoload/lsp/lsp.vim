@@ -35,9 +35,9 @@ def LspInitOnce()
   hlset([{name: 'LspReadRef', default: true, linksto: 'DiffChange'}])
   hlset([{name: 'LspWriteRef', default: true, linksto: 'DiffDelete'}])
 
-  prop_type_add('LspTextRef', {highlight: 'LspTextRef', override: true})
-  prop_type_add('LspReadRef', {highlight: 'LspReadRef', override: true})
-  prop_type_add('LspWriteRef', {highlight: 'LspWriteRef', override: true})
+  prop_type_add('LspTextRef', {highlight: 'LspTextRef'})
+  prop_type_add('LspReadRef', {highlight: 'LspReadRef'})
+  prop_type_add('LspWriteRef', {highlight: 'LspWriteRef'})
 
   diag.InitOnce()
   inlayhints.InitOnce()
