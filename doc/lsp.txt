@@ -470,6 +470,13 @@ showDiagInPopup		|Boolean| option.  When using the |:LspDiagCurrent|
 						*lsp-opt-showDiagOnStatusLine*
 showDiagOnStatusLine	|Boolean| option.  Show a diagnostic message on a
 			status line.  By default this is set to false.
+						*lsp-opt-showDiagSource*
+showDiagSource		|Boolean| option. Show which language server a
+			diagnostic is comming from, by prefixing the diagnostic
+			message with the language servers name. This option
+			makes most sense when using multiple language servers in
+			the same buffer, see |lsp-multiple-servers|.  By default
+			this is set to false.
 						*lsp-opt-showDiagWithVirtualText*
 showDiagWithVirtualText	|Boolean| option.  Show diagnostic message text from
 			the language server with virtual text.  By default

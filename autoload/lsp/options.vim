@@ -53,6 +53,9 @@ export var lspOptions: dict<any> = {
   # Suppress diagnostic hover from appearing when the mouse is over the line
   # Show a diagnostic message on a status line
   showDiagOnStatusLine: false,
+  # Show which language server a diagnostic is comming from, by prefixing the
+  # diagnostic message with the language servers name.
+  showDiagSource: false,
   # Show a diagnostic messages with virtual text
   showDiagWithVirtualText: false,
   # enable inlay hints

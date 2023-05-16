@@ -272,6 +272,9 @@ export def DiagNotification(lspserver: dict<any>, uri: string, newDiags: list<di
 
   var diagWithinRange: list<dict<any>> = []
   for diag in newDiags
+    if opt.lspOptions.showDiagSource
+      diag.message = $'{lspserver.name}: {diag.message}'
+    endif
     if diag.range.start.line + 1 > lastlnum
       # Make sure the line number is a valid buffer line number
       diag.range.start.line = lastlnum - 1
