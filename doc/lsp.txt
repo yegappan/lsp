@@ -457,10 +457,6 @@ outlineOnRight		|Boolean| option.  Open the outline window on the
 						*lsp-opt-outlineWinSize*
 outlineWinSize		|Number| option.  The size of the symbol Outline
 			window.  By default this is set to 20.
-						*lsp-opt-useQuickfixForLocations*
-useQuickfixForLocations	|Boolean| option.  Show |:LspShowReferences| in a
-			quickfix list instead of a location list.
-			By default this is set to false.
 						*lsp-opt-showDiagInPopup*
 showDiagInPopup		|Boolean| option.  When using the |:LspDiagCurrent|
 			command to display the diagnostic message for the
@@ -497,6 +493,10 @@ ultisnipsSupport	|Boolean| option.  Enable SirVer/ultisnips support.
 usePopupInCodeAction    |Boolean| option.  When using the |:LspCodeAction|
 			command to display the code action for the current
 			line, use a popup menu instead of echoing.
+			By default this is set to false.
+						*lsp-opt-useQuickfixForLocations*
+useQuickfixForLocations	|Boolean| option.  Show |:LspShowReferences| in a
+			quickfix list instead of a location list.
 			By default this is set to false.
 						*lsp-opt-useBufferCompletion*
 useBufferCompletion     |Boolean| option. If enabled, the words from the current

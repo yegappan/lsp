@@ -130,7 +130,6 @@ call LspOptionsSet(#{
 	\   noNewlineInCompletion: v:false,
 	\   outlineOnRight: v:false,
 	\   outlineWinSize: 20,
-	\   useQuickfixForLocations: v:false,
 	\   showDiagInPopup: v:true,
 	\   showDiagOnStatusLine: v:false,
 	\   showDiagWithVirtualText: v:false,
@@ -139,6 +138,7 @@ call LspOptionsSet(#{
 	\   snippetSupport: v:false,
 	\   ultisnipsSupport: v:false,
 	\   usePopupInCodeAction: v:false,
+	\   useQuickfixForLocations: v:false,
 	\   useBufferCompletion: v:false,
 	\ })
 ```
