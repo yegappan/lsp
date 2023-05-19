@@ -1,31 +1,41 @@
 *lsp.txt*	Language Server Protocol (LSP) Plugin for Vim9
 
+
+		     ___      _______  _______ ~
+		    |   |    |       ||       |~
+		    |   |    |  _____||    _  |~
+		    |   |    | |_____ |   |_| |~
+		    |   |___ |_____  ||    ___|~
+		    |       | _____| ||   |    ~
+		    |_______||_______||___|    ~
+
+
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
 Last change: April 11, 2023
 
 ==============================================================================
-						*lsp-license*
-License: MIT License
-Copyright (c) 2020-2023 Yegappan Lakshmanan
+CONTENTS                                                     *lsp-contents*
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to
-deal in the Software without restriction, including without limitation the
-rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-sell copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+     1. Overview ................................. |lsp-overview|
+     2. Requirements ............................. |lsp-installation|
+     3. Usage .................................... |lsp-usage|
+     4. Configuration............................. |lsp-configuration|
+     5. Commands ................................. |lsp-commands|
+     6. Insert Mode Completion ................... |lsp-ins-mode-completion|
+     7. Diagnostics .............................. |lsp-diagnostics|
+     8. Tag Function ............................. |lsp-tagfunc|
+     9. LSP Formatting ........................... |lsp-format|
+    10. Call Hierarchy ........................... |lsp-call-hierarchy|
+    11. Autocommands ............................. |lsp-autocmds|
+    12. Highlight Groups ......................... |lsp-highlight-groups|
+    13. Debugging ................................ |lsp-debug|
+    14. Custom Command Handlers .................. |lsp-custom-commands|
+    15. Custom LSP Completion Kinds .............. |lsp-custom-kinds|
+    16. Multiple Language Servers for a buffer ... |lsp-multiple-servers|
+    17. Language Servers Features ................ |lsp-features|
+    18. License .................................. |lsp-license|
 
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-IN THE SOFTWARE.
 ==============================================================================
 1. Overview					*lsp-overview*
 
@@ -154,18 +164,19 @@ To register a language server, add the following lines to your .vimrc file
 If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the
 LSP plugin, the steps are described later in this section: >
 
-   let lspServers = [
-		\     #{
-		\	 name: 'typescriptls',
-		\	 filetype: ['javascript', 'typescript'],
-		\	 path: '/usr/local/bin/typescript-language-server',
-		\	 args: ['--stdio']
+   vim9script
+   var lspServers = [
+		\     {
+		\	 'name': 'typescriptls',
+		\	 'filetype': ['javascript', 'typescript'],
+		\	 'path': '/usr/local/bin/typescript-language-server',
+		\	 'args': ['--stdio']
 		\      },
-		\     #{
-		\	 name: 'pythonls',
-		\	 filetype: 'python',
-		\	 path: '/usr/local/bin/pyls',
-		\	 args: ['--check-parent-process', '-v']
+		\     {
+		\	 'name': 'pythonls',
+		\	 'filetype': 'python',
+		\	 'path': '/usr/local/bin/pyls',
+		\	 'args': ['--check-parent-process', '-v']
 		\      }
 		\   ]
    call LspAddServer(lspServers)
@@ -174,50 +185,51 @@ Depending on the location of the typescript and python pyls language servers
 installed in your system, update the "path" in the above snippet
 appropriately.
 
-Another example, for adding the language servers for the C, C++, Golang, Rust, 
+Another example, for adding the language servers for the C, C++, Golang, Rust,
 Shell script, Vim script and PHP file types: >
 
-   let lspServers = [
-		\     #{
-		\	 name: 'clangd',
-		\        filetype: ['c', 'cpp'],
-		\        path: '/usr/local/bin/clangd',
-		\        args: ['--background-index']
+   vim9script
+   var lspServers = [
+		\     {
+		\	 'name': 'clangd',
+		\        'filetype': ['c', 'cpp'],
+		\        'path': '/usr/local/bin/clangd',
+		\        'args': ['--background-index']
 		\     },
-                \     #{ 
-		\	 name: 'golang',
-                \        filetype: ['go', 'gomod', 'gohtmltmpl', 'gotexttmpl'],
-                \        path: '/path/to/.go/bin/gopls',
-                \        args: [],
-                \        syncInit: v:true,
+                \     {
+		\	 'name': 'golang',
+                \        'filetype': ['go', 'gomod', 'gohtmltmpl', 'gotexttmpl'],
+                \        'path': '/path/to/.go/bin/gopls',
+                \        'args': [],
+                \        'syncInit': v:true,
                 \      },
-                \     #{
-		\	 name: 'rustls',
-                \        filetype: ['rust'],
-                \        path: '/path/to/.cargo/bin/rust-analyzer',
-                \        args: [],
-                \        syncInit: v:true,
+                \     {
+		\	 'name': 'rustls',
+                \        filetype': ['rust'],
+                \        'path': '/path/to/.cargo/bin/rust-analyzer',
+                \        'args': [],
+                \        'syncInit': v:true,
                 \      },
-		\     #{
-		\	 name: 'bashls',
-		\	 filetype: 'sh',
-		\	 path: '/usr/local/bin/bash-language-server',
-		\	 args: ['start']
+		\     {
+		\	 'name': 'bashls',
+		\	 'filetype': 'sh',
+		\	 'path': '/usr/local/bin/bash-language-server',
+		\	 'args': ['start']
 		\     },
-		\     #{
-		\	 name: 'vimls',
-		\	 filetype: ['vim'],
-		\	 path: '/usr/local/bin/vim-language-server',
-		\	 args: ['--stdio']
+		\     {
+		\	 'name': 'vimls',
+		\	 'filetype': ['vim'],
+		\	 'path': '/usr/local/bin/vim-language-server',
+		\	 'args': ['--stdio']
 		\     },
-		\     #{
-		\	 name: 'phpls',
-		\        filetype: ['php'],
-		\        path: '/usr/local/bin/intelephense',
-		\        args: ['--stdio'],
-		\        syncInit: v:true,
-		\        initializationOptions: {
-		\          licenceKey: 'xxxxxxxxxxxxxxx'
+		\     {
+		\	 'name': 'phpls',
+		\        'filetype': ['php'],
+		\        'path': '/usr/local/bin/intelephense',
+		\        'args': ['--stdio'],
+		\        'syncInit': v:true,
+		\        'initializationOptions': {
+		\          'licenceKey': 'xxxxxxxxxxxxxxx'
 		\        }
 		\      }
 		\   ]
@@ -342,17 +354,18 @@ If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP
 plugin, then you need to use the VimEnter autocmd to initialize the language
 server and to set the language server options.  For example: >
 
-    let lspServers = [
-		\     #{
-		\        name: 'clangd',
-		\        filetype: ['c', 'cpp'],
-		\        path: '/usr/local/bin/clangd',
-		\        args: ['--background-index']
+    vim9script
+    var lspServers = [
+		\     {
+		\        'name': 'clangd',
+		\        'filetype': ['c', 'cpp'],
+		\        'path': '/usr/local/bin/clangd',
+		\        'args': ['--background-index']
 		\      }
 		\   ]
     autocmd VimEnter * call LspAddServer(lspServers)
 
-    let lspOpts = {'autoHighlightDiags': v:true}
+    var lspOpts = {'autoHighlightDiags': v:true}
     autocmd VimEnter * call LspOptionsSet(lspOpts)
 <
 						*lsp-options* *LspOptionsSet*
@@ -418,7 +431,7 @@ diagSignWarningText     |String| option. Change diag sign text for warnings
                         By default 'W>',
 						*lsp-opt-diagVirtualTextAlign*
 diagVirtualTextAlign	|String| option.   Alignment of diagnostics messages
-			if |lsp-opt-showDiagWithVirtualText| is set to true. 
+			if |lsp-opt-showDiagWithVirtualText| is set to true.
 			Allowed values are 'above', 'below' or 'after'
 			By default this is set to 'above',
 						*lsp-opt-echoSignature*
@@ -1012,7 +1025,7 @@ can map these commands to keys and make it easier to invoke them.
 			Remove a folder from the workspace
 
 ==============================================================================
-6. Insert mode completion
+6. Insert mode completion		    *lsp-ins-mode-completion*
 
 By default, in insert mode, the LSP plugin automatically displays the matches
 for the symbol under the cursor in an insert-completion popup menu. You can
@@ -1035,7 +1048,8 @@ server for the filetype. If this item is not specified, then omni-completion
 is enabled by default. The following example disables omni-completion for
 python: >
 
-	let lspServers = [
+    vim9script
+    var lspServers = [
 		\     {
 		\	'filetype': 'python',
 		\	'omnicompl': v:false,
@@ -1063,7 +1077,7 @@ returned items.  You can modify the 'completionMatcher' option to use either
 case insensitive or fuzzy comparison.
 
 ==============================================================================
-7. Diagnostics
+7. Diagnostics						*lsp-diagnostics*
 
 When a source file has syntax errors or warnings or static analysis warnings,
 the LSP plugin highlights them by placing |signs| in the |sign-column|.  You
@@ -1523,5 +1537,28 @@ rename				Used by |:LspRename|
 selectionRange			Used by |:LspSelectionExpand|, and |:LspSelectionShrink|
 						*lsp-features-typeDefinition*
 typeDefinition			Used by |:LspGotoTypeDef|, and |:LspPeekTypeDef|
+
+==============================================================================
+						*lsp-license*
+License: MIT License
+Copyright (c) 2020-2023 Yegappan Lakshmanan
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to
+deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+IN THE SOFTWARE.
 
 vim:tw=78:ts=8:noet:ft=help:norl:
