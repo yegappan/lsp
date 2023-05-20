@@ -251,7 +251,7 @@ enddef
 # process a diagnostic notification message from the LSP server
 # Notification: textDocument/publishDiagnostics
 # Param: PublishDiagnosticsParams
-export def DiagNotification(lspserver: dict<any>, uri: string, newDiags: list<dict<any>>): void
+export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<dict<any>>): void
   # Diagnostics are disabled for this server
   if lspserver.features->has_key('diagnostics') && !lspserver.features.diagnostics
     return
@@ -262,6 +262,11 @@ export def DiagNotification(lspserver: dict<any>, uri: string, newDiags: list<di
   if bnr == -1
     # Is this condition possible?
     return
+  endif
+
+  var newDiags: list<dict<any>> = diags_arg
+  if lspserver.processDiagHandler != null_function
+    newDiags = lspserver.processDiagHandler(diags_arg)
   endif
 
   # TODO: Is the buffer (bnr) always a loaded buffer? Should we load it here?
