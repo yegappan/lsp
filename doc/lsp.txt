@@ -166,19 +166,19 @@ LSP plugin, the steps are described later in this section: >
 
    vim9script
    var lspServers = [
-		\     {
-		\	 'name': 'typescriptls',
-		\	 'filetype': ['javascript', 'typescript'],
-		\	 'path': '/usr/local/bin/typescript-language-server',
-		\	 'args': ['--stdio']
-		\      },
-		\     {
-		\	 'name': 'pythonls',
-		\	 'filetype': 'python',
-		\	 'path': '/usr/local/bin/pyls',
-		\	 'args': ['--check-parent-process', '-v']
-		\      }
-		\   ]
+		     {
+			 name: 'typescriptls',
+			 filetype: ['javascript', 'typescript'],
+			 path: '/usr/local/bin/typescript-language-server',
+			 args: ['--stdio']
+		      },
+		     {
+			 name: 'pythonls',
+			 filetype: 'python',
+			 path: '/usr/local/bin/pyls',
+			 args: ['--check-parent-process', '-v']
+		      }
+		   ]
    call LspAddServer(lspServers)
 <
 Depending on the location of the typescript and python pyls language servers
@@ -190,49 +190,49 @@ Shell script, Vim script and PHP file types: >
 
    vim9script
    var lspServers = [
-		\     {
-		\	 'name': 'clangd',
-		\        'filetype': ['c', 'cpp'],
-		\        'path': '/usr/local/bin/clangd',
-		\        'args': ['--background-index']
-		\     },
-                \     {
-		\	 'name': 'golang',
-                \        'filetype': ['go', 'gomod', 'gohtmltmpl', 'gotexttmpl'],
-                \        'path': '/path/to/.go/bin/gopls',
-                \        'args': [],
-                \        'syncInit': v:true,
-                \      },
-                \     {
-		\	 'name': 'rustls',
-                \        filetype': ['rust'],
-                \        'path': '/path/to/.cargo/bin/rust-analyzer',
-                \        'args': [],
-                \        'syncInit': v:true,
-                \      },
-		\     {
-		\	 'name': 'bashls',
-		\	 'filetype': 'sh',
-		\	 'path': '/usr/local/bin/bash-language-server',
-		\	 'args': ['start']
-		\     },
-		\     {
-		\	 'name': 'vimls',
-		\	 'filetype': ['vim'],
-		\	 'path': '/usr/local/bin/vim-language-server',
-		\	 'args': ['--stdio']
-		\     },
-		\     {
-		\	 'name': 'phpls',
-		\        'filetype': ['php'],
-		\        'path': '/usr/local/bin/intelephense',
-		\        'args': ['--stdio'],
-		\        'syncInit': v:true,
-		\        'initializationOptions': {
-		\          'licenceKey': 'xxxxxxxxxxxxxxx'
-		\        }
-		\      }
-		\   ]
+		     {
+			name: 'clangd',
+		        filetype: ['c', 'cpp'],
+		        path: '/usr/local/bin/clangd',
+		        args: ['--background-index']
+		     },
+                     {
+			name: 'golang',
+                        filetype: ['go', 'gomod', 'gohtmltmpl', 'gotexttmpl'],
+                        path: '/path/to/.go/bin/gopls',
+                        args: [],
+                        syncInit: v:true,
+                      },
+                     {
+			name: 'rustls',
+                        filetype: ['rust'],
+                        path: '/path/to/.cargo/bin/rust-analyzer',
+                        args: [],
+                        syncInit: v:true,
+                      },
+		     {
+			name: 'bashls',
+			filetype: 'sh',
+			path: '/usr/local/bin/bash-language-server',
+			args: ['start']
+		     },
+		     {
+			name: 'vimls',
+			filetype: ['vim'],
+			path: '/usr/local/bin/vim-language-server',
+			args: ['--stdio']
+		     },
+		     {
+			name: 'phpls',
+		        filetype: ['php'],
+		        path': '/usr/local/bin/intelephense',
+		        args: ['--stdio'],
+		        syncInit: v:true,
+		        initializationOptions: {
+		        licenceKey: 'xxxxxxxxxxxxxxx'
+		        }
+		      }
+		   ]
    call LspAddServer(lspServers)
 <
 To add a language server, the following information is needed:
@@ -356,13 +356,13 @@ server and to set the language server options.  For example: >
 
     vim9script
     var lspServers = [
-		\     {
-		\        'name': 'clangd',
-		\        'filetype': ['c', 'cpp'],
-		\        'path': '/usr/local/bin/clangd',
-		\        'args': ['--background-index']
-		\      }
-		\   ]
+		     {
+		        name: 'clangd',
+		        filetype: ['c', 'cpp'],
+		        path: '/usr/local/bin/clangd',
+		        args: ['--background-index']
+		      }
+		   ]
     autocmd VimEnter * call LspAddServer(lspServers)
 
     var lspOpts = {'autoHighlightDiags': v:true}
@@ -1050,13 +1050,13 @@ python: >
 
     vim9script
     var lspServers = [
-		\     {
-		\	'filetype': 'python',
-		\	'omnicompl': v:false,
-		\	'path': '/usr/local/bin/pyls',
-		\	'args': ['--check-parent-process', '-v']
-		\     }
-		\   ]
+		     {
+			filetype: 'python',
+			omnicompl: v:false,
+			path: '/usr/local/bin/pyls',
+			args: ['--check-parent-process', '-v']
+		     }
+		   ]
 <
 If you want to use omni completion, in addition to the automatic completion,
 then you can set the 'omnifunc' option to the "g:LspOmniFunc" function: >

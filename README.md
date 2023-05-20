@@ -56,37 +56,37 @@ vim9script
 
 # Clangd language server
 call LspAddServer([{
-	\    'name': 'clangd',
-	\    'filetype': ['c', 'cpp'],
-	\    'path': '/usr/local/bin/clangd',
-	\    'args': ['--background-index']
-	\  }])
+	    name: 'clangd',
+	    filetype: ['c', 'cpp'],
+	    path: '/usr/local/bin/clangd',
+	    args: ['--background-index']
+	  }])
 
 # Javascript/Typescript language server
 call LspAddServer([{
-	\    'name': 'typescriptlang',
-	\    'filetype': ['javascript', 'typescript'],
-	\    'path': '/usr/local/bin/typescript-language-server',
-	\    'args': ['--stdio'],
-	\  }])
+	    name: 'typescriptlang',
+	    filetype: ['javascript', 'typescript'],
+	    path: '/usr/local/bin/typescript-language-server',
+	    args: ['--stdio'],
+	  }])
 
 # Go language server
 call LspAddServer([{
-	\    'name': 'golang',
-	\    'filetype': ['go', 'gomod'],
-	\    'path': '/usr/local/bin/gopls',
-	\    'args': ['serve'],
-	\    'syncInit': v:true
-	\  }])
+	    name: 'golang',
+	    filetype: ['go', 'gomod'],
+	    path: '/usr/local/bin/gopls',
+	    args: ['serve'],
+	    syncInit: v:true
+	  }])
 
 # Rust language server
 call LspAddServer([{
-	\    'name': 'rustlang',
-	\    'filetype': ['rust'],
-	\    'path': '/usr/local/bin/rust-analyzer',
-	\    'args': [],
-	\    'syncInit': v:true
-	\  }])
+	    name: 'rustlang',
+	    filetype: ['rust'],
+	    path: '/usr/local/bin/rust-analyzer',
+	    args: [],
+	    syncInit: v:true
+	  }])
 ```
 
 The above lines register the language servers for C/C++, Javascript/Typescript, Go and Rust file types.  Refer to the [Wiki](https://github.com/yegappan/lsp/wiki) page for various language server specific configuration.
@@ -108,13 +108,13 @@ If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP 
 ```viml
 vim9script
 var lspServers = [
-	\     {
-	\	 'name': 'clang',
-	\	 'filetype': ['c', 'cpp'],
-	\	 'path': '/usr/local/bin/clangd',
-	\	 'args': ['--background-index']
-	\      }
-	\   ]
+	     {
+		 name: 'clang',
+		 filetype: ['c', 'cpp'],
+		 path: '/usr/local/bin/clangd',
+		 args: ['--background-index']
+	      }
+	   ]
 autocmd VimEnter * call LspAddServer(lspServers)
 
 var lspOpts = {'autoHighlightDiags': v:true}
