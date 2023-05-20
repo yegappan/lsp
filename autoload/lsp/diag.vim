@@ -171,39 +171,43 @@ def DiagsRefresh(bnr: number)
     diag_symbol = 'E>'
   endif
 
-  var signs: list<dict<any>> = []
   var diags: list<dict<any>> = diagsMap[bnr].sortedDiagnostics
   var diaglen = diags->len()
-  var ix = 0
+  var ix: number
 
-  # Place line based diagnostics
-  while ix < diaglen
-    var diag = diags[ix]
+  if &l:signcolumn != 'no'
+    var signs: list<dict<any>> = []
+    ix = 0
+    # Place line based diagnostics
+    while ix < diaglen
+      var diag = diags[ix]
 
-    # Prioritize most important severity when there are multiple diagnostics in
-    # the same line
-    while ix + 1 < diaglen
-        && diag.range.start.line == diags[ix + 1].range.start.line
+      # Prioritize most important severity when there are multiple diagnostics in
+      # the same line
+      while ix + 1 < diaglen
+          && diag.range.start.line == diags[ix + 1].range.start.line
 
-      if diag.severity > diags[ix + 1].severity
-        diag = diags[ix + 1]
-      endif
+        if diag.severity > diags[ix + 1].severity
+          diag = diags[ix + 1]
+        endif
 
+        ix = ix + 1
+      endwhile
+
+      # increment for the iteration, place it as close to the top as possible,
+      # to avoid infinite loops, if "continue" is used.
       ix = ix + 1
+
+      var lnum = diag.range.start.line + 1
+      if signs->len() == 0 || signs[-1].lnum != lnum
+        signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
+                                    lnum: lnum,
+                                    name: DiagSevToSignName(diag.severity)})
+      endif
     endwhile
 
-    # increment for the iteration, place it as close to the top as possible,
-    # to avoid infinite loops, if "continue" is used.
-    ix = ix + 1
-
-    var lnum = diag.range.start.line + 1
-    if signs->len() == 0 || signs[-1].lnum != lnum
-      signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
-                                  lnum: lnum,
-                                  name: DiagSevToSignName(diag.severity)})
-    endif
-
-  endwhile
+    signs->sign_placelist()
+  endif
 
   # Place inline diagnostics or virtual text
   if opt.lspOptions.highlightDiagInline
@@ -266,8 +270,6 @@ def DiagsRefresh(bnr: number)
       endtry
     endwhile
   endif
-
-  signs->sign_placelist()
 enddef
 
 # New LSP diagnostic messages received from the server for a file.
