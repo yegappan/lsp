@@ -173,51 +173,99 @@ def DiagsRefresh(bnr: number)
 
   var signs: list<dict<any>> = []
   var diags: list<dict<any>> = diagsMap[bnr].sortedDiagnostics
-  for diag in diags
-    # TODO: prioritize most important severity if there are multiple diagnostics
-    # from the same line
-    var lnum = diag.range.start.line + 1
-    signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
-				lnum: lnum,
-				name: DiagSevToSignName(diag.severity)})
+  var diaglen = diags->len()
+  var ix = 0
 
-    try
-      if opt.lspOptions.highlightDiagInline
-        prop_add(diag.range.start.line + 1,
-                  util.GetLineByteFromPos(bnr, diag.range.start) + 1,
-                  {end_lnum: diag.range.end.line + 1,
-                    end_col: util.GetLineByteFromPos(bnr, diag.range.end) + 1,
-                    bufnr: bnr,
-                    type: DiagSevToInlineHLName(diag.severity)})
+  # Place line based diagnostics
+  while ix < diaglen
+    var diag = diags[ix]
+
+    # Prioritize most important severity when there are multiple diagnostics in
+    # the same line
+    while ix + 1 < diaglen
+        && diag.range.start.line == diags[ix + 1].range.start.line
+
+      if diag.severity > diags[ix + 1].severity
+        diag = diags[ix + 1]
       endif
 
-      if opt.lspOptions.showDiagWithVirtualText
+      ix = ix + 1
+    endwhile
 
-        var padding: number
-        var symbol: string = diag_symbol
+    # increment for the iteration, place it as close to the top as possible,
+    # to avoid infinite loops, if "continue" is used.
+    ix = ix + 1
 
-        if diag_align == 'after'
-          padding = 3
-          symbol = DiagSevToSymbolText(diag.severity)
-        else
-          padding = diag.range.start.character
-          if padding > 0
-            padding = strdisplaywidth(getline(diag.range.start.line + 1)[ : diag.range.start.character - 1])
-          endif
+    var lnum = diag.range.start.line + 1
+    if signs->len() == 0 || signs[-1].lnum != lnum
+      signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
+                                  lnum: lnum,
+                                  name: DiagSevToSignName(diag.severity)})
+    endif
+
+  endwhile
+
+  # Place inline diagnostics or virtual text
+  if opt.lspOptions.highlightDiagInline
+      || opt.lspOptions.showDiagWithVirtualText
+    ix = 0
+    while ix < diaglen
+      var diag = diags[ix]
+
+      # Prioritize most important severity when there are multiple diagnostics in
+      # the same position
+      while ix + 1 < diaglen
+          && diag.range.start.line == diags[ix + 1].range.start.line
+          && diag.range.start.character == diags[ix + 1].range.start.character
+        if diag.severity > diags[ix + 1].severity
+          diag = diags[ix + 1]
         endif
 
-        prop_add(lnum, 0, {bufnr: bnr,
-                           type: 'LspDiagVirtualText',
-                           text: $'{symbol} {diag.message}',
-                           text_align: diag_align,
-                           text_wrap: diag_wrap,
-                           text_padding_left: padding})
-      endif
-    catch /E966\|E964/ # Invalid lnum | Invalid col
-      # Diagnostics arrive asynchronous and the document changed while they wore
-      # send. Ignore this as new once will arrive shortly.
-    endtry
-  endfor
+        ix = ix + 1
+      endwhile
+
+      # increment for the iteration, place it as close to the top as possible,
+      # to avoid infinite loops, if "continue" is used.
+      ix = ix + 1
+
+      try
+        if opt.lspOptions.highlightDiagInline
+          prop_add(diag.range.start.line + 1,
+                    util.GetLineByteFromPos(bnr, diag.range.start) + 1,
+                    {end_lnum: diag.range.end.line + 1,
+                      end_col: util.GetLineByteFromPos(bnr, diag.range.end) + 1,
+                      bufnr: bnr,
+                      type: DiagSevToInlineHLName(diag.severity)})
+        endif
+
+        if opt.lspOptions.showDiagWithVirtualText
+          var padding: number
+          var symbol: string = diag_symbol
+
+          if diag_align == 'after'
+            padding = 3
+            symbol = DiagSevToSymbolText(diag.severity)
+          else
+            padding = diag.range.start.character
+            if padding > 0
+              padding = strdisplaywidth(getline(diag.range.start.line + 1))
+            endif
+          endif
+
+          var lnum = diag.range.start.line + 1
+          prop_add(lnum, 0, {bufnr: bnr,
+                             type: 'LspDiagVirtualText',
+                             text: $'{symbol} {diag.message}',
+                             text_align: diag_align,
+                             text_wrap: diag_wrap,
+                             text_padding_left: padding})
+        endif
+      catch /E966\|E964/ # Invalid lnum | Invalid col
+        # Diagnostics arrive asynchronous and the document changed while they
+        # wore send. Ignore this as new once will arrive shortly.
+      endtry
+    endwhile
+  endif
 
   signs->sign_placelist()
 enddef
