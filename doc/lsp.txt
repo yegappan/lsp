@@ -326,7 +326,22 @@ Additionally the following configurations can be made:
 			language server diagnostics and returns a new list of
 			filtered, or otherwise changed diagnostics.  Can be used
 			to remove unwanted diagnostics, prefix the diagnostics
-			text, etc.
+			text, etc.  The following example will remove all but
+			errors and warnings: >
+
+		vim9script
+		g:LspAddServer([{
+			filetype: ['javascript', 'typescript'],
+			path: '/usr/local/bin/typescript-language-server',
+			args: ['--stdio'],
+			processDiagHandler: (diags: list<dict<any>>) => {
+				# Only include errors and warnings
+				return diags->filter((diag, ix) => {
+					return diag.severity <= 2
+				})
+			},
+		}])
+<
 						*lsp-cfg-syncInit*
 	syncInit        (Optional) for language servers (e.g. rust analyzer,
 			gopls, etc.) that take time to initialize and reply to
