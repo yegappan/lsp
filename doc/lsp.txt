@@ -179,7 +179,7 @@ LSP plugin, the steps are described later in this section: >
 			 args: ['--check-parent-process', '-v']
 		      }
 		   ]
-   call LspAddServer(lspServers)
+   LspAddServer(lspServers)
 <
 Depending on the location of the typescript and python pyls language servers
 installed in your system, update the "path" in the above snippet
@@ -233,7 +233,7 @@ Shell script, Vim script and PHP file types: >
 		        }
 		      }
 		   ]
-   call LspAddServer(lspServers)
+   LspAddServer(lspServers)
 <
 To add a language server, the following information is needed:
 
@@ -363,10 +363,10 @@ server and to set the language server options.  For example: >
 		        args: ['--background-index']
 		      }
 		   ]
-    autocmd VimEnter * call LspAddServer(lspServers)
+    autocmd VimEnter * LspAddServer(lspServers)
 
     var lspOpts = {'autoHighlightDiags': v:true}
-    autocmd VimEnter * call LspOptionsSet(lspOpts)
+    autocmd VimEnter * LspOptionsSet(lspOpts)
 <
 						*lsp-options* *LspOptionsSet*
 						*g:LspOptionsSet*
@@ -521,7 +521,7 @@ useBufferCompletion     |Boolean| option. If enabled, the words from the current
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file: >
 
-	call LspOptionsSet({'autoHighlightDiags': v:false})
+	LspOptionsSet({'autoHighlightDiags': v:false})
 <
 The LspOptionsGet() function returns a |Dict| of all the LSP plugin options,
 To get a particular option value you can use the following: >
@@ -710,7 +710,7 @@ can map these commands to keys and make it easier to invoke them.
 			documentation in the preview window instead of in a
 			popup set >
 
-			    call LspOptionsSet({'hoverInPreview': v:true})
+			    LspOptionsSet({'hoverInPreview': v:true})
 <
 			Default is false.
 
@@ -925,7 +925,7 @@ can map these commands to keys and make it easier to invoke them.
 			references in a quickfix list instead of in a location
 			list set >
 
-			call LspOptionsSet({'useQuickfixForLocations': v:true})
+			LspOptionsSet({'useQuickfixForLocations': v:true})
 <
 						*:LspShowSignature*
 :LspShowSignature	Displays the signature of the symbol (e.g. a function
@@ -937,14 +937,14 @@ can map these commands to keys and make it easier to invoke them.
 			this, you can set the showSignature option to false in
 			your .vimrc file: >
 
-			call LspOptionsSet({'showSignature': v:false})
+			LspOptionsSet({'showSignature': v:false})
 <
 			Default is true.
 
 			You can get the function signature echoed in cmdline
 			rather than displayed in popup if you use >
 
-			call LspOptionsSet({'echoSignature': v:true})
+			LspOptionsSet({'echoSignature': v:true})
 <
 			Default is false.
 
@@ -1034,7 +1034,7 @@ use the keys described in |popupmenu-keys| with this menu.
 To disable the auto-completion for all the files, you can set the
 'autoComplete' option to v:false in your .vimrc file: >
 
-	call LspOptionsSet({'autoComplete': v:false})
+	LspOptionsSet({'autoComplete': v:false})
 <
 If this variable is set, then the LSP plugin will not automatically start
 completion in insert mode and instead supports omni-completion (|compl-omni|).
@@ -1099,7 +1099,7 @@ using the |:LspDiagHighlightDisable| command and re-enable them using the
 To disable the automatic placement of signs on the lines with a diagnostic
 message, you can set the 'autoHighlightDiags' option to v:false: >
 
-	call LspOptionsSet({'autoHighlightDiags': v:false})
+	LspOptionsSet({'autoHighlightDiags': v:false})
 <
 By default the 'autoHighlightDiags' option is set to v:true.
 

@@ -55,7 +55,7 @@ To register a LSP server, add the following lines to your .vimrc file (use only 
 vim9script
 
 # Clangd language server
-call LspAddServer([{
+LspAddServer([{
 	    name: 'clangd',
 	    filetype: ['c', 'cpp'],
 	    path: '/usr/local/bin/clangd',
@@ -63,7 +63,7 @@ call LspAddServer([{
 	  }])
 
 # Javascript/Typescript language server
-call LspAddServer([{
+LspAddServer([{
 	    name: 'typescriptlang',
 	    filetype: ['javascript', 'typescript'],
 	    path: '/usr/local/bin/typescript-language-server',
@@ -71,7 +71,7 @@ call LspAddServer([{
 	  }])
 
 # Go language server
-call LspAddServer([{
+LspAddServer([{
 	    name: 'golang',
 	    filetype: ['go', 'gomod'],
 	    path: '/usr/local/bin/gopls',
@@ -80,7 +80,7 @@ call LspAddServer([{
 	  }])
 
 # Rust language server
-call LspAddServer([{
+LspAddServer([{
 	    name: 'rustlang',
 	    filetype: ['rust'],
 	    path: '/usr/local/bin/rust-analyzer',
@@ -115,10 +115,10 @@ var lspServers = [
 		 args: ['--background-index']
 	      }
 	   ]
-autocmd VimEnter * call LspAddServer(lspServers)
+autocmd VimEnter * LspAddServer(lspServers)
 
 var lspOpts = {'autoHighlightDiags': v:true}
-autocmd VimEnter * call LspOptionsSet(lspOpts)
+autocmd VimEnter * LspOptionsSet(lspOpts)
 ```
 
 ## Supported Commands
