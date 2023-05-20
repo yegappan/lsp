@@ -52,41 +52,40 @@ The LSP servers are registered using the LspAddServer() function. This function 
 
 To register a LSP server, add the following lines to your .vimrc file (use only the LSP servers that you need from the below list).  If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, the steps are described later in this section.
 ```viml
-vim9script
 
-# Clangd language server
-LspAddServer([{
-	    name: 'clangd',
-	    filetype: ['c', 'cpp'],
-	    path: '/usr/local/bin/clangd',
-	    args: ['--background-index']
-	  }])
+" Clangd language server
+call LspAddServer([#{
+	\    name: 'clangd',
+	\    filetype: ['c', 'cpp'],
+	\    path: '/usr/local/bin/clangd',
+	\    args: ['--background-index']
+	\  }])
 
-# Javascript/Typescript language server
-LspAddServer([{
-	    name: 'typescriptlang',
-	    filetype: ['javascript', 'typescript'],
-	    path: '/usr/local/bin/typescript-language-server',
-	    args: ['--stdio'],
-	  }])
+" Javascript/Typescript language server
+call LspAddServer([#{
+	\    name: 'typescriptlang',
+	\    filetype: ['javascript', 'typescript'],
+	\    path: '/usr/local/bin/typescript-language-server',
+	\    args: ['--stdio'],
+	\  }])
 
-# Go language server
-LspAddServer([{
-	    name: 'golang',
-	    filetype: ['go', 'gomod'],
-	    path: '/usr/local/bin/gopls',
-	    args: ['serve'],
-	    syncInit: v:true
-	  }])
+" Go language server
+call LspAddServer([#{
+	\    name: 'golang',
+	\    filetype: ['go', 'gomod'],
+	\    path: '/usr/local/bin/gopls',
+	\    args: ['serve'],
+	\    syncInit: v:true
+	\  }])
 
-# Rust language server
-LspAddServer([{
-	    name: 'rustlang',
-	    filetype: ['rust'],
-	    path: '/usr/local/bin/rust-analyzer',
-	    args: [],
-	    syncInit: v:true
-	  }])
+" Rust language server
+call LspAddServer([#{
+	\    name: 'rustlang',
+	\    filetype: ['rust'],
+	\    path: '/usr/local/bin/rust-analyzer',
+	\    args: [],
+	\    syncInit: v:true
+	\  }])
 ```
 
 The above lines register the language servers for C/C++, Javascript/Typescript, Go and Rust file types.  Refer to the [Wiki](https://github.com/yegappan/lsp/wiki) page for various language server specific configuration.
@@ -98,7 +97,7 @@ Field|Description
 filetype|One or more file types supported by the LSP server.  This can be a String or a List. To specify multiple multiple file types, use a List.
 path|complete path to the LSP server executable (without any arguments).
 args|a list of command-line arguments passed to the LSP server. Each argument is a separate List item.
-initializationOptions|User provided initialization options. May be of any type. For example the *intelephense* PHP language server accept several options here with the License Key among others.
+initializationOptions|User provided initialization options. May be of any type. For example the *intelephense* PHP language server accept several options here with the License Key among others. 
 customNotificationHandlers|A dictionary of notifications and functions that can be specified to add support for custom language server notifications.
 features|A dictionary of booleans that can be specified to toggle what things a given LSP is providing (folding, goto definition, etc) This is useful when running multiple servers in one buffer.
 
@@ -106,19 +105,18 @@ The LspAddServer() function accepts a list of LSP servers with the above informa
 
 If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, then you need to use the VimEnter autocmd to initialize the LSP server and to set the LSP server options.  For example:
 ```viml
-vim9script
-var lspServers = [
-	     {
-		 name: 'clang',
-		 filetype: ['c', 'cpp'],
-		 path: '/usr/local/bin/clangd',
-		 args: ['--background-index']
-	      }
-	   ]
-autocmd VimEnter * LspAddServer(lspServers)
+let lspServers = [
+	\     #{
+	\	 name: 'clang',
+	\	 filetype: ['c', 'cpp'],
+	\	 path: '/usr/local/bin/clangd',
+	\	 args: ['--background-index']
+	\      }
+	\   ]
+autocmd VimEnter * call LspAddServer(lspServers)
 
-var lspOpts = {'autoHighlightDiags': v:true}
-autocmd VimEnter * LspOptionsSet(lspOpts)
+let lspOpts = {'autoHighlightDiags': v:true}
+autocmd VimEnter * call LspOptionsSet(lspOpts)
 ```
 
 ## Supported Commands
