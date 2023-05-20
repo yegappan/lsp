@@ -614,6 +614,11 @@ export def AddServer(serverList: list<dict<any>>)
 
     var ProcessDiagHandler: func = null_function
     if server->has_key('processDiagHandler')
+      if server.processDiagHandler->type() != v:t_func
+        util.ErrMsg($'Setting of processDiagHandler {server.processDiagHandler} is not a Funcref nor lambda')
+        return
+      endif
+
       ProcessDiagHandler = server.processDiagHandler
     endif
 
