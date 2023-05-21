@@ -618,8 +618,12 @@ export def AddServer(serverList: list<dict<any>>)
         util.ErrMsg($'Setting of processDiagHandler {server.processDiagHandler} is not a Funcref nor lambda')
         return
       endif
-
       ProcessDiagHandler = server.processDiagHandler
+    endif
+
+    var customRequestHandlers: dict<func> = {}
+    if server->has_key('customRequestHandlers')
+      customRequestHandlers = server.customRequestHandlers
     endif
 
     var features: dict<bool> = {}
@@ -671,7 +675,8 @@ export def AddServer(serverList: list<dict<any>>)
 						    server.runIfSearch,
 						    server.runUnlessSearch,
 						    customNotificationHandlers,
-						    ProcessDiagHandler,
+						    customRequestHandlers,
+ 						    ProcessDiagHandler,
 						    features, server.debug)
 
     var ftypes = server.filetype
