@@ -1,4 +1,4 @@
-![unit-tests](https://github.com/yegappan/lsp/workflows/unit-tests/badge.svg?branch=main)
+[![unit-tests](https://github.com/yegappan/lsp/workflows/unit-tests/badge.svg?branch=main)](https://github.com/yegappan/lsp/actions/workflows/unitests.yml?query=branch%3Amain)
 
 Language Server Protocol (LSP) plugin for Vim. You need Vim version 9.0 or above to use this plugin.  This plugin is written using only the Vim9 script.
 
