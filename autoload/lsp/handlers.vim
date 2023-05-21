@@ -186,12 +186,18 @@ enddef
 export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
   var lspRequestHandlers: dict<func> =
     {
-      'workspace/applyEdit': ProcessApplyEditReq,
-      'workspace/workspaceFolders': ProcessWorkspaceFoldersReq,
-      'window/workDoneProgress/create': ProcessWorkDoneProgressCreate,
       'client/registerCapability': ProcessClientRegisterCap,
       'client/unregisterCapability': ProcessClientUnregisterCap,
-      'workspace/configuration': ProcessWorkspaceConfiguration
+      'window/workDoneProgress/create': ProcessWorkDoneProgressCreate,
+      'workspace/applyEdit': ProcessApplyEditReq,
+      'workspace/configuration': ProcessWorkspaceConfiguration,
+      'workspace/workspaceFolders': ProcessWorkspaceFoldersReq
+      # TODO: Handle the following requests from the server:
+      #     workspace/codeLens/refresh
+      #     workspace/diagnostic/refresh
+      #     workspace/inlayHint/refresh
+      #     workspace/inlineValue/refresh
+      #     workspace/semanticTokens/refresh
     }
 
   # Explicitly ignored requests
