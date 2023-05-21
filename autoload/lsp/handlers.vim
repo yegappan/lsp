@@ -182,10 +182,6 @@ def ProcessClientUnregisterCap(lspserver: dict<any>, request: dict<any>)
   lspserver.sendResponse(request, {}, {})
 enddef
 
-def ProcessUnsupportedReq(lspserver: dict<any>, request: dict<any>)
-  util.ErrMsg($'Unsupported request message received from the LSP server ({lspserver.path}), message = {request->string()}')
-enddef
-
 # process a request message from the server
 export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
   var lspRequestHandlers: dict<func> =
@@ -195,9 +191,7 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
       'window/workDoneProgress/create': ProcessWorkDoneProgressCreate,
       'client/registerCapability': ProcessClientRegisterCap,
       'client/unregisterCapability': ProcessClientUnregisterCap,
-      'workspace/configuration': ProcessWorkspaceConfiguration,
-      'workspace/codeLens/refresh': ProcessUnsupportedReq,
-      'workspace/semanticTokens/refresh': ProcessUnsupportedReq
+      'workspace/configuration': ProcessWorkspaceConfiguration
     }
 
   # Explicitly ignored requests
@@ -210,6 +204,8 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
 
   if lspRequestHandlers->has_key(request.method)
     lspRequestHandlers[request.method](lspserver, request)
+  elseif lspserver.customRequestHandlers->has_key(request.method)
+    lspserver.customRequestHandlers[request.method](lspserver, request)
   elseif lspIgnoredRequestHandlers->index(request.method) == -1
     util.ErrMsg($'Unsupported request message received from the LSP server ({lspserver.path}), message = {request->string()}')
   endif

@@ -612,6 +612,11 @@ export def AddServer(serverList: list<dict<any>>)
       customNotificationHandlers = server.customNotificationHandlers
     endif
 
+    var customRequestHandlers: dict<func> = {}
+    if server->has_key('customRequestHandlers')
+      customRequestHandlers = server.customRequestHandlers
+    endif
+
     var features: dict<bool> = {}
     if server->has_key('features')
       features = server.features
@@ -661,6 +666,7 @@ export def AddServer(serverList: list<dict<any>>)
 						    server.runIfSearch,
 						    server.runUnlessSearch,
 						    customNotificationHandlers,
+						    customRequestHandlers,
 						    features, server.debug)
 
     var ftypes = server.filetype
