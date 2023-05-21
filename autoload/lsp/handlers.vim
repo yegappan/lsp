@@ -194,11 +194,19 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
       'workspace/configuration': ProcessWorkspaceConfiguration
     }
 
+  # Explicitly ignored requests
+  var lspIgnoredRequestHandlers: list<string> =
+    [
+      # Eclipse java language server sends the 'workspace/executeClientCommand' 
+      # request (to reload bundles) which is not in the LSP specification.
+      'workspace/executeClientCommand',
+    ]
+
   if lspRequestHandlers->has_key(request.method)
     lspRequestHandlers[request.method](lspserver, request)
   elseif lspserver.customRequestHandlers->has_key(request.method)
     lspserver.customRequestHandlers[request.method](lspserver, request)
-  else
+  elseif lspIgnoredRequestHandlers->index(request.method) == -1
     util.ErrMsg($'Unsupported request message received from the LSP server ({lspserver.path}), message = {request->string()}')
   endif
 enddef

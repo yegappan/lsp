@@ -705,7 +705,7 @@ def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
       endif
     endif
 
-    # Select the location requsted in 'count'
+    # Select the location requested in 'count'
     var idx = count - 1
     if idx >= reply.result->len()
       idx = reply.result->len() - 1
@@ -1426,7 +1426,7 @@ enddef
 # Display the LSP server initialize request and result
 def GetInitializeRequest(lspserver: dict<any>): list<string>
   var l = []
-  var heading = $"'{lspserver.path}' Language Server Initialize Requst"
+  var heading = $"'{lspserver.path}' Language Server Initialize Request"
   var underlines = repeat('=', heading->len())
   l->extend([heading, underlines])
   if lspserver->has_key('rpcInitializeRequest')

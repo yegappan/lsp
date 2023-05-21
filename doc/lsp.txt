@@ -1,31 +1,32 @@
 *lsp.txt*	Language Server Protocol (LSP) Plugin for Vim9
 
+
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
 Last change: April 11, 2023
 
 ==============================================================================
-						*lsp-license*
-License: MIT License
-Copyright (c) 2020-2023 Yegappan Lakshmanan
+CONTENTS                                                     *lsp-contents*
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to
-deal in the Software without restriction, including without limitation the
-rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-sell copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+     1. Overview ................................. |lsp-overview|
+     2. Requirements ............................. |lsp-installation|
+     3. Usage .................................... |lsp-usage|
+     4. Configuration............................. |lsp-configuration|
+     5. Commands ................................. |lsp-commands|
+     6. Insert Mode Completion ................... |lsp-ins-mode-completion|
+     7. Diagnostics .............................. |lsp-diagnostics|
+     8. Tag Function ............................. |lsp-tagfunc|
+     9. LSP Formatting ........................... |lsp-format|
+    10. Call Hierarchy ........................... |lsp-call-hierarchy|
+    11. Autocommands ............................. |lsp-autocmds|
+    12. Highlight Groups ......................... |lsp-highlight-groups|
+    13. Debugging ................................ |lsp-debug|
+    14. Custom Command Handlers .................. |lsp-custom-commands|
+    15. Custom LSP Completion Kinds .............. |lsp-custom-kinds|
+    16. Multiple Language Servers for a buffer ... |lsp-multiple-servers|
+    17. Language Servers Features ................ |lsp-features|
+    18. License .................................. |lsp-license|
 
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-IN THE SOFTWARE.
 ==============================================================================
 1. Overview					*lsp-overview*
 
@@ -154,74 +155,76 @@ To register a language server, add the following lines to your .vimrc file
 If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the
 LSP plugin, the steps are described later in this section: >
 
-   let lspServers = [
-		\     #{
-		\	 name: 'typescriptls',
-		\	 filetype: ['javascript', 'typescript'],
-		\	 path: '/usr/local/bin/typescript-language-server',
-		\	 args: ['--stdio']
-		\      },
-		\     #{
-		\	 name: 'pythonls',
-		\	 filetype: 'python',
-		\	 path: '/usr/local/bin/pyls',
-		\	 args: ['--check-parent-process', '-v']
-		\      }
-		\   ]
-   call LspAddServer(lspServers)
+   vim9script
+   var lspServers = [
+		     {
+			 name: 'typescriptls',
+			 filetype: ['javascript', 'typescript'],
+			 path: '/usr/local/bin/typescript-language-server',
+			 args: ['--stdio']
+		      },
+		     {
+			 name: 'pythonls',
+			 filetype: 'python',
+			 path: '/usr/local/bin/pyls',
+			 args: ['--check-parent-process', '-v']
+		      }
+		   ]
+   LspAddServer(lspServers)
 <
 Depending on the location of the typescript and python pyls language servers
 installed in your system, update the "path" in the above snippet
 appropriately.
 
-Another example, for adding the language servers for the C, C++, Golang, Rust, 
+Another example, for adding the language servers for the C, C++, Golang, Rust,
 Shell script, Vim script and PHP file types: >
 
-   let lspServers = [
-		\     #{
-		\	 name: 'clangd',
-		\        filetype: ['c', 'cpp'],
-		\        path: '/usr/local/bin/clangd',
-		\        args: ['--background-index']
-		\     },
-                \     #{ 
-		\	 name: 'golang',
-                \        filetype: ['go', 'gomod', 'gohtmltmpl', 'gotexttmpl'],
-                \        path: '/path/to/.go/bin/gopls',
-                \        args: [],
-                \        syncInit: v:true,
-                \      },
-                \     #{
-		\	 name: 'rustls',
-                \        filetype: ['rust'],
-                \        path: '/path/to/.cargo/bin/rust-analyzer',
-                \        args: [],
-                \        syncInit: v:true,
-                \      },
-		\     #{
-		\	 name: 'bashls',
-		\	 filetype: 'sh',
-		\	 path: '/usr/local/bin/bash-language-server',
-		\	 args: ['start']
-		\     },
-		\     #{
-		\	 name: 'vimls',
-		\	 filetype: ['vim'],
-		\	 path: '/usr/local/bin/vim-language-server',
-		\	 args: ['--stdio']
-		\     },
-		\     #{
-		\	 name: 'phpls',
-		\        filetype: ['php'],
-		\        path: '/usr/local/bin/intelephense',
-		\        args: ['--stdio'],
-		\        syncInit: v:true,
-		\        initializationOptions: {
-		\          licenceKey: 'xxxxxxxxxxxxxxx'
-		\        }
-		\      }
-		\   ]
-   call LspAddServer(lspServers)
+   vim9script
+   var lspServers = [
+		     {
+			name: 'clangd',
+		        filetype: ['c', 'cpp'],
+		        path: '/usr/local/bin/clangd',
+		        args: ['--background-index']
+		     },
+                     {
+			name: 'golang',
+                        filetype: ['go', 'gomod', 'gohtmltmpl', 'gotexttmpl'],
+                        path: '/path/to/.go/bin/gopls',
+                        args: [],
+                        syncInit: true,
+                      },
+                     {
+			name: 'rustls',
+                        filetype: ['rust'],
+                        path: '/path/to/.cargo/bin/rust-analyzer',
+                        args: [],
+                        syncInit: true,
+                      },
+		     {
+			name: 'bashls',
+			filetype: 'sh',
+			path: '/usr/local/bin/bash-language-server',
+			args: ['start']
+		     },
+		     {
+			name: 'vimls',
+			filetype: ['vim'],
+			path: '/usr/local/bin/vim-language-server',
+			args: ['--stdio']
+		     },
+		     {
+			name: 'phpls',
+		        filetype: ['php'],
+		        path': '/usr/local/bin/intelephense',
+		        args: ['--stdio'],
+		        syncInit: true,
+		        initializationOptions: {
+		        licenceKey: 'xxxxxxxxxxxxxxx'
+		        }
+		      }
+		   ]
+   LspAddServer(lspServers)
 <
 To add a language server, the following information is needed:
 
@@ -325,15 +328,15 @@ Additionally the following configurations can be made:
 						*lsp-cfg-omnicompl*
 	omnicompl	(Optional) a boolean value that enables (true)
 			or disables (false) omni-completion for this file
-			types. By default this is set to "v:true".
+			types. By default this is set to "true".
 						*lsp-cfg-syncInit*
 	syncInit        (Optional) for language servers (e.g. rust analyzer,
 			gopls, etc.) that take time to initialize and reply to
 			a "initialize" request message this should be set to
-			"v:true". If this is set to true, then a synchronous
+			"true". If this is set to true, then a synchronous
 			call is used to initialize the language server,
 			otherwise the server is initialized asynchronously.
-			By default this is set to "v:false".
+			By default this is set to "false".
 						*lsp-cfg-debug*
 	debug		(Optional) log the messages printed by this language
 			server in stdout and stderr to a file.  Useful for
@@ -348,18 +351,19 @@ If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP
 plugin, then you need to use the VimEnter autocmd to initialize the language
 server and to set the language server options.  For example: >
 
-    let lspServers = [
-		\     #{
-		\        name: 'clangd',
-		\        filetype: ['c', 'cpp'],
-		\        path: '/usr/local/bin/clangd',
-		\        args: ['--background-index']
-		\      }
-		\   ]
-    autocmd VimEnter * call LspAddServer(lspServers)
+    vim9script
+    var lspServers = [
+		     {
+		        name: 'clangd',
+		        filetype: ['c', 'cpp'],
+		        path: '/usr/local/bin/clangd',
+		        args: ['--background-index']
+		      }
+		   ]
+    autocmd VimEnter * LspAddServer(lspServers)
 
-    let lspOpts = {'autoHighlightDiags': v:true}
-    autocmd VimEnter * call LspOptionsSet(lspOpts)
+    var lspOpts = {'autoHighlightDiags': true}
+    autocmd VimEnter * LspOptionsSet(lspOpts)
 <
 						*lsp-options* *LspOptionsSet*
 						*g:LspOptionsSet*
@@ -424,7 +428,7 @@ diagSignWarningText     |String| option. Change diag sign text for warnings
                         By default 'W>',
 						*lsp-opt-diagVirtualTextAlign*
 diagVirtualTextAlign	|String| option.   Alignment of diagnostics messages
-			if |lsp-opt-showDiagWithVirtualText| is set to true. 
+			if |lsp-opt-showDiagWithVirtualText| is set to true.
 			Allowed values are 'above', 'below' or 'after'
 			By default this is set to 'above',
 						*lsp-opt-echoSignature*
@@ -463,10 +467,6 @@ outlineOnRight		|Boolean| option.  Open the outline window on the
 						*lsp-opt-outlineWinSize*
 outlineWinSize		|Number| option.  The size of the symbol Outline
 			window.  By default this is set to 20.
-						*lsp-opt-useQuickfixForLocations*
-useQuickfixForLocations	|Boolean| option.  Show |:LspShowReferences| in a
-			quickfix list instead of a location list.
-			By default this is set to false.
 						*lsp-opt-showDiagInPopup*
 showDiagInPopup		|Boolean| option.  When using the |:LspDiagCurrent|
 			command to display the diagnostic message for the
@@ -504,6 +504,10 @@ usePopupInCodeAction    |Boolean| option.  When using the |:LspCodeAction|
 			command to display the code action for the current
 			line, use a popup menu instead of echoing.
 			By default this is set to false.
+						*lsp-opt-useQuickfixForLocations*
+useQuickfixForLocations	|Boolean| option.  Show |:LspShowReferences| in a
+			quickfix list instead of a location list.
+			By default this is set to false.
 						*lsp-opt-useBufferCompletion*
 useBufferCompletion     |Boolean| option. If enabled, the words from the current
 			buffer are added to the auto completion list. This may degrade Vim performance
@@ -514,7 +518,7 @@ useBufferCompletion     |Boolean| option. If enabled, the words from the current
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file: >
 
-	call LspOptionsSet({'autoHighlightDiags': v:false})
+	LspOptionsSet({'autoHighlightDiags': false})
 <
 The LspOptionsGet() function returns a |Dict| of all the LSP plugin options,
 To get a particular option value you can use the following: >
@@ -550,7 +554,7 @@ can map these commands to keys and make it easier to invoke them.
 						*:LspDiagCurrent*
 :LspDiagCurrent		Displays the diagnostic message (if any) for the
 			current line.  If the option 'showDiagInPopup' is set
-			to v:true (default), then the message is displayed in
+			to true (default), then the message is displayed in
 			a popup window.  Otherwise the message is displayed in
 			the status message area.
 
@@ -703,7 +707,7 @@ can map these commands to keys and make it easier to invoke them.
 			documentation in the preview window instead of in a
 			popup set >
 
-			    call LspOptionsSet({'hoverInPreview': v:true})
+			    LspOptionsSet({'hoverInPreview': true})
 <
 			Default is false.
 
@@ -918,7 +922,7 @@ can map these commands to keys and make it easier to invoke them.
 			references in a quickfix list instead of in a location
 			list set >
 
-			call LspOptionsSet({'useQuickfixForLocations': v:true})
+			LspOptionsSet({'useQuickfixForLocations': true})
 <
 						*:LspShowSignature*
 :LspShowSignature	Displays the signature of the symbol (e.g. a function
@@ -930,14 +934,14 @@ can map these commands to keys and make it easier to invoke them.
 			this, you can set the showSignature option to false in
 			your .vimrc file: >
 
-			call LspOptionsSet({'showSignature': v:false})
+			LspOptionsSet({'showSignature': false})
 <
 			Default is true.
 
 			You can get the function signature echoed in cmdline
 			rather than displayed in popup if you use >
 
-			call LspOptionsSet({'echoSignature': v:true})
+			LspOptionsSet({'echoSignature': true})
 <
 			Default is false.
 
@@ -1018,16 +1022,16 @@ can map these commands to keys and make it easier to invoke them.
 			Remove a folder from the workspace
 
 ==============================================================================
-6. Insert mode completion
+6. Insert mode completion		    *lsp-ins-mode-completion*
 
 By default, in insert mode, the LSP plugin automatically displays the matches
 for the symbol under the cursor in an insert-completion popup menu. You can
 use the keys described in |popupmenu-keys| with this menu.
 
 To disable the auto-completion for all the files, you can set the
-'autoComplete' option to v:false in your .vimrc file: >
+'autoComplete' option to false in your .vimrc file: >
 
-	call LspOptionsSet({'autoComplete': v:false})
+	LspOptionsSet({'autoComplete': false})
 <
 If this variable is set, then the LSP plugin will not automatically start
 completion in insert mode and instead supports omni-completion (|compl-omni|).
@@ -1041,14 +1045,15 @@ server for the filetype. If this item is not specified, then omni-completion
 is enabled by default. The following example disables omni-completion for
 python: >
 
-	let lspServers = [
-		\     {
-		\	'filetype': 'python',
-		\	'omnicompl': v:false,
-		\	'path': '/usr/local/bin/pyls',
-		\	'args': ['--check-parent-process', '-v']
-		\     }
-		\   ]
+    vim9script
+    var lspServers = [
+		     {
+			filetype: 'python',
+			omnicompl: false,
+			path: '/usr/local/bin/pyls',
+			args: ['--check-parent-process', '-v']
+		     }
+		   ]
 <
 If you want to use omni completion, in addition to the automatic completion,
 then you can set the 'omnifunc' option to the "g:LspOmniFunc" function: >
@@ -1069,7 +1074,7 @@ returned items.  You can modify the 'completionMatcher' option to use either
 case insensitive or fuzzy comparison.
 
 ==============================================================================
-7. Diagnostics
+7. Diagnostics						*lsp-diagnostics*
 
 When a source file has syntax errors or warnings or static analysis warnings,
 the LSP plugin highlights them by placing |signs| in the |sign-column|.  You
@@ -1089,11 +1094,11 @@ using the |:LspDiagHighlightDisable| command and re-enable them using the
 |:LspDiagHighlightEnable| command.
 
 To disable the automatic placement of signs on the lines with a diagnostic
-message, you can set the 'autoHighlightDiags' option to v:false: >
+message, you can set the 'autoHighlightDiags' option to false: >
 
-	call LspOptionsSet({'autoHighlightDiags': v:false})
+	LspOptionsSet({'autoHighlightDiags': false})
 <
-By default the 'autoHighlightDiags' option is set to v:true.
+By default the 'autoHighlightDiags' option is set to true.
 
 The function lsp#lsp#ErrorCount() function can be used to get the count of the
 diagnostic messages in the current buffer by type.  This function returns a
@@ -1110,19 +1115,19 @@ the current line.
 The |:LspDiagShow| command creates a new location list with the current list
 of diagnostics for the current buffer.  To automatically add the diagnostics
 messages to the location list, you can set the 'autoPopulateDiags' option to
-v:true.  By default this option is set to v:false.
+true.  By default this option is set to false.
 
 When using GUI Vim or in a terminal Vim with 'ballooneval' option set, when
 the mouse is moved over the diagnostic sign displayed in the sign column, then
 the diagnostic message is displayed in a popup.  By default, the diagnostic
 message popup is not displayed when the mouse is moved over the text in the
 line. To display the diagnostic message when hovering the mouse over the text
-of the line, you can set the 'noDiagHoverOnLine' option to v:false.  By
-default, this option is set to v:true.
+of the line, you can set the 'noDiagHoverOnLine' option to false.  By
+default, this option is set to true.
 
 To display the diagnostic message for the current line in the status area, you
-can set the 'showDiagOnStatusLine' option to v:true.  By default, this option
-is set to v:false.
+can set the 'showDiagOnStatusLine' option to true.  By default, this option
+is set to false.
 
 By default, the |:LspDiagCurrent| command displays the diagnostic message for
 the current line in a popup window.  To display the message in the status
@@ -1278,7 +1283,7 @@ logging of the messages from the language server for the current buffer: >
     :LspServer debug off
 <
 By default, the messages are not logged.  Another method to enable the debug
-is to set the "debug" field to v:true when adding a language server
+is to set the "debug" field to true when adding a language server
 using |LspAddServer()|.
 
 The messages printed by the language server in the stdout are logged to the
@@ -1441,9 +1446,9 @@ supports other features. In such a case you can do one of two things:
 1. change the order of language servers, and specify that a given language
 server should be used for a given method.
 
-2. set the unwanted features to |v:false| in the features |Dictionary| >
+2. set the unwanted features to |false| in the features |Dictionary| >
 
-	features: { 'codeAction': v:false }
+	features: { 'codeAction': false }
 <
 For example, if you want to use the efm-langserver for formatting, but the
 typescript-language-server for everything else: >
@@ -1509,7 +1514,7 @@ definition			Used by |:LspGotoDefinition|, and
 diagnostics			Used to disable diagnostics for a single
 				language server, by default diagnostics are
 				combined from all running servers, by setting
-				this to |v:false| you can ignore diagnostics
+				this to |false| you can ignore diagnostics
 				from a specific server.
 						*lsp-features-documentFormatting*
 documentFormatting		Used by |:LspFormat|, and 'formatexpr'
@@ -1529,5 +1534,30 @@ rename				Used by |:LspRename|
 selectionRange			Used by |:LspSelectionExpand|, and |:LspSelectionShrink|
 						*lsp-features-typeDefinition*
 typeDefinition			Used by |:LspGotoTypeDef|, and |:LspPeekTypeDef|
+
+==============================================================================
+						*lsp-license*
+License: MIT License
+Copyright (c) 2020-2023 Yegappan Lakshmanan
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to
+deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+IN THE SOFTWARE.
+
+==============================================================================
 
 vim:tw=78:ts=8:noet:ft=help:norl:
