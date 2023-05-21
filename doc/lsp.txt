@@ -327,8 +327,46 @@ Additionally the following configurations can be made:
 			|lsp-features| for more information.
 						*lsp-cfg-omnicompl*
 	omnicompl	(Optional) a boolean value that enables (true)
-			or disables (false) omni-completion for this file
-			types. By default this is set to "true".
+			or disables (false) omni-completion for these file
+			types. By default this is set to "v:true".
+						*lsp-cfg-processDiagHandler*
+	processDiagHandler
+			(Optional) A |Funcref| or |lambda| that takes a list of
+			language server diagnostics and returns a new list of
+			filtered, or otherwise changed diagnostics.  Can be used
+			to remove unwanted diagnostics, prefix the diagnostics
+			text, etc.  The following example will remove all but
+			errors and warnings: >
+
+		vim9script
+		g:LspAddServer([{
+			filetype: ['javascript', 'typescript'],
+			path: '/usr/local/bin/typescript-language-server',
+			args: ['--stdio'],
+			processDiagHandler: (diags: list<dict<any>>) => {
+				# Only include errors and warnings
+				return diags->filter((diag, ix) => {
+					return diag.severity <= 2
+				})
+			},
+		}])
+<
+			And this example will prefix the diagnostic message with
+			the string "TypeScript: ": >
+
+		vim9script
+		g:LspAddServer([{
+			filetype: ['javascript', 'typescript'],
+			path: '/usr/local/bin/typescript-language-server',
+			args: ['--stdio'],
+			processDiagHandler: (diags: list<dict<any>>) => {
+				return diags->map((diag, ix) => {
+					diag.message = $'TypeScript: {diag.message}'
+					return diag
+				})
+			},
+		}])
+<
 						*lsp-cfg-syncInit*
 	syncInit        (Optional) for language servers (e.g. rust analyzer,
 			gopls, etc.) that take time to initialize and reply to
