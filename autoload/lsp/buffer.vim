@@ -66,7 +66,6 @@ export def BufLspServerGet(bnr: number, feature: string = null_string): dict<any
   if !SupportedCheckFns->has_key(feature)
     # If this happns it is a programming error, and should be fixed in the source code
     :throw $'Error: ''{feature}'' is not a valid feature'
-    return {}
   endif
 
   var SupportedCheckFn = SupportedCheckFns[feature]
