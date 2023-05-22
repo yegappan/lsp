@@ -404,15 +404,16 @@ def ShowCompletionDocumentation(cItem: any)
     id->popup_show()
   else
     # &omnifunc with &completeopt =~ 'preview'
-    execute $':silent! pedit Completion'
-    :wincmd P
-    :setlocal buftype=nofile
-    :setlocal bufhidden=delete
-    bufnr()->deletebufline(1, '$')
-    infoText->append(0)
-    [1, 1]->cursor()
-    exe $'setlocal ft={infoKind}'
-    :wincmd p
+    try
+      :wincmd P
+      :setlocal modifiable
+      bufnr()->deletebufline(1, '$')
+      infoText->append(0)
+      [1, 1]->cursor()
+      exe $'setlocal ft={infoKind}'
+      :wincmd p
+    catch /E441/ # No preview window
+    endtry
   endif
 enddef
 
