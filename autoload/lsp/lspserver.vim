@@ -110,12 +110,14 @@ def ServerInitReply(lspserver: dict<any>, initResult: dict<any>): void
 
   capabilities.ProcessServerCaps(lspserver, caps)
 
-  if opt.lspOptions.autoComplete && caps->has_key('completionProvider')
-    lspserver.completionTriggerChars =
+  if caps->has_key('completionProvider')
+    if opt.lspOptions.autoComplete
+      lspserver.completionTriggerChars =
 			caps.completionProvider->get('triggerCharacters', [])
+    endif
+    lspserver.completionLazyDoc =
+			caps.completionProvider->get('resolveProvider', false)
   endif
-  lspserver.completionLazyDoc =
-                      caps.completionProvider->get('resolveProvider', false)
 
   # send a "initialized" notification to server
   lspserver.sendInitializedNotif()

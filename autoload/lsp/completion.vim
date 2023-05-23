@@ -592,6 +592,11 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
     return
   endif
 
+  if !opt.lspOptions.autoComplete && !LspOmniComplEnabled(ftype)
+    # LSP auto/omni completion support is not enabled for this buffer
+    return
+  endif
+
   # buffer-local autocmds for completion
   var acmds: list<dict<any>> = []
 
@@ -615,9 +620,7 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
 		group: 'LSPBufferAutocmds',
 		cmd: 'LspComplete()'})
   else
-    if LspOmniComplEnabled(ftype)
-      setbufvar(bnr, '&omnifunc', 'g:LspOmniFunc')
-    endif
+    setbufvar(bnr, '&omnifunc', 'g:LspOmniFunc')
   endif
 
   if lspserver.completionLazyDoc

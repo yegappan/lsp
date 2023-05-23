@@ -328,7 +328,9 @@ Additionally the following configurations can be made:
 						*lsp-cfg-omnicompl*
 	omnicompl	(Optional) a boolean value that enables (true)
 			or disables (false) omni-completion for these file
-			types. By default this is set to "v:true".
+			types. By default this is set to "v:true".  This value
+			is applicable only if auto completion is disabled
+			(|lsp-opt-autoComplete|).
 						*lsp-cfg-processDiagHandler*
 	processDiagHandler
 			(Optional) A |Funcref| or |lambda| that takes a list of
