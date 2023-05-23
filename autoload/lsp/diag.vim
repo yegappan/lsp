@@ -59,13 +59,13 @@ export def InitOnce()
   hlset([{name: 'LspDiagInlineInfo', default: true, linksto: 'SpellRare'}])
   hlset([{name: 'LspDiagInlineHint', default: true, linksto: 'SpellLocal'}])
   prop_type_add('LspDiagInlineError',
-                      { highlight: 'LspDiagInlineError' })
+                      { highlight: 'LspDiagInlineError', priority: 10 })
   prop_type_add('LspDiagInlineWarning',
-                      { highlight: 'LspDiagInlineWarning' })
+                      { highlight: 'LspDiagInlineWarning', priority: 9 })
   prop_type_add('LspDiagInlineInfo',
-                      { highlight: 'LspDiagInlineInfo' })
+                      { highlight: 'LspDiagInlineInfo', priority: 8 })
   prop_type_add('LspDiagInlineHint',
-                      { highlight: 'LspDiagInlineHint' })
+                      { highlight: 'LspDiagInlineHint', priority: 7 })
 
   hlset([{name: 'LspDiagVirtualText', default: true, linksto: 'LineNr'}])
   prop_type_add('LspDiagVirtualText', {highlight: 'LspDiagVirtualText',
@@ -179,7 +179,8 @@ def DiagsRefresh(bnr: number)
     var lnum = diag.range.start.line + 1
     signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
 				lnum: lnum,
-				name: DiagSevToSignName(diag.severity)})
+				name: DiagSevToSignName(diag.severity),
+				priority: 10 - diag.severity})
 
     try
       if opt.lspOptions.highlightDiagInline
@@ -251,7 +252,7 @@ enddef
 # process a diagnostic notification message from the LSP server
 # Notification: textDocument/publishDiagnostics
 # Param: PublishDiagnosticsParams
-export def DiagNotification(lspserver: dict<any>, uri: string, newDiags: list<dict<any>>): void
+export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<dict<any>>): void
   # Diagnostics are disabled for this server
   if lspserver.features->has_key('diagnostics') && !lspserver.features.diagnostics
     return
@@ -262,6 +263,11 @@ export def DiagNotification(lspserver: dict<any>, uri: string, newDiags: list<di
   if bnr == -1
     # Is this condition possible?
     return
+  endif
+
+  var newDiags: list<dict<any>> = diags_arg
+  if lspserver.processDiagHandler != null_function
+    newDiags = lspserver.processDiagHandler(diags_arg)
   endif
 
   # TODO: Is the buffer (bnr) always a loaded buffer? Should we load it here?

@@ -6,6 +6,8 @@ source common.vim
 var lspOpts = {autoComplete: false, highlightDiagInline: true}
 g:LspOptionsSet(lspOpts)
 
+g:LSPTest_modifyDiags = false
+
 var lspServers = [{
       filetype: ['c', 'cpp'],
       path: (exepath('clangd-15') ?? exepath('clangd')),
@@ -15,6 +17,16 @@ var lspServers = [{
         'textDocument/clangd.fileStatus': (lspserver: dict<any>, reply: dict<any>) => {
           g:LSPTest_customNotificationHandlerReplied = true
         }
+      },
+      processDiagHandler: (diags: list<dict<any>>) => {
+        if g:LSPTest_modifyDiags != true
+          return diags
+        endif
+
+        return diags->map((ix, diag) => {
+          diag.message = $'this is overridden'
+          return diag
+        })
       }
   }]
 call LspAddServer(lspServers)
@@ -325,6 +337,35 @@ def g:Test_LspDiag()
   g:LspOptionsSet({showDiagInPopup: true})
 
   popup_clear()
+  :%bw!
+enddef
+
+# Test for LSP diagnostics handler
+def g:Test_LspProcessDiagHandler()
+  g:LSPTest_modifyDiags = true
+  g:LspOptionsSet({showDiagInPopup: false})
+
+  :silent! edit Xtest.c
+  sleep 200m
+  var lines: list<string> =<< trim END
+    void blueFunc()
+    {
+	int count, j:
+    }
+  END
+  setline(1, lines)
+  g:WaitForServerFileLoad(1)
+  :redraw!
+  normal gg
+
+  :LspDiagFirst
+  assert_equal([3, 14], [line('.'), col('.')])
+
+  var output = execute('LspDiagCurrent')->split("\n")
+  assert_equal("this is overridden", output[0])
+
+  g:LspOptionsSet({showDiagInPopup: true})
+  g:LSPTest_modifyDiags = false
   :%bw!
 enddef
 

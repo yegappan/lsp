@@ -395,12 +395,25 @@ def ShowCompletionDocumentation(cItem: any)
     return
   endif
 
+  # autoComplete or &omnifunc with &completeopt =~ 'popup'
   var id = popup_findinfo()
   if id > 0
     var bufnr = id->winbufnr()
     id->popup_settext(infoText)
     infoKind->setbufvar(bufnr, '&ft')
     id->popup_show()
+  else
+    # &omnifunc with &completeopt =~ 'preview'
+    try
+      :wincmd P
+      :setlocal modifiable
+      bufnr()->deletebufline(1, '$')
+      infoText->append(0)
+      [1, 1]->cursor()
+      exe $'setlocal ft={infoKind}'
+      :wincmd p
+    catch /E441/ # No preview window
+    endtry
   endif
 enddef
 
@@ -579,6 +592,11 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
     return
   endif
 
+  if !opt.lspOptions.autoComplete && !LspOmniComplEnabled(ftype)
+    # LSP auto/omni completion support is not enabled for this buffer
+    return
+  endif
+
   # buffer-local autocmds for completion
   var acmds: list<dict<any>> = []
 
@@ -601,17 +619,16 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
 		event: 'TextChangedI',
 		group: 'LSPBufferAutocmds',
 		cmd: 'LspComplete()'})
-    if lspserver.completionLazyDoc
-      # resolve additional documentation for a selected item
-      acmds->add({bufnr: bnr,
-		  event: 'CompleteChanged',
-		  group: 'LSPBufferAutocmds',
-		  cmd: 'LspResolve()'})
-    endif
   else
-    if LspOmniComplEnabled(ftype)
-      setbufvar(bnr, '&omnifunc', 'g:LspOmniFunc')
-    endif
+    setbufvar(bnr, '&omnifunc', 'g:LspOmniFunc')
+  endif
+
+  if lspserver.completionLazyDoc
+    # resolve additional documentation for a selected item
+    acmds->add({bufnr: bnr,
+                event: 'CompleteChanged',
+                group: 'LSPBufferAutocmds',
+                cmd: 'LspResolve()'})
   endif
 
   acmds->add({bufnr: bnr,

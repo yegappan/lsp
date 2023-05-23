@@ -31,9 +31,13 @@ var ftypeServerMap: dict<list<dict<any>>> = {}
 var lspInitializedOnce = false
 
 def LspInitOnce()
-  prop_type_add('LspTextRef', {highlight: 'Search', override: true})
-  prop_type_add('LspReadRef', {highlight: 'DiffChange', override: true})
-  prop_type_add('LspWriteRef', {highlight: 'DiffDelete', override: true})
+  hlset([{name: 'LspTextRef', default: true, linksto: 'Search'}])
+  hlset([{name: 'LspReadRef', default: true, linksto: 'DiffChange'}])
+  hlset([{name: 'LspWriteRef', default: true, linksto: 'DiffDelete'}])
+
+  prop_type_add('LspTextRef', {highlight: 'LspTextRef'})
+  prop_type_add('LspReadRef', {highlight: 'LspReadRef'})
+  prop_type_add('LspWriteRef', {highlight: 'LspWriteRef'})
 
   diag.InitOnce()
   inlayhints.InitOnce()
@@ -612,6 +616,20 @@ export def AddServer(serverList: list<dict<any>>)
       customNotificationHandlers = server.customNotificationHandlers
     endif
 
+    var ProcessDiagHandler: func = null_function
+    if server->has_key('processDiagHandler')
+      if server.processDiagHandler->type() != v:t_func
+        util.ErrMsg($'Setting of processDiagHandler {server.processDiagHandler} is not a Funcref nor lambda')
+        return
+      endif
+      ProcessDiagHandler = server.processDiagHandler
+    endif
+
+    var customRequestHandlers: dict<func> = {}
+    if server->has_key('customRequestHandlers')
+      customRequestHandlers = server.customRequestHandlers
+    endif
+
     var features: dict<bool> = {}
     if server->has_key('features')
       features = server.features
@@ -661,6 +679,8 @@ export def AddServer(serverList: list<dict<any>>)
 						    server.runIfSearch,
 						    server.runUnlessSearch,
 						    customNotificationHandlers,
+						    customRequestHandlers,
+ 						    ProcessDiagHandler,
 						    features, server.debug)
 
     var ftypes = server.filetype
