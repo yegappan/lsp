@@ -15,11 +15,22 @@ export var lspOptions: dict<any> = {
   # icase | fuzzy | case match for language servers that replies with a full
   # list of completion items
   completionMatcher: 'case',
+  # If true, apply the LSP server supplied text edits after a completion.
+  # If a snippet plugin is going to apply the text edits, then set this to
+  # false to avoid applying the text edits twice.
+  completionTextEdit: true,
+  # A dictionary with all completion kinds that you want to customize
+  completionKinds: {},
+  # Enable support for custom completion kinds
+  customCompletionKinds: false,
   # diagnostics signs options
   diagSignErrorText: 'E>',
   diagSignHintText: 'H>',
   diagSignInfoText: 'I>',
   diagSignWarningText: 'W>',
+  # Alignment of virtual diagnostic text, when showDiagWithVirtualText is true
+  # Allowed values: 'above' | 'below' | 'after' (default is 'above')
+  diagVirtualTextAlign: 'above',
   # In insert mode, echo the current symbol signature in the status line
   # instead of showing it in a popup
   echoSignature: false,
@@ -33,13 +44,6 @@ export var lspOptions: dict<any> = {
   ignoreMissingServer: false,
   # Focus on the location list window after LspShowReferences
   keepFocusInReferences: false,
-  # If true, apply the LSP server supplied text edits after a completion.
-  # If a snippet plugin is going to apply the text edits, then set this to
-  # false to avoid applying the text edits twice.
-  completionTextEdit: true,
-  # Alignment of virtual diagnostic text, when showDiagWithVirtualText is true
-  # Allowed values: 'above' | 'below' | 'after' (default is 'above')
-  diagVirtualTextAlign: 'above',
   # instead of the signature
   noDiagHoverOnLine: true,
   # Suppress adding a new line on completion selection with <CR>
@@ -68,11 +72,7 @@ export var lspOptions: dict<any> = {
   # ShowReferences in a quickfix list instead of a location list`
   useQuickfixForLocations: false,
   # add to autocomplition list current buffer words
-  useBufferCompletion: false,
-  # Enable support for custom completion kinds
-  customCompletionKinds: false,
-  # A dictionary with all completion kinds that you want to customize
-  completionKinds: {}
+  useBufferCompletion: false
 }
 
 # set the LSP plugin options from the user provided option values
