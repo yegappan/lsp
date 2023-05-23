@@ -59,13 +59,13 @@ export def InitOnce()
   hlset([{name: 'LspDiagInlineInfo', default: true, linksto: 'SpellRare'}])
   hlset([{name: 'LspDiagInlineHint', default: true, linksto: 'SpellLocal'}])
   prop_type_add('LspDiagInlineError',
-                      { highlight: 'LspDiagInlineError' })
+                      { highlight: 'LspDiagInlineError', priority: 10 })
   prop_type_add('LspDiagInlineWarning',
-                      { highlight: 'LspDiagInlineWarning' })
+                      { highlight: 'LspDiagInlineWarning', priority: 9 })
   prop_type_add('LspDiagInlineInfo',
-                      { highlight: 'LspDiagInlineInfo' })
+                      { highlight: 'LspDiagInlineInfo', priority: 8 })
   prop_type_add('LspDiagInlineHint',
-                      { highlight: 'LspDiagInlineHint' })
+                      { highlight: 'LspDiagInlineHint', priority: 7 })
 
   hlset([{name: 'LspDiagVirtualText', default: true, linksto: 'LineNr'}])
   prop_type_add('LspDiagVirtualText', {highlight: 'LspDiagVirtualText',
