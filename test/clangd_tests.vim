@@ -185,7 +185,7 @@ def g:Test_LspShowReferences()
   assert_equal([4, 6], [loclist[0].lnum, loclist[0].col])
   assert_equal([5, 2], [loclist[1].lnum, loclist[1].col])
   assert_equal([6, 6], [loclist[2].lnum, loclist[2].col])
-  :only
+  :lclose
   cursor(1, 5)
   :LspShowReferences
   assert_equal(1, getloclist(0)->len())
@@ -199,13 +199,13 @@ def g:Test_LspShowReferences()
   :LspShowReferences
   sleep 100m
   assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
+  :cclose
   var qfl: list<dict<any>> = getqflist()
   assert_equal(3, qfl->len())
   assert_equal(bufnr(), qfl[0].bufnr)
   assert_equal([4, 6], [qfl[0].lnum, qfl[0].col])
   assert_equal([5, 2], [qfl[1].lnum, qfl[1].col])
   assert_equal([6, 6], [qfl[2].lnum, qfl[2].col])
-  :only
   cursor(1, 5)
   :LspShowReferences
   assert_equal(1, getqflist()->len())
@@ -214,12 +214,12 @@ def g:Test_LspShowReferences()
   :cclose
   g:LspOptionsSet({ useQuickfixForLocations: false })
 
-  # Test for moving buffer focus to loclist
-  g:LspOptionsSet({ keepFocusInReferences: true })
-  :LspShowReferences
-  assert_equal('quickfix', getwinvar(0, '&buftype'))
-  :lclose
+  # Test for maintaining buffer focus
   g:LspOptionsSet({ keepFocusInReferences: false })
+  :LspShowReferences
+  assert_equal('', getwinvar(0, '&buftype'))
+  :lclose
+  g:LspOptionsSet({ keepFocusInReferences: true })
 
   # Test for LspPeekReferences
 
@@ -282,7 +282,7 @@ def g:Test_LspDiag()
   assert_equal([3, 14, 'E'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
   assert_equal([5, 2, 'W'], [qfl[1].lnum, qfl[1].col, qfl[1].type])
   assert_equal([7, 2, 'W'], [qfl[2].lnum, qfl[2].col, qfl[2].type])
-  :lclose
+  close
   g:LspOptionsSet({showDiagInPopup: false})
   normal gg
   var output = execute('LspDiagCurrent')->split("\n")
@@ -306,12 +306,12 @@ def g:Test_LspDiag()
   output = execute('LspDiagPrev')->split("\n")
   assert_equal('Warn: No more diagnostics found', output[0])
 
-  # Test for moving buffer focus to loclist
-  g:LspOptionsSet({ keepFocusInDiags: true })
-  :LspDiagShow
-  assert_equal('quickfix', getwinvar(0, '&buftype'))
-  :lclose
+  # Test for maintaining buffer focus
   g:LspOptionsSet({ keepFocusInDiags: false })
+  :LspDiagShow
+  assert_equal('', getwinvar(0, '&buftype'))
+  :lclose
+  g:LspOptionsSet({ keepFocusInDiags: true })
 
   # :[count]LspDiagNext
   cursor(3, 1)
@@ -435,7 +435,7 @@ def g:Test_LspDiag_Multi()
   endif
   assert_equal([1, 9, 'E'], [qfl[1].lnum, qfl[1].col, qfl[1].type])
   assert_equal([2, 9, 'E'], [qfl[2].lnum, qfl[2].col, qfl[2].type])
-  :lclose
+  close
 
   :sleep 100m
   cursor(2, 1)
@@ -1363,6 +1363,7 @@ def g:Test_ScanFindIdent()
   cursor(6, 10)
   assert_equal([],
 	       execute('LspShowReferences')->split("\n"))
+  :lclose
 
   # LspRename
   cursor(6, 10)
