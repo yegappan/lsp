@@ -179,7 +179,8 @@ def DiagsRefresh(bnr: number)
     var lnum = diag.range.start.line + 1
     signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
 				lnum: lnum,
-				name: DiagSevToSignName(diag.severity)})
+				name: DiagSevToSignName(diag.severity),
+				priority: 10 - diag.severity})
 
     try
       if opt.lspOptions.highlightDiagInline
