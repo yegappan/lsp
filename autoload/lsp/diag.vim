@@ -421,7 +421,7 @@ export def ShowAllDiags(): void
     return
   endif
 
-  # make the error list the active one and open it
+  # make the diagnostics error list the active one and open it
   var LspQfId: number = getbufvar(bufnr(), 'LspQfId', 0)
   var LspQfNr: number = getloclist(0, {id: LspQfId, nr: 0}).nr
   exe $':{LspQfNr} lhistory'
