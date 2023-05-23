@@ -106,7 +106,10 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       'language/status',
       # Typescript language server sends the '$/typescriptVersion'
       # notification which is not in the LSP specification.
-      '$/typescriptVersion'
+      '$/typescriptVersion',
+      # Dart language server sends the '$/analyzerStatus' notification which
+      # is not in the LSP specification.
+      '$/analyzerStatus'
     ]
 
   if lsp_notif_handlers->has_key(reply.method)
@@ -182,27 +185,37 @@ def ProcessClientUnregisterCap(lspserver: dict<any>, request: dict<any>)
   lspserver.sendResponse(request, {}, {})
 enddef
 
-def ProcessUnsupportedReq(lspserver: dict<any>, request: dict<any>)
-  util.ErrMsg($'Unsupported request message received from the LSP server ({lspserver.path}), message = {request->string()}')
-enddef
-
 # process a request message from the server
 export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
   var lspRequestHandlers: dict<func> =
     {
-      'workspace/applyEdit': ProcessApplyEditReq,
-      'workspace/workspaceFolders': ProcessWorkspaceFoldersReq,
-      'window/workDoneProgress/create': ProcessWorkDoneProgressCreate,
       'client/registerCapability': ProcessClientRegisterCap,
       'client/unregisterCapability': ProcessClientUnregisterCap,
+      'window/workDoneProgress/create': ProcessWorkDoneProgressCreate,
+      'workspace/applyEdit': ProcessApplyEditReq,
       'workspace/configuration': ProcessWorkspaceConfiguration,
-      'workspace/codeLens/refresh': ProcessUnsupportedReq,
-      'workspace/semanticTokens/refresh': ProcessUnsupportedReq
+      'workspace/workspaceFolders': ProcessWorkspaceFoldersReq
+      # TODO: Handle the following requests from the server:
+      #     workspace/codeLens/refresh
+      #     workspace/diagnostic/refresh
+      #     workspace/inlayHint/refresh
+      #     workspace/inlineValue/refresh
+      #     workspace/semanticTokens/refresh
     }
+
+  # Explicitly ignored requests
+  var lspIgnoredRequestHandlers: list<string> =
+    [
+      # Eclipse java language server sends the 'workspace/executeClientCommand' 
+      # request (to reload bundles) which is not in the LSP specification.
+      'workspace/executeClientCommand',
+    ]
 
   if lspRequestHandlers->has_key(request.method)
     lspRequestHandlers[request.method](lspserver, request)
-  else
+  elseif lspserver.customRequestHandlers->has_key(request.method)
+    lspserver.customRequestHandlers[request.method](lspserver, request)
+  elseif lspIgnoredRequestHandlers->index(request.method) == -1
     util.ErrMsg($'Unsupported request message received from the LSP server ({lspserver.path}), message = {request->string()}')
   endif
 enddef

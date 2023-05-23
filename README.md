@@ -1,4 +1,4 @@
-![unit-tests](https://github.com/yegappan/lsp/workflows/unit-tests/badge.svg?branch=main)
+[![unit-tests](https://github.com/yegappan/lsp/workflows/unit-tests/badge.svg?branch=main)](https://github.com/yegappan/lsp/actions/workflows/unitests.yml?query=branch%3Amain)
 
 Language Server Protocol (LSP) plugin for Vim. You need Vim version 9.0 or above to use this plugin.  This plugin is written using only the Vim9 script.
 
@@ -99,23 +99,62 @@ path|complete path to the LSP server executable (without any arguments).
 args|a list of command-line arguments passed to the LSP server. Each argument is a separate List item.
 initializationOptions|User provided initialization options. May be of any type. For example the *intelephense* PHP language server accept several options here with the License Key among others. 
 customNotificationHandlers|A dictionary of notifications and functions that can be specified to add support for custom language server notifications.
+customRequestHandlers|A dictionary of request handlers and functions that can be specified to add support for custom language server requests replies.
 features|A dictionary of booleans that can be specified to toggle what things a given LSP is providing (folding, goto definition, etc) This is useful when running multiple servers in one buffer.
 
 The LspAddServer() function accepts a list of LSP servers with the above information.
 
+Some of the LSP plugin features can be enabled or disabled by using the LspOptionsSet() function, detailed in `:help lsp-options`.
+Here is an example of configuration with default values:
+```viml
+call LspOptionsSet(#{
+	\   autoComplete: v:true,
+	\   autoHighlight: v:false,
+	\   autoHighlightDiags: v:true,
+	\   autoPopulateDiags: v:false,
+	\   completionMatcher: 'case',
+	\   completionTextEdit: v:true,
+	\   completionKinds: {},
+	\   customCompletionKinds: v:false,
+	\   diagSignErrorText: 'E>',
+	\   diagSignInfoText: 'I>',
+	\   diagSignHintText: 'H>',
+	\   diagSignWarningText: 'W>',
+	\   diagVirtualTextAlign: 'above',
+	\   echoSignature: v:false,
+	\   hideDisabledCodeActions: v:false,
+	\   highlightDiagInline: v:false,
+	\   hoverInPreview: v:false,
+	\   ignoreMissingServer: v:false,
+	\   keepFocusInReferences: v:false,
+	\   noDiagHoverOnLine: v:true,
+	\   noNewlineInCompletion: v:false,
+	\   outlineOnRight: v:false,
+	\   outlineWinSize: 20,
+	\   showDiagInPopup: v:true,
+	\   showDiagOnStatusLine: v:false,
+	\   showDiagWithVirtualText: v:false,
+	\   showInlayHints: v:false,
+	\   showSignature: v:true,
+	\   snippetSupport: v:false,
+	\   ultisnipsSupport: v:false,
+	\   usePopupInCodeAction: v:false,
+	\   useQuickfixForLocations: v:false,
+	\   useBufferCompletion: v:false,
+	\ })
+```
+
 If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, then you need to use the VimEnter autocmd to initialize the LSP server and to set the LSP server options.  For example:
 ```viml
-let lspServers = [
-	\     #{
-	\	 name: 'clang',
-	\	 filetype: ['c', 'cpp'],
-	\	 path: '/usr/local/bin/clangd',
-	\	 args: ['--background-index']
-	\      }
-	\   ]
+let lspServers = [#{
+	\	  name: 'clang',
+	\	  filetype: ['c', 'cpp'],
+	\	  path: '/usr/local/bin/clangd',
+	\	  args: ['--background-index']
+	\ }]
 autocmd VimEnter * call LspAddServer(lspServers)
 
-let lspOpts = {'autoHighlightDiags': v:true}
+let lspOpts = #{autoHighlightDiags: v:true}
 autocmd VimEnter * call LspOptionsSet(lspOpts)
 ```
 
