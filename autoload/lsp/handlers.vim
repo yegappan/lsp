@@ -106,7 +106,10 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       'language/status',
       # Typescript language server sends the '$/typescriptVersion'
       # notification which is not in the LSP specification.
-      '$/typescriptVersion'
+      '$/typescriptVersion',
+      # Dart language server sends the '$/analyzerStatus' notification which
+      # is not in the LSP specification.
+      '$/analyzerStatus'
     ]
 
   if lsp_notif_handlers->has_key(reply.method)
