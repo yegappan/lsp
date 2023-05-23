@@ -510,7 +510,8 @@ outlineWinSize		|Number| option.  The size of the symbol Outline
 						*lsp-opt-propOverride*
 propOverride		|Boolean| option.  when TRUE textprops highlight
 			overrides any other, including 'cursorline' and Visual
-			By default this is set to false.
+			By default this is based on if 'cursorline' is set and
+			'cursorlineopt' have either "line" or "screenline" set.
 						*lsp-opt-showDiagInPopup*
 showDiagInPopup		|Boolean| option.  When using the |:LspDiagCurrent|
 			command to display the diagnostic message for the

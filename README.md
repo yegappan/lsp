@@ -131,7 +131,7 @@ call LspOptionsSet(#{
 	\   noNewlineInCompletion: v:false,
 	\   outlineOnRight: v:false,
 	\   outlineWinSize: 20,
-	\   propOverride: false,
+	\   propOverride: &cursorline && &cursorlineopt =~ '\<line\>\|\<screenline\>\|\<both\>',
 	\   showDiagInPopup: v:true,
 	\   showDiagOnStatusLine: v:false,
 	\   showDiagWithVirtualText: v:false,
