@@ -131,6 +131,7 @@ call LspOptionsSet(#{
 	\   noNewlineInCompletion: v:false,
 	\   outlineOnRight: v:false,
 	\   outlineWinSize: 20,
+	\   propOverride: false,
 	\   showDiagInPopup: v:true,
 	\   showDiagOnStatusLine: v:false,
 	\   showDiagWithVirtualText: v:false,

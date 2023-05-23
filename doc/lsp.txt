@@ -507,6 +507,10 @@ outlineOnRight		|Boolean| option.  Open the outline window on the
 						*lsp-opt-outlineWinSize*
 outlineWinSize		|Number| option.  The size of the symbol Outline
 			window.  By default this is set to 20.
+						*lsp-opt-propOverride*
+propOverride		|Boolean| option.  when TRUE textprops highlight
+			overrides any other, including 'cursorline' and Visual
+			By default this is set to false.
 						*lsp-opt-showDiagInPopup*
 showDiagInPopup		|Boolean| option.  When using the |:LspDiagCurrent|
 			command to display the diagnostic message for the

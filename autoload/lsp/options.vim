@@ -52,6 +52,8 @@ export var lspOptions: dict<any> = {
   outlineOnRight: false,
   # Outline window size
   outlineWinSize: 20,
+  # Override any highlight including 'cursorline' and Visual in textprops
+  propOverride: false,
   # Make diagnostics show in a popup instead of echoing
   showDiagInPopup: true,
   # Suppress diagnostic hover from appearing when the mouse is over the line
