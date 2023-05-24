@@ -16,6 +16,8 @@ echomsg systemlist($'{lspServers[0].path} version')
 # shown in a list or popup
 def g:Test_LspGoto()
   :silent! edit Xtest.go
+  var bnr = bufnr()
+
   sleep 200m
 
   var lines =<< trim END
@@ -62,7 +64,7 @@ def g:Test_LspGoto()
   var loclist: list<dict<any>> = getloclist(0)
   assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
   assert_equal(2, loclist->len())
-  assert_equal(bufnr(), loclist[0].bufnr)
+  assert_equal(bnr, loclist[0].bufnr)
   assert_equal([9, 13, ''], [loclist[0].lnum, loclist[0].col, loclist[0].type])
   assert_equal([13, 13, ''], [loclist[1].lnum, loclist[1].col, loclist[1].type])
   lclose
@@ -75,7 +77,7 @@ def g:Test_LspGoto()
   var qfl: list<dict<any>> = getqflist()
   assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
   assert_equal(2, qfl->len())
-  assert_equal(bufnr(), qfl[0].bufnr)
+  assert_equal(bnr, qfl[0].bufnr)
   assert_equal([9, 13, ''], [qfl[0].lnum, qfl[0].col, qfl[0].type])
   assert_equal([13, 13, ''], [qfl[1].lnum, qfl[1].col, qfl[1].type])
   cclose
