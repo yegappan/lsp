@@ -421,11 +421,15 @@ export def ShowAllDiags(): void
     return
   endif
 
+  var save_winid = win_getid()
   # make the diagnostics error list the active one and open it
   var LspQfId: number = getbufvar(bufnr(), 'LspQfId', 0)
   var LspQfNr: number = getloclist(0, {id: LspQfId, nr: 0}).nr
   exe $':{LspQfNr} lhistory'
   :lopen
+  if !opt.lspOptions.keepFocusInDiags
+    save_winid->win_gotoid()
+  endif
 enddef
 
 # Display the message of 'diag' in a popup window right below the position in

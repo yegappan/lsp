@@ -488,10 +488,14 @@ hoverInPreview		|Boolean| option. Show |:LspHover| in a preview window
 						*lsp-opt-ignoreMissingServer*
 ignoreMissingServer	|Boolean| option.  Do not print a missing language
 			server executable.  By default this is set to false.
+						*lsp-opt-keepFocusInDiags*
+keepFocusInDiags     	|Boolean| option.  Focus on the location list window
+			after LspDiagShow.
+			By default this is set to true.
 						*lsp-opt-keepFocusInReferences*
 keepFocusInReferences	|Boolean| option.  Focus on the location list window
 			after LspShowReferences.
-			By default this is set to false.
+			By default this is set to true.
 						*lsp-opt-noDiagHoverOnLine*
 noDiagHoverOnLine	|Boolean| option.  Suppress diagnostic hover from
 			appearing when the mouse is over the line instead of
