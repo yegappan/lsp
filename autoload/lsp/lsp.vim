@@ -35,9 +35,12 @@ def LspInitOnce()
   hlset([{name: 'LspReadRef', default: true, linksto: 'DiffChange'}])
   hlset([{name: 'LspWriteRef', default: true, linksto: 'DiffDelete'}])
 
-  prop_type_add('LspTextRef', {highlight: 'LspTextRef'})
-  prop_type_add('LspReadRef', {highlight: 'LspReadRef'})
-  prop_type_add('LspWriteRef', {highlight: 'LspWriteRef'})
+  var override = &cursorline
+      && &cursorlineopt =~ '\<line\>\|\<screenline\>\|\<both\>'
+
+  prop_type_add('LspTextRef', {highlight: 'LspTextRef', override: override})
+  prop_type_add('LspReadRef', {highlight: 'LspReadRef', override: override})
+  prop_type_add('LspWriteRef', {highlight: 'LspWriteRef', override: override})
 
   diag.InitOnce()
   inlayhints.InitOnce()

@@ -58,14 +58,26 @@ export def InitOnce()
   hlset([{name: 'LspDiagInlineWarning', default: true, linksto: 'SpellCap'}])
   hlset([{name: 'LspDiagInlineInfo', default: true, linksto: 'SpellRare'}])
   hlset([{name: 'LspDiagInlineHint', default: true, linksto: 'SpellLocal'}])
+
+  var override = &cursorline
+      && &cursorlineopt =~ '\<line\>\|\<screenline\>\|\<both\>'
+
   prop_type_add('LspDiagInlineError',
-                      { highlight: 'LspDiagInlineError', priority: 10 })
+                      { highlight: 'LspDiagInlineError',
+                        priority: 10,
+                        override: override })
   prop_type_add('LspDiagInlineWarning',
-                      { highlight: 'LspDiagInlineWarning', priority: 9 })
+                      { highlight: 'LspDiagInlineWarning',
+                        priority: 9,
+                        override: override })
   prop_type_add('LspDiagInlineInfo',
-                      { highlight: 'LspDiagInlineInfo', priority: 8 })
+                      { highlight: 'LspDiagInlineInfo',
+                        priority: 8,
+                        override: override })
   prop_type_add('LspDiagInlineHint',
-                      { highlight: 'LspDiagInlineHint', priority: 7 })
+                      { highlight: 'LspDiagInlineHint',
+                        priority: 7,
+                        override: override })
 
   hlset([{name: 'LspDiagVirtualText', default: true, linksto: 'LineNr'}])
   prop_type_add('LspDiagVirtualText', {highlight: 'LspDiagVirtualText',
