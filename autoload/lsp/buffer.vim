@@ -157,7 +157,11 @@ export def CurbufGetServerChecked(feature: string = null_string): dict<any>
 
   var lspserver: dict<any> = CurbufGetServer(feature)
   if lspserver->empty()
-    util.ErrMsg($'Language server for "{&filetype}" file type is not found')
+    if feature == null_string
+      util.ErrMsg($'Language server for "{&filetype}" file type is not found')
+    else
+      util.ErrMsg($'Language server for "{&filetype}" file type supporting "{feature}" feature is not found')
+    endif
     return {}
   endif
   if !lspserver.running
