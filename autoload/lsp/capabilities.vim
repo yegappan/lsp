@@ -294,7 +294,7 @@ export def GetClientCaps(): dict<any>
       completion: {
 	dynamicRegistration: false,
 	completionItem: {
-	  documentationFormat: ['plaintext', 'markdown'],
+	  documentationFormat: ['markdown', 'plaintext'],
 	  resolveSupport: {properties: ['detail', 'documentation']},
 	  snippetSupport: opt.lspOptions.snippetSupport
 	},
@@ -306,7 +306,7 @@ export def GetClientCaps(): dict<any>
 	symbolKind: {valueSet: range(1, 25)}
       },
       hover: {
-	contentFormat: ['plaintext', 'markdown']
+	contentFormat: ['markdown', 'plaintext']
       },
       foldingRange: {lineFoldingOnly: true},
       inlayHint: {dynamicRegistration: false},
@@ -319,7 +319,7 @@ export def GetClientCaps(): dict<any>
       implementation: {linkSupport: true},
       signatureHelp: {
 	signatureInformation: {
-	  documentationFormat: ['plaintext', 'markdown'],
+	  documentationFormat: ['markdown', 'plaintext'],
 	  activeParameterSupport: true
 	}
       }
