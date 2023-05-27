@@ -125,7 +125,7 @@ def g:Test_LspFormat()
 
   # file without an LSP server
   edit a.raku
-  assert_equal('Error: Language server for "raku" file type is not found',
+  assert_equal('Error: Language server for "raku" file type supporting "documentFormatting" feature is not found',
 	       execute('LspFormat')->split("\n")[0])
 
   :%bw!
@@ -250,7 +250,7 @@ def g:Test_LspShowReferences()
 
   # file without an LSP server
   edit a.raku
-  assert_equal('Error: Language server for "raku" file type is not found',
+  assert_equal('Error: Language server for "raku" file type supporting "references" feature is not found',
 	       execute('LspShowReferences')->split("\n")[0])
 
   :%bw!
@@ -669,7 +669,7 @@ def g:Test_LspCodeAction()
 
   # file without an LSP server
   edit a.raku
-  assert_equal('Error: Language server for "raku" file type is not found',
+  assert_equal('Error: Language server for "raku" file type supporting "codeAction" feature is not found',
 	       execute('LspCodeAction')->split("\n")[0])
 
   :%bw!
@@ -739,7 +739,7 @@ def g:Test_LspRename()
 
   # file without an LSP server
   edit a.raku
-  assert_equal('Error: Language server for "raku" file type is not found',
+  assert_equal('Error: Language server for "raku" file type supporting "rename" feature is not found',
 	       execute('LspRename')->split("\n")[0])
 
   :%bw!
@@ -839,7 +839,7 @@ def g:Test_LspSelection()
 
   # file without an LSP server
   edit a.raku
-  assert_equal('Error: Language server for "raku" file type is not found',
+  assert_equal('Error: Language server for "raku" file type supporting "selectionRange" feature is not found',
 	       execute('LspSelectionExpand')->split("\n")[0])
 
   :%bw!
@@ -972,11 +972,11 @@ def g:Test_LspGotoSymbol()
 
   # file without an LSP server
   edit a.raku
-  assert_equal('Error: Language server for "raku" file type is not found',
+  assert_equal('Error: Language server for "raku" file type supporting "definition" feature is not found',
 	       execute('LspGotoDefinition')->split("\n")[0])
-  assert_equal('Error: Language server for "raku" file type is not found',
+  assert_equal('Error: Language server for "raku" file type supporting "declaration" feature is not found',
 	       execute('LspGotoDeclaration')->split("\n")[0])
-  assert_equal('Error: Language server for "raku" file type is not found',
+  assert_equal('Error: Language server for "raku" file type supporting "implementation" feature is not found',
 	       execute('LspGotoImpl')->split("\n")[0])
 
   :%bw!
@@ -1049,7 +1049,7 @@ def g:Test_LspHover()
   assert_equal([], output)
   var p: list<number> = popup_list()
   assert_equal(1, p->len())
-  assert_equal(['function f1', '', '→ int', 'Parameters:', '- int a', '', 'int f1(int a)'], getbufline(winbufnr(p[0]), 1, '$'))
+  assert_equal(['### function `f1`  ', '', '---', '→ `int`  ', 'Parameters:  ', '- `int a`', '', '---', '```cpp', 'int f1(int a)', '```'], getbufline(winbufnr(p[0]), 1, '$'))
   popup_close(p[0])
   cursor(7, 1)
   output = execute(':LspHover')->split("\n")
