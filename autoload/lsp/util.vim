@@ -107,8 +107,14 @@ export def LspUriRemote(uri: string): bool
   return uri =~ '^\w\+::' || uri =~ '^[a-z][a-z0-9+.-]*://'
 enddef
 
+var resolvedUris = {}
+
 # Convert a Vim filename to an LSP URI (file://<absolute_path>)
 export def LspFileToUri(fname: string): string
+  if resolvedUris->has_key(fname)
+    return resolvedUris[fname]
+  endif
+
   var uri: string = fname->fnamemodify(':p')
 
   if has("win32unix")
@@ -137,6 +143,7 @@ export def LspFileToUri(fname: string): string
     uri = $'file://{uri}'
   endif
 
+  resolvedUris[fname] = uri
   return uri
 enddef
 
