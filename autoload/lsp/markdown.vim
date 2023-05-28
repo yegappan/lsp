@@ -200,14 +200,14 @@ def GetNextInlineBlock(text: string, blocks: list<any>, rel_pos: number): dict<a
   var cur = blocks->remove(0)
   var pos = cur.start[1]
   while blocks->len() > 0 && cur.end[0] >= blocks[0].start[0]
-    result.text ..= Unescape(text[pos : blocks[0].start[0] - 1], cur.marker[0])
+    result.text ..= Unescape(text->strpart(pos, blocks[0].start[0] - pos), cur.marker[0])
     # get nested block
     var part = GetNextInlineBlock(text, blocks, rel_pos + result.text->len())
     result.text ..= part.text
     result.props += part.props
     pos = part.end_pos
   endwhile
-  result.text ..= Unescape(text[pos : cur.end[0] - 1], cur.marker[0])
+  result.text ..= Unescape(text->strpart(pos, cur.end[0] - pos), cur.marker[0])
   # add props for current inline block
   var prop_type = {
     '`':  'code_span',
@@ -276,12 +276,12 @@ def ParseInlines(text: string, rel_pos: number = 0): dict<any>
 	  var new_delim = {
 	    marker: delimiter.marker[0]->repeat(marker_len),
 	    start: [seq[idx].start[1] - marker_len, seq[idx].start[1]],
-	    left: v:true,
-	    right: v:false
+	    left: true,
+	    right: false
 	  }
 	  seq[idx].marker = seq[idx].marker[: -1 - marker_len]
 	  seq[idx].start[1] -= marker_len
-	  seq[idx].right = v:false
+	  seq[idx].right = false
 	  idx += 1
 	  seq->insert(new_delim, idx)
 	endif
@@ -297,7 +297,7 @@ def ParseInlines(text: string, rel_pos: number = 0): dict<any>
 	if delimiter.marker->len() > marker_len
 	  delimiter.start[0] += marker_len
 	else
-	  delimiter.left = v:false
+	  delimiter.left = false
 	  break
 	endif
 	idx -= 1
@@ -322,7 +322,7 @@ def ParseInlines(text: string, rel_pos: number = 0): dict<any>
   pos = 0
   while seq->len() > 0
     if pos < seq[0].start[0]
-      formatted.text ..= Unescape(text[pos : seq[0].start[0] - 1])
+      formatted.text ..= Unescape(text->strpart(pos, seq[0].start[0] - pos))
       pos = seq[0].start[0]
     endif
     var inline = GetNextInlineBlock(text, seq,
@@ -332,7 +332,7 @@ def ParseInlines(text: string, rel_pos: number = 0): dict<any>
     pos = inline.end_pos
   endwhile
   if pos < text->len()
-    formatted.text ..= Unescape(text[pos : -1])
+    formatted.text ..= Unescape(text->strpart(pos))
   endif
   return formatted
 enddef
@@ -394,15 +394,15 @@ enddef
 
 def NeedBlankLine(prev: string, cur: string): bool
   if prev == 'hr' || cur == 'hr'
-    return v:false
+    return false
   elseif prev == 'heading' || cur == 'heading'
-    return v:true
+    return true
   elseif prev == 'paragraph' && cur == 'paragraph'
-    return v:true
+    return true
   elseif prev != cur
-    return v:true
+    return true
   endif
-  return v:false
+  return false
 enddef
 
 var last_block: string = ''
@@ -560,13 +560,13 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
 	if marker[1] == -1
 	  break
 	endif
-	line = line[marker[2] :]
+	line = line->strpart(marker[2])
       elseif open_blocks[cur].type == 'list_item'
 	var marker = line->matchstrpos($'^ \{{{open_blocks[cur].indent}}}')
 	if marker[1] == -1
 	  break
 	endif
-	line = line[marker[2] :]
+	line = line->strpart(marker[2])
       elseif open_blocks[cur].type == 'fenced_code'
 	if line =~ $'^ \{{,3}}{open_blocks[cur].fence}{open_blocks[cur].fence[0]}* *$'
 	  CloseBlocks(document, open_blocks, cur)
@@ -627,7 +627,7 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
     endif
 
     # check for new container blocks
-    while v:true
+    while true
       var block = line->matchstrpos($'{block_quote}\|{list_item}')
       if block[1] < 0
 	break
@@ -637,7 +637,7 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
       # start a new block
       open_blocks->add(CreateContainerBlock(block, document->len()))
       cur = open_blocks->len()
-      line = line[block[2] :]
+      line = line->strpart(block[2])
     endwhile
 
     # check for leaf block
