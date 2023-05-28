@@ -111,17 +111,21 @@ var resolvedUris = {}
 
 # Convert a Vim filename to an LSP URI (file://<absolute_path>)
 export def LspFileToUri(fname: string): string
-  if resolvedUris->has_key(fname)
-    return resolvedUris[fname]
+  var fname_full: string = fname->fnamemodify(':p')
+
+  if resolvedUris->has_key(fname_full)
+    return resolvedUris[fname_full]
   endif
 
-  var uri: string = fname->fnamemodify(':p')
+  var uri: string
 
   if has("win32unix")
     # We're in Cygwin, convert POSIX style paths to Windows style.
     # The substitution is to remove the '^@' escape character from the end of
     # line.
-    uri = system($'cygpath -m {uri}')->substitute('^\(\p*\).*$', '\=submatch(1)', "")
+    uri = system($'cygpath -m {fname_full}')->substitute('^\(\p*\).*$', '\=submatch(1)', "")
+  else
+    uri = fname_full
   endif
 
   var on_windows: bool = false
@@ -143,7 +147,7 @@ export def LspFileToUri(fname: string): string
     uri = $'file://{uri}'
   endif
 
-  resolvedUris[fname] = uri
+  resolvedUris[fname_full] = uri
   return uri
 enddef
 
