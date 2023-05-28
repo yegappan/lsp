@@ -117,7 +117,7 @@ def CompletionUltiSnips(prefix: string, items: list<dict<any>>)
   for key in matchfuzzy(g:current_ulti_dict_info->keys(), prefix)
     var item = g:current_ulti_dict_info[key]
     var parts = split(item.location, ':')
-    var txt = readfile(parts[0])[str2nr(parts[1]) : str2nr(parts[1]) + 20]
+    var txt = parts[0]->readfile()[parts[1]->str2nr() : parts[1]->str2nr() + 20]
     var restxt = item.description .. "\n\n"
     for line in txt
       if line == "" || line[0 : 6] == "snippet"

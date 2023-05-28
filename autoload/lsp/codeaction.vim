@@ -83,7 +83,7 @@ export def ApplyCodeAction(lspserver: dict<any>, actionlist: list<dict<any>>, qu
   var choice: number
 
   if query =~ '^\d\+'	# digit
-    choice = str2nr(query)
+    choice = query->str2nr()
   elseif query =~ '^/'	# regex
     choice = 1 + util.Indexof(actions, (i, a) => a.title =~ query[1 : ])
   elseif query != ''	# literal string
