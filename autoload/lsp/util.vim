@@ -117,15 +117,13 @@ export def LspFileToUri(fname: string): string
     return resolvedUris[fname_full]
   endif
 
-  var uri: string
+  var uri: string = fname_full
 
   if has("win32unix")
     # We're in Cygwin, convert POSIX style paths to Windows style.
     # The substitution is to remove the '^@' escape character from the end of
     # line.
-    uri = system($'cygpath -m {fname_full}')->substitute('^\(\p*\).*$', '\=submatch(1)', "")
-  else
-    uri = fname_full
+    uri = system($'cygpath -m {uri}')->substitute('^\(\p*\).*$', '\=submatch(1)', "")
   endif
 
   var on_windows: bool = false
