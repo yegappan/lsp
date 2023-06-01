@@ -464,14 +464,14 @@ def g:Test_LspDiag_Multi()
   assert_equal([1, 5], [line('.'), col('.')])
   var ids = popup_list()
   assert_equal(1, ids->len())
-  assert_match('Incompatible pointer to integer', getbufline(ids[0]->winbufnr(), 1, '$')[0])
+  assert_match('Incompatible pointer to integer', getbufoneline(ids[0]->winbufnr(), 1, '$'))
   popup_clear()
   cursor(1, 6)
   :LspDiagHere
   assert_equal([1, 9], [line('.'), col('.')])
   ids = popup_list()
   assert_equal(1, ids->len())
-  assert_match('Initializer element is not', getbufline(ids[0]->winbufnr(), 1, '$')[0])
+  assert_match('Initializer element is not', getbufoneline(ids[0]->winbufnr(), 1, '$'))
   popup_clear()
 
   # Line without diagnostics
