@@ -598,13 +598,13 @@ export def AddServer(serverList: list<dict<any>>)
       if !opt.lspOptions.ignoreMissingServer
         util.ErrMsg($'LSP server {server.path} is not found')
       endif
-      return
+      continue
     endif
     var args: list<string> = []
     if server->has_key('args')
       if server.args->type() != v:t_list
         util.ErrMsg($'Arguments for LSP server {server.args} is not a List')
-        return
+        continue
       endif
       args = server.args
     endif
@@ -623,7 +623,7 @@ export def AddServer(serverList: list<dict<any>>)
     if server->has_key('processDiagHandler')
       if server.processDiagHandler->type() != v:t_func
         util.ErrMsg($'Setting of processDiagHandler {server.processDiagHandler} is not a Funcref nor lambda')
-        return
+        continue
       endif
       ProcessDiagHandler = server.processDiagHandler
     endif
@@ -640,7 +640,7 @@ export def AddServer(serverList: list<dict<any>>)
 
     if server.omnicompl->type() != v:t_bool
       util.ErrMsg($'Setting of omnicompl {server.omnicompl} is not a Boolean')
-      return
+      continue
     endif
 
     if !server->has_key('syncInit')
