@@ -107,9 +107,17 @@ export def LspUriRemote(uri: string): bool
   return uri =~ '^\w\+::' || uri =~ '^[a-z][a-z0-9+.-]*://'
 enddef
 
+var resolvedUris = {}
+
 # Convert a Vim filename to an LSP URI (file://<absolute_path>)
 export def LspFileToUri(fname: string): string
-  var uri: string = fname->fnamemodify(':p')
+  var fname_full: string = fname->fnamemodify(':p')
+
+  if resolvedUris->has_key(fname_full)
+    return resolvedUris[fname_full]
+  endif
+
+  var uri: string = fname_full
 
   if has("win32unix")
     # We're in Cygwin, convert POSIX style paths to Windows style.
@@ -137,6 +145,7 @@ export def LspFileToUri(fname: string): string
     uri = $'file://{uri}'
   endif
 
+  resolvedUris[fname_full] = uri
   return uri
 enddef
 
