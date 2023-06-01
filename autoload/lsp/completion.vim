@@ -155,7 +155,7 @@ def CompletionVsnip(items: list<dict<any>>)
     if match[0] != ''
       var user_data = item.user_data->json_decode()
       var documentation = []
-      for line in user_data.vsnip.snippet->vsnip#to_string()->split("\n")
+      for line in vsnip#to_string(user_data.vsnip.snippet)->split("\n")
 	documentation->add(line)
       endfor
       items->add({
