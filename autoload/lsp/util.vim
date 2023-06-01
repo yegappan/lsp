@@ -290,4 +290,13 @@ export def FindNearestRootDir(startDir: string, files: list<any>): string
   return sortedList[0]
 enddef
 
+export def GetBufOneLine(bnr: number, lnum: number): string
+  if exists_compiled('*getbufoneline')
+    # getbufoneline() was introduced in patch 9.0.0916
+    return bnr->getbufoneline(lnum)
+  else
+    return bnr->getbufline(lnum)[0]
+  endif
+enddef
+
 # vim: tabstop=8 shiftwidth=2 softtabstop=2

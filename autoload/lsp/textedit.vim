@@ -173,7 +173,7 @@ export def ApplyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   # lines.
   var dellastline: bool = false
   if start_line == 0 && bnr->getbufinfo()[0].linecount == 1 &&
-						bnr->getbufoneline(1) == ''
+					util.GetBufOneLine(bnr, 1) == ''
     dellastline = true
   endif
 

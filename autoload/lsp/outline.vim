@@ -194,7 +194,7 @@ def OutlineHighlightCurrentSymbol()
 
   # Highlight the selected symbol
   var col: number =
-	bnr->getbufoneline(symbolTable[mid].outlineLine)->match('\S') + 1
+    util.GetBufOneLine(bnr, symbolTable[mid].outlineLine)->match('\S') + 1
   prop_add(symbolTable[mid].outlineLine, col,
 			{bufnr: bnr, type: 'LspOutlineHighlight',
 			length: symbolTable[mid].name->len()})
