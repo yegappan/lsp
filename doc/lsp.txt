@@ -546,7 +546,8 @@ ultisnipsSupport	|Boolean| option.  Enable SirVer/ultisnips support.
 						*lsp-opt-vssnipSupport*
 vsnipSupport		|Boolean| option.  Enable hrsh7th/vim-vsnip support.
 			Need snippet completion plugins hrsh7th/vim-vsnip
-		 	and hrsh7th/vim-vsnip-integ. By default this is
+		 	and hrsh7th/vim-vsnip-integ. Set ultisnipsSupport to
+			false before enabling this. By default this is
 			set to false.
 						*lsp-opt-usePopupInCodeAction*
 usePopupInCodeAction    |Boolean| option.  When using the |:LspCodeAction|
