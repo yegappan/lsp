@@ -143,7 +143,7 @@ def CompletionVsnip(items: list<dict<any>>)
     var chars = escape(abbr, '\/?')->split('\zs')
     var chars_pattern = '\%(\V' .. chars->join('\m\|\V') .. '\m\)'
     var separator = chars[0] =~ '\a' ? '\<' : ''
-    return separator .. '\V' .. chars[0] .. '\m' .. chars_pattern .. '*$'
+    return $'{separator}\V{chars[0]}\m{chars_pattern}*$'
   enddef
 
   if charcol('.') == 1
