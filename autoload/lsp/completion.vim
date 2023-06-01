@@ -140,8 +140,8 @@ enddef
 # Integration with the vim-vsnip plugin
 def CompletionVsnip(items: list<dict<any>>)
   def Pattern(abbr: string): string
-    var chars = split(escape(abbr, '\/?'), '\zs')
-    var chars_pattern = '\%(\V' .. join(chars, '\m\|\V') .. '\m\)'
+    var chars = escape(abbr, '\/?')->split('\zs')
+    var chars_pattern = '\%(\V' .. chars->join('\m\|\V') .. '\m\)'
     var separator = chars[0] =~ '\a' ? '\<' : ''
     return separator .. '\V' .. chars[0] .. '\m' .. chars_pattern .. '*$'
   enddef
@@ -153,9 +153,9 @@ def CompletionVsnip(items: list<dict<any>>)
   for item in vsnip#get_complete_items(bufnr('%'))
     var match = starttext->matchstrpos(Pattern(item.abbr))
     if match[0] != ''
-      var user_data = json_decode(item.user_data)
+      var user_data = item.user_data->json_decode()
       var documentation = []
-      for line in split(vsnip#to_string(user_data.vsnip.snippet), "\n")
+      for line in user_data.vsnip.snippet->vsnip#to_string()->split("\n")
 	documentation->add(line)
       endfor
       items->add({
@@ -163,7 +163,7 @@ def CompletionVsnip(items: list<dict<any>>)
 	filterText: item.word,
 	insertTextFormat: 2,
 	textEdit: {
-	  newText: join(user_data.vsnip.snippet, "\n"),
+	  newText: user_data.vsnip.snippet->join("\n"),
 	  range: {
 	    start: {
 	      line: line('.'),
