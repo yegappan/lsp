@@ -137,6 +137,57 @@ def CompletionUltiSnips(prefix: string, items: list<dict<any>>)
   endfor
 enddef
 
+# Integration with the vim-vsnip plugin
+def CompletionVsnip(items: list<dict<any>>)
+  def Pattern(abbr: string): string
+    var chars = split(escape(abbr, '\/?'), '\zs')
+    var chars_pattern = '\%(\V' .. join(chars, '\m\|\V') .. '\m\)'
+    var separator = chars[0] =~ '\a' ? '\<' : ''
+    return separator .. '\V' .. chars[0] .. '\m' .. chars_pattern .. '*$'
+  enddef
+
+  if charcol('.') == 1
+    return
+  endif
+  var starttext = getline('.')->slice(0, charcol('.') - 1)
+  for item in vsnip#get_complete_items(bufnr('%'))
+    var match = starttext->matchstrpos(Pattern(item.abbr))
+    if match[0] != ''
+      var user_data = json_decode(item.user_data)
+      var documentation = []
+      for line in split(vsnip#to_string(user_data.vsnip.snippet), "\n")
+	documentation->add(line)
+      endfor
+      items->add({
+	label: item.abbr,
+	filterText: item.word,
+	insertTextFormat: 2,
+	textEdit: {
+	  newText: join(user_data.vsnip.snippet, "\n"),
+	  range: {
+	    start: {
+	      line: line('.'),
+	      character: match[1],
+	    },
+	    ['end']: {
+	      line: line('.'),
+	      character: match[2],
+	    },
+	  },
+	},
+	data: {
+	  entryNames: [item.word],
+	},
+	kind: 15,
+	documentation: {
+	  kind: 'markdown',
+	  value: documentation->join("\n"),
+	},
+      })
+    endif
+  endfor
+enddef
+
 # add completion from current buf
 def CompletionFromBuffer(items: list<dict<any>>)
     var words = {}
@@ -190,6 +241,8 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
 
   if opt.lspOptions.ultisnipsSupport
     CompletionUltiSnips(prefix, items)
+  elseif opt.lspOptions.vsnipSupport
+    CompletionVsnip(items)
   endif
 
   if opt.lspOptions.useBufferCompletion
@@ -604,10 +657,11 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
   if opt.lspOptions.autoComplete
     if lspserver.completionLazyDoc
       setbufvar(bnr, '&completeopt', 'menuone,popuphidden,noinsert,noselect')
+      setbufvar(bnr, '&completepopup', 'width:80,highlight:Pmenu,align:item,border:off')
     else
       setbufvar(bnr, '&completeopt', 'menuone,popup,noinsert,noselect')
+      setbufvar(bnr, '&completepopup', 'border:off')
     endif
-    setbufvar(bnr, '&completepopup', 'width:80,highlight:Pmenu,align:item,border:off')
     # <Enter> in insert mode stops completion and inserts a <Enter>
     if !opt.lspOptions.noNewlineInCompletion
       :inoremap <expr> <buffer> <CR> pumvisible() ? "\<C-Y>\<CR>" : "\<CR>"
