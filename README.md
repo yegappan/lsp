@@ -108,6 +108,7 @@ Some of the LSP plugin features can be enabled or disabled by using the LspOptio
 Here is an example of configuration with default values:
 ```viml
 call LspOptionsSet(#{
+	\   aleSupport: v:false,
 	\   autoComplete: v:true,
 	\   autoHighlight: v:false,
 	\   autoHighlightDiags: v:true,
