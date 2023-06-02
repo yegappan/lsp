@@ -168,12 +168,9 @@ export def GetLineByteFromPos(bnr: number, pos: dict<number>): number
       bnr->bufload()
     endif
 
-    var ltext: list<string> = bnr->getbufline(pos.line + 1)
-    if !ltext->empty()
-      var bidx = ltext[0]->byteidx(col)
-      if bidx != -1
-	return bidx
-      endif
+    var bidx = GetBufOneLine(bnr, pos.line + 1)->byteidx(col)
+    if bidx != -1
+      return bidx
     endif
   endif
 
