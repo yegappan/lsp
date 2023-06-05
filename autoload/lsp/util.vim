@@ -162,22 +162,84 @@ export def GetLineByteFromPos(bnr: number, pos: dict<number>): number
   var col: number = pos.character
   # When on the first character, we can ignore the difference between byte and
   # character
-  if col > 0
-    # Need a loaded buffer to read the line and compute the offset
-    if !bnr->bufloaded()
-      bnr->bufload()
-    endif
+  if col <= 0
+    return col
+  endif
 
-    var ltext: list<string> = bnr->getbufline(pos.line + 1)
-    if !ltext->empty()
-      var bidx = ltext[0]->byteidx(col)
-      if bidx != -1
-	return bidx
-      endif
+  # Need a loaded buffer to read the line and compute the offset
+  bnr->bufload()
+
+  var ltext: string = GetBufOneLine(bnr, pos.line + 1)
+  if ltext->empty()
+    return col
+  endif
+
+  var byteIdx = ltext->byteidxcomp(col)
+  if byteIdx != -1
+    return byteIdx
+  endif
+
+  return col
+enddef
+
+# Get the index of the character at [pos.line, pos.character] in buffer "bnr"
+# without counting the composing characters.  The LSP server counts composing
+# characters as separate characters whereas Vim string indexing ignores the
+# composing characters.
+export def GetCharIdxWithoutCompChar(bnr: number, pos: dict<number>): number
+  var col: number = pos.character
+  # When on the first character, nothing to do.
+  if col <= 0
+    return col
+  endif
+
+  # Need a loaded buffer to read the line and compute the offset
+  bnr->bufload()
+
+  var ltext: string = GetBufOneLine(bnr, pos.line + 1)
+  if ltext->empty()
+    return col
+  endif
+
+  # Convert the character index that includes composing characters as separate
+  # characters to a byte index and then back to a character index ignoring the
+  # composing characters.
+  var byteIdx = ltext->byteidxcomp(col)
+  if byteIdx != -1
+    if byteIdx == ltext->strlen()
+      # Byte index points to the byte after the last byte.
+      return ltext->strcharlen()
+    else
+      return ltext->charidx(byteIdx, v:false)
     endif
   endif
 
   return col
+enddef
+
+# Get the index of the character at [pos.line, pos.character] in buffer "bnr"
+# counting the composing characters as separate characters.  The LSP server
+# counts composing characters as separate characters whereas Vim string
+# indexing ignores the composing characters.
+export def GetCharIdxWithCompChar(ltext: string, charIdx: number): number
+  # When on the first character, nothing to do.
+  if charIdx <= 0 || ltext->empty()
+    return charIdx
+  endif
+
+  # Convert the character index that doesn't include composing characters as
+  # separate characters to a byte index and then back to a character index
+  # that includes the composing characters as separate characters
+  var byteIdx = ltext->byteidx(charIdx)
+  if byteIdx != -1
+    if byteIdx == ltext->strlen()
+      return ltext->strchars()
+    else
+      return ltext->charidx(byteIdx, v:true)
+    endif
+  endif
+
+  return charIdx
 enddef
 
 # push the current location on to the tag stack
@@ -234,7 +296,8 @@ export def JumpToLspLocation(location: dict<any>, cmdmods: string)
   else
     exe $'{cmdmods} split {fname}'
   endif
-  setcursorcharpos(range.start.line + 1, range.start.character + 1)
+  setcursorcharpos(range.start.line + 1,
+		   GetCharIdxWithoutCompChar(bufnr(), range.start) + 1)
 enddef
 
 # 'indexof' is to new to use it, use this instead.

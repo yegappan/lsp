@@ -597,7 +597,9 @@ def GetLspPosition(find_ident: bool): dict<number>
     endwhile
   endif
 
-  return {line: lnum, character: col}
+  # Compute character index counting composing characters as separate
+  # characters
+  return {line: lnum, character: util.GetCharIdxWithCompChar(line, col)}
 enddef
 
 # Return the current file name and current cursor position as a LSP

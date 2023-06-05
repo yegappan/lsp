@@ -264,7 +264,8 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
 	start_charcol = chcol
       endif
       var textEdit = item.textEdit
-      var textEditStartCol = textEdit.range.start.character
+      var textEditStartCol =
+		util.GetCharIdxWithoutCompChar(bufnr(), textEdit.range.start)
       if textEditStartCol != start_charcol
 	var offset = start_charcol - textEditStartCol - 1
 	d.word = textEdit.newText[offset : ]
@@ -532,7 +533,7 @@ def g:LspOmniFunc(findstart: number, base: string): any
     endif
 
     if opt.lspOptions.completionMatcher == 'icase'
-      return res->filter((i, v) => v.word->tolower()->stridx(prefix) == 0)
+      return res->filter((i, v) => v.word->tolower()->stridx(prefix->tolower()) == 0)
     endif
 
     return res->filter((i, v) => v.word->stridx(prefix) == 0)

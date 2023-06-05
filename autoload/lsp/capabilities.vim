@@ -5,6 +5,7 @@ vim9script
 import './options.vim' as opt
 
 # Process the server capabilities
+#   interface ServerCapabilities
 export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
   # completionProvider
   if lspserver.caps->has_key('completionProvider')
