@@ -1403,18 +1403,18 @@ def g:Test_LspIncomingCalls()
   silent! edit XLspIncomingCalls.c
   sleep 200m
   var lines: list<string> =<< trim END
-    void xFunc(void)
+    void xFuncIncoming(void)
     {
     }
 
-    void aFunc(void)
+    void aFuncIncoming(void)
     {
-      xFunc();
+      xFuncIncoming();
     }
 
-    void bFunc(void)
+    void bFuncIncoming(void)
     {
-      xFunc();
+      xFuncIncoming();
     }
   END
   setline(1, lines)
@@ -1423,10 +1423,10 @@ def g:Test_LspIncomingCalls()
   :LspIncomingCalls
   assert_equal([1, 2], [winnr(), winnr('$')])
   var l = getline(1, '$')
-  assert_equal('# Incoming calls to "xFunc"', l[0])
-  assert_match('- xFunc (XLspIncomingCalls.c \[.*\])', l[1])
-  assert_match('  + aFunc (XLspIncomingCalls.c \[.*\])', l[2])
-  assert_match('  + bFunc (XLspIncomingCalls.c \[.*\])', l[3])
+  assert_equal('# Incoming calls to "xFuncIncoming"', l[0])
+  assert_match('- xFuncIncoming (XLspIncomingCalls.c \[.*\])', l[1])
+  assert_match('  + aFuncIncoming (XLspIncomingCalls.c \[.*\])', l[2])
+  assert_match('  + bFuncIncoming (XLspIncomingCalls.c \[.*\])', l[3])
   :%bw!
 enddef
 
@@ -1435,11 +1435,11 @@ def g:Test_LspOutline()
   silent! edit XLspOutline.c
   sleep 200m
   var lines: list<string> =<< trim END
-    void aFunc(void)
+    void aFuncOutline(void)
     {
     }
 
-    void bFunc(void)
+    void bFuncOutline(void)
     {
     }
   END
@@ -1450,7 +1450,7 @@ def g:Test_LspOutline()
   assert_equal(2, winnr('$'))
   var bnum = winbufnr(winid + 1)
   assert_equal('LSP-Outline', bufname(bnum))
-  assert_equal(['Function', '  aFunc', '  bFunc'], getbufline(bnum, 4, '$'))
+  assert_equal(['Function', '  aFuncOutline', '  bFuncOutline'], getbufline(bnum, 4, '$'))
 
   # Validate position vert topleft
   assert_equal(['row', [['leaf', winid + 1], ['leaf', winid]]], winlayout())
@@ -1466,7 +1466,7 @@ def g:Test_LspOutline()
   assert_equal(2, winnr('$'))
   bnum = winbufnr(winid + 2)
   assert_equal('LSP-Outline', bufname(bnum))
-  assert_equal(['Function', '  aFunc', '  bFunc'], getbufline(bnum, 4, '$'))
+  assert_equal(['Function', '  aFuncOutline', '  bFuncOutline'], getbufline(bnum, 4, '$'))
   assert_equal(['row', [['leaf', winid], ['leaf', winid + 2]]], winlayout())
   g:LspOptionsSet({ outlineOnRight: false })
   execute $':{bnum}bw'
@@ -1476,7 +1476,7 @@ def g:Test_LspOutline()
   assert_equal(2, winnr('$'))
   bnum = winbufnr(winid + 3)
   assert_equal('LSP-Outline', bufname(bnum))
-  assert_equal(['Function', '  aFunc', '  bFunc'], getbufline(bnum, 4, '$'))
+  assert_equal(['Function', '  aFuncOutline', '  bFuncOutline'], getbufline(bnum, 4, '$'))
   assert_equal(['col', [['leaf', winid], ['leaf', winid + 3]]], winlayout())
   execute $':{bnum}bw'
 
@@ -1486,7 +1486,7 @@ def g:Test_LspOutline()
   assert_equal(2, winnr('$'))
   bnum = winbufnr(winid + 4)
   assert_equal('LSP-Outline', bufname(bnum))
-  assert_equal(['Function', '  aFunc', '  bFunc'], getbufline(bnum, 4, '$'))
+  assert_equal(['Function', '  aFuncOutline', '  bFuncOutline'], getbufline(bnum, 4, '$'))
   assert_equal(40, winwidth(winid + 4))
   execute $':{bnum}bw'
   g:LspOptionsSet({ outlineWinSize: 20 })
@@ -1496,7 +1496,7 @@ def g:Test_LspOutline()
   assert_equal(2, winnr('$'))
   bnum = winbufnr(winid + 5)
   assert_equal('LSP-Outline', bufname(bnum))
-  assert_equal(['Function', '  aFunc', '  bFunc'], getbufline(bnum, 4, '$'))
+  assert_equal(['Function', '  aFuncOutline', '  bFuncOutline'], getbufline(bnum, 4, '$'))
   assert_equal(37, winwidth(winid + 5))
   execute $':{bnum}bw'
 
@@ -1506,17 +1506,17 @@ enddef
 # Test for setting the 'tagfunc'
 def g:Test_LspTagFunc()
   var lines: list<string> =<< trim END
-    void aFunc(void)
+    void aFuncTag(void)
     {
-      xFunc();
+      xFuncTag();
     }
 
-    void bFunc(void)
+    void bFuncTag(void)
     {
-      xFunc();
+      xFuncTag();
     }
 
-    void xFunc(void)
+    void xFuncTag(void)
     {
     }
   END
@@ -1574,7 +1574,7 @@ def g:Test_LspDiagsUpdated_Autocmd()
   silent! edit XLspDiagsAutocmd.c
   sleep 200m
   var lines: list<string> =<< trim END
-    void aFunc(void)
+    void aFuncDiag(void)
     {
 	return;
     }
