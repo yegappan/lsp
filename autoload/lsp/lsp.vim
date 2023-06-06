@@ -201,7 +201,7 @@ def ShowServer(arg: string)
 
   var windowName: string = ''
   var lines: list<string> = []
-  if arg == '' || arg == 'status'
+  if arg->empty() || arg == 'status'
     windowName = $'LangServer-Status'
     for lspserver in lspservers
       if !lines->empty()
@@ -485,7 +485,7 @@ export def AddFile(bnr: number): void
   endif
 
   var ftype: string = bnr->getbufvar('&filetype')
-  if ftype == ''
+  if ftype->empty()
     return
   endif
   var lspservers: list<dict<any>> = LspGetServers(bnr, ftype)
@@ -648,7 +648,7 @@ export def AddServer(serverList: list<dict<any>>)
     endif
 
     if !server->has_key('name') || server.name->type() != v:t_string
-							|| server.name == ''
+							|| server.name->empty()
       # Use the executable name (without the extension) as the language server
       # name.
       server.name = server.path->fnamemodify(':t:r')
@@ -704,7 +704,7 @@ enddef
 # received ('initialize' LSP reply message)
 export def ServerReady(): bool
   var fname: string = @%
-  if fname == ''
+  if fname->empty()
     return false
   endif
 
@@ -755,7 +755,7 @@ enddef
 # Display the diagnostics for the current line in the status line.
 export def LspShowCurrentDiagInStatusLine()
   var fname: string = @%
-  if fname == ''
+  if fname->empty()
     return
   endif
 
@@ -766,7 +766,7 @@ enddef
 export def ErrorCount(): dict<number>
   var res = {Error: 0, Warn: 0, Info: 0, Hint: 0}
   var fname: string = @%
-  if fname == ''
+  if fname->empty()
     return res
   endif
 
@@ -831,7 +831,7 @@ def g:LspRequestDocSymbols()
   endif
 
   var fname: string = @%
-  if fname == ''
+  if fname->empty()
     return
   endif
 
@@ -914,10 +914,10 @@ export def Rename(a_newName: string)
   endif
 
   var newName: string = a_newName
-  if newName == ''
+  if newName->empty()
     var sym: string = expand('<cword>')
     newName = input($"Rename symbol '{sym}' to: ", sym)
-    if newName == ''
+    if newName->empty()
       return
     endif
 
@@ -960,9 +960,9 @@ export def SymbolSearch(queryArg: string)
   endif
 
   var query: string = queryArg
-  if query == ''
+  if query->empty()
     query = input('Lookup symbol: ', expand('<cword>'))
-    if query == ''
+    if query->empty()
       return
     endif
   endif
@@ -982,9 +982,9 @@ enddef
 # Add a workspace folder. Default is to use the current folder.
 export def AddWorkspaceFolder(dirArg: string)
   var dirName: string = dirArg
-  if dirName == ''
+  if dirName->empty()
     dirName = input('Add Workspace Folder: ', getcwd(), 'dir')
-    if dirName == ''
+    if dirName->empty()
       return
     endif
   endif
@@ -1004,9 +1004,9 @@ enddef
 # Remove a workspace folder. Default is to use the current folder.
 export def RemoveWorkspaceFolder(dirArg: string)
   var dirName: string = dirArg
-  if dirName == ''
+  if dirName->empty()
     dirName = input('Remove Workspace Folder: ', getcwd(), 'dir')
-    if dirName == ''
+    if dirName->empty()
       return
     endif
   endif

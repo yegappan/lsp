@@ -165,7 +165,7 @@ def InitServer(lspserver: dict<any>, bnr: number)
   if !rootSearchFiles->empty()
     rootPath = util.FindNearestRootDir(bufDir, rootSearchFiles)
   endif
-  if rootPath == ''
+  if rootPath->empty()
     var cwd = getcwd()
 
     # bufDir is within cwd
@@ -319,7 +319,7 @@ enddef
 def SendResponse(lspserver: dict<any>, request: dict<any>, result: any, error: dict<any>)
   if (request.id->type() == v:t_string
 	&& (request.id->trim() =~ '[^[:digit:]]\+'
-	    || request.id->trim() == ''))
+	    || request.id->trim()->empty()))
     || (request.id->type() != v:t_string && request.id->type() != v:t_number)
     util.ErrMsg('request.id of response to LSP server is not a correct number')
     return
@@ -622,7 +622,7 @@ def GetCompletion(lspserver: dict<any>, triggerKind_arg: number, triggerChar: st
   endif
 
   var fname = @%
-  if fname == ''
+  if fname->empty()
     return
   endif
 

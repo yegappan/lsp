@@ -29,7 +29,7 @@ def OutlineJumpToSymbol()
   if wid == -1
     # Find a window showing a normal buffer and use it
     for w in getwininfo()
-      if w.winid->getwinvar('&buftype') == ''
+      if w.winid->getwinvar('&buftype')->empty()
 	wid = w.winid
 	wid->win_gotoid()
 	break
@@ -145,7 +145,7 @@ enddef
 
 def OutlineHighlightCurrentSymbol()
   var fname: string = expand('%')->fnamemodify(':p')
-  if fname == '' || &filetype == ''
+  if fname->empty() || &filetype->empty()
     return
   endif
 
@@ -227,7 +227,7 @@ export def OpenOutlineWindow(cmdmods: string, winsize: number)
   var prevWinID: number = win_getid()
 
   var mods = cmdmods
-  if mods == ''
+  if mods->empty()
     if opt.lspOptions.outlineOnRight
       mods = ':vert :botright'
     else

@@ -380,7 +380,7 @@ enddef
 # Returns true if diagnostics is not empty and false if it is empty.
 def DiagsUpdateLocList(bnr: number): bool
   var fname: string = bnr->bufname()->fnamemodify(':p')
-  if fname == ''
+  if fname->empty()
     return false
   endif
 
@@ -602,7 +602,7 @@ enddef
 # jump to the next/previous/first diagnostic message in the current buffer
 export def LspDiagsJump(which: string, a_count: number = 0): void
   var fname: string = expand('%:p')
-  if fname == ''
+  if fname->empty()
     return
   endif
   var bnr: number = bufnr()

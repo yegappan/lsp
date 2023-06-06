@@ -38,7 +38,7 @@ echomsg clangdVerDetail
 
 # Test for formatting a file using LspFormat
 def g:Test_LspFormat()
-  :silent! edit Xtest.c
+  :silent! edit XLspFormat.c
   sleep 200m
   setline(1, ['  int i;', '  int j;'])
   :redraw!
@@ -133,7 +133,7 @@ enddef
 
 # Test for :LspFormat when using composing characters
 def g:Test_LspFormat_ComposingChars()
-  :silent! edit Xtest.c
+  :silent! edit XLspFormatComposing.c
   sleep 200m
   var lines =<< trim END
     void fn(int aVar)
@@ -160,7 +160,7 @@ enddef
 
 # Test for formatting a file using 'formatexpr'
 def g:Test_LspFormatExpr()
-  :silent! edit Xtest.c
+  :silent! edit XLspFormat.c
   sleep 200m
   setlocal formatexpr=lsp#lsp#FormatExpr()
   setline(1, ['  int i;', '  int j;'])
@@ -315,7 +315,7 @@ enddef
 
 # Test for LSP diagnostics
 def g:Test_LspDiag()
-  :silent! edit Xtest.c
+  :silent! edit XLspDiag.c
   sleep 200m
   var lines: list<string> =<< trim END
     void blueFunc()
@@ -399,7 +399,7 @@ enddef
 
 # Test for :LspDiagShow when using composing characters
 def g:Test_LspDiagShow_ComposingChars()
-  :silent! edit Xtest.c
+  :silent! edit XDiagShowCompose.c
   sleep 200m
   var lines =<< trim END
     #include <stdio.h>
@@ -428,7 +428,7 @@ def g:Test_LspProcessDiagHandler()
   g:LSPTest_modifyDiags = true
   g:LspOptionsSet({showDiagInPopup: false})
 
-  :silent! edit Xtest.c
+  :silent! edit XLspProcessDiag.c
   sleep 200m
   var lines: list<string> =<< trim END
     void blueFunc()
@@ -454,7 +454,7 @@ enddef
 
 # Test that the client have been able to configure the server to speak utf-32
 def g:Test_UnicodeColumnCalc()
-  :silent! edit Xtest.c
+  :silent! edit XUnicodeColumn.c
   sleep 200m
   var lines: list<string> =<< trim END
     int count;
@@ -483,12 +483,12 @@ def g:Test_UnicodeColumnCalc()
               execute('LspGotoDefinition')->split("\n"))
   assert_equal([2, 12], [line('.'), col('.')])
 
-  bw!
+  :%bw!
 enddef
 
 # Test for multiple LSP diagnostics on the same line
 def g:Test_LspDiag_Multi()
-  :silent! edit Xtest.c
+  :silent! edit XLspDiagMulti.c
   sleep 200m
 
   var bnr: number = bufnr()
@@ -639,12 +639,12 @@ def g:Test_LspDiag_Multi()
   assert_equal([1, 5], [line('.'), col('.')])
   g:LspOptionsSet({showDiagInPopup: true})
 
-  bw!
+  :%bw!
 enddef
 
 # Test for highlight diag inline
 def g:Test_LspHighlightDiagInline()
-  :silent! edit Xtest.c
+  :silent! edit XLspHighlightDiag.c
   sleep 200m
   setline(1, [
     'int main()',
@@ -676,12 +676,12 @@ def g:Test_LspHighlightDiagInline()
   props = prop_list(6)
   assert_equal(0, props->len())
 
-  bw!
+  :%bw!
 enddef
 
 # Test for :LspCodeAction
 def g:Test_LspCodeAction()
-  silent! edit Xtest.c
+  silent! edit XLspCodeAction.c
   sleep 200m
   var lines: list<string> =<< trim END
     void testFunc()
@@ -713,7 +713,7 @@ def g:Test_LspCodeAction()
   bw!
 
   # pattern and string prefix
-  silent! edit Xtest.c
+  silent! edit XLspCodeActionPattern.c
   sleep 200m
   var lines2: list<string> =<< trim END
     void testFunc()
@@ -760,7 +760,7 @@ enddef
 
 # Test for :LspCodeAction with symbols containing composing characters
 def g:Test_LspCodeAction_ComposingChars()
-  silent! edit Xtest.c
+  silent! edit XLspCodeActionComposing.c
   sleep 200m
   var lines =<< trim END
     #include <stdio.h>
@@ -788,12 +788,12 @@ def g:Test_LspCodeAction_ComposingChars()
   :LspCodeAction 1
   assert_equal('    printf("ą́ą́ą́ą́ = %d\n", aVar);', getline(7))
 
-  :bw!
+  :%bw!
 enddef
 
 # Test for :LspRename
 def g:Test_LspRename()
-  silent! edit Xtest.c
+  silent! edit XLspRename.c
   sleep 200m
   var lines: list<string> =<< trim END
     void F1(int count)
@@ -863,7 +863,7 @@ enddef
 
 # Test for :LspRename with composing characters
 def g:Test_LspRename_ComposingChars()
-  silent! edit Xtest.c
+  silent! edit XLspRenameComposing.c
   sleep 200m
   var lines: list<string> =<< trim END
     #include <stdio.h>
@@ -897,7 +897,7 @@ enddef
 
 # Test for :LspSelectionExpand and :LspSelectionShrink
 def g:Test_LspSelection()
-  silent! edit Xtest.c
+  silent! edit XLspSelection.c
   sleep 200m
   var lines: list<string> =<< trim END
     void F1(int count)
@@ -998,7 +998,7 @@ enddef
 # Test for :LspGotoDefinition, :LspGotoDeclaration and :LspGotoImpl
 def g:Test_LspGotoSymbol()
   settagstack(0, {items: []})
-  silent! edit Xtest.cpp
+  silent! edit XLspGotoSymbol.cpp
   sleep 600m
   var lines: list<string> =<< trim END
     class base {
@@ -1192,7 +1192,7 @@ enddef
 
 # Test for :LspHighlight
 def g:Test_LspHighlight()
-  silent! edit Xtest.c
+  silent! edit XLspHighlight.c
   sleep 200m
   var lines: list<string> =<< trim END
     void f1(int arg)
@@ -1231,7 +1231,7 @@ enddef
 
 # Test for :LspHover
 def g:Test_LspHover()
-  silent! edit Xtest.c
+  silent! edit XLspHover.c
   sleep 200m
   var lines: list<string> =<< trim END
     int f1(int a)
@@ -1282,7 +1282,7 @@ enddef
 
 # Test for :LspShowSignature
 def g:Test_LspShowSignature()
-  silent! edit Xtest.c
+  silent! edit XLspShowSignature.c
   sleep 200m
   var lines: list<string> =<< trim END
     int MyFunc(int a, int b)
@@ -1325,7 +1325,7 @@ enddef
 
 # Test for :LspSymbolSearch
 def g:Test_LspSymbolSearch()
-  silent! edit Xtest.c
+  silent! edit XLspSymbolSearch.c
   sleep 200m
   var lines: list<string> =<< trim END
     void lsptest_funcA()
@@ -1363,7 +1363,7 @@ enddef
 
 # Test for :LspSymbolSearch when using composing characters
 def g:Test_LspSymbolSearch_ComposingChars()
-  silent! edit Xtest.c
+  silent! edit XLspSymbolSearchCompose.c
   sleep 200m
   var lines: list<string> =<< trim END
     typedef void 😊😊😊😊;
@@ -1400,7 +1400,7 @@ enddef
 
 # Test for :LspIncomingCalls
 def g:Test_LspIncomingCalls()
-  silent! edit Xtest.c
+  silent! edit XLspIncomingCalls.c
   sleep 200m
   var lines: list<string> =<< trim END
     void xFunc(void)
@@ -1424,15 +1424,15 @@ def g:Test_LspIncomingCalls()
   assert_equal([1, 2], [winnr(), winnr('$')])
   var l = getline(1, '$')
   assert_equal('# Incoming calls to "xFunc"', l[0])
-  assert_match('- xFunc (Xtest.c \[.*\])', l[1])
-  assert_match('  + aFunc (Xtest.c \[.*\])', l[2])
-  assert_match('  + bFunc (Xtest.c \[.*\])', l[3])
+  assert_match('- xFunc (XLspIncomingCalls.c \[.*\])', l[1])
+  assert_match('  + aFunc (XLspIncomingCalls.c \[.*\])', l[2])
+  assert_match('  + bFunc (XLspIncomingCalls.c \[.*\])', l[3])
   :%bw!
 enddef
 
 # Test for :LspOutline
 def g:Test_LspOutline()
-  silent! edit Xtest.c
+  silent! edit XLspOutline.c
   sleep 200m
   var lines: list<string> =<< trim END
     void aFunc(void)
@@ -1520,8 +1520,8 @@ def g:Test_LspTagFunc()
     {
     }
   END
-  writefile(lines, 'Xtest.c')
-  :silent! edit Xtest.c
+  writefile(lines, 'Xtagfunc.c')
+  :silent! edit Xtagfunc.c
   g:WaitForServerFileLoad(1)
   :setlocal tagfunc=lsp#lsp#TagFunc
   cursor(3, 4)
@@ -1532,7 +1532,7 @@ def g:Test_LspTagFunc()
 
   :set tagfunc&
   :%bw!
-  delete('Xtest.c')
+  delete('Xtagfunc.c')
 enddef
 
 # Test for setting the 'tagfunc' with composing characters in symbols
@@ -1548,8 +1548,8 @@ def g:Test_LspTagFunc_ComposingChars()
         dVar = 10;
     }
   END
-  writefile(lines, 'Xtest.c', 'D')
-  :silent! edit! Xtest.c
+  writefile(lines, 'XtagfuncCompose.c')
+  :silent! edit! XtagfuncCompose.c
   g:WaitForServerFileLoad(0)
   :setlocal tagfunc=lsp#lsp#TagFunc
   cursor(6, 5)
@@ -1564,13 +1564,14 @@ def g:Test_LspTagFunc_ComposingChars()
   :set tagfunc&
 
   :%bw!
+  delete('XtagfuncCompose.c')
 enddef
 
 # Test for the LspDiagsUpdated autocmd
 def g:Test_LspDiagsUpdated_Autocmd()
   g:LspAutoCmd = 0
   autocmd_add([{event: 'User', pattern: 'LspDiagsUpdated', cmd: 'g:LspAutoCmd = g:LspAutoCmd + 1'}])
-  silent! edit Xtest.c
+  silent! edit XLspDiagsAutocmd.c
   sleep 200m
   var lines: list<string> =<< trim END
     void aFunc(void)
@@ -1588,7 +1589,7 @@ def g:Test_LspDiagsUpdated_Autocmd()
   g:WaitForDiags(0)
   :%bw!
   autocmd_delete([{event: 'User', pattern: 'LspDiagsUpdated'}])
-  assert_equal(6, g:LspAutoCmd)
+  assert_equal(5, g:LspAutoCmd)
 enddef
 
 # Test custom notification handlers
@@ -1610,7 +1611,7 @@ def g:Test_LspCustomNotificationHandlers()
 enddef
 
 def g:Test_ScanFindIdent()
-  :silent! edit Xtest.c
+  :silent! edit XscanFindIdent.c
   sleep 200m
   var lines: list<string> =<< trim END
     int count;
@@ -1622,6 +1623,7 @@ def g:Test_ScanFindIdent()
     }
   END
   setline(1, lines)
+  g:WaitForServerFileLoad(0)
   :redraw!
 
   # LspGotoDefinition et al
@@ -1649,12 +1651,12 @@ def g:Test_ScanFindIdent()
   assert_equal('int counter;', getline(1))
   assert_equal('  return    counter + 1;', getline(6))
 
-  bw!
+  :%bw!
 enddef
 
 # Test for doing omni completion from the first column
 def g:Test_OmniComplete_FirstColumn()
-  :silent! edit Xtest.c
+  :silent! edit XOmniCompleteFirstColumn.c
   sleep 200m
   var lines: list<string> =<< trim END
     typedef struct Foo_ {
@@ -1668,12 +1670,12 @@ def g:Test_OmniComplete_FirstColumn()
 
   feedkeys("G0i\<C-X>\<C-O>", 'xt')
   assert_equal('Foo_t#define FOO 1', getline('.'))
-  :bw!
+  :%bw!
 enddef
 
 # Test for doing omni completion from the first column
 def g:Test_OmniComplete_Multibyte()
-  :silent! edit Xtest.c
+  :silent! edit XOmniCompleteMultibyte.c
   sleep 200m
   var lines: list<string> =<< trim END
     #include <string.h>
@@ -1690,12 +1692,12 @@ def g:Test_OmniComplete_Multibyte()
   cursor(5, 36)
   feedkeys("cwthis\<C-X>\<C-O>", 'xt')
   assert_equal('  int len = strlen("©©©©©") + thisVar;', getline('.'))
-  :bw!
+  :%bw!
 enddef
 
 # Test for doing omni completion from the first column
 def g:Test_OmniComplete_Struct()
-  :silent! edit Xtest.c
+  :silent! edit XOmniCompleteStruct.c
   sleep 200m
   var lines: list<string> =<< trim END
     struct test_ {
@@ -1721,12 +1723,12 @@ def g:Test_OmniComplete_Struct()
   cursor(11, 12)
   feedkeys("cw\<C-X>\<C-O>\<C-N>\<C-N>\<C-Y>", 'xt')
   assert_equal('    pTest->foo = 20;', getline('.'))
-  :bw!
+  :%bw!
 enddef
 
 # Test for doing omni completion for symbols with composing characters
 def g:Test_OmniComplete_ComposingChars()
-  :silent! edit Xtest.c
+  :silent! edit XOmniCompleteCompose.c
   sleep 200m
   var lines: list<string> =<< trim END
     void Func1(void)
@@ -1790,7 +1792,7 @@ def g:Test_LspServer()
 	       execute('LspServer trace xyz')->split("\n"))
   assert_equal(['Error: Unsupported argument "verbose xyz"'],
 	       execute('LspServer trace verbose xyz')->split("\n"))
-  :bw!
+  :%bw!
 enddef
 
 # TODO:

@@ -261,7 +261,7 @@ export def JumpToLspLocation(location: dict<any>, cmdmods: string)
   var fname = LspUriToFile(uri)
 
   # jump to the file and line containing the symbol
-  if cmdmods == ''
+  if cmdmods->empty()
     var bnr: number = fname->bufnr()
     if bnr == bufnr()
       # Set the previous cursor location mark. Instead of using setpos(), m' is
@@ -324,7 +324,7 @@ export def FindNearestRootDir(startDir: string, files: list<any>): string
   var foundDirs: dict<bool> = {}
 
   for file in files
-    if file->type() != v:t_string || file == ''
+    if file->type() != v:t_string || file->empty()
       continue
     endif
     var isDir = file[-1 : ] == '/' || file[-1 : ] == '\'
@@ -358,7 +358,11 @@ export def GetBufOneLine(bnr: number, lnum: number): string
     # getbufoneline() was introduced in patch 9.0.0916
     return bnr->getbufoneline(lnum)
   else
-    return bnr->getbufline(lnum)[0]
+    var l = bnr->getbufline(lnum)
+    if l->empty()
+      return ''
+    endif
+    return l[0]
   endif
 enddef
 
