@@ -349,7 +349,7 @@ def PeekLocations(lspserver: dict<any>, locations: list<dict<any>>,
     bnr->bufload()
 
     var lnum = range.start.line + 1
-    var text: string = util.GetBufOneLine(bnr, lnum)
+    var text: string = bnr->getbufline(lnum)->get(0, '')
     menuItems->add($'{lnum}: {text}')
   endfor
 
@@ -389,7 +389,7 @@ export def ShowLocations(lspserver: dict<any>, locations: list<dict<any>>,
       bnr = fname->bufadd()
     endif
     bnr->bufload()
-    var text: string = util.GetBufOneLine(bnr, range.start.line + 1)->trim("\t ", 1)
+    var text: string = bnr->getbufline(range.start.line + 1)->get(0, '')->trim("\t ", 1)
     qflist->add({filename: fname,
 			lnum: range.start.line + 1,
 			col: util.GetLineByteFromPos(bnr, range.start) + 1,

@@ -169,7 +169,7 @@ export def GetLineByteFromPos(bnr: number, pos: dict<number>): number
   # Need a loaded buffer to read the line and compute the offset
   bnr->bufload()
 
-  var ltext: string = GetBufOneLine(bnr, pos.line + 1)
+  var ltext: string = bnr->getbufline(pos.line + 1)->get(0, '')
   if ltext->empty()
     return col
   endif
@@ -196,7 +196,7 @@ export def GetCharIdxWithoutCompChar(bnr: number, pos: dict<number>): number
   # Need a loaded buffer to read the line and compute the offset
   bnr->bufload()
 
-  var ltext: string = GetBufOneLine(bnr, pos.line + 1)
+  var ltext: string = bnr->getbufline(pos.line + 1)->get(0, '')
   if ltext->empty()
     return col
   endif
@@ -351,19 +351,6 @@ export def FindNearestRootDir(startDir: string, files: list<any>): string
 
   # choose the longest matching path (the nearest directory from 'startDir')
   return sortedList[0]
-enddef
-
-export def GetBufOneLine(bnr: number, lnum: number): string
-  if exists_compiled('*getbufoneline')
-    # getbufoneline() was introduced in patch 9.0.0916
-    return bnr->getbufoneline(lnum)
-  else
-    var l = bnr->getbufline(lnum)
-    if l->empty()
-      return ''
-    endif
-    return l[0]
-  endif
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2
