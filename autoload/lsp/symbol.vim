@@ -501,9 +501,9 @@ export def TagFunc(lspserver: dict<any>,
     tagitem.name = pat
 
     var [uri, range] = util.LspLocationParse(tagloc)
-    var fname = util.LspUriToFile(uri)
-    tagitem.filename = fname
-    var startByteIdx = util.GetLineByteFromPos(fname->bufnr(), range.start)
+    tagitem.filename = util.LspUriToFile(uri)
+    var bnr = util.LspUriToBufnr(uri)
+    var startByteIdx = util.GetLineByteFromPos(bnr, range.start)
     tagitem.cmd = $"/\\%{range.start.line + 1}l\\%{startByteIdx + 1}c"
 
     retval->add(tagitem)
