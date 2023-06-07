@@ -3,7 +3,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: April 11, 2023
+Last change: June 7, 2023
 
 ==============================================================================
 CONTENTS                                                     *lsp-contents*
@@ -87,14 +87,14 @@ The following commands are provided:
 			buffer.
 :LspDiagNext		Jump to the next diagnostic message for the current
 			buffer after the current cursor position.
-:LspDiagPrev		Jump to the previous diagnostic message for the current
-			buffer before the current current position.
+:LspDiagPrev		Jump to the previous diagnostic message for the
+			current buffer before the current current position.
 :LspDiagShow		Display the diagnostics messages from the language
 			server for the current buffer in a location list.
 :LspFold		Fold the current file
 :LspFormat		Format a range of lines in the current file using the
-			language server.  The default range is the entire file.
-			See |lsp-format| for more information.
+			language server.  The default range is the entire
+			file.  See |lsp-format| for more information.
 :LspGotoDeclaration	Go to the declaration of the symbol under cursor
 :LspGotoDefinition	Go to the definition of the symbol under cursor
 :LspGotoImpl		Go to the implementation of the symbol under cursor
@@ -240,9 +240,9 @@ To add a language server, the following information is needed:
 			item.
 						*lsp-cfg-filetype*
 	filetype	One or more file types supported by the language
-			server.  This can be a |String| or a |List|. To specify
-			multiple file types, use a List.
-						*lsp-cfg-initializationOptions*
+			server.  This can be a |String| or a |List|. To
+			specify multiple file types, use a List.
+					*lsp-cfg-initializationOptions*
 	initializationOptions
 			(Optional) for lsp servers (e.g. intelephense) some
 			additional initialization options may be required
@@ -268,24 +268,24 @@ To add a language server, the following information is needed:
 			closest to the directory of the current buffer is used
 			as the workspace root.
 
-			If this parameter is not specified or the files are not
-			found, then the current working directory is used as the
-			workspace root for decendent files, for any other files
-			the parent directory of the file is used.
+			If this parameter is not specified or the files are
+			not found, then the current working directory is used
+			as the workspace root for decendent files, for any
+			other files the parent directory of the file is used.
 
 						*lsp-cfg-runIfSearch*
 	runIfSearch	(Optional) a List of file and directory names used to
-			determinate if a server should run or not. The directory
-			names in "runIfSearch" must end in "/" or "\".  Each
-			file and directory name in "runIfSearch" is searched
-			upwards in all the parent directories.  Exactly like
-			|lsp-cfg-rootSearch|.
+			determinate if a server should run or not. The
+			directory names in "runIfSearch" must end in "/" or
+			"\".  Each file and directory name in "runIfSearch" is
+			searched upwards in all the parent directories.
+			Exactly like |lsp-cfg-rootSearch|.
 
-			If a file or directory is found then the server will be
-			started, otherwise it will not.
+			If a file or directory is found then the server will
+			be started, otherwise it will not.
 
-			If this parameter is not specified or is an empty list,
-			then the server will be started unless
+			If this parameter is not specified or is an empty
+			list, then the server will be started unless
 			|lsp-cfg-runUnlessSearch| prevents it.
 
 						*lsp-cfg-runUnlessSearch*
@@ -297,9 +297,10 @@ Additionally the following configurations can be made:
 	customNotificationHandlers
 			(Optional) some lsp servers (e.g.
 			typescript-language-server) will send additional
-			notifications which you might want to silence or handle.
-			The provided notification handlers will be called with a
-			reference to the "lspserver" and the "reply". >
+			notifications which you might want to silence or
+			handle.  The provided notification handlers will be
+			called with a reference to the "lspserver" and the
+			"reply". >
 
 		vim9script
 		g:LspAddServer([{
@@ -314,7 +315,7 @@ Additionally the following configurations can be made:
 			}
 		}])
 <
-						*lsp-cfg-customRequestHandlers*
+					*lsp-cfg-customRequestHandlers*
 	customRequestHandlers
 			(Optional) some lsp servers will send additional
 			request replies which you might want to silence or
@@ -322,9 +323,9 @@ Additionally the following configurations can be made:
 			with a reference to the "lspserver" and the "request".
 						*lsp-cfg-features*
 	features
-			(Optional) toggle which features should be enabled for a
-			given language server. See |lsp-multiple-servers| and
-			|lsp-features| for more information.
+			(Optional) toggle which features should be enabled for
+			a given language server. See |lsp-multiple-servers|
+			and |lsp-features| for more information.
 						*lsp-cfg-omnicompl*
 	omnicompl	(Optional) a boolean value that enables (true)
 			or disables (false) omni-completion for these file
@@ -333,12 +334,12 @@ Additionally the following configurations can be made:
 			(|lsp-opt-autoComplete|).
 						*lsp-cfg-processDiagHandler*
 	processDiagHandler
-			(Optional) A |Funcref| or |lambda| that takes a list of
-			language server diagnostics and returns a new list of
-			filtered, or otherwise changed diagnostics.  Can be used
-			to remove unwanted diagnostics, prefix the diagnostics
-			text, etc.  The following example will remove all but
-			errors and warnings: >
+			(Optional) A |Funcref| or |lambda| that takes a list
+			of language server diagnostics and returns a new list
+			of filtered, or otherwise changed diagnostics.  Can be
+			used to remove unwanted diagnostics, prefix the
+			diagnostics text, etc.  The following example will
+			remove all but errors and warnings: >
 
 		vim9script
 		g:LspAddServer([{
@@ -353,8 +354,8 @@ Additionally the following configurations can be made:
 			},
 		}])
 <
-			And this example will prefix the diagnostic message with
-			the string "TypeScript: ": >
+			And this example will prefix the diagnostic message
+			with the string "TypeScript: ": >
 
 		vim9script
 		g:LspAddServer([{
@@ -384,12 +385,12 @@ Additionally the following configurations can be made:
 			messages are not logged.  See |lsp-debug| for more
 			information.
 
-The language servers are added using the LspAddServer() function. This function
-accepts a list of language servers with the above information.
+The language servers are added using the LspAddServer() function. This
+function accepts a list of language servers with the above information.
 
-If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP
-plugin, then you need to use the VimEnter autocmd to initialize the language
-server and to set the language server options.  For example: >
+If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the
+LSP plugin, then you need to use the VimEnter autocmd to initialize the
+language server and to set the language server options.  For example: >
 
     vim9script
     var lspServers = [
@@ -435,8 +436,8 @@ completionMatcher	|String| option.  Enable fuzzy or case insensitive
 			does completion filtering in the server, while other
 			relies on the client to do the filtering.
 
-			This option only works for language servers that expect
-			the client to filter the completion items.
+			This option only works for language servers that
+			expect the client to filter the completion items.
 
 			This option accepts one of the following values:
 			    case  - case sensitive matching (default).
@@ -451,9 +452,10 @@ completionTextEdit	|Boolean| option.  If true, apply the LSP server
                                                 *lsp-opt-completionKinds*
 completionKinds		|Dictionary| option. See |lsp-custom-kinds| for all
                         completion kind names.
-                                                *lsp-opt-customCompletionKinds*
-customCompletionKinds   |Boolean| option.  If you set this to true, you can set
-			custom completion kinds using the option completionKinds.
+					*lsp-opt-customCompletionKinds*
+customCompletionKinds   |Boolean| option.  If you set this to true, you can
+			set custom completion kinds using the option
+			completionKinds.
 						*lsp-opt-diagSignErrorText*
 diagSignErrorText       |String| option. Change diag sign text for errors
                         By default 'E>'
@@ -475,7 +477,7 @@ diagVirtualTextAlign	|String| option.   Alignment of diagnostics messages
 echoSignature		|Boolean| option.  In insert mode, echo the current
 			symbol signature instead of showing it in a popup.
 			By default this is set to false.
-						*lsp-opt-hideDisabledCodeActions*
+					*lsp-opt-hideDisabledCodeActions*
 hideDisabledCodeActions |Boolean| option. Hide all the disabled code actions.
 			By default this is set to false.
 						*lsp-opt-highlightDiagInline*
@@ -492,7 +494,7 @@ ignoreMissingServer	|Boolean| option.  Do not print a missing language
 keepFocusInDiags     	|Boolean| option.  Focus on the location list window
 			after LspDiagShow.
 			By default this is set to true.
-						*lsp-opt-keepFocusInReferences*
+					*lsp-opt-keepFocusInReferences*
 keepFocusInReferences	|Boolean| option.  Focus on the location list window
 			after LspShowReferences.
 			By default this is set to true.
@@ -501,7 +503,7 @@ noDiagHoverOnLine	|Boolean| option.  Suppress diagnostic hover from
 			appearing when the mouse is over the line instead of
 			the signature.
 			By default this is set to true.
-						*lsp-opt-noNewlineInCompletion*
+					*lsp-opt-noNewlineInCompletion*
 noNewlineInCompletion	|Boolean| option.  Suppress adding a new line on
 			completion selection with <CR>.
 			By default this is set to false.
@@ -520,7 +522,7 @@ showDiagInPopup		|Boolean| option.  When using the |:LspDiagCurrent|
 						*lsp-opt-showDiagOnStatusLine*
 showDiagOnStatusLine	|Boolean| option.  Show a diagnostic message on a
 			status line.  By default this is set to false.
-						*lsp-opt-showDiagWithVirtualText*
+					*lsp-opt-showDiagWithVirtualText*
 showDiagWithVirtualText	|Boolean| option.  Show diagnostic message text from
 			the language server with virtual text.  By default
 			this is set to false.  The "autoHighlightDiags" option
@@ -546,23 +548,24 @@ ultisnipsSupport	|Boolean| option.  Enable SirVer/ultisnips support.
 						*lsp-opt-vssnipSupport*
 vsnipSupport		|Boolean| option.  Enable hrsh7th/vim-vsnip support.
 			Need snippet completion plugins hrsh7th/vim-vsnip
-		 	and hrsh7th/vim-vsnip-integ.  Make sure ultisnipsSupport
-			is set to false before enabling this.  By default 
-			this option is set to false.
+			and hrsh7th/vim-vsnip-integ.  Make sure
+			ultisnipsSupport is set to false before enabling this.
+			By default this option is set to false.
 						*lsp-opt-usePopupInCodeAction*
 usePopupInCodeAction    |Boolean| option.  When using the |:LspCodeAction|
 			command to display the code action for the current
 			line, use a popup menu instead of echoing.
 			By default this is set to false.
-						*lsp-opt-useQuickfixForLocations*
+					*lsp-opt-useQuickfixForLocations*
 useQuickfixForLocations	|Boolean| option.  Show |:LspShowReferences| in a
 			quickfix list instead of a location list.
 			By default this is set to false.
 						*lsp-opt-useBufferCompletion*
-useBufferCompletion     |Boolean| option. If enabled, the words from the current
-			buffer are added to the auto completion list. This may degrade Vim performance
-			as the current buffer contents are processed every time the completion
-			menu is displayed.
+useBufferCompletion     |Boolean| option. If enabled, the words from the
+			current buffer are added to the auto completion list.
+			This may degrade Vim performance as the current buffer
+			contents are processed every time the completion menu
+			is displayed.
 			By default this is set to false.
 
 For example, to disable the automatic placement of signs for the LSP
@@ -593,8 +596,9 @@ can map these commands to keys and make it easier to invoke them.
 			pattern, or a digit corresponding to the index of the
 			code actions in the created prompt.
 
-			When [query] is not given you will be prompted to select
-			one of the actions supplied by the language server.
+			When [query] is not given you will be prompted to
+			select one of the actions supplied by the language
+			server.
 
 						*:LspCodeLens*
 :LspCodeLens		Display a list of code lens commands available for the
@@ -608,8 +612,8 @@ can map these commands to keys and make it easier to invoke them.
 			a popup window.  Otherwise the message is displayed in
 			the status message area.
 
-:LspDiagCurrent!	Only display a diagnostic message if it's directly under
-			the cursor.  Otherwise works exactly like
+:LspDiagCurrent!	Only display a diagnostic message if it's directly
+			under the cursor.  Otherwise works exactly like
 			|:LspDiagCurrent|
 
 			To show the current diagnotic under the cursor while
@@ -645,15 +649,17 @@ can map these commands to keys and make it easier to invoke them.
 
 						*:LspDiagNext*
 :[count]LspDiagNext	Go to the [count] diagnostic message after the current
-			cursor position.  If [count] is omitted, then 1 is used.
-			If [count] exceeds the number of diagnostics after the
-			current position, then the last diagnostic is selected.
+			cursor position.  If [count] is omitted, then 1 is
+			used.  If [count] exceeds the number of diagnostics
+			after the current position, then the last diagnostic
+			is selected.
 
 						*:LspDiagPrev*
-:[count]LspDiagPrev	Go to the [count] diagnostic message before the current
-			cursor position.  If [count] is omitted, then 1 is used.
-			If [count] exceeds the number of diagnostics before the
-			current position, then first last diagnostic is selected.
+:[count]LspDiagPrev	Go to the [count] diagnostic message before the
+			current cursor position.  If [count] is omitted, then
+			1 is used.  If [count] exceeds the number of
+			diagnostics before the current position, then first
+			last diagnostic is selected.
 
 						*:LspDiagShow*
 :LspDiagShow		Creates a new location list with the diagnostics
@@ -667,8 +673,8 @@ can map these commands to keys and make it easier to invoke them.
 
 						*:LspFormat*
 :LspFormat		Format the current file using the language server. The
-			'shiftwidth' and 'expandtab' values set for the current
-			buffer are used when format is applied.
+			'shiftwidth' and 'expandtab' values set for the
+			current buffer are used when format is applied.
 
 :{range}LspFormat	Format the specified range of lines in the current
 			file using the language server.
@@ -681,23 +687,23 @@ can map these commands to keys and make it easier to invoke them.
 
 						*:LspGotoDefinition*
 :[count]LspGotoDefinition
-			Jumps to the [count] definition of the symbol under the
-			cursor.  If there are multiple matches and [count] isn't
-			specified, then a location list will be created with the
-			list of locations.
+			Jumps to the [count] definition of the symbol under
+			the cursor.  If there are multiple matches and [count]
+			isn't specified, then a location list will be created
+			with the list of locations.
 
 			If there is only one location, or [count] is provided
 			then the following will apply:
 
 			If the file is already present in a window, then jumps
 			to that window.  Otherwise, opens the file in a new
-			window.  If the current buffer is modified and 'hidden'
-			is not set or if the current buffer is a special buffer,
-			then a new window is opened.  If the jump is successful,
-			then the current cursor location is pushed onto the tag
-			stack.  The |CTRL-T| command can be used to go back up
-			the tag stack.  Also the |``| mark is set to the
-			position before the jump.
+			window.  If the current buffer is modified and
+			'hidden' is not set or if the current buffer is a
+			special buffer, then a new window is opened.  If the
+			jump is successful, then the current cursor location
+			is pushed onto the tag stack.  The |CTRL-T| command
+			can be used to go back up the tag stack.  Also the
+			|``| mark is set to the position before the jump.
 
 			This command supports |:command-modifiers|.  You can
 			use the modifiers to specify whether a new window or
@@ -786,20 +792,23 @@ can map these commands to keys and make it easier to invoke them.
 			outline window for the various group of symbols.
 
 			You can use |lsp-opt-outlineOnRight| and
-			|lsp-opt-outlineWinSize| to customize the placement and
-			size of the window.
+			|lsp-opt-outlineWinSize| to customize the placement
+			and size of the window.
 
 			This command also supports |:command-modifiers|.  You
 			can use the modifiers specify the position of the
 			window.  Note that the default is ":vert :topleft" or
-			":vert :botright" depending on |lsp-opt-outlineOnRight|
+			":vert :botright" depending on
+			|lsp-opt-outlineOnRight|
 
 			This command also supports providing a [count] to
 			specify the size of the window.  Note that this
-			overrides the values defined in |lsp-opt-outlineWinSize|
+			overrides the values defined in
+			|lsp-opt-outlineWinSize|.
 			Example: >
 
-			    # Open the outline window just above the current window
+			    # Open the outline window just above the current
+			    # window
 			    :aboveleft LspOutline
 
 			    # Open the outline window just next to the current
@@ -825,11 +834,11 @@ can map these commands to keys and make it easier to invoke them.
 			<Esc> will close the popup window.
 			When more than one symbol is found all of them will be
 			shown.  The corresponding file for the symbol is
-			displayed in another popup window.  As the selection in
-			the symbol popup menu changes, the file in the popup is
-			updated.
-			When [count] is provided only the [count] symbol will be
-			shown.
+			displayed in another popup window.  As the selection
+			in the symbol popup menu changes, the file in the
+			popup is updated.
+			When [count] is provided only the [count] symbol will
+			be shown.
 
 						*:LspPeekImpl*
 :[count]LspPeekImpl	Displays the implementation of the symbol under the
@@ -999,8 +1008,8 @@ can map these commands to keys and make it easier to invoke them.
 :LspSubTypeHierarchy	Show the sub type hierarchy for the symbol under the
 			cursor in a popup window.  The file containing the
 			type is shown in another popup window.  You can jump
-			to the location where a type is defined by browsing the
-			popup menu and selecting an entry.
+			to the location where a type is defined by browsing
+			the popup menu and selecting an entry.
 
 						*:LspSuperTypeHierarchy*
 :LspSuperTypeHierarchy	Show the super type hierarchy for the symbol under the
@@ -1277,8 +1286,8 @@ override them.
 				By default, linked to the "SpellLocal"
 				highlight group.
 *LspDiagInlineInfo*		Used to highlight inline info diagnostics.
-				By default, linked to the "SpellRare" highlight
-				group.
+				By default, linked to the "SpellRare"
+				highlight group.
 *LspDiagInlineWarning*		Used to highlight inline warning diagnostics.
 				By default, linked to the "SpellCap" highlight
 				group.
@@ -1400,7 +1409,8 @@ more information about the "Command" interface.
 When a completion popup is triggered, the LSP client will use a default kind
 list to show in the completion "kind" section, to customize it, you need to
 use the option |lsp-opt-customCompletionKinds| and set all custom kinds in the
-option |lsp-opt-completionKinds| . There is a table with all default LSP kinds:
+option |lsp-opt-completionKinds| . There is a table with all default LSP
+kinds:
 
  Kind Name              | Value
 ------------------------|--------------------
@@ -1457,11 +1467,12 @@ In the completion popup, will show something like this: >
 It's possible to run multiple language servers for a given buffer.
 
 By default the language server defined first will be used for as much as it
-supports, then the next and so on. With the exception that diagnostics from all
-running language servers will be combined.
+supports, then the next and so on. With the exception that diagnostics from
+all running language servers will be combined.
 
-This means that you can define a language server that only supports a subset of
-features at first and then define the general purpose language server after it:
+This means that you can define a language server that only supports a subset
+of features at first and then define the general purpose language server after
+it:
 >
 	vim9script
 
@@ -1544,9 +1555,9 @@ everything else: >
 ==============================================================================
 17. Language Server Features			*lsp-features*
 
-By providing the configuration |lsp-cfg-features| it's possible to specify which
-servers should be used for a given method.  The following feature flags are
-supported: See |lsp-multiple-servers| for examples.
+By providing the configuration |lsp-cfg-features| it's possible to specify
+which servers should be used for a given method.  The following feature flags
+are supported: See |lsp-multiple-servers| for examples.
 
 						*lsp-features-codeAction*
 codeAction			Used by |:LspCodeAction|
@@ -1566,10 +1577,11 @@ diagnostics			Used to disable diagnostics for a single
 				combined from all running servers, by setting
 				this to |false| you can ignore diagnostics
 				from a specific server.
-						*lsp-features-documentFormatting*
+					*lsp-features-documentFormatting*
 documentFormatting		Used by |:LspFormat|, and 'formatexpr'
-						*lsp-features-documentHighlight*
-documentHighlight		Used by |:LspHighlight|, and |:LspHighlightClear|
+					*lsp-features-documentHighlight*
+documentHighlight		Used by the |:LspHighlight| and the
+				|:LspHighlightClear| commands.
 						*lsp-features-foldingRange*
 foldingRange			Used by |:LspFold|
 						*lsp-features-hover*
@@ -1581,9 +1593,11 @@ references			Used by |:LspShowReferences|
 						*lsp-features-rename*
 rename				Used by |:LspRename|
 						*lsp-features-selectionRange*
-selectionRange			Used by |:LspSelectionExpand|, and |:LspSelectionShrink|
+selectionRange			Used by the |:LspSelectionExpand| and the
+				|:LspSelectionShrink| commands.
 						*lsp-features-typeDefinition*
-typeDefinition			Used by |:LspGotoTypeDef|, and |:LspPeekTypeDef|
+typeDefinition			Used by the |:LspGotoTypeDef| and the
+				|:LspPeekTypeDef| commands.
 
 ==============================================================================
 						*lsp-license*
