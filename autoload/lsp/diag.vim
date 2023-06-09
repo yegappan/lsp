@@ -82,6 +82,10 @@ export def InitOnce()
   hlset([{name: 'LspDiagVirtualText', default: true, linksto: 'LineNr'}])
   prop_type_add('LspDiagVirtualText', {highlight: 'LspDiagVirtualText',
                                        override: true})
+
+  if opt.lspOptions.aleSupport
+    autocmd_add([{group: 'LspAleCmds', event: 'User', pattern: 'ALEWantResults', cmd: 'AleHook(g:ale_want_results_buffer)'}])
+  endif
 enddef
 
 # Sort diagnostics ascending based on line and character offset
@@ -236,6 +240,29 @@ def DiagsRefresh(bnr: number)
   signs->sign_placelist()
 enddef
 
+# Sends diagnostics to Ale
+def SendAleDiags(bnr: number, timerid: number)
+  if !diagsMap->has_key(bnr)
+    return
+  endif
+
+  # Conver to Ale's diagnostics format (:h ale-loclist-format)
+  ale#other_source#ShowResults(bnr, 'lsp', diagsMap[bnr].sortedDiagnostics->mapnew((_, v) => {
+     return {text: v.message,
+             lnum: v.range.start.line + 1,
+             col: util.GetLineByteFromPos(bnr, v.range.start) + 1,
+             end_lnum: v.range.end.line + 1,
+             end_col: util.GetLineByteFromPos(bnr, v.range.end) + 1,
+             type: "EWIH"[v.severity - 1]}
+  }))
+enddef
+
+# Hook called when Ale wants to retrieve new diagnostics
+def AleHook(bnr: number)
+  ale#other_source#StartChecking(bnr, 'lsp')
+  timer_start(0, function('SendAleDiags', [bnr]))
+enddef
+
 # New LSP diagnostic messages received from the server for a file.
 # Update the signs placed in the buffer for this file
 export def ProcessNewDiags(bnr: number)
@@ -243,7 +270,10 @@ export def ProcessNewDiags(bnr: number)
     DiagsUpdateLocList(bnr)
   endif
 
-  if !opt.lspOptions.autoHighlightDiags
+  if opt.lspOptions.aleSupport
+    SendAleDiags(bnr, -1)
+    return
+  elseif !opt.lspOptions.autoHighlightDiags
     return
   endif
 

@@ -413,6 +413,11 @@ Some of the LSP plugin features can be enabled or disabled by using the
 LspOptionsSet() function. This function accepts a dictionary argument with the
 following optional items:
 
+						*lsp-opt-aleSupport*
+aleSupport		|Boolean| option. If true, diagnostics will be sent to
+			Ale, instead of being displayed by this plugin.
+			This is useful to combine all LSP and linter
+			diagnostics. By default this is set to false.
 						*lsp-opt-autoComplete*
 autoComplete		|Boolean| option. In insert mode, automatically
 			complete the current symbol. Otherwise use
