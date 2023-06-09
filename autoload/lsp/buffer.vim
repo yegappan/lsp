@@ -151,7 +151,7 @@ enddef
 # Returns an empty dict if the server is not found or is not ready.
 export def CurbufGetServerChecked(feature: string = null_string): dict<any>
   var fname: string = @%
-  if fname == ''
+  if fname->empty()
     return {}
   endif
 

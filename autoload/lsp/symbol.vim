@@ -116,7 +116,8 @@ def JumpToWorkspaceSymbol(popupID: number, result: number): void
     # used so that the current location is added to the jump list.
     :normal m'
     setcursorcharpos(symTbl[result - 1].pos.line + 1,
-			symTbl[result - 1].pos.character + 1)
+		     util.GetCharIdxWithoutCompChar(bufnum,
+						    symTbl[result - 1].pos) + 1)
   catch
     # ignore exceptions
   endtry
@@ -345,12 +346,10 @@ def PeekLocations(lspserver: dict<any>, locations: list<dict<any>>,
     if bnr == -1
       bnr = fname->bufadd()
     endif
-    if !bnr->bufloaded()
-      bnr->bufload()
-    endif
+    bnr->bufload()
 
     var lnum = range.start.line + 1
-    var text: string = util.GetBufOneLine(bnr, lnum)
+    var text: string = bnr->getbufline(lnum)->get(0, '')
     menuItems->add($'{lnum}: {text}')
   endfor
 
@@ -389,10 +388,8 @@ export def ShowLocations(lspserver: dict<any>, locations: list<dict<any>>,
     if bnr == -1
       bnr = fname->bufadd()
     endif
-    if !bnr->bufloaded()
-      bnr->bufload()
-    endif
-    var text: string = util.GetBufOneLine(bnr, range.start.line + 1)->trim("\t ", 1)
+    bnr->bufload()
+    var text: string = bnr->getbufline(range.start.line + 1)->get(0, '')->trim("\t ", 1)
     qflist->add({filename: fname,
 			lnum: range.start.line + 1,
 			col: util.GetLineByteFromPos(bnr, range.start) + 1,
@@ -505,7 +502,9 @@ export def TagFunc(lspserver: dict<any>,
 
     var [uri, range] = util.LspLocationParse(tagloc)
     tagitem.filename = util.LspUriToFile(uri)
-    tagitem.cmd = $"/\\%{range.start.line + 1}l\\%{range.start.character + 1}c"
+    var bnr = util.LspUriToBufnr(uri)
+    var startByteIdx = util.GetLineByteFromPos(bnr, range.start)
+    tagitem.cmd = $"/\\%{range.start.line + 1}l\\%{startByteIdx + 1}c"
 
     retval->add(tagitem)
   endfor

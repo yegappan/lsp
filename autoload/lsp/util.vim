@@ -162,19 +162,84 @@ export def GetLineByteFromPos(bnr: number, pos: dict<number>): number
   var col: number = pos.character
   # When on the first character, we can ignore the difference between byte and
   # character
-  if col > 0
-    # Need a loaded buffer to read the line and compute the offset
-    if !bnr->bufloaded()
-      bnr->bufload()
-    endif
+  if col <= 0
+    return col
+  endif
 
-    var bidx = GetBufOneLine(bnr, pos.line + 1)->byteidx(col)
-    if bidx != -1
-      return bidx
+  # Need a loaded buffer to read the line and compute the offset
+  bnr->bufload()
+
+  var ltext: string = bnr->getbufline(pos.line + 1)->get(0, '')
+  if ltext->empty()
+    return col
+  endif
+
+  var byteIdx = ltext->byteidxcomp(col)
+  if byteIdx != -1
+    return byteIdx
+  endif
+
+  return col
+enddef
+
+# Get the index of the character at [pos.line, pos.character] in buffer "bnr"
+# without counting the composing characters.  The LSP server counts composing
+# characters as separate characters whereas Vim string indexing ignores the
+# composing characters.
+export def GetCharIdxWithoutCompChar(bnr: number, pos: dict<number>): number
+  var col: number = pos.character
+  # When on the first character, nothing to do.
+  if col <= 0
+    return col
+  endif
+
+  # Need a loaded buffer to read the line and compute the offset
+  bnr->bufload()
+
+  var ltext: string = bnr->getbufline(pos.line + 1)->get(0, '')
+  if ltext->empty()
+    return col
+  endif
+
+  # Convert the character index that includes composing characters as separate
+  # characters to a byte index and then back to a character index ignoring the
+  # composing characters.
+  var byteIdx = ltext->byteidxcomp(col)
+  if byteIdx != -1
+    if byteIdx == ltext->strlen()
+      # Byte index points to the byte after the last byte.
+      return ltext->strcharlen()
+    else
+      return ltext->charidx(byteIdx, v:false)
     endif
   endif
 
   return col
+enddef
+
+# Get the index of the character at [pos.line, pos.character] in buffer "bnr"
+# counting the composing characters as separate characters.  The LSP server
+# counts composing characters as separate characters whereas Vim string
+# indexing ignores the composing characters.
+export def GetCharIdxWithCompChar(ltext: string, charIdx: number): number
+  # When on the first character, nothing to do.
+  if charIdx <= 0 || ltext->empty()
+    return charIdx
+  endif
+
+  # Convert the character index that doesn't include composing characters as
+  # separate characters to a byte index and then back to a character index
+  # that includes the composing characters as separate characters
+  var byteIdx = ltext->byteidx(charIdx)
+  if byteIdx != -1
+    if byteIdx == ltext->strlen()
+      return ltext->strchars()
+    else
+      return ltext->charidx(byteIdx, v:true)
+    endif
+  endif
+
+  return charIdx
 enddef
 
 # push the current location on to the tag stack
@@ -196,7 +261,7 @@ export def JumpToLspLocation(location: dict<any>, cmdmods: string)
   var fname = LspUriToFile(uri)
 
   # jump to the file and line containing the symbol
-  if cmdmods == ''
+  if cmdmods->empty()
     var bnr: number = fname->bufnr()
     if bnr == bufnr()
       # Set the previous cursor location mark. Instead of using setpos(), m' is
@@ -231,7 +296,8 @@ export def JumpToLspLocation(location: dict<any>, cmdmods: string)
   else
     exe $'{cmdmods} split {fname}'
   endif
-  setcursorcharpos(range.start.line + 1, range.start.character + 1)
+  setcursorcharpos(range.start.line + 1,
+		   GetCharIdxWithoutCompChar(bufnr(), range.start) + 1)
 enddef
 
 # 'indexof' is to new to use it, use this instead.
@@ -258,7 +324,7 @@ export def FindNearestRootDir(startDir: string, files: list<any>): string
   var foundDirs: dict<bool> = {}
 
   for file in files
-    if file->type() != v:t_string || file == ''
+    if file->type() != v:t_string || file->empty()
       continue
     endif
     var isDir = file[-1 : ] == '/' || file[-1 : ] == '\'
@@ -285,15 +351,6 @@ export def FindNearestRootDir(startDir: string, files: list<any>): string
 
   # choose the longest matching path (the nearest directory from 'startDir')
   return sortedList[0]
-enddef
-
-export def GetBufOneLine(bnr: number, lnum: number): string
-  if exists_compiled('*getbufoneline')
-    # getbufoneline() was introduced in patch 9.0.0916
-    return bnr->getbufoneline(lnum)
-  else
-    return bnr->getbufline(lnum)[0]
-  endif
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2

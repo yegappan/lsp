@@ -104,9 +104,7 @@ export def ApplyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   endif
 
   # if the buffer is not loaded, load it and make it a listed buffer
-  if !bnr->bufloaded()
-    bnr->bufload()
-  endif
+  bnr->bufload()
   setbufvar(bnr, '&buflisted', true)
 
   var start_line: number = 4294967295		# 2 ^ 32
@@ -122,9 +120,9 @@ export def ApplyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   for e in text_edits
     # Adjust the start and end columns for multibyte characters
     start_row = e.range.start.line
-    start_col = util.GetLineByteFromPos(bnr, e.range.start)
+    start_col = util.GetCharIdxWithoutCompChar(bnr, e.range.start)
     end_row = e.range.end.line
-    end_col = util.GetLineByteFromPos(bnr, e.range.end)
+    end_col = util.GetCharIdxWithoutCompChar(bnr, e.range.end)
     start_line = [e.range.start.line, start_line]->min()
     finish_line = [e.range.end.line, finish_line]->max()
 
@@ -173,7 +171,7 @@ export def ApplyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   # lines.
   var dellastline: bool = false
   if start_line == 0 && bnr->getbufinfo()[0].linecount == 1 &&
-					util.GetBufOneLine(bnr, 1) == ''
+					bnr->getbufline(1)->get(0, '')->empty()
     dellastline = true
   endif
 

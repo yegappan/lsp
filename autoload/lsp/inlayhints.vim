@@ -34,7 +34,7 @@ export def InlayHintsReply(lspserver: dict<any>, inlayHints: any)
     return
   endif
 
-  var bufnum = bufnr('%')
+  var bnr = bufnr('%')
   for hint in inlayHints
     var label = ''
     if hint.label->type() == v:t_list
@@ -45,12 +45,13 @@ export def InlayHintsReply(lspserver: dict<any>, inlayHints: any)
 
     var kind = hint->has_key('kind') ? hint.kind->string() : '1'
     try
+      var byteIdx = util.GetLineByteFromPos(bnr, hint.position)
       if kind == "'type'" || kind == '1'
-	prop_add(hint.position.line + 1, hint.position.character + 1,
-	  {type: 'LspInlayHintsType', text: label, bufnr: bufnum})
+	prop_add(hint.position.line + 1, byteIdx + 1,
+	  {type: 'LspInlayHintsType', text: label, bufnr: bnr})
       elseif kind == "'parameter'" || kind == '2'
-	prop_add(hint.position.line + 1, hint.position.character + 1,
-	  {type: 'LspInlayHintsParam', text: label, bufnr: bufnum})
+	prop_add(hint.position.line + 1, byteIdx + 1,
+	  {type: 'LspInlayHintsParam', text: label, bufnr: bnr})
       endif
     catch /E966\|E964/ # Invalid lnum | Invalid col
       # Inlay hints replies arrive asynchronously and the document might have

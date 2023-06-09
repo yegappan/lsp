@@ -120,7 +120,7 @@ def CompletionUltiSnips(prefix: string, items: list<dict<any>>)
     var txt = parts[0]->readfile()[parts[1]->str2nr() : parts[1]->str2nr() + 20]
     var restxt = item.description .. "\n\n"
     for line in txt
-      if line == "" || line[0 : 6] == "snippet"
+      if line->empty() || line[0 : 6] == "snippet"
 	break
       else
 	restxt = restxt .. line .. "\n"
@@ -264,7 +264,8 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
 	start_charcol = chcol
       endif
       var textEdit = item.textEdit
-      var textEditStartCol = textEdit.range.start.character
+      var textEditStartCol =
+		util.GetCharIdxWithoutCompChar(bufnr(), textEdit.range.start)
       if textEditStartCol != start_charcol
 	var offset = start_charcol - textEditStartCol - 1
 	d.word = textEdit.newText[offset : ]
@@ -523,7 +524,7 @@ def g:LspOmniFunc(findstart: number, base: string): any
     var prefix = lspserver.omniCompleteKeyword
 
     # Don't attempt to filter on the items, when "isIncomplete" is set
-    if prefix == '' || lspserver.completeItemsIsIncomplete
+    if prefix->empty() || lspserver.completeItemsIsIncomplete
       return res
     endif
 
@@ -532,7 +533,7 @@ def g:LspOmniFunc(findstart: number, base: string): any
     endif
 
     if opt.lspOptions.completionMatcher == 'icase'
-      return res->filter((i, v) => v.word->tolower()->stridx(prefix) == 0)
+      return res->filter((i, v) => v.word->tolower()->stridx(prefix->tolower()) == 0)
     endif
 
     return res->filter((i, v) => v.word->stridx(prefix) == 0)

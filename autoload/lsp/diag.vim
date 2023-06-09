@@ -217,9 +217,10 @@ def DiagsRefresh(bnr: number)
           padding = 3
           symbol = DiagSevToSymbolText(diag.severity)
         else
-          padding = diag.range.start.character
+	  var charIdx = util.GetCharIdxWithoutCompChar(bnr, diag.range.start)
+          padding = charIdx
           if padding > 0
-            padding = strdisplaywidth(getline(diag.range.start.line + 1)[ : diag.range.start.character - 1])
+            padding = strdisplaywidth(getline(diag.range.start.line + 1)[ : charIdx - 1])
           endif
         endif
 
@@ -409,7 +410,7 @@ enddef
 # Returns true if diagnostics is not empty and false if it is empty.
 def DiagsUpdateLocList(bnr: number): bool
   var fname: string = bnr->bufname()->fnamemodify(':p')
-  if fname == ''
+  if fname->empty()
     return false
   endif
 
@@ -479,7 +480,7 @@ enddef
 def ShowDiagInPopup(diag: dict<any>)
   var dlnum = diag.range.start.line + 1
   var ltext = dlnum->getline()
-  var dlcol = ltext->byteidx(diag.range.start.character + 1)
+  var dlcol = ltext->byteidxcomp(diag.range.start.character) + 1
 
   var lastline = line('$')
   if dlnum > lastline
@@ -568,11 +569,13 @@ export def GetDiagByPos(bnr: number, lnum: number, col: number,
   var diags_in_line = GetDiagsByLine(bnr, lnum)
 
   for diag in diags_in_line
+    var startCharIdx = util.GetCharIdxWithoutCompChar(bnr, diag.range.start)
+    var endCharIdx = util.GetCharIdxWithoutCompChar(bnr, diag.range.end)
     if atPos
-      if col >= diag.range.start.character + 1 && col < diag.range.end.character + 1
+      if col >= startCharIdx + 1 && col < endCharIdx + 1
         return diag
       endif
-    elseif col <= diag.range.start.character + 1
+    elseif col <= startCharIdx + 1
       return diag
     endif
   endfor
@@ -617,17 +620,19 @@ enddef
 
 # Utility function to do the actual jump
 def JumpDiag(diag: dict<any>)
-    setcursorcharpos(diag.range.start.line + 1, diag.range.start.character + 1)
-    if !opt.lspOptions.showDiagWithVirtualText
-      :redraw
-      DisplayDiag(diag)
-    endif
+  var startPos: dict<number> = diag.range.start
+  setcursorcharpos(startPos.line + 1,
+		   util.GetCharIdxWithoutCompChar(bufnr(), startPos) + 1)
+  if !opt.lspOptions.showDiagWithVirtualText
+    :redraw
+    DisplayDiag(diag)
+  endif
 enddef
 
 # jump to the next/previous/first diagnostic message in the current buffer
 export def LspDiagsJump(which: string, a_count: number = 0): void
   var fname: string = expand('%:p')
-  if fname == ''
+  if fname->empty()
     return
   endif
   var bnr: number = bufnr()
@@ -657,7 +662,7 @@ export def LspDiagsJump(which: string, a_count: number = 0): void
   for diag in (which == 'next' || which == 'here') ?
 					diags : diags->copy()->reverse()
     var lnum = diag.range.start.line + 1
-    var col = diag.range.start.character + 1
+    var col = util.GetCharIdxWithoutCompChar(bnr, diag.range.start) + 1
     if (which == 'next' && (lnum > curlnum || lnum == curlnum && col > curcol))
 	  || (which == 'prev' && (lnum < curlnum || lnum == curlnum
 							&& col < curcol))
