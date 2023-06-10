@@ -10,11 +10,11 @@ import './symbol.vim'
 # super/sub type hierarchy.
 #
 # Returns the line number where the next type name should be added.
-def TypeTreeGenerate(super: bool, typeHier: dict<any>, pfx_arg: string,
+def TypeTreeGenerate(isSuper: bool, typeHier: dict<any>, pfx_arg: string,
 			typeTree: list<string>, typeUriMap: list<dict<any>>)
 
   var itemHasChildren = false
-  if super
+  if isSuper
     if typeHier->has_key('parents') && !typeHier.parents->empty()
       itemHasChildren = true
     endif
@@ -47,10 +47,10 @@ def TypeTreeGenerate(super: bool, typeHier: dict<any>, pfx_arg: string,
   endif
 
   var items: list<dict<any>>
-  items = super ? typeHier.parents : typeHier.children
+  items = isSuper ? typeHier.parents : typeHier.children
 
   for item in items
-    TypeTreeGenerate(super, item, $'{pfx_arg}| ', typeTree, typeUriMap)
+    TypeTreeGenerate(isSuper, item, $'{pfx_arg}| ', typeTree, typeUriMap)
   endfor
 enddef
 
@@ -136,7 +136,7 @@ def TypeHierPopupCallback(lspserver: dict<any>, typeUriMap: list<dict<any>>,
 enddef
 
 # Show the super or sub type hierarchy items 'types' as a tree in a popup window
-export def ShowTypeHierarchy(lspserver: dict<any>, super: bool, types: dict<any>)
+export def ShowTypeHierarchy(lspserver: dict<any>, isSuper: bool, types: dict<any>)
 
   if lspserver.typeHierPopup->winbufnr() != -1
     # If the type hierarchy popup window is already present, close it.
@@ -147,12 +147,12 @@ export def ShowTypeHierarchy(lspserver: dict<any>, super: bool, types: dict<any>
   var typeUriMap: list<dict<any>>
 
   # Generate a tree of the type hierarchy items
-  TypeTreeGenerate(super, types, '', typeTree, typeUriMap)
+  TypeTreeGenerate(isSuper, types, '', typeTree, typeUriMap)
 
   # Display a popup window with the type hierarchy tree and a popup window for
   # the file.
   var popupAttrs = {
-      title: $'{super ? "Super" : "Sub"}Type Hierarchy',
+      title: $'{isSuper ? "Super" : "Sub"}Type Hierarchy',
       wrap: 0,
       pos: 'topleft',
       line: 'cursor+1',
