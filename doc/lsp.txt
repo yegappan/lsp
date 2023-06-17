@@ -770,8 +770,12 @@ can map these commands to keys and make it easier to invoke them.
 
 			    LspOptionsSet({'hoverInPreview': true})
 <
-			Default is false.
+			You can use the |K| key in normal mode to display the
+			documentation for the keyword under the cursor by
+			setting the 'keywordprg' Vim option: >
 
+			    :set keywordprg=:LspHover
+<
 						*:LspIncomingCalls*
 :LspIncomingCalls	Display a hierarchy of symbols calling the symbol
 			under the cursor in a window.  See

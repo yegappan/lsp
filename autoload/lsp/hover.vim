@@ -78,7 +78,7 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string): 
   # Nothing to show
   if hoverText->empty()
     if cmdmods !~ 'silent'
-      util.WarnMsg($'No hover messages found for current position')
+      util.WarnMsg($'No documentation found for current keyword')
     endif
     return
   endif
@@ -95,8 +95,11 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string): 
     :wincmd p
   else
     popup_clear()
-    var winid = hoverText->popup_atcursor({moved: 'word',
+    var winid = hoverText->popup_atcursor({moved: 'any',
+					   close: 'click',
+					   fixed: true,
 					   maxwidth: 80,
+					   minwidth: 80,
 					   border: [0, 1, 0, 1],
 					   borderchars: [' ']})
     win_execute(winid, $'setlocal ft={hoverKind}')
