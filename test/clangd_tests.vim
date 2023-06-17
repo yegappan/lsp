@@ -155,7 +155,7 @@ enddef
 # Test for :LspShowReferences - showing all the references to a symbol in a
 # file using LSP
 def g:Test_LspShowReferences()
-  :silent! edit Xtest.c
+  :silent! edit XshowRefs.c
   sleep 200m
   var lines: list<string> =<< trim END
     int count;
@@ -234,7 +234,7 @@ def g:Test_LspShowReferences()
   assert_equal(2, ids->len())
   var filePopupAttrs = ids[0]->popup_getoptions()
   var refPopupAttrs = ids[1]->popup_getoptions()
-  assert_match('Xtest', filePopupAttrs.title)
+  assert_match('XshowRefs', filePopupAttrs.title)
   assert_equal('Symbol References', refPopupAttrs.title)
   assert_equal(10, line('.', ids[0]))
   assert_equal(3, line('$', ids[1]))
@@ -1053,7 +1053,7 @@ def g:Test_LspHover()
   popup_close(p[0])
   cursor(7, 1)
   output = execute(':LspHover')->split("\n")
-  assert_equal('Warn: No hover messages found for current position', output[0])
+  assert_equal('Warn: No documentation found for current keyword', output[0])
   output = execute(':silent LspHover')->split("\n")
   assert_equal([], output)
   assert_equal([], popup_list())
@@ -1320,7 +1320,7 @@ def g:Test_LspCustomNotificationHandlers()
 
   g:LSPTest_customNotificationHandlerReplied = false
 
-  silent! edit Xtest.c
+  silent! edit XcustomNotification.c
   sleep 200m
   var lines: list<string> =<< trim END
     int a = 1;
@@ -1351,25 +1351,21 @@ def g:Test_ScanFindIdent()
 
   # LspGotoDefinition et al
   cursor(5, 10)
-  assert_equal([],
-	       execute('LspGotoDefinition')->split("\n"))
+  assert_equal([], execute('LspGotoDefinition')->split("\n"))
   assert_equal([2, 14], [line('.'), col('.')])
 
   cursor(6, 10)
-  assert_equal([],
-	       execute('LspGotoDefinition')->split("\n"))
+  assert_equal([], execute('LspGotoDefinition')->split("\n"))
   assert_equal([1, 5], [line('.'), col('.')])
 
   # LspShowReferences
   cursor(6, 10)
-  assert_equal([],
-	       execute('LspShowReferences')->split("\n"))
+  assert_equal([], execute('LspShowReferences')->split("\n"))
   :lclose
 
   # LspRename
   cursor(6, 10)
-  assert_equal([],
-	       execute('LspRename counterFI')->split("\n"))
+  assert_equal([], execute('LspRename counterFI')->split("\n"))
   sleep 100m
   assert_equal('int counterFI;', getline(1))
   assert_equal('  return    counterFI + 1;', getline(6))
