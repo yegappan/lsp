@@ -246,7 +246,7 @@ def SendAleDiags(bnr: number, timerid: number)
     return
   endif
 
-  # Conver to Ale's diagnostics format (:h ale-loclist-format)
+  # Convert to Ale's diagnostics format (:h ale-loclist-format)
   ale#other_source#ShowResults(bnr, 'lsp', diagsMap[bnr].sortedDiagnostics->mapnew((_, v) => {
      return {text: v.message,
              lnum: v.range.start.line + 1,
@@ -727,6 +727,18 @@ export def DiagsHighlightEnable()
   for binfo in getbufinfo({bufloaded: true})
     DiagsRefresh(binfo.bufnr)
   endfor
+enddef
+
+# Return the sorted diagnostics for buffer "bnr".  Default is the current
+# buffer.  A copy of the diagnostics is returned so that the caller can modify
+# the diagnostics.
+export def GetDiagsForBuf(bnr: number = bufnr()): list<dict<any>>
+  if !diagsMap->has_key(bnr) ||
+      diagsMap[bnr].sortedDiagnostics->empty()
+    return []
+  endif
+
+  return diagsMap[bnr].sortedDiagnostics->deepcopy()
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2

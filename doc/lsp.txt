@@ -1204,6 +1204,12 @@ the current line in a popup window.  To display the message in the status
 message area instead, you can set the 'showDiagInPopup' option to false.  By
 default this is set to true.
 
+The lsp#diag#GetDiagsForBuf() function can be used to get all the LSP
+diagnostics in a buffer.  This function optionally accepts a buffer number.
+If the buffer number argument is not specified, then the current buffer is
+used.  This function returns a |List| of diagnostics sorted by their line and
+column number.  Each diagnostic is a |Dict| returned by the language server.
+
 ==============================================================================
 8. Tag Function					*lsp-tagfunc*
 

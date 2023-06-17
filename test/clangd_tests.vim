@@ -383,6 +383,9 @@ def g:Test_DiagLocListAutoUpdate()
   var bnr = bufnr()
   g:WaitForServerFileLoad(1)
   :redraw!
+  var d = lsp#diag#GetDiagsForBuf()[0]
+  assert_equal({start: {line: 0, character: 5}, end: {line: 0, character: 6}},
+	       d.range)
 
   :LspDiagShow
   assert_equal(1, line('$'))
@@ -390,12 +393,18 @@ def g:Test_DiagLocListAutoUpdate()
   setline(2, 'int j:')
   redraw!
   g:WaitForDiags(2)
+  var l = lsp#diag#GetDiagsForBuf()
+  assert_equal({start: {line: 0, character: 5}, end: {line: 0, character: 6}},
+	       l[0].range)
+  assert_equal({start: {line: 1, character: 5}, end: {line: 1, character: 6}},
+	       l[1].range)
   wincmd w
   assert_equal(2, line('$'))
   wincmd w
   deletebufline('', 1, '$')
   redraw!
   g:WaitForDiags(0)
+  assert_equal([], lsp#diag#GetDiagsForBuf())
   wincmd w
   assert_equal([''], getline(1, '$'))
   :lclose
