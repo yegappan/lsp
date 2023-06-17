@@ -309,6 +309,15 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<d
   endif
 
   var newDiags: list<dict<any>> = diags_arg
+
+  if lspserver.needOffsetEncoding
+    # Decode the position encoding in all the diags
+    newDiags->map((_, dval) => {
+	lspserver.decodeRange(bnr, dval.range)
+	return dval
+      })
+  endif
+
   if lspserver.processDiagHandler != null_function
     newDiags = lspserver.processDiagHandler(diags_arg)
   endif

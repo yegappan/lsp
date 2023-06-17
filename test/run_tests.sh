@@ -12,8 +12,8 @@ VIM_CMD="$VIMPRG -u NONE -U NONE -i NONE --noplugin -N --not-a-term"
 
 TESTS="clangd_tests.vim tsserver_tests.vim gopls_tests.vim not_lspserver_related_tests.vim"
 
-for testfile in $TESTS
-do
+RunTestsInFile() {
+    testfile=$1
     echo "Running tests in $testfile"
     $VIM_CMD -c "let g:TestName='$testfile'" -S runner.vim
 
@@ -31,6 +31,18 @@ do
 
     echo "SUCCESS: All the tests in $testfile passed."
     echo
+}
+
+for testfile in $TESTS
+do
+    RunTestsInFile $testfile
+done
+
+for encoding in "utf-8" "utf-16" "utf-32"
+do
+    export LSP_OFFSET_ENCODING=$encoding
+    echo "LSP offset encoding: $LSP_OFFSET_ENCODING"
+    RunTestsInFile clangd_offsetencoding.vim
 done
 
 echo "SUCCESS: All the tests passed."

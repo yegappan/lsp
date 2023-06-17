@@ -45,6 +45,7 @@ export def InlayHintsReply(lspserver: dict<any>, inlayHints: any)
 
     var kind = hint->has_key('kind') ? hint.kind->string() : '1'
     try
+      lspserver.decodePosition(bnr, hint.position)
       var byteIdx = util.GetLineByteFromPos(bnr, hint.position)
       if kind == "'type'" || kind == '1'
 	prop_add(hint.position.line + 1, byteIdx + 1,

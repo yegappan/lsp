@@ -4,13 +4,13 @@ import './codeaction.vim'
 
 # Functions related to handling LSP code lens
 
-export def ProcessCodeLens(lspserver: dict<any>, codeLensItems: list<dict<any>>)
+export def ProcessCodeLens(lspserver: dict<any>, bnr: number, codeLensItems: list<dict<any>>)
   var text: list<string> = []
   for i in codeLensItems->len()->range()
     var item = codeLensItems[i]
     if !item->has_key('command')
       # resolve the code lens
-      item = lspserver.resolveCodeLens(item)
+      item = lspserver.resolveCodeLens(bnr, item)
       if item->empty()
 	continue
       endif

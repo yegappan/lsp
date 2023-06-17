@@ -196,6 +196,7 @@ export def WorkspaceSymbolPopup(lspserver: dict<any>, query: string,
     # interface SymbolInformation
     fileName = util.LspUriToFile(symbol.location.uri)
     r = symbol.location.range
+    lspserver.decodeRange(fileName->bufnr(), r)
 
     symName = symbol.name
     if symbol->has_key('containerName') && symbol.containerName != ''
@@ -513,9 +514,11 @@ export def TagFunc(lspserver: dict<any>,
 enddef
 
 # process SymbolInformation[]
-def ProcessSymbolInfoTable(symbolInfoTable: list<dict<any>>,
-				symbolTypeTable: dict<list<dict<any>>>,
-				symbolLineTable: list<dict<any>>)
+def ProcessSymbolInfoTable(lspserver: dict<any>,
+			   bnr: number,
+			   symbolInfoTable: list<dict<any>>,
+			   symbolTypeTable: dict<list<dict<any>>>,
+			   symbolLineTable: list<dict<any>>)
   var fname: string
   var symbolType: string
   var name: string
@@ -532,6 +535,7 @@ def ProcessSymbolInfoTable(symbolInfoTable: list<dict<any>>,
       endif
     endif
     r = syminfo.location.range
+    lspserver.decodeRange(bnr, r)
 
     if !symbolTypeTable->has_key(symbolType)
       symbolTypeTable[symbolType] = []
@@ -543,9 +547,11 @@ def ProcessSymbolInfoTable(symbolInfoTable: list<dict<any>>,
 enddef
 
 # process DocumentSymbol[]
-def ProcessDocSymbolTable(docSymbolTable: list<dict<any>>,
-				symbolTypeTable: dict<list<dict<any>>>,
-				symbolLineTable: list<dict<any>>)
+def ProcessDocSymbolTable(lspserver: dict<any>,
+			  bnr: number,
+			  docSymbolTable: list<dict<any>>,
+			  symbolTypeTable: dict<list<dict<any>>>,
+			  symbolLineTable: list<dict<any>>)
   var symbolType: string
   var name: string
   var r: dict<dict<number>>
@@ -556,7 +562,8 @@ def ProcessDocSymbolTable(docSymbolTable: list<dict<any>>,
   for syminfo in docSymbolTable
     name = syminfo.name
     symbolType = SymbolKindToName(syminfo.kind)
-    r = syminfo.range
+    r = syminfo.selectionRange
+    lspserver.decodeRange(bnr, r)
     if syminfo->has_key('detail')
       symbolDetail = syminfo.detail
     endif
@@ -565,7 +572,8 @@ def ProcessDocSymbolTable(docSymbolTable: list<dict<any>>,
     endif
     childSymbols = {}
     if syminfo->has_key('children')
-      ProcessDocSymbolTable(syminfo.children, childSymbols, symbolLineTable)
+      ProcessDocSymbolTable(lspserver, bnr, syminfo.children, childSymbols,
+			    symbolLineTable)
     endif
     symInfo = {name: name, range: r, detail: symbolDetail,
 						children: childSymbols}
@@ -580,6 +588,7 @@ enddef
 export def DocSymbolReply(lspserver: dict<any>, docsymbol: any, fname: string)
   var symbolTypeTable: dict<list<dict<any>>> = {}
   var symbolLineTable: list<dict<any>> = []
+  var bnr = fname->bufnr()
 
   if docsymbol->empty()
     # No symbols defined for this file. Clear the outline window.
@@ -589,10 +598,12 @@ export def DocSymbolReply(lspserver: dict<any>, docsymbol: any, fname: string)
 
   if docsymbol[0]->has_key('location')
     # SymbolInformation[]
-    ProcessSymbolInfoTable(docsymbol, symbolTypeTable, symbolLineTable)
+    ProcessSymbolInfoTable(lspserver, bnr, docsymbol, symbolTypeTable,
+			   symbolLineTable)
   else
     # DocumentSymbol[]
-    ProcessDocSymbolTable(docsymbol, symbolTypeTable, symbolLineTable)
+    ProcessDocSymbolTable(lspserver, bnr, docsymbol, symbolTypeTable,
+			  symbolLineTable)
   endif
 
   # sort the symbols by line number

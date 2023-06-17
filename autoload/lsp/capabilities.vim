@@ -7,6 +7,28 @@ import './options.vim' as opt
 # Process the server capabilities
 #   interface ServerCapabilities
 export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
+  var serverEncoding = 'utf-16'
+  if lspserver.caps->has_key('positionEncoding')
+    serverEncoding = lspserver.caps.positionEncoding
+  elseif lspserver.caps->has_key('~additionalInitResult_offsetEncoding')
+    serverEncoding = lspserver.caps['~additionalInitResult_offsetEncoding']
+  endif
+
+  # one of 'utf-8', 'utf-16' or 'utf-32'
+  if serverEncoding == 'utf-8'
+    lspserver.posEncoding = 8
+  elseif serverEncoding == 'utf-16'
+    lspserver.posEncoding = 16
+  else
+    lspserver.posEncoding = 32
+  endif
+
+  if has('patch-9.0.1629') && lspserver.posEncoding != 32
+    lspserver.needOffsetEncoding = true
+  else
+    lspserver.needOffsetEncoding = false
+  endif
+
   # completionProvider
   if lspserver.caps->has_key('completionProvider')
     lspserver.isCompletionProvider = true
@@ -337,6 +359,12 @@ export def GetClientCaps(): dict<any>
     # https://clangd.llvm.org/extensions#utf-8-offsets
     offsetEncoding: ['utf-32', 'utf-16']
   }
+
+  # Vim patch 1629 is needed to properly encode/decode UTF-16 offsets
+  if has('patch-9.0.1629')
+    clientCaps.general.positionEncodings = ['utf-32', 'utf-16', 'utf-8']
+    clientCaps.offsetEncoding = ['utf-32', 'utf-16', 'utf-8']
+  endif
 
   return clientCaps
 enddef

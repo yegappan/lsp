@@ -12,6 +12,7 @@ import './options.vim' as opt
 import './handlers.vim'
 import './util.vim'
 import './capabilities.vim'
+import './offset.vim'
 import './diag.vim'
 import './selection.vim'
 import './symbol.vim'
@@ -354,6 +355,36 @@ def SendNotification(lspserver: dict<any>, method: string, params: any = {})
   lspserver.sendMessage(notif)
 enddef
 
+# Translate an LSP error code into a readable string
+def LspGetErrorMessage(errcode: number): string
+  var errmap = {
+    -32001: 'UnknownErrorCode',
+    -32002: 'ServerNotInitialized',
+    -32600: 'InvalidRequest',
+    -32601: 'MethodNotFound',
+    -32602: 'InvalidParams',
+    -32603: 'InternalError',
+    -32700: 'ParseError',
+    -32800: 'RequestCancelled',
+    -32801: 'ContentModified',
+    -32802: 'ServerCancelled',
+    -32803: 'RequestFailed'
+  }
+
+  return errmap->get(errcode, errcode->string())
+enddef
+
+# Process a LSP server response error and display an error message.
+def ProcessLspServerError(method: string, responseError: dict<any>)
+  # request failed
+  var emsg: string = responseError.message
+  emsg ..= $', error = {LspGetErrorMessage(responseError.code)}'
+  if responseError->has_key('data')
+    emsg ..= $', data = {responseError.data->string()}'
+  endif
+  util.ErrMsg($'request {method} failed ({emsg})')
+enddef
+
 # Send a sync RPC request message to the LSP server and return the received
 # reply.  In case of an error, an empty Dict is returned.
 def Rpc(lspserver: dict<any>, method: string, params: any, handleError: bool = true): dict<any>
@@ -382,12 +413,7 @@ def Rpc(lspserver: dict<any>, method: string, params: any, handleError: bool = t
 
   if reply->has_key('error') && handleError
     # request failed
-    var emsg: string = reply.error.message
-    emsg ..= $', code = {reply.error.code}'
-    if reply.error->has_key('data')
-      emsg ..= $', data = {reply.error.data->string()}'
-    endif
-    util.ErrMsg($'request {method} failed ({emsg})')
+    ProcessLspServerError(method, reply.error)
   endif
 
   return {}
@@ -403,12 +429,7 @@ def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel,
 
   if reply->has_key('error')
     # request failed
-    var emsg: string
-    emsg = $'{reply.error.message}, code = {reply.error.code}'
-    if reply.error->has_key('data')
-      emsg ..= $', data = {reply.error.data->string()}'
-    endif
-    util.ErrMsg($'request {method} failed ({emsg})')
+    ProcessLspServerError(method, reply.error)
     return
   endif
 
@@ -580,7 +601,7 @@ enddef
 # LSP line and column numbers start from zero, whereas Vim line and column
 # numbers start from one. The LSP column number is the character index in the
 # line and not the byte index in the line.
-def GetLspPosition(find_ident: bool): dict<number>
+def GetPosition(lspserver: dict<any>, find_ident: bool): dict<number>
   var lnum: number = line('.') - 1
   var col: number = charcol('.') - 1
   var line = getline('.')
@@ -599,16 +620,19 @@ def GetLspPosition(find_ident: bool): dict<number>
 
   # Compute character index counting composing characters as separate
   # characters
-  return {line: lnum, character: util.GetCharIdxWithCompChar(line, col)}
+  var pos = {line: lnum, character: util.GetCharIdxWithCompChar(line, col)}
+  lspserver.encodePosition(bufnr(), pos)
+
+  return pos
 enddef
 
 # Return the current file name and current cursor position as a LSP
 # TextDocumentPositionParams structure
-def GetLspTextDocPosition(find_ident: bool): dict<dict<any>>
+def GetTextDocPosition(lspserver: dict<any>, find_ident: bool): dict<dict<any>>
   # interface TextDocumentIdentifier
   # interface Position
   return {textDocument: {uri: util.LspFileToUri(@%)},
-	  position: GetLspPosition(find_ident)}
+	  position: lspserver.getPosition(find_ident)}
 enddef
 
 # Get a list of completion items.
@@ -628,7 +652,7 @@ def GetCompletion(lspserver: dict<any>, triggerKind_arg: number, triggerChar: st
 
   # interface CompletionParams
   #   interface TextDocumentPositionParams
-  var params = GetLspTextDocPosition(false)
+  var params = lspserver.getTextDocPosition(false)
   #   interface CompletionContext
   params.context = {triggerKind: triggerKind_arg, triggerCharacter: triggerChar}
 
@@ -670,7 +694,7 @@ enddef
 # Result: Location | Location[] | LocationLink[] | null
 def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
 		  cmdmods: string, count: number)
-  var reply = lspserver.rpc(msg, GetLspTextDocPosition(true), false)
+  var reply = lspserver.rpc(msg, lspserver.getTextDocPosition(true), false)
   if reply->empty() || reply.result->empty()
     var emsg: string
     if msg == 'textDocument/declaration'
@@ -687,12 +711,13 @@ def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
     return
   endif
 
+  var result = reply.result
   var location: dict<any>
-  if reply.result->type() == v:t_list
+  if result->type() == v:t_list
     if count == 0
       # When there are multiple symbol locations, and a specific one isn't
       # requested with 'count', display the locations in a location list.
-      if reply.result->len() > 1
+      if result->len() > 1
         var title: string = ''
         if msg == 'textDocument/declaration'
           title = 'Declarations'
@@ -704,20 +729,29 @@ def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
           title = 'Definitions'
         endif
 
-        symbol.ShowLocations(lspserver, reply.result, peekSymbol, title)
+	if lspserver.needOffsetEncoding
+	  # Decode the position encoding in all the symbol locations
+	  result->map((_, loc) => {
+	      lspserver.decodeLocation(loc)
+	      return loc
+	    })
+	endif
+
+        symbol.ShowLocations(lspserver, result, peekSymbol, title)
         return
       endif
     endif
 
     # Select the location requested in 'count'
     var idx = count - 1
-    if idx >= reply.result->len()
-      idx = reply.result->len() - 1
+    if idx >= result->len()
+      idx = result->len() - 1
     endif
-    location = reply.result[idx]
+    location = result[idx]
   else
-    location = reply.result
+    location = result
   endif
+  lspserver.decodeLocation(location)
 
   symbol.GotoSymbol(lspserver, location, peekSymbol, cmdmods)
 enddef
@@ -814,7 +848,7 @@ def ShowSignature(lspserver: dict<any>): void
 
   # interface SignatureHelpParams
   #   interface TextDocumentPositionParams
-  var params = GetLspTextDocPosition(false)
+  var params = lspserver.getTextDocPosition(false)
   lspserver.rpc_a('textDocument/signatureHelp', params,
 			signature.SignatureHelp)
 enddef
@@ -847,7 +881,7 @@ def ShowHoverInfo(lspserver: dict<any>, cmdmods: string): void
 
   # interface HoverParams
   #   interface TextDocumentPositionParams
-  var params = GetLspTextDocPosition(false)
+  var params = lspserver.getTextDocPosition(false)
   lspserver.rpc_a('textDocument/hover', params, (_, reply) => {
     hover.HoverReply(lspserver, reply, cmdmods)
   })
@@ -865,7 +899,7 @@ def ShowReferences(lspserver: dict<any>, peek: bool): void
   # interface ReferenceParams
   #   interface TextDocumentPositionParams
   var param: dict<any>
-  param = GetLspTextDocPosition(true)
+  param = lspserver.getTextDocPosition(true)
   param.context = {includeDeclaration: true}
   var reply = lspserver.rpc('textDocument/references', param)
 
@@ -873,6 +907,14 @@ def ShowReferences(lspserver: dict<any>, peek: bool): void
   if reply->empty() || reply.result->empty()
     util.WarnMsg('No references found')
     return
+  endif
+
+  if lspserver.needOffsetEncoding
+    # Decode the position encoding in all the reference locations
+    reply.result->map((_, loc) => {
+      lspserver.decodeLocation(loc)
+      return loc
+    })
   endif
 
   symbol.ShowLocations(lspserver, reply.result, peek, 'Symbol References')
@@ -890,6 +932,7 @@ def DocHighlightReply(lspserver: dict<any>, docHighlightReply: any,
   endif
 
   for docHL in docHighlightReply
+    lspserver.decodeRange(bnr, docHL.range)
     var kind: number = docHL->get('kind', 1)
     var propName: string
     if kind == 2
@@ -928,7 +971,7 @@ def DocHighlight(lspserver: dict<any>, cmdmods: string): void
 
   # interface DocumentHighlightParams
   #   interface TextDocumentPositionParams
-  var params = GetLspTextDocPosition(false)
+  var params = lspserver.getTextDocPosition(false)
   lspserver.rpc_a('textDocument/documentHighlight', params, (_, reply) => {
     DocHighlightReply(lspserver, reply, bufnr(), cmdmods)
   })
@@ -1004,6 +1047,14 @@ def TextDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
     return
   endif
 
+  if lspserver.needOffsetEncoding
+    # Decode the position encoding in all the reference locations
+    reply.result->map((_, textEdit) => {
+      lspserver.decodeRange(bnr, textEdit.range)
+      return textEdit
+    })
+  endif
+
   # interface TextEdit
   # Apply each of the text edit operations
   var save_cursor: list<number> = getcurpos()
@@ -1016,7 +1067,7 @@ def PrepareCallHierarchy(lspserver: dict<any>): dict<any>
   # interface CallHierarchyPrepareParams
   #   interface TextDocumentPositionParams
   var param: dict<any>
-  param = GetLspTextDocPosition(false)
+  param = lspserver.getTextDocPosition(false)
   var reply = lspserver.rpc('textDocument/prepareCallHierarchy', param)
   if reply->empty() || reply.result->empty()
     return {}
@@ -1058,6 +1109,16 @@ def GetIncomingCalls(lspserver: dict<any>, item: dict<any>): any
   if reply->empty()
     return null
   endif
+
+  if lspserver.needOffsetEncoding
+    # Decode the position encoding in all the incoming call locations
+    var bnr = util.LspUriToBufnr(item.uri)
+    reply.result->map((_, hierItem) => {
+      lspserver.decodeRange(bnr, hierItem.from.range)
+      return hierItem
+    })
+  endif
+
   return reply.result
 enddef
 
@@ -1081,6 +1142,16 @@ def GetOutgoingCalls(lspserver: dict<any>, item: dict<any>): any
   if reply->empty()
     return null
   endif
+
+  if lspserver.needOffsetEncoding
+    # Decode the position encoding in all the outgoing call locations
+    var bnr = util.LspUriToBufnr(item.uri)
+    reply.result->map((_, hierItem) => {
+      lspserver.decodeRange(bnr, hierItem.to.range)
+      return hierItem
+    })
+  endif
+
   return reply.result
 enddef
 
@@ -1103,6 +1174,8 @@ def InlayHintsShow(lspserver: dict<any>)
       }
   }
 
+  lspserver.encodeRange(bufnr(), param.range)
+
   var msg: string
   if lspserver.isClangdInlayHintsProvider
     # clangd-style inlay hints
@@ -1111,6 +1184,28 @@ def InlayHintsShow(lspserver: dict<any>)
     msg = 'textDocument/inlayHint'
   endif
   var reply = lspserver.rpc_a(msg, param, inlayhints.InlayHintsReply)
+enddef
+
+def DecodeTypeHierarchy(lspserver: dict<any>, isSuper: bool, typeHier: dict<any>)
+  if !lspserver.needOffsetEncoding
+    return
+  endif
+  var bnr = util.LspUriToBufnr(typeHier.uri)
+  lspserver.decodeRange(bnr, typeHier.range)
+  lspserver.decodeRange(bnr, typeHier.selectionRange)
+  var subType: list<dict<any>>
+  if isSuper
+    subType = typeHier->get('parents', [])
+  else
+    subType = typeHier->get('children', [])
+  endif
+  if !subType->empty()
+    # Decode the position encoding in all the type hierarchy items
+    subType->map((_, typeHierItem) => {
+        DecodeTypeHierarchy(lspserver, isSuper, typeHierItem)
+	return typeHierItem
+      })
+  endif
 enddef
 
 # Request: "textDocument/typehierarchy"
@@ -1127,7 +1222,7 @@ def TypeHiearchy(lspserver: dict<any>, direction: number)
   # interface TypeHierarchy
   #   interface TextDocumentPositionParams
   var param: dict<any>
-  param = GetLspTextDocPosition(false)
+  param = lspserver.getTextDocPosition(false)
   # 0: children, 1: parent, 2: both
   param.direction = direction
   param.resolve = 5
@@ -1137,7 +1232,47 @@ def TypeHiearchy(lspserver: dict<any>, direction: number)
     return
   endif
 
-  typehier.ShowTypeHierarchy(lspserver, direction == 1, reply.result)
+  var isSuper = (direction == 1)
+
+  DecodeTypeHierarchy(lspserver, isSuper, reply.result)
+
+  typehier.ShowTypeHierarchy(lspserver, isSuper, reply.result)
+enddef
+
+# Decode the ranges in "WorkspaceEdit"
+def DecodeWorkspaceEdit(lspserver: dict<any>, workspaceEdit: dict<any>)
+  if !lspserver.needOffsetEncoding
+    return
+  endif
+  if workspaceEdit->has_key('changes')
+    for [uri, changes] in workspaceEdit.changes->items()
+      var bnr: number = util.LspUriToBufnr(uri)
+      if bnr <= 0
+	continue
+      endif
+      # Decode the position encoding in all the text edit locations
+      changes->map((_, textEdit) => {
+	lspserver.decodeRange(bnr, textEdit.range)
+	return textEdit
+      })
+    endfor
+  endif
+
+  if workspaceEdit->has_key('documentChanges')
+    for change in workspaceEdit.documentChanges
+      if !change->has_key('kind')
+	var bnr: number = util.LspUriToBufnr(change.textDocument.uri)
+	if bnr <= 0
+	  continue
+	endif
+	# Decode the position encoding in all the text edit locations
+	change.edits->map((_, textEdit) => {
+	  lspserver.decodeRange(bnr, textEdit.range)
+	  return textEdit
+	})
+      endif
+    endfor
+  endif
 enddef
 
 # Request: "textDocument/rename"
@@ -1152,7 +1287,7 @@ def RenameSymbol(lspserver: dict<any>, newName: string)
   # interface RenameParams
   #   interface TextDocumentPositionParams
   var param: dict<any> = {}
-  param = GetLspTextDocPosition(true)
+  param = lspserver.getTextDocPosition(true)
   param.newName = newName
 
   var reply = lspserver.rpc('textDocument/rename', param)
@@ -1164,7 +1299,21 @@ def RenameSymbol(lspserver: dict<any>, newName: string)
   endif
 
   # result: WorkspaceEdit
+  DecodeWorkspaceEdit(lspserver, reply.result)
   textedit.ApplyWorkspaceEdit(reply.result)
+enddef
+
+# Decode the range in "CodeAction"
+def DecodeCodeAction(lspserver: dict<any>, actionList: list<dict<any>>)
+  if !lspserver.needOffsetEncoding
+    return
+  endif
+  actionList->map((_, act) => {
+      if !act->has_key('disabled') && act->has_key('edit')
+	DecodeWorkspaceEdit(lspserver, act.edit)
+      endif
+      return act
+    })
 enddef
 
 # Request: "textDocument/codeAction"
@@ -1184,17 +1333,24 @@ def CodeAction(lspserver: dict<any>, fname_arg: string, line1: number,
   var r: dict<dict<number>> = {
     start: {
       line: line1 - 1,
-      character: line1 == line2 ? charcol('.') - 1 : 0
+      character: line1 == line2 ? util.GetCharIdxWithCompChar(getline('.'), charcol('.') - 1) : 0
     },
     end: {
       line: line2 - 1,
-      character: charcol([line2, '$']) - 1
+      character: util.GetCharIdxWithCompChar(getline(line2), charcol([line2, '$']) - 1)
     }
   }
+  lspserver.encodeRange(bnr, r)
   params->extend({textDocument: {uri: util.LspFileToUri(fname)}, range: r})
   var d: list<dict<any>> = []
   for lnum in range(line1, line2)
-    var diagsInfo: list<dict<any>> = diag.GetDiagsByLine(bnr, lnum, lspserver)
+    var diagsInfo: list<dict<any>> = diag.GetDiagsByLine(bnr, lnum, lspserver)->deepcopy()
+    if lspserver.needOffsetEncoding
+      diagsInfo->map((_, di) => {
+	  lspserver.encodeRange(bnr, di.range)
+	  return di
+	})
+    endif
     d->extend(diagsInfo)
   endfor
   params->extend({context: {diagnostics: d, triggerKind: 1}})
@@ -1207,6 +1363,8 @@ def CodeAction(lspserver: dict<any>, fname_arg: string, line1: number,
     util.WarnMsg('No code action is available')
     return
   endif
+
+  DecodeCodeAction(lspserver, reply.result)
 
   codeaction.ApplyCodeAction(lspserver, reply.result, query)
 enddef
@@ -1227,20 +1385,44 @@ def CodeLens(lspserver: dict<any>, fname: string)
     return
   endif
 
-  codelens.ProcessCodeLens(lspserver, reply.result)
+  var bnr = fname->bufnr()
+
+  # Decode the position encoding in all the code lens items
+  if lspserver.needOffsetEncoding
+    reply.result->map((_, codeLensItem) => {
+      lspserver.decodeRange(bnr, codeLensItem.range)
+      return codeLensItem
+    })
+  endif
+
+  codelens.ProcessCodeLens(lspserver, bnr, reply.result)
 enddef
 
 # Request: "codeLens/resolve"
 # Param: CodeLens
-def ResolveCodeLens(lspserver: dict<any>, codeLens: dict<any>): dict<any>
+def ResolveCodeLens(lspserver: dict<any>, bnr: number,
+		    codeLens: dict<any>): dict<any>
   if !lspserver.isCodeLensResolveProvider
     return {}
   endif
+
+  if lspserver.needOffsetEncoding
+    lspserver.encodeRange(bnr, codeLens.range)
+  endif
+
   var reply = lspserver.rpc('codeLens/resolve', codeLens)
   if reply->empty()
     return {}
   endif
-  return reply.result
+
+  var codeLensItem: dict<any> = reply.result
+
+  # Decode the position encoding in the code lens item
+  if lspserver.needOffsetEncoding
+    lspserver.decodeRange(bnr, codeLensItem.range)
+  endif
+
+  return codeLensItem
 enddef
 
 # List project-wide symbols matching query string
@@ -1312,6 +1494,13 @@ def RemoveWorkspaceFolder(lspserver: dict<any>, dirName: string): void
   lspserver.workspaceFolders->remove(idx)
 enddef
 
+def DecodeSelectionRange(lspserver: dict<any>, bnr: number, selRange: dict<any>)
+  lspserver.decodeRange(bnr, selRange.range)
+  if selRange->has_key('parent')
+    DecodeSelectionRange(lspserver, bnr, selRange.parent)
+  endif
+enddef
+
 # select the text around the current cursor location
 # Request: "textDocument/selectionRange"
 # Param: SelectionRangeParams
@@ -1330,11 +1519,20 @@ def SelectionRange(lspserver: dict<any>, fname: string)
   var param = {}
   param.textDocument = {}
   param.textDocument.uri = util.LspFileToUri(fname)
-  param.positions = [GetLspPosition(false)]
+  param.positions = [lspserver.getPosition(false)]
   var reply = lspserver.rpc('textDocument/selectionRange', param)
 
   if reply->empty() || reply.result->empty()
     return
+  endif
+
+  # Decode the position encoding in all the selection range items
+  if lspserver.needOffsetEncoding
+    var bnr = fname->bufnr()
+    reply.result->map((_, selItem) => {
+	DecodeSelectionRange(lspserver, bnr, selItem)
+	return selItem
+      })
   endif
 
   selection.SelectionStart(lspserver, reply.result)
@@ -1480,7 +1678,8 @@ def TagFunc(lspserver: dict<any>, pat: string, flags: string, info: dict<any>): 
 
   # interface DefinitionParams
   #   interface TextDocumentPositionParams
-  var reply = lspserver.rpc('textDocument/definition', GetLspTextDocPosition(false))
+  var reply = lspserver.rpc('textDocument/definition',
+			    lspserver.getTextDocPosition(false))
   if reply->empty() || reply.result->empty()
     return null
   endif
@@ -1490,6 +1689,14 @@ def TagFunc(lspserver: dict<any>, pat: string, flags: string, info: dict<any>): 
     taglocations = reply.result
   else
     taglocations = [reply.result]
+  endif
+
+  if lspserver.needOffsetEncoding
+    # Decode the position encoding in all the reference locations
+    taglocations->map((_, loc) => {
+      lspserver.decodeLocation(loc)
+      return loc
+    })
   endif
 
   return symbol.TagFunc(lspserver, taglocations, pat)
@@ -1574,6 +1781,14 @@ export def NewLspServer(name_arg: string, path_arg: string, args: list<string>,
     processNotif: function(handlers.ProcessNotif, [lspserver]),
     processRequest: function(handlers.ProcessRequest, [lspserver]),
     processMessages: function(handlers.ProcessMessages, [lspserver]),
+    encodePosition: function(offset.EncodePosition, [lspserver]),
+    decodePosition: function(offset.DecodePosition, [lspserver]),
+    encodeRange: function(offset.EncodeRange, [lspserver]),
+    decodeRange: function(offset.DecodeRange, [lspserver]),
+    encodeLocation: function(offset.EncodeLocation, [lspserver]),
+    decodeLocation: function(offset.DecodeLocation, [lspserver]),
+    getPosition: function(GetPosition, [lspserver]),
+    getTextDocPosition: function(GetTextDocPosition, [lspserver]),
     textdocDidOpen: function(TextdocDidOpen, [lspserver]),
     textdocDidClose: function(TextdocDidClose, [lspserver]),
     textdocDidChange: function(TextdocDidChange, [lspserver]),
