@@ -5,7 +5,7 @@ vim9script
 import './util.vim'
 import './symbol.vim'
 
-# Parse the type hierarchy in 'typeHier' and displays a tree of type names
+# Parse the type hierarchy in "typeHier" and displays a tree of type names
 # in the current buffer.  This function is called recursively to display the
 # super/sub type hierarchy.
 #
@@ -135,7 +135,8 @@ def TypeHierPopupCallback(lspserver: dict<any>, typeUriMap: list<dict<any>>,
   util.JumpToLspLocation(typeUriMap[selIdx - 1], '')
 enddef
 
-# Show the super or sub type hierarchy items 'types' as a tree in a popup window
+# Show the super or sub type hierarchy items "types" as a tree in a popup
+# window
 export def ShowTypeHierarchy(lspserver: dict<any>, isSuper: bool, types: dict<any>)
 
   if lspserver.typeHierPopup->winbufnr() != -1

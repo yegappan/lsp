@@ -39,13 +39,13 @@ var defaultKinds: dict<string> = {
   'Buffer':         'B',
 }
 
-# Returns true if omni-completion is enabled for filetype 'ftype'.
+# Returns true if omni-completion is enabled for filetype "ftype".
 # Otherwise, returns false.
 def LspOmniComplEnabled(ftype: string): bool
   return ftypeOmniCtrlMap->get(ftype, false)
 enddef
 
-# Enables or disables omni-completion for filetype 'fype'
+# Enables or disables omni-completion for filetype "fype"
 export def OmniComplSet(ftype: string, enabled: bool)
   ftypeOmniCtrlMap->extend({[ftype]: enabled})
 enddef
@@ -96,7 +96,7 @@ def LspCompleteItemKindChar(kind: number): string
   return kindValue
 enddef
 
-# Remove all the snippet placeholders from 'str' and return the value.
+# Remove all the snippet placeholders from "str" and return the value.
 # Based on a similar function in the vim-lsp plugin.
 def MakeValidWord(str_arg: string): string
   var str = str_arg->substitute('\$[0-9]\+\|\${\%(\\.\|[^}]\)\+}', '', 'g')
@@ -596,8 +596,8 @@ def LspResolve()
   endif
 enddef
 
-# If the completion popup documentation window displays 'markdown' content,
-# then set the 'filetype' to 'lspgfm'.
+# If the completion popup documentation window displays "markdown" content,
+# then set the 'filetype' to "lspgfm".
 def LspSetPopupFileType()
   var item = v:event.completed_item
   if !item->has_key('user_data') || item.user_data->empty()

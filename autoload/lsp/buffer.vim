@@ -84,7 +84,7 @@ export def BufLspServerGet(bnr: number, feature: string = null_string): dict<any
     return {}
   endif
 
-  # LSP server is configured to be a provider for 'feature'
+  # LSP server is configured to be a provider for "feature"
   for lspserver in possibleLSPs
     if lspserver.features->has_key(feature) && lspserver.features[feature]
       return lspserver
@@ -102,7 +102,7 @@ export def BufLspServerGet(bnr: number, feature: string = null_string): dict<any
   return {}
 enddef
 
-# Returns the LSP server for the buffer 'bnr' and with ID 'id'. Returns an empty
+# Returns the LSP server for the buffer "bnr" and with ID "id". Returns an empty
 # dict if the server is not found.
 export def BufLspServerGetById(bnr: number, id: number): dict<any>
   if !bufnrToServers->has_key(bnr)
@@ -118,7 +118,7 @@ export def BufLspServerGetById(bnr: number, id: number): dict<any>
   return {}
 enddef
 
-# Returns the LSP servers for the buffer 'bnr'. Returns an empty list if the
+# Returns the LSP servers for the buffer "bnr". Returns an empty list if the
 # servers are not found.
 export def BufLspServersGet(bnr: number): list<dict<any>>
   if !bufnrToServers->has_key(bnr)
@@ -128,7 +128,7 @@ export def BufLspServersGet(bnr: number): list<dict<any>>
   return bufnrToServers[bnr]
 enddef
 
-# Returns the LSP server for the current buffer with the optionally 'feature'.
+# Returns the LSP server for the current buffer with the optionally "feature".
 # Returns an empty dict if the server is not found.
 export def CurbufGetServer(feature: string = null_string): dict<any>
   return BufLspServerGet(bufnr(), feature)
@@ -146,7 +146,7 @@ export def BufHasLspServer(bnr: number): bool
   return !lspserver->empty()
 enddef
 
-# Returns the LSP server for the current buffer with the optinally 'feature' if
+# Returns the LSP server for the current buffer with the optinally "feature" if
 # it is running and is ready.
 # Returns an empty dict if the server is not found or is not ready.
 export def CurbufGetServerChecked(feature: string = null_string): dict<any>

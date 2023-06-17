@@ -154,7 +154,7 @@ export def LspBufnrToUri(bnr: number): string
   return LspFileToUri(bnr->bufname())
 enddef
 
-# Returns the byte number of the specified LSP position in buffer 'bnr'.
+# Returns the byte number of the specified LSP position in buffer "bnr".
 # LSP's line and characters are 0-indexed.
 # Vim's line and columns are 1-indexed.
 # Returns a zero-indexed column.
@@ -253,9 +253,9 @@ export def PushCursorToTagStack()
 			 }]}, 't')
 enddef
 
-# Jump to the LSP 'location'.  The 'location' contains the file name, line
+# Jump to the LSP "location".  The "location" contains the file name, line
 # number and character number. The user specified window command modifiers
-# (e.g. topleft) are in 'cmdmods'.
+# (e.g. topleft) are in "cmdmods".
 export def JumpToLspLocation(location: dict<any>, cmdmods: string)
   var [uri, range] = LspLocationParse(location)
   var fname = LspUriToFile(uri)
@@ -300,7 +300,8 @@ export def JumpToLspLocation(location: dict<any>, cmdmods: string)
 		   GetCharIdxWithoutCompChar(bufnr(), range.start) + 1)
 enddef
 
-# 'indexof' is to new to use it, use this instead.
+# indexof() function is not present in older Vim 9 versions.  So use this
+# function.
 export def Indexof(list: list<any>, CallbackFn: func(number, any): bool): number
   var ix = 0
   for val in list
@@ -313,12 +314,12 @@ export def Indexof(list: list<any>, CallbackFn: func(number, any): bool): number
 enddef
 
 # Find the nearest root directory containing a file or directory name from the
-# list of names in 'files' starting with the directory 'startDir'.
+# list of names in "files" starting with the directory "startDir".
 # Based on a similar implementation in the vim-lsp plugin.
-# Searches upwards starting with the directory 'startDir'.
+# Searches upwards starting with the directory "startDir".
 # If a file name ends with '/' or '\', then it is a directory name, otherwise
 # it is a file name.
-# Returns '' if none of the file and directory names in 'files' can be found
+# Returns '' if none of the file and directory names in "files" can be found
 # in one of the parent directories.
 export def FindNearestRootDir(startDir: string, files: list<any>): string
   var foundDirs: dict<bool> = {}
@@ -349,7 +350,7 @@ export def FindNearestRootDir(startDir: string, files: list<any>): string
     return b->len() - a->len()
   })
 
-  # choose the longest matching path (the nearest directory from 'startDir')
+  # choose the longest matching path (the nearest directory from "startDir")
   return sortedList[0]
 enddef
 

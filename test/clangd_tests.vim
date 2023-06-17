@@ -369,6 +369,41 @@ def g:Test_LspProcessDiagHandler()
   :%bw!
 enddef
 
+# Diag location list should be automatically updated when the list of diags
+# changes.
+def g:Test_DiagLocListAutoUpdate()
+  :silent! edit XdiagLocListAutoUpdate.c
+  :sleep 200m
+  setloclist(0, [], 'f')
+  var lines: list<string> =<< trim END
+    int i:
+    int j;
+  END
+  setline(1, lines)
+  var bnr = bufnr()
+  g:WaitForServerFileLoad(1)
+  :redraw!
+
+  :LspDiagShow
+  assert_equal(1, line('$'))
+  wincmd w
+  setline(2, 'int j:')
+  redraw!
+  g:WaitForDiags(2)
+  wincmd w
+  assert_equal(2, line('$'))
+  wincmd w
+  deletebufline('', 1, '$')
+  redraw!
+  g:WaitForDiags(0)
+  wincmd w
+  assert_equal([''], getline(1, '$'))
+  :lclose
+
+  setloclist(0, [], 'f')
+  :%bw!
+enddef
+
 # Test that the client have been able to configure the server to speak utf-32
 def g:Test_UnicodeColumnCalc()
   :silent! edit XUnicodeColumn.c
@@ -1068,8 +1103,6 @@ def g:Test_LspHover()
   popup_clear()
 
   :%bw!
-
-
 enddef
 
 # Test for :LspShowSignature

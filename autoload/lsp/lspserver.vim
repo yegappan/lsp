@@ -91,7 +91,7 @@ def StartServer(lspserver: dict<any>, bnr: number): number
   return 0
 enddef
 
-# process the 'initialize' method reply from the LSP server
+# process the "initialize" method reply from the LSP server
 # Result: InitializeResult
 def ServerInitReply(lspserver: dict<any>, initResult: dict<any>): void
   if initResult->empty()
@@ -148,7 +148,7 @@ def ServerInitReply(lspserver: dict<any>, initResult: dict<any>): void
   endif
 enddef
 
-# Request: 'initialize'
+# Request: "initialize"
 # Param: InitializeParams
 def InitServer(lspserver: dict<any>, bnr: number)
   # interface 'InitializeParams'

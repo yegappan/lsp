@@ -426,8 +426,8 @@ def SymbolFilterCB(lspserver: dict<any>, id: number, key: string): bool
   return false
 enddef
 
-# Display the file specified by LSP 'LocationLink' in a popup window and
-# highlight the range in 'location'.
+# Display the file specified by LSP "LocationLink" in a popup window and
+# highlight the range in "location".
 def PeekSymbolLocation(lspserver: dict<any>, location: dict<any>)
   var [uri, range] = util.LspLocationParse(location)
   var fname = util.LspUriToFile(uri)

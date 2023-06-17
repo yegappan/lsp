@@ -97,8 +97,8 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       '$/progress',
       '$/status/report',
       '$/status/show',
-      # PHP intelephense server sends the 'indexingStarted' and
-      # 'indexingEnded' notifications which is not in the LSP specification.
+      # PHP intelephense server sends the "indexingStarted" and
+      # "indexingEnded" notifications which is not in the LSP specification.
       'indexingStarted',
       'indexingEnded',
       # Java language server sends the 'language/status' notification which is

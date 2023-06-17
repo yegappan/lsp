@@ -1183,7 +1183,9 @@ the current line.
 The |:LspDiagShow| command creates a new location list with the current list
 of diagnostics for the current buffer.  To automatically add the diagnostics
 messages to the location list, you can set the 'autoPopulateDiags' option to
-true.  By default this option is set to false.
+true.  By default this option is set to false.  When new diagnostics are
+received for a buffer, if a location list with the diagnostics is already
+present, then it is refreshed with the new diagnostics.
 
 When using GUI Vim or in a terminal Vim with 'ballooneval' option set, when
 the mouse is moved over the diagnostic sign displayed in the sign column, then

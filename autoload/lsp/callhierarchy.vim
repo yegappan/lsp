@@ -12,7 +12,7 @@ def CallHierarchyItemJump()
   util.JumpToLspLocation(item, '')
 enddef
 
-# Refresh the call hierarchy tree for the symbol at index 'idx'.
+# Refresh the call hierarchy tree for the symbol at index "idx".
 def CallHierarchyTreeItemRefresh(idx: number)
   var treeItem: dict<any> = w:LspCallHierItemMap[idx]
 
@@ -22,7 +22,7 @@ def CallHierarchyTreeItemRefresh(idx: number)
   endif
 
   if !treeItem->has_key('children')
-    # First time retrieving the children for the item at index 'idx'
+    # First time retrieving the children for the item at index "idx"
     var lspserver = buf.BufLspServerGet(w:LspBufnr)
     if lspserver->empty() || !lspserver.running
       return

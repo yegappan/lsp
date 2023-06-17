@@ -99,7 +99,7 @@ def SortDiags(diags: list<dict<any>>): list<dict<any>>
   })
 enddef
 
-# Remove the diagnostics stored for buffer 'bnr'
+# Remove the diagnostics stored for buffer "bnr"
 export def DiagRemoveFile(bnr: number)
   if diagsMap->has_key(bnr)
     diagsMap->remove(bnr)
@@ -160,7 +160,7 @@ def RemoveDiagVisualsForBuffer(bnr: number)
   endif
 enddef
 
-# Refresh the placed diagnostics in buffer 'bnr'
+# Refresh the placed diagnostics in buffer "bnr"
 # This inline signs, inline props, and virtual text diagnostics
 def DiagsRefresh(bnr: number)
   bnr->bufload()
@@ -266,9 +266,7 @@ enddef
 # New LSP diagnostic messages received from the server for a file.
 # Update the signs placed in the buffer for this file
 export def ProcessNewDiags(bnr: number)
-  if opt.lspOptions.autoPopulateDiags
-    DiagsUpdateLocList(bnr)
-  endif
+  DiagsUpdateLocList(bnr)
 
   if opt.lspOptions.aleSupport
     SendAleDiags(bnr, -1)
@@ -417,14 +415,21 @@ enddef
 # Update the location list window for the current window with the diagnostic
 # messages.
 # Returns true if diagnostics is not empty and false if it is empty.
-def DiagsUpdateLocList(bnr: number): bool
+def DiagsUpdateLocList(bnr: number, calledByCmd: bool = false): bool
   var fname: string = bnr->bufname()->fnamemodify(':p')
   if fname->empty()
     return false
   endif
 
   var LspQfId: number = bnr->getbufvar('LspQfId', 0)
+  if LspQfId->empty() && !opt.lspOptions.autoPopulateDiags && !calledByCmd
+    # If a location list for the diagnostics was not opened previously,
+    # and 'autoPopulateDiags' is set to false, then do nothing.
+    return false
+  endif
+
   if !LspQfId->empty() && getloclist(0, {id: LspQfId}).id != LspQfId
+    # Previously used location list for the diagnostics is gone
     LspQfId = 0
   endif
 
@@ -468,7 +473,7 @@ enddef
 # Display the diagnostic messages from the LSP server for the current buffer
 # in a location list
 export def ShowAllDiags(): void
-  if !DiagsUpdateLocList(bufnr())
+  if !DiagsUpdateLocList(bufnr(), true)
     util.WarnMsg($'No diagnostic messages found for {@%}')
     return
   endif
@@ -484,7 +489,7 @@ export def ShowAllDiags(): void
   endif
 enddef
 
-# Display the message of 'diag' in a popup window right below the position in
+# Display the message of "diag" in a popup window right below the position in
 # the diagnostic message.
 def ShowDiagInPopup(diag: dict<any>)
   var dlnum = diag.range.start.line + 1
@@ -527,7 +532,7 @@ def ShowDiagInPopup(diag: dict<any>)
   popup_create(msg, ppopts)
 enddef
 
-# Display the 'diag' message in a popup or in the status message area
+# Display the "diag" message in a popup or in the status message area
 def DisplayDiag(diag: dict<any>)
   if opt.lspOptions.showDiagInPopup
     # Display the diagnostic message in a popup window.

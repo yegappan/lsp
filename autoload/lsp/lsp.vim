@@ -168,7 +168,7 @@ export def ShowAllServers()
   :setlocal nomodifiable
 enddef
 
-# Create a new window containing the buffer 'bname' or if the window is
+# Create a new window containing the buffer "bname" or if the window is
 # already present then jump to it.
 def OpenScratchWindow(bname: string)
   var wid = bufwinid(bname)
@@ -254,7 +254,7 @@ def ShowServer(arg: string)
   endif
 enddef
 
-# Get LSP server running status for filetype 'ftype'
+# Get LSP server running status for filetype "ftype"
 # Return true if running, or false if not found or not running
 export def ServerRunning(ftype: string): bool
   if ftypeServerMap->has_key(ftype)
@@ -701,7 +701,7 @@ export def AddServer(serverList: list<dict<any>>)
 enddef
 
 # The LSP server is considered ready when the server capabilities are
-# received ('initialize' LSP reply message)
+# received ("initialize" LSP reply message)
 export def ServerReady(): bool
   var fname: string = @%
   if fname->empty()

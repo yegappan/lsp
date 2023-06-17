@@ -30,8 +30,8 @@ export def HandleCodeAction(lspserver: dict<any>, selAction: dict<any>)
   # textDocument/codeAction can return either Command[] or CodeAction[].
   # If it is a CodeAction, it can have either an edit, a command or both.
   # Edits should be executed first.
-  # Both Command and CodeAction interfaces has 'command' member
-  # so we should check 'command' type - for Command it will be 'string'
+  # Both Command and CodeAction interfaces has "command" member
+  # so we should check "command" type - for Command it will be "string"
   if selAction->has_key('edit')
      || (selAction->has_key('command') && selAction.command->type() == v:t_dict)
     # selAction is a CodeAction instance, apply edit and command
