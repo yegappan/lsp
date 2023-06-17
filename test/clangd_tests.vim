@@ -750,7 +750,7 @@ def g:Test_LspSelection()
   silent! edit XLspSelection.c
   sleep 200m
   var lines: list<string> =<< trim END
-    void F1(int count)
+    void fnSel(int count)
     {
         int i;
         for (i = 0; i < 10; i++) {
@@ -1337,12 +1337,12 @@ def g:Test_ScanFindIdent()
   :silent! edit XscanFindIdent.c
   sleep 200m
   var lines: list<string> =<< trim END
-    int count;
-    int fn(int a)
+    int countFI;
+    int fnFI(int a)
     {
       int hello;
       hello =    a;
-      return    count + 1;
+      return    countFI + 1;
     }
   END
   setline(1, lines)
@@ -1353,7 +1353,7 @@ def g:Test_ScanFindIdent()
   cursor(5, 10)
   assert_equal([],
 	       execute('LspGotoDefinition')->split("\n"))
-  assert_equal([2, 12], [line('.'), col('.')])
+  assert_equal([2, 14], [line('.'), col('.')])
 
   cursor(6, 10)
   assert_equal([],
@@ -1369,10 +1369,10 @@ def g:Test_ScanFindIdent()
   # LspRename
   cursor(6, 10)
   assert_equal([],
-	       execute('LspRename counter')->split("\n"))
+	       execute('LspRename counterFI')->split("\n"))
   sleep 100m
-  assert_equal('int counter;', getline(1))
-  assert_equal('  return    counter + 1;', getline(6))
+  assert_equal('int counterFI;', getline(1))
+  assert_equal('  return    counterFI + 1;', getline(6))
 
   :%bw!
 enddef
