@@ -163,7 +163,7 @@ enddef
 # Refresh the placed diagnostics in buffer "bnr"
 # This inline signs, inline props, and virtual text diagnostics
 def DiagsRefresh(bnr: number)
-  bnr->bufload()
+  :silent! bnr->bufload()
 
   RemoveDiagVisualsForBuffer(bnr)
 

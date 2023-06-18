@@ -167,7 +167,7 @@ export def GetLineByteFromPos(bnr: number, pos: dict<number>): number
   endif
 
   # Need a loaded buffer to read the line and compute the offset
-  bnr->bufload()
+  :silent! bnr->bufload()
 
   var ltext: string = bnr->getbufline(pos.line + 1)->get(0, '')
   if ltext->empty()
@@ -194,7 +194,7 @@ export def GetCharIdxWithoutCompChar(bnr: number, pos: dict<number>): number
   endif
 
   # Need a loaded buffer to read the line and compute the offset
-  bnr->bufload()
+  :silent! bnr->bufload()
 
   var ltext: string = bnr->getbufline(pos.line + 1)->get(0, '')
   if ltext->empty()

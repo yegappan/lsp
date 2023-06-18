@@ -19,9 +19,9 @@ export def EncodePosition(lspserver: dict<any>, bnr: number, pos: dict<number>)
       return
     endif
 
-    bnr->bufload()
+    :silent! bnr->bufload()
     var text = bnr->getbufline(pos.line + 1)->get(0, '')
-    if text == ''
+    if text->empty()
       return
     endif
 
@@ -45,10 +45,10 @@ export def DecodePosition(lspserver: dict<any>, bnr: number, pos: dict<number>)
       return
     endif
 
-    bnr->bufload()
+    :silent! bnr->bufload()
     var text = bnr->getbufline(pos.line + 1)->get(0, '')
     # If the line is empty then don't decode the character position.
-    if text == ''
+    if text->empty()
       return
     endif
 

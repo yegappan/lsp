@@ -104,7 +104,7 @@ export def ApplyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   endif
 
   # if the buffer is not loaded, load it and make it a listed buffer
-  bnr->bufload()
+  :silent! bnr->bufload()
   setbufvar(bnr, '&buflisted', true)
 
   var start_line: number = 4294967295		# 2 ^ 32

@@ -352,7 +352,7 @@ def PeekLocations(lspserver: dict<any>, locations: list<dict<any>>,
     if bnr == -1
       bnr = fname->bufadd()
     endif
-    bnr->bufload()
+    :silent! bnr->bufload()
 
     var lnum = range.start.line + 1
     var text: string = bnr->getbufline(lnum)->get(0, '')
@@ -394,7 +394,7 @@ export def ShowLocations(lspserver: dict<any>, locations: list<dict<any>>,
     if bnr == -1
       bnr = fname->bufadd()
     endif
-    bnr->bufload()
+    :silent! bnr->bufload()
     var text: string = bnr->getbufline(range.start.line + 1)->get(0, '')->trim("\t ", 1)
     qflist->add({filename: fname,
 			lnum: range.start.line + 1,
@@ -441,7 +441,7 @@ def PeekSymbolLocation(lspserver: dict<any>, location: dict<any>)
     # Failed to create or find a buffer
     return
   endif
-  silent! bnum->bufload()
+  :silent! bnum->bufload()
 
   if lspserver.peekSymbolPopup->winbufnr() != -1
     # If the symbol popup window is already present, close it.
