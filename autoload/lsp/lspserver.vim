@@ -1433,7 +1433,7 @@ enddef
 # List project-wide symbols matching query string
 # Request: "workspace/symbol"
 # Param: WorkspaceSymbolParams
-def WorkspaceQuerySymbols(lspserver: dict<any>, query: string)
+def WorkspaceQuerySymbols(lspserver: dict<any>, query: string, firstCall: bool, cmdmods: string = '')
   # Check whether the LSP server supports listing workspace symbols
   if !lspserver.isWorkspaceSymbolProvider
     util.ErrMsg('LSP server does not support listing workspace symbols')
@@ -1449,7 +1449,24 @@ def WorkspaceQuerySymbols(lspserver: dict<any>, query: string)
     return
   endif
 
-  symbol.WorkspaceSymbolPopup(lspserver, query, reply.result)
+  var symInfo: list<dict<any>> = reply.result
+
+  symInfo->map((_, sym) => {
+      if sym->has_key('location')
+	lspserver.decodeLocation(sym.location)
+      endif
+      return sym
+    })
+
+  if firstCall && symInfo->len() == 1
+    # If there is only one symbol, then jump to the symbol location
+    var symLoc: dict<any> = symInfo[0]->get('location', {})
+    if !symLoc->empty()
+      symbol.GotoSymbol(lspserver, symLoc, false, cmdmods)
+    endif
+  else
+    symbol.WorkspaceSymbolPopup(lspserver, query, symInfo, cmdmods)
+  endif
 enddef
 
 # Add a workspace folder to the language server.

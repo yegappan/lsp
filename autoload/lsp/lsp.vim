@@ -952,7 +952,7 @@ enddef
 
 # Perform a workspace wide symbol lookup
 # Uses LSP "workspace/symbol" request
-export def SymbolSearch(queryArg: string)
+export def SymbolSearch(queryArg: string, cmdmods: string)
   var lspserver: dict<any> = buf.CurbufGetServerChecked()
   if lspserver->empty()
     return
@@ -967,7 +967,7 @@ export def SymbolSearch(queryArg: string)
   endif
   :redraw!
 
-  lspserver.workspaceQuery(query)
+  lspserver.workspaceQuery(query, true, cmdmods)
 enddef
 
 # Display the list of workspace folders

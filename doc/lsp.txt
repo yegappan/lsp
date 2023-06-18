@@ -1047,9 +1047,11 @@ can map these commands to keys and make it easier to invoke them.
 :LspSymbolSearch <sym>	Perform a workspace wide search for the symbol <sym>.
 			If <sym> is not supplied, then you will be prompted to
 			enter the symbol name (the keyword under the cursor is
-			used as the default).  A popup window is opened with
-			the list of matching symbols.  You can enter a few
-			characters to narrow down the list of matches. The
+			used as the default).  If there is only one matching
+			symbol, then the cursor will be positioned at the
+			symbol location.  Otherwise a popup window is opened
+			with the list of matching symbols.  You can enter a
+			few characters to narrow down the list of matches. The
 			displayed symbol name can be erased by pressing
 			<Backspace> or <C-U> and a new symbol search pattern
 			can be entered.  You can close the popup menu by
@@ -1082,6 +1084,14 @@ can map these commands to keys and make it easier to invoke them.
 			You can enter a new search pattern to do a workspace
 			wide symbol search.
 
+			This command accepts |:command-modifiers| which can be
+			used to jump to a symbol in a horizontally or
+			vertically split window or a new tab page: >
+
+				:topleft LspSymbolSearch foo
+				:vert LspSymbolSearch bar
+				:tab LspSymbolSearch baz
+<
 						*:LspWorkspaceAddFolder*
 :LspWorkspaceAddFolder {folder}
 			Add a folder to the workspace

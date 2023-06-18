@@ -378,13 +378,13 @@ def g:Test_LspSymbolSearch_multibyte()
   g:WaitForServerFileLoad(0)
 
   cursor(1, 1)
-  feedkeys(":LspSymbolSearch Func1\<CR>\<CR>", "xt")
+  feedkeys(":LspSymbolSearch Func1\<CR>", "xt")
   assert_equal([5, 18], [line('.'), col('.')])
   cursor(1, 1)
-  feedkeys(":LspSymbolSearch Func2\<CR>\<CR>", "xt")
+  feedkeys(":LspSymbolSearch Func2\<CR>", "xt")
   assert_equal([9, 14], [line('.'), col('.')])
   cursor(1, 1)
-  feedkeys(":LspSymbolSearch Func3\<CR>\<CR>", "xt")
+  feedkeys(":LspSymbolSearch Func3\<CR>", "xt")
   assert_equal([13, 22], [line('.'), col('.')])
 
   :%bw!

@@ -261,8 +261,8 @@ export def JumpToLspLocation(location: dict<any>, cmdmods: string)
   var fname = LspUriToFile(uri)
 
   # jump to the file and line containing the symbol
+  var bnr: number = fname->bufnr()
   if cmdmods->empty()
-    var bnr: number = fname->bufnr()
     if bnr == bufnr()
       # Set the previous cursor location mark. Instead of using setpos(), m' is
       # used so that the current location is added to the jump list.
@@ -294,7 +294,12 @@ export def JumpToLspLocation(location: dict<any>, cmdmods: string)
       endif
     endif
   else
-    exe $'{cmdmods} split {fname}'
+    if bnr == -1
+      exe $'{cmdmods} split {fname}'
+    else
+      # Use "sbuffer" so that the 'switchbuf' option settings are used.
+      exe $'{cmdmods} sbuffer {bnr}'
+    endif
   endif
   setcursorcharpos(range.start.line + 1,
 		   GetCharIdxWithoutCompChar(bufnr(), range.start) + 1)

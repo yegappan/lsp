@@ -54,7 +54,7 @@ def FilterSymbols(lspserver: dict<any>, popupID: number, key: string): bool
     # Update the popup with the new list of symbol names
     popupID->popup_settext('')
     if query != ''
-      lspserver.workspaceQuery(query)
+      lspserver.workspaceQuery(query, false)
     else
       []->setwinvar(popupID, 'LspSymbolTable')
     endif
@@ -72,7 +72,7 @@ def FilterSymbols(lspserver: dict<any>, popupID: number, key: string): bool
 enddef
 
 # Jump to the location of a symbol selected in the popup menu
-def JumpToWorkspaceSymbol(popupID: number, result: number): void
+def JumpToWorkspaceSymbol(cmdmods: string, popupID: number, result: number): void
   # clear the message displayed at the command-line
   :echo ''
 
@@ -91,32 +91,40 @@ def JumpToWorkspaceSymbol(popupID: number, result: number): void
 
     # if the selected file is already present in a window, then jump to it
     var fname: string = symTbl[result - 1].file
-    var bufnum = fname->bufnr()
-    var winList: list<number> = bufnum->win_findbuf()
-    if winList->empty()
-      # Not present in any window
-      if &modified || &buftype != ''
-	# the current buffer is modified or is not a normal buffer, then open
-	# the file in a new window
-	exe $'split {symTbl[result - 1].file}'
+    var bnr = fname->bufnr()
+    if cmdmods->empty()
+      var winList: list<number> = bnr->win_findbuf()
+      if winList->empty()
+	# Not present in any window
+	if &modified || &buftype != ''
+	  # the current buffer is modified or is not a normal buffer, then
+	  # open the file in a new window
+	  exe $'split {symTbl[result - 1].file}'
+	else
+	  exe $'confirm edit {symTbl[result - 1].file}'
+	endif
       else
-	exe $'confirm edit {symTbl[result - 1].file}'
+	# If the target buffer is opened in the curent window, then don't
+	# change the window.
+	if bufnr() != bnr
+	  # If the target buffer is opened in a window in the current tab
+	  # page, then use it.
+	  var winID = fname->bufwinid()
+	  if winID == -1
+	    # not present in the current tab page.  Use the first window.
+	    winID = winList[0]
+	  endif
+	  winID->win_gotoid()
+	endif
       endif
     else
-      if bufnr() != bufnum
-	var winID = fname->bufwinid()
-	if winID == -1
-	  # not present in the current tab page
-	  winID = winList[0]
-	endif
-	winID->win_gotoid()
-      endif
+      exe $'{cmdmods} split {symTbl[result - 1].file}'
     endif
     # Set the previous cursor location mark. Instead of using setpos(), m' is
     # used so that the current location is added to the jump list.
     :normal m'
     setcursorcharpos(symTbl[result - 1].pos.line + 1,
-		     util.GetCharIdxWithoutCompChar(bufnum,
+		     util.GetCharIdxWithoutCompChar(bnr,
 						    symTbl[result - 1].pos) + 1)
   catch
     # ignore exceptions
@@ -124,7 +132,7 @@ def JumpToWorkspaceSymbol(popupID: number, result: number): void
 enddef
 
 # display a list of symbols from the workspace
-def ShowSymbolMenu(lspserver: dict<any>, query: string)
+def ShowSymbolMenu(lspserver: dict<any>, query: string, cmdmods: string)
   # Create the popup menu
   var lnum = &lines - &cmdheight - 2 - 10
   var popupAttr = {
@@ -141,7 +149,7 @@ def ShowSymbolMenu(lspserver: dict<any>, query: string)
       fixed: 1,
       close: 'button',
       filter: function(FilterSymbols, [lspserver]),
-      callback: JumpToWorkspaceSymbol
+      callback: function('JumpToWorkspaceSymbol', [cmdmods])
   }
   lspserver.workspaceSymbolPopup = popup_menu([], popupAttr)
   lspserver.workspaceSymbolQuery = query
@@ -175,16 +183,15 @@ enddef
 # process the 'workspace/symbol' reply from the LSP server
 # Result: SymbolInformation[] | null
 export def WorkspaceSymbolPopup(lspserver: dict<any>, query: string,
-				symInfo: list<dict<any>>)
+				symInfo: list<dict<any>>, cmdmods: string)
   var symbols: list<dict<any>> = []
   var symbolType: string
   var fileName: string
-  var r: dict<dict<number>>
   var symName: string
 
   # Create a symbol popup menu if it is not present
   if lspserver.workspaceSymbolPopup->winbufnr() == -1
-    ShowSymbolMenu(lspserver, query)
+    ShowSymbolMenu(lspserver, query, cmdmods)
   endif
 
   for symbol in symInfo
@@ -195,8 +202,6 @@ export def WorkspaceSymbolPopup(lspserver: dict<any>, query: string,
 
     # interface SymbolInformation
     fileName = util.LspUriToFile(symbol.location.uri)
-    r = symbol.location.range
-    lspserver.decodeRange(fileName->bufnr(), r)
 
     symName = symbol.name
     if symbol->has_key('containerName') && symbol.containerName != ''
@@ -209,7 +214,7 @@ export def WorkspaceSymbolPopup(lspserver: dict<any>, query: string,
 
     symbols->add({name: symName,
 			file: fileName,
-			pos: r.start})
+			pos: symbol.location.range.start})
   endfor
   symbols->setwinvar(lspserver.workspaceSymbolPopup, 'LspSymbolTable')
   lspserver.workspaceSymbolPopup->popup_settext(

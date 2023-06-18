@@ -96,7 +96,7 @@ command! -nargs=0 -bar LspSuperTypeHierarchy lsp.TypeHierarchy(1)
 # Clangd specifc extension to switch from one C/C++ source file to a
 # corresponding header file
 command! -nargs=0 -bar LspSwitchSourceHeader lsp.SwitchSourceHeader()
-command! -nargs=? -bar LspSymbolSearch lsp.SymbolSearch(<q-args>)
+command! -nargs=? -bar LspSymbolSearch lsp.SymbolSearch(<q-args>, <q-mods>)
 command! -nargs=1 -bar -complete=dir LspWorkspaceAddFolder lsp.AddWorkspaceFolder(<q-args>)
 command! -nargs=0 -bar LspWorkspaceListFolders lsp.ListWorkspaceFolders()
 command! -nargs=1 -bar -complete=dir LspWorkspaceRemoveFolder lsp.RemoveWorkspaceFolder(<q-args>)

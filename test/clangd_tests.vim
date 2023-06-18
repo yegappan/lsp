@@ -1178,7 +1178,7 @@ def g:Test_LspSymbolSearch()
   g:WaitForServerFileLoad(0)
 
   cursor(1, 1)
-  feedkeys(":LspSymbolSearch lsptest_funcB\<CR>\<CR>", "xt")
+  feedkeys(":LspSymbolSearch lsptest_funcB\<CR>", "xt")
   assert_equal([5, 6], [line('.'), col('.')])
 
   cursor(1, 1)
@@ -1186,7 +1186,7 @@ def g:Test_LspSymbolSearch()
   assert_equal([9, 6], [line('.'), col('.')])
 
   cursor(1, 1)
-  feedkeys(":LspSymbolSearch lsptest_funcA\<CR>\<BS>B\<CR>", "xt")
+  feedkeys(":LspSymbolSearch lsptest_func\<CR>A\<BS>B\<CR>", "xt")
   assert_equal([5, 6], [line('.'), col('.')])
 
   var output = execute(':LspSymbolSearch lsptest_nonexist')->split("\n")
