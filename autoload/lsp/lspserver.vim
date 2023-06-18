@@ -1451,12 +1451,15 @@ def WorkspaceQuerySymbols(lspserver: dict<any>, query: string, firstCall: bool, 
 
   var symInfo: list<dict<any>> = reply.result
 
-  symInfo->map((_, sym) => {
+  if lspserver.needOffsetEncoding
+    # Decode the position encoding in all the symbol locations
+    symInfo->map((_, sym) => {
       if sym->has_key('location')
 	lspserver.decodeLocation(sym.location)
       endif
       return sym
     })
+  endif
 
   if firstCall && symInfo->len() == 1
     # If there is only one symbol, then jump to the symbol location
