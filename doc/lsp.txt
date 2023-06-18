@@ -3,7 +3,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: June 7, 2023
+Last change: June 18, 2023
 
 ==============================================================================
 CONTENTS                                                     *lsp-contents*
@@ -321,17 +321,30 @@ Additionally the following configurations can be made:
 			request replies which you might want to silence or
 			handle.  The provided request handlers will be called
 			with a reference to the "lspserver" and the "request".
-						*lsp-cfg-features*
-	features
+
+	features				*lsp-cfg-features*
 			(Optional) toggle which features should be enabled for
 			a given language server. See |lsp-multiple-servers|
 			and |lsp-features| for more information.
+
+	forceOffsetEncoding			*lsp-cfg-forceOffsetEncoding*
+			(Optional) a |String| value that forces the use of a
+			specific offset encoding in LSP messages.  If this
+			option is not specified, then the UTF offset encoding
+			is negotiated with the server during initialization.
+			Supported values are 'utf-8' or 'utf-16' or 'utf-32'.
+			The Vim native offset encoding is 'utf-32'.  For the
+			'utf-8' and 'utf-16' encodings, the offsets need to be
+			encoded and decoded in every LSP message and will
+			incur some overhead.
+
 						*lsp-cfg-omnicompl*
 	omnicompl	(Optional) a boolean value that enables (true)
 			or disables (false) omni-completion for these file
 			types. By default this is set to "v:true".  This value
 			is applicable only if auto completion is disabled
 			(|lsp-opt-autoComplete|).
+
 						*lsp-cfg-processDiagHandler*
 	processDiagHandler
 			(Optional) A |Funcref| or |lambda| that takes a list
@@ -378,12 +391,14 @@ Additionally the following configurations can be made:
 			call is used to initialize the language server,
 			otherwise the server is initialized asynchronously.
 			By default this is set to "false".
+
 						*lsp-cfg-debug*
 	debug		(Optional) log the messages printed by this language
 			server in stdout and stderr to a file.  Useful for
 			debugging a language server.  By default the
 			messages are not logged.  See |lsp-debug| for more
 			information.
+
 						*lsp-cfg-traceLevel*
 	traceLevel	(Optional) set the debug trace level for this language
 			server.  Supported values are: "off", "debug" and

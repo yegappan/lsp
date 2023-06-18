@@ -614,6 +614,14 @@ export def AddServer(serverList: list<dict<any>>)
       server.initializationOptions = {}
     endif
 
+    if !server->has_key('forceOffsetEncoding')
+	|| server.forceOffsetEncoding->type() != v:t_string
+	|| (server.forceOffsetEncoding != 'utf-8'
+	    && server.forceOffsetEncoding != 'utf-16'
+	    && server.forceOffsetEncoding != 'utf-32')
+      server.forceOffsetEncoding = ''
+    endif
+
     if !server->has_key('customNotificationHandlers')
 	|| server.customNotificationHandlers->type() != v:t_dict
       server.customNotificationHandlers = {}

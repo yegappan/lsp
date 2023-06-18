@@ -14,6 +14,10 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
     serverEncoding = lspserver.caps['~additionalInitResult_offsetEncoding']
   endif
 
+  if lspserver.forceOffsetEncoding != ''
+    serverEncoding = lspserver.forceOffsetEncoding
+  endif
+
   # one of 'utf-8', 'utf-16' or 'utf-32'
   if serverEncoding == 'utf-8'
     lspserver.posEncoding = 8
