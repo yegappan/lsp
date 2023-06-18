@@ -206,8 +206,9 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
   # Explicitly ignored requests
   var lspIgnoredRequestHandlers: list<string> =
     [
-      # Eclipse java language server sends the 'workspace/executeClientCommand' 
-      # request (to reload bundles) which is not in the LSP specification.
+      # Eclipse java language server sends the
+      # 'workspace/executeClientCommand' request (to reload bundles) which is
+      # not in the LSP specification.
       'workspace/executeClientCommand',
     ]
 

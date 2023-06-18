@@ -600,42 +600,41 @@ export def AddServer(serverList: list<dict<any>>)
       endif
       continue
     endif
-    var args: list<string> = []
     if server->has_key('args')
       if server.args->type() != v:t_list
         util.ErrMsg($'Arguments for LSP server {server.args} is not a List')
         continue
       endif
-      args = server.args
+    else
+      server.args = []
     endif
 
-    var initializationOptions: dict<any> = {}
-    if server->has_key('initializationOptions')
-      initializationOptions = server.initializationOptions
+    if !server->has_key('initializationOptions')
+	|| server.initializationOptions->type() != v:t_dict
+      server.initializationOptions = {}
     endif
 
-    var customNotificationHandlers: dict<func> = {}
-    if server->has_key('customNotificationHandlers')
-      customNotificationHandlers = server.customNotificationHandlers
+    if !server->has_key('customNotificationHandlers')
+	|| server.customNotificationHandlers->type() != v:t_dict
+      server.customNotificationHandlers = {}
     endif
 
-    var ProcessDiagHandler: func = null_function
     if server->has_key('processDiagHandler')
       if server.processDiagHandler->type() != v:t_func
         util.ErrMsg($'Setting of processDiagHandler {server.processDiagHandler} is not a Funcref nor lambda')
         continue
       endif
-      ProcessDiagHandler = server.processDiagHandler
+    else
+      server.processDiagHandler = null_function
     endif
 
-    var customRequestHandlers: dict<func> = {}
-    if server->has_key('customRequestHandlers')
-      customRequestHandlers = server.customRequestHandlers
+    if !server->has_key('customRequestHandlers')
+	|| server.customRequestHandlers->type() != v:t_dict
+      server.customRequestHandlers = {}
     endif
 
-    var features: dict<bool> = {}
-    if server->has_key('features')
-      features = server.features
+    if !server->has_key('features') || server.features->type() != v:t_dict
+      server.features = {}
     endif
 
     if server.omnicompl->type() != v:t_bool
@@ -648,7 +647,7 @@ export def AddServer(serverList: list<dict<any>>)
     endif
 
     if !server->has_key('name') || server.name->type() != v:t_string
-							|| server.name->empty()
+	|| server.name->empty()
       # Use the executable name (without the extension) as the language server
       # name.
       server.name = server.path->fnamemodify(':t:r')
@@ -658,7 +657,15 @@ export def AddServer(serverList: list<dict<any>>)
       server.debug = false
     endif
 
+    if !server->has_key('traceLevel')
+	|| server->type() != v:t_string
+	|| (server.traceLevel != 'off' && server.traceLevel != 'debug'
+	    && server.traceLevel != 'verbose')
+      server.traceLevel = 'off'
+    endif
+
     if !server->has_key('workspaceConfig')
+	|| server.workspaceConfig->type() != v:t_dict
       server.workspaceConfig = {}
     endif
 
@@ -666,25 +673,17 @@ export def AddServer(serverList: list<dict<any>>)
       server.rootSearch = []
     endif
 
-    if !server->has_key('runIfSearch') || server.runIfSearch->type() != v:t_list
+    if !server->has_key('runIfSearch') ||
+	server.runIfSearch->type() != v:t_list
       server.runIfSearch = []
     endif
 
-    if !server->has_key('runUnlessSearch') || server.runUnlessSearch->type() != v:t_list
+    if !server->has_key('runUnlessSearch') ||
+	server.runUnlessSearch->type() != v:t_list
       server.runUnlessSearch = []
     endif
 
-    var lspserver: dict<any> = lserver.NewLspServer(server.name, server.path,
-						    args, server.syncInit,
-						    initializationOptions,
-						    server.workspaceConfig,
-						    server.rootSearch,
-						    server.runIfSearch,
-						    server.runUnlessSearch,
-						    customNotificationHandlers,
-						    customRequestHandlers,
- 						    ProcessDiagHandler,
-						    features, server.debug)
+    var lspserver: dict<any> = lserver.NewLspServer(server)
 
     var ftypes = server.filetype
     if ftypes->type() == v:t_string

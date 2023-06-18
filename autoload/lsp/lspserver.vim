@@ -135,6 +135,11 @@ def ServerInitReply(lspserver: dict<any>, initResult: dict<any>): void
     exe $'doautocmd <nomodeline> User LspServerReady_{lspserver.id}'
   endif
 
+  # set the server debug trace level
+  if lspserver.traceLevel != 'off'
+    lspserver.setTrace(lspserver.traceLevel)
+  endif
+
   # if the outline window is opened, then request the symbols for the current
   # buffer
   if bufwinid('LSP-Outline') != -1
@@ -1709,27 +1714,18 @@ def GetUniqueServerId(): number
   return UniqueServerIdCounter
 enddef
 
-export def NewLspServer(name_arg: string, path_arg: string, args: list<string>,
-			isSync: bool, initializationOptions: any,
-			workspaceConfig: dict<any>,
-			rootSearchFiles: list<any>,
-			runIfSearchFiles: list<any>,
-			runUnlessSearchFiles: list<any>,
-			customNotificationHandlers: dict<func>,
-			customRequestHandlers: dict<func>,
-			ProcessDiagHandler: func,      
-			features: dict<bool>, debug_arg: bool): dict<any>
+export def NewLspServer(serverParams: dict<any>): dict<any>
   var lspserver: dict<any> = {
     id: GetUniqueServerId(),
-    name: name_arg,
-    path: path_arg,
-    args: args,
-    syncInit: isSync,
-    initializationOptions: initializationOptions,
-    customNotificationHandlers: customNotificationHandlers,
-    customRequestHandlers: customRequestHandlers,
-    processDiagHandler: ProcessDiagHandler,
-    features: features,
+    name: serverParams.name,
+    path: serverParams.path,
+    args: serverParams.args->deepcopy(),
+    syncInit: serverParams.syncInit,
+    initializationOptions: serverParams.initializationOptions->deepcopy(),
+    customNotificationHandlers: serverParams.customNotificationHandlers->deepcopy(),
+    customRequestHandlers: serverParams.customRequestHandlers->deepcopy(),
+    processDiagHandler: serverParams.processDiagHandler,
+    features: serverParams.features->deepcopy(),
     running: false,
     ready: false,
     job: v:none,
@@ -1737,9 +1733,9 @@ export def NewLspServer(name_arg: string, path_arg: string, args: list<string>,
     nextID: 1,
     caps: {},
     requests: {},
-    rootSearchFiles: rootSearchFiles,
-    runIfSearchFiles: runIfSearchFiles,
-    runUnlessSearchFiles: runUnlessSearchFiles,
+    rootSearchFiles: serverParams.rootSearch->deepcopy(),
+    runIfSearchFiles: serverParams.runIfSearch->deepcopy(),
+    runUnlessSearchFiles: serverParams.runUnlessSearch->deepcopy(),
     omniCompletePending: false,
     completionTriggerChars: [],
     signaturePopup: -1,
@@ -1751,9 +1747,10 @@ export def NewLspServer(name_arg: string, path_arg: string, args: list<string>,
     peekSymbolFilePopup: -1,
     callHierarchyType: '',
     selection: {},
-    workspaceConfig: workspaceConfig,
+    workspaceConfig: serverParams.workspaceConfig->deepcopy(),
     messages: [],
-    debug: debug_arg
+    debug: serverParams.debug,
+    traceLevel: serverParams.traceLevel
   }
   lspserver.logfile = $'lsp-{lspserver.name}.log'
   lspserver.errfile = $'lsp-{lspserver.name}.err'

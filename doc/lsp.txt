@@ -384,6 +384,10 @@ Additionally the following configurations can be made:
 			debugging a language server.  By default the
 			messages are not logged.  See |lsp-debug| for more
 			information.
+						*lsp-cfg-traceLevel*
+	traceLevel	(Optional) set the debug trace level for this language
+			server.  Supported values are: "off", "debug" and
+			"verbose".  By default this is seto "off".
 
 The language servers are added using the LspAddServer() function. This
 function accepts a list of language servers with the above information.
