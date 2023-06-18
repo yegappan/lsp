@@ -1301,7 +1301,9 @@ LspAttached			A |User| autocommand fired when the LSP client
 LspDiagsUpdated			A |User| autocommand invoked when new
 				diagnostics are received from the language
 				server.  This is invoked after the LSP client
-				has processed the diagnostics.
+				has processed the diagnostics.  The function
+				lsp#diag#GetDiagsForBuf() can be used to get
+				all the diagnostics for a buffer.
 
 ==============================================================================
 12. Highlight Groups				*lsp-highlight-groups*

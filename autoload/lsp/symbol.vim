@@ -124,7 +124,7 @@ def JumpToWorkspaceSymbol(cmdmods: string, popupID: number, result: number): voi
     # used so that the current location is added to the jump list.
     :normal m'
     setcursorcharpos(symTbl[result - 1].pos.line + 1,
-		     util.GetCharIdxWithoutCompChar(bnr,
+		     util.GetCharIdxWithoutCompChar(bufnr(),
 						    symTbl[result - 1].pos) + 1)
   catch
     # ignore exceptions
