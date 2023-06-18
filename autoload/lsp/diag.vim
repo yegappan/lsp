@@ -422,13 +422,14 @@ def DiagsUpdateLocList(bnr: number, calledByCmd: bool = false): bool
   endif
 
   var LspQfId: number = bnr->getbufvar('LspQfId', 0)
-  if LspQfId->empty() && !opt.lspOptions.autoPopulateDiags && !calledByCmd
-    # If a location list for the diagnostics was not opened previously,
-    # and 'autoPopulateDiags' is set to false, then do nothing.
+  if LspQfId == 0 && !opt.lspOptions.autoPopulateDiags && !calledByCmd
+    # Diags location list is not present. Create the location list only if
+    # the 'autoPopulateDiags' option is set or the :LspDiagShow command is
+    # invoked.
     return false
   endif
 
-  if !LspQfId->empty() && getloclist(0, {id: LspQfId}).id != LspQfId
+  if LspQfId != 0 && getloclist(0, {id: LspQfId}).id != LspQfId
     # Previously used location list for the diagnostics is gone
     LspQfId = 0
   endif
