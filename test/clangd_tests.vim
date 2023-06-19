@@ -794,13 +794,13 @@ def g:Test_LspSelection()
   silent! edit XLspSelection.c
   sleep 200m
   var lines: list<string> =<< trim END
-    void fnSel(int count)
+    void fnSel(int countSel)
     {
         int i;
         for (i = 0; i < 10; i++) {
-           count++;
+           countSel++;
         }
-        count = 20;
+        countSel = 20;
     }
   END
   setline(1, lines)
@@ -831,10 +831,10 @@ def g:Test_LspSelection()
   xnoremap <silent> ls <Cmd>LspSelectionShrink<CR>
   cursor(5, 8)
   normal vley
-  assert_equal([5, 8, 5, 12], [line("'<"), col("'<"), line("'>"), col("'>")])
+  assert_equal([5, 8, 5, 15], [line("'<"), col("'<"), line("'>"), col("'>")])
   cursor(5, 8)
   normal vleley
-  assert_equal([5, 8, 5, 14], [line("'<"), col("'<"), line("'>"), col("'>")])
+  assert_equal([5, 8, 5, 17], [line("'<"), col("'<"), line("'>"), col("'>")])
   cursor(5, 8)
   normal vleleley
   assert_equal([4, 30, 6, 5], [line("'<"), col("'<"), line("'>"), col("'>")])
@@ -854,16 +854,16 @@ def g:Test_LspSelection()
   # Shrink the visual selection
   cursor(5, 8)
   normal vlsy
-  assert_equal([5, 8, 5, 12], [line("'<"), col("'<"), line("'>"), col("'>")])
+  assert_equal([5, 8, 5, 15], [line("'<"), col("'<"), line("'>"), col("'>")])
   cursor(5, 8)
   normal vlelsy
-  assert_equal([5, 8, 5, 12], [line("'<"), col("'<"), line("'>"), col("'>")])
+  assert_equal([5, 8, 5, 15], [line("'<"), col("'<"), line("'>"), col("'>")])
   cursor(5, 8)
   normal vlelelsy
-  assert_equal([5, 8, 5, 12], [line("'<"), col("'<"), line("'>"), col("'>")])
+  assert_equal([5, 8, 5, 15], [line("'<"), col("'<"), line("'>"), col("'>")])
   cursor(5, 8)
   normal vlelelelsy
-  assert_equal([5, 8, 5, 14], [line("'<"), col("'<"), line("'>"), col("'>")])
+  assert_equal([5, 8, 5, 17], [line("'<"), col("'<"), line("'>"), col("'>")])
   cursor(5, 8)
   normal vlelelelelsy
   assert_equal([4, 30, 6, 5], [line("'<"), col("'<"), line("'>"), col("'>")])
