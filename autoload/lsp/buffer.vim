@@ -63,9 +63,18 @@ export def BufLspServerGet(bnr: number, feature: string = null_string): dict<any
     return bufnrToServers[bnr][0]
   endif
 
+  for lspserver in bufnrToServers[bnr]
+    # If not ready, 'SupportedCheckFns' may have no its keys yet,
+    # assumed this was not a real error, let's see the occurrence
+    if !lspserver.ready
+      :throw $'Warn: Lsp server for "{feature}" feature check is not fully running ready yet'
+    endif
+  endfor
+
   if !SupportedCheckFns->has_key(feature)
-    # If this happns it is a programming error, and should be fixed in the source code
-    :throw $'Error: ''{feature}'' is not a valid feature'
+    # If this still happened, then probably was a programming error,
+    # e.g typo or something, and should be fixed in the source code.
+    :throw $'Error: "{feature}" is not a valid feature'
   endif
 
   var SupportedCheckFn = SupportedCheckFns[feature]
