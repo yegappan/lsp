@@ -45,6 +45,7 @@ def LspInitOnce()
   diag.InitOnce()
   inlayhints.InitOnce()
   signature.InitOnce()
+  symbol.InitOnce()
 
   :set ballooneval balloonevalterm
   lspInitializedOnce = true
@@ -847,13 +848,28 @@ def g:LspRequestDocSymbols()
     return
   endif
 
-  lspserver.getDocSymbols(fname)
+  lspserver.getDocSymbols(fname, true)
 enddef
 
 # open a window and display all the symbols in a file (outline)
 export def Outline(cmdmods: string, winsize: number)
   outline.OpenOutlineWindow(cmdmods, winsize)
   g:LspRequestDocSymbols()
+enddef
+
+# show all the symbols in a file in a popup menu
+export def ShowDocSymbols()
+  var fname: string = @%
+  if fname->empty()
+    return
+  endif
+
+  var lspserver: dict<any> = buf.CurbufGetServer()
+  if lspserver->empty() || !lspserver.running || !lspserver.ready
+    return
+  endif
+
+  lspserver.getDocSymbols(fname, false)
 enddef
 
 # Format the entire file

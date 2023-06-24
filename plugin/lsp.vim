@@ -67,6 +67,7 @@ command! -nargs=0 -bar -count=1 LspDiagNext lsp.JumpToDiag('next', <count>)
 command! -nargs=0 -bar -count=1 LspDiagPrev lsp.JumpToDiag('prev', <count>)
 command! -nargs=0 -bar LspDiagShow lsp.ShowDiagnostics()
 command! -nargs=0 -bar LspDiagHere lsp.JumpToDiag('here')
+command! -nargs=0 -bar LspDocumentSymbol lsp.ShowDocSymbols()
 command! -nargs=0 -bar LspFold lsp.FoldDocument()
 command! -nargs=0 -bar -range=% LspFormat lsp.TextDocFormat(<range>, <line1>, <line2>)
 command! -nargs=0 -bar -count LspGotoDeclaration lsp.GotoDeclaration(v:false, <q-mods>, <count>)
@@ -113,6 +114,7 @@ if has('gui_running')
   anoremenu <silent> L&sp.Show\ Detail :LspHover<CR>
   anoremenu <silent> L&sp.Outline :LspOutline<CR>
 
+  anoremenu <silent> L&sp.Goto\ Symbol :LspDocumentSymbol<CR>
   anoremenu <silent> L&sp.Symbol\ Search :LspSymbolSearch<CR>
   anoremenu <silent> L&sp.Outgoing\ Calls :LspOutgoingCalls<CR>
   anoremenu <silent> L&sp.Incoming\ Calls :LspIncomingCalls<CR>

@@ -143,7 +143,7 @@ def ServerInitReply(lspserver: dict<any>, initResult: dict<any>): void
   # if the outline window is opened, then request the symbols for the current
   # buffer
   if bufwinid('LSP-Outline') != -1
-    lspserver.getDocSymbols(@%)
+    lspserver.getDocSymbols(@%, true)
   endif
 
   # Update the inlay hints (if enabled)
@@ -984,7 +984,7 @@ enddef
 
 # Request: "textDocument/documentSymbol"
 # Param: DocumentSymbolParams
-def GetDocSymbols(lspserver: dict<any>, fname: string): void
+def GetDocSymbols(lspserver: dict<any>, fname: string, showOutline: bool): void
   # Check whether LSP server supports getting document symbol information
   if !lspserver.isDocumentSymbolProvider
     util.ErrMsg('LSP server does not support getting list of symbols')
@@ -995,7 +995,11 @@ def GetDocSymbols(lspserver: dict<any>, fname: string): void
   # interface TextDocumentIdentifier
   var params = {textDocument: {uri: util.LspFileToUri(fname)}}
   lspserver.rpc_a('textDocument/documentSymbol', params, (_, reply) => {
-    symbol.DocSymbolReply(lspserver, reply, fname)
+    if showOutline
+      symbol.DocSymbolOutline(lspserver, reply, fname)
+    else
+      symbol.DocSymbolPopup(lspserver, reply, fname)
+    endif
   })
 enddef
 

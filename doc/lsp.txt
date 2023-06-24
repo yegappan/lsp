@@ -91,6 +91,8 @@ The following commands are provided:
 			current buffer before the current current position.
 :LspDiagShow		Display the diagnostics messages from the language
 			server for the current buffer in a location list.
+:LspDocumentSymbol	Display the symbols in the current file in a popup
+			menu and jump to the location of a selected symbol.
 :LspFold		Fold the current file
 :LspFormat		Format a range of lines in the current file using the
 			language server.  The default range is the entire
@@ -691,6 +693,27 @@ can map these commands to keys and make it easier to invoke them.
 			current file and opens the location list window. You
 			can use the Vim location list commands to browse the
 			list.
+
+						*:LspDocumentSymbol*
+:LspDocumentSymbol	Display the symbols in the current file in a popup
+			menu.  When a symbol is selected in the popup menu by
+			pressing <Enter> or <Space>, jump to the location of
+			the symbol.
+
+			The <Up>, <Down>, <C-F>, <C-B>, <PageUp>, <PageDown>,
+			<C-Home>, <C-End>, <C-N>, <C-P> keys can be used to
+			scroll the popup menu.  The <Esc> or <Ctrl-C> keys can
+			be used to cancel the popup menu.
+
+			If one or more keyword characters are typed, then only
+			the symbols containing the keyword characters are
+			displayed in the popup menu.  Fuzzy searching is used
+			to get the list of matching symbols.  The <BS> key can
+			be used to erase the last typed character.  The <C-U>
+			key can be used to erase all the characters.
+
+			When scrolling through the symbols in the popup menu,
+			the corresponding range of lines is highlighted.
 
 						*:LspFold*
 :LspFold		Create folds for the current buffer.
@@ -1363,6 +1386,13 @@ override them.
 *LspSigActiveParameter*		Used to highlight the active signature
 				parameter.  By default, linked to the "LineNr"
 				highlight group.
+*LspSymbolName*			Used to highlight the symbol name when using
+				the |:LspDocumentSymbol| command.  By default,
+				linked to the "Search" highlight group.
+*LspSymbolRange*		Used to highlight the range of lines
+				containing a symbol when using the
+				|:LspDocumentSymbol| command.  By default,
+				linked to the "Visual" highlight group.
 
 For example, to override the highlight used for diagnostics virtual text, you
 can use the following: >
