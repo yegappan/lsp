@@ -28,7 +28,9 @@ import './inlayhints.vim'
 
 # LSP server standard output handler
 def Output_cb(lspserver: dict<any>, chan: channel, msg: any): void
-  lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Received {msg->string()}')
+  if lspserver.debug
+    lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Received {msg->string()}')
+  endif
   lspserver.data = msg
   lspserver.processMessages()
 enddef
@@ -349,7 +351,9 @@ def SendMessage(lspserver: dict<any>, content: dict<any>): void
   endif
   job->ch_sendexpr(content)
   if content->has_key('id')
-    lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Sent {content->string()}')
+    if lspserver.debug
+      lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Sent {content->string()}')
+    endif
   endif
 enddef
 
@@ -393,10 +397,10 @@ enddef
 # Send a sync RPC request message to the LSP server and return the received
 # reply.  In case of an error, an empty Dict is returned.
 def Rpc(lspserver: dict<any>, method: string, params: any, handleError: bool = true): dict<any>
-  var req = {}
-  req.method = method
-  req.params = {}
-  req.params->extend(params)
+  var req = {
+    method: method,
+    params: params
+  }
 
   var job = lspserver.job
   if job->job_status() != 'run'
@@ -404,12 +408,16 @@ def Rpc(lspserver: dict<any>, method: string, params: any, handleError: bool = t
     return {}
   endif
 
-  lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Sent {req->string()}')
+  if lspserver.debug
+    lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Sent {req->string()}')
+  endif
 
   # Do the synchronous RPC call
   var reply = job->ch_evalexpr(req)
 
-  lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Received {reply->string()}')
+  if lspserver.debug
+    lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Received {reply->string()}')
+  endif
 
   if reply->has_key('result')
     # successful reply
@@ -426,7 +434,9 @@ enddef
 
 # LSP server asynchronous RPC callback
 def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel, reply: dict<any>)
-  lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Received {reply->string()}')
+  if lspserver.debug
+    lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Received {reply->string()}')
+  endif
 
   if reply->empty()
     return
@@ -450,10 +460,10 @@ enddef
 # Returns the LSP message id.  This id can be used to cancel the RPC request
 # (if needed).  Returns -1 on error.
 def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func): number
-  var req = {}
-  req.method = method
-  req.params = {}
-  req.params->extend(params)
+  var req = {
+    method: method,
+    params: params
+  }
 
   var job = lspserver.job
   if job->job_status() != 'run'
@@ -461,7 +471,9 @@ def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func): n
     return -1
   endif
 
-  lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Sent {req->string()}')
+  if lspserver.debug
+    lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Sent {req->string()}')
+  endif
 
   # Do the asynchronous RPC call
   var Fn = function('AsyncRpcCb', [lspserver, method, Cbfunc])
