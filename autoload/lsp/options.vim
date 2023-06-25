@@ -77,6 +77,8 @@ export var lspOptions: dict<any> = {
   useQuickfixForLocations: false,
   # add to autocomplition list current buffer words
   useBufferCompletion: false,
+  # Limit the time autocompletion searches for words in current buffer (in milliseconds)
+  bufferCompletionTimeout: 100,
   # Enable support for custom completion kinds
   customCompletionKinds: false,
   # A dictionary with all completion kinds that you want to customize
