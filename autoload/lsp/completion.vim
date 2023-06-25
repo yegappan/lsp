@@ -114,22 +114,30 @@ enddef
 
 # add completion from current buf
 def CompletionFromBuffer(items: list<dict<any>>)
-    var words = {}
-    for line in getline(1, '$')
-        for word in line->split('\W\+')
-            if !words->has_key(word) && word->len() > 1
-                words[word] = 1
-                items->add({
-                    label: word,
-                    data: {
-                        entryNames: [word],
-                    },
-                    kind: 26,
-                    documentation: "",
-                })
-            endif
-        endfor
+  var words = {}
+  var start = reltime()
+  var timeout = opt.lspOptions.bufferCompletionTimeout
+  var linenr = 1
+  for line in getline(1, '$')
+    for word in line->split('\W\+')
+      if !words->has_key(word) && word->len() > 1
+	words[word] = 1
+	items->add({
+	  label: word,
+	  data: {
+	    entryNames: [word],
+	  },
+	  kind: 26,
+	  documentation: "",
+	})
+      endif
     endfor
+    # Check every 200 lines if timeout is exceeded
+    if timeout > 0 && linenr % 200 == 0 && start->reltime()->reltimefloat() * 1000 > timeout
+      break
+    endif
+    linenr += 1
+  endfor
 enddef
 
 # process the 'textDocument/completion' reply from the LSP server

@@ -589,10 +589,16 @@ useQuickfixForLocations	|Boolean| option.  Show |:LspShowReferences| in a
 						*lsp-opt-useBufferCompletion*
 useBufferCompletion     |Boolean| option. If enabled, the words from the
 			current buffer are added to the auto completion list.
-			This may degrade Vim performance as the current buffer
-			contents are processed every time the completion menu
-			is displayed.
 			By default this is set to false.
+						*lsp-opt-bufferCompletionTimeout*
+bufferCompletionTimeout |Number| option. Specifies how long (in milliseconds) 
+			to wait while processing current buffer for 
+			autocompletion words.  If set too high Vim performance
+			may degrade as the current buffer contents are
+			processed every time the completion menu is displayed.
+			If set to 0 the entire buffer is processed without
+			regard to timeout.
+			By default this is set to 100 ms.
 
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file: >
