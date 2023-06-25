@@ -116,6 +116,7 @@ enddef
 def CompletionFromBuffer(items: list<dict<any>>)
   var words = {}
   var start = reltime()
+  var timeout = opt.lspOptions.bufferCompletionTimeout
   var linenr = 1
   for line in getline(1, '$')
     for word in line->split('\W\+')
@@ -132,8 +133,7 @@ def CompletionFromBuffer(items: list<dict<any>>)
       endif
     endfor
     # Check every 200 lines if timeout is exceeded
-    if opt.lspOptions.bufferCompletionTimeout > 0 && linenr % 200 == 0 && 
-	start->reltime()->reltimefloat() * 1000 > opt.lspOptions.bufferCompletionTimeout
+    if timeout > 0 && linenr % 200 == 0 && start->reltime()->reltimefloat() * 1000 > timeout
       break
     endif
     linenr += 1
