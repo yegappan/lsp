@@ -45,7 +45,7 @@ enddef
 
 augroup LSPAutoCmds
   au!
-  autocmd BufNewFile,BufReadPost * lsp.AddFile(expand('<abuf>')->str2nr())
+  autocmd BufNewFile,BufReadPost,FileType * lsp.AddFile(expand('<abuf>')->str2nr())
   # Note that when BufWipeOut is invoked, the current buffer may be different
   # from the buffer getting wiped out.
   autocmd BufWipeOut * lsp.RemoveFile(expand('<abuf>')->str2nr())
