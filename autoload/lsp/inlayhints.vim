@@ -80,7 +80,7 @@ def LspInlayHintsUpdate()
     b:LspInlayHintsTimer = -1
   endif
 
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('inlayHint')
   if lspserver->empty()
     return
   endif

@@ -1233,7 +1233,7 @@ enddef
 # Support the clangd version of type hierarchy retrieval method.
 # The method described in the LSP 3.17.0 standard is not supported as clangd
 # doesn't support that method.
-def TypeHiearchy(lspserver: dict<any>, direction: number)
+def TypeHierarchy(lspserver: dict<any>, direction: number)
   # Check whether LSP server supports type hierarchy
   if !lspserver.isTypeHierarchyProvider
     util.ErrMsg('LSP server does not support type hierarchy')
@@ -1849,7 +1849,7 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     outgoingCalls: function(OutgoingCalls, [lspserver]),
     getOutgoingCalls: function(GetOutgoingCalls, [lspserver]),
     inlayHintsShow: function(InlayHintsShow, [lspserver]),
-    typeHierarchy: function(TypeHiearchy, [lspserver]),
+    typeHierarchy: function(TypeHierarchy, [lspserver]),
     renameSymbol: function(RenameSymbol, [lspserver]),
     codeAction: function(CodeAction, [lspserver]),
     codeLens: function(CodeLens, [lspserver]),

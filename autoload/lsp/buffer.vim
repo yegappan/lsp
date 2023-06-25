@@ -31,6 +31,7 @@ export def BufLspServerRemove(bnr: number, lspserver: dict<any>)
 enddef
 
 var SupportedCheckFns = {
+  callHierarchy: (lspserver) => lspserver.isCallHierarchyProvider,
   codeAction: (lspserver) => lspserver.isCodeActionProvider,
   codeLens: (lspserver) => lspserver.isCodeLensProvider,
   completion: (lspserver) => lspserver.isCompletionProvider,
@@ -38,13 +39,18 @@ var SupportedCheckFns = {
   definition: (lspserver) => lspserver.isDefinitionProvider,
   documentFormatting: (lspserver) => lspserver.isDocumentFormattingProvider,
   documentHighlight: (lspserver) => lspserver.isDocumentHighlightProvider,
+  documentSymbol: (lspserver) => lspserver.isDocumentSymbolProvider,
   foldingRange: (lspserver) => lspserver.isFoldingRangeProvider,
   hover: (lspserver) => lspserver.isHoverProvider,
   implementation: (lspserver) => lspserver.isImplementationProvider,
+  inlayHint: (lspserver) => lspserver.isInlayHintProvider,
   references: (lspserver) => lspserver.isReferencesProvider,
   rename: (lspserver) => lspserver.isRenameProvider,
   selectionRange: (lspserver) => lspserver.isSelectionRangeProvider,
+  signatureHelp: (lspserver) => lspserver.isSignatureHelpProvider,
   typeDefinition: (lspserver) => lspserver.isTypeDefinitionProvider,
+  typeHierarchy: (lspserver) => lspserver.isTypeHierarchyProvider,
+  workspaceSymbol: (lspserver) => lspserver.isWorkspaceSymbolProvider
 }
 
 # Returns the LSP server for the buffer "bnr".  If "feature" is specified,

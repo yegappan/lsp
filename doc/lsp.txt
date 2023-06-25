@@ -3,7 +3,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: June 18, 2023
+Last change: June 25, 2023
 
 ==============================================================================
 CONTENTS                                                     *lsp-contents*
@@ -1639,22 +1639,26 @@ everything else: >
 ==============================================================================
 17. Language Server Features			*lsp-features*
 
-By providing the configuration |lsp-cfg-features| it's possible to specify
-which servers should be used for a given method.  The following feature flags
-are supported: See |lsp-multiple-servers| for examples.
+When using multiple language servers for a given file type, by providing the
+configuration |lsp-cfg-features| it is possible to specify which language
+server should be used for a given method/functionality.  The following feature
+flags are supported: See |lsp-multiple-servers| for examples.
 
+						*lsp-features-callHierarchy*
+callHierarchy			Used by the|:LspIncomingCalls| and the
+				|:LspOutgoingCalls| commands.
 						*lsp-features-codeAction*
-codeAction			Used by |:LspCodeAction|
+codeAction			Used by the |:LspCodeAction| command.
 						*lsp-features-codeLens*
-codeLens			Used by |:LspCodeLens|
+codeLens			Used by the |:LspCodeLens| command.
 						*lsp-features-completion*
 completion			Used by 24/7 Completion and 'omnifunc'
 						*lsp-features-declaration*
-declaration			Used by |:LspGotoDeclaration|, and
-				|:LspPeekDeclaration|
+declaration			Used by the |:LspGotoDeclaration|, and
+				the |:LspPeekDeclaration| commands.
 						*lsp-features-definition*
-definition			Used by |:LspGotoDefinition|, and
-				|:LspPeekDefinition|
+definition			Used by the|:LspGotoDefinition|, and
+				the |:LspPeekDefinition| commands.
 						*lsp-features-diagnostics*
 diagnostics			Used to disable diagnostics for a single
 				language server, by default diagnostics are
@@ -1662,26 +1666,39 @@ diagnostics			Used to disable diagnostics for a single
 				this to |false| you can ignore diagnostics
 				from a specific server.
 					*lsp-features-documentFormatting*
-documentFormatting		Used by |:LspFormat|, and 'formatexpr'
+documentFormatting		Used by the |:LspFormat| command, and
+				'formatexpr'
 					*lsp-features-documentHighlight*
 documentHighlight		Used by the |:LspHighlight| and the
 				|:LspHighlightClear| commands.
+					*lsp-features-documentSymbol*
+documentSymbol			Used by the |:LspDocumentSymbol| and the
+				|:LspOutline| commands.
 						*lsp-features-foldingRange*
-foldingRange			Used by |:LspFold|
+foldingRange			Used by the|:LspFold| command.
 						*lsp-features-hover*
-hover				Used by |:LspHover|
+hover				Used by the |:LspHover| command.
 						*lsp-features-implementation*
-implementation			Used by |:LspGotoImpl|, and |:LspPeekImpl|
+implementation			Used by the |:LspGotoImpl| and the
+				|:LspPeekImpl| commands.
+						*lsp-features-inlayHint*
+inlayHint			Used to show the inlay hints for
+				function/method arguments.
 						*lsp-features-references*
-references			Used by |:LspShowReferences|
+references			Used by the |:LspShowReferences| command.
 						*lsp-features-rename*
-rename				Used by |:LspRename|
+rename				Used by the |:LspRename| command.
 						*lsp-features-selectionRange*
 selectionRange			Used by the |:LspSelectionExpand| and the
 				|:LspSelectionShrink| commands.
+						*lsp-features-signatureHelp*
+signatureHelp			Used by the |:LspShowSignature| command.
 						*lsp-features-typeDefinition*
 typeDefinition			Used by the |:LspGotoTypeDef| and the
 				|:LspPeekTypeDef| commands.
+typeHierarchy			Used by the |:LspSubTypeHierarchy| and the
+				|:LspSuperTypeHiearchy| commands.
+workspaceSymbol			Used by the |:LspSymbolSearch| command.
 
 ==============================================================================
 						*lsp-license*

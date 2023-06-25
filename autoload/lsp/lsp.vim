@@ -324,7 +324,7 @@ enddef
 # Show the signature using "textDocument/signatureHelp" LSP method
 # Invoked from an insert-mode mapping, so return an empty string.
 def g:LspShowSignature(): string
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('signatureHelp')
   if lspserver->empty()
     return ''
   endif
@@ -843,7 +843,7 @@ def g:LspRequestDocSymbols()
     return
   endif
 
-  var lspserver: dict<any> = buf.CurbufGetServer()
+  var lspserver: dict<any> = buf.CurbufGetServer('documentSymbol')
   if lspserver->empty() || !lspserver.running || !lspserver.ready
     return
   endif
@@ -864,7 +864,7 @@ export def ShowDocSymbols()
     return
   endif
 
-  var lspserver: dict<any> = buf.CurbufGetServer()
+  var lspserver: dict<any> = buf.CurbufGetServer('documentSymbol')
   if lspserver->empty() || !lspserver.running || !lspserver.ready
     return
   endif
@@ -898,7 +898,7 @@ enddef
 # Display all the locations where the current symbol is called from.
 # Uses LSP "callHierarchy/incomingCalls" request
 export def IncomingCalls()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('callHierarchy')
   if lspserver->empty()
     return
   endif
@@ -909,7 +909,7 @@ enddef
 # Display all the symbols used by the current symbol.
 # Uses LSP "callHierarchy/outgoingCalls" request
 export def OutgoingCalls()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('callHierarchy')
   if lspserver->empty()
     return
   endif
@@ -920,7 +920,7 @@ enddef
 # Display the type hierarchy for the current symbol.  Direction is 0 for
 # sub types and 1 for super types.
 export def TypeHierarchy(direction: number)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('typeHierarchy')
   if lspserver->empty()
     return
   endif
@@ -977,7 +977,7 @@ enddef
 # Perform a workspace wide symbol lookup
 # Uses LSP "workspace/symbol" request
 export def SymbolSearch(queryArg: string, cmdmods: string)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked()
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('workspaceSymbol')
   if lspserver->empty()
     return
   endif
