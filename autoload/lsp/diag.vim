@@ -638,6 +638,7 @@ def JumpDiag(diag: dict<any>)
   var startPos: dict<number> = diag.range.start
   setcursorcharpos(startPos.line + 1,
 		   util.GetCharIdxWithoutCompChar(bufnr(), startPos) + 1)
+  :normal! zv
   if !opt.lspOptions.showDiagWithVirtualText
     :redraw
     DisplayDiag(diag)

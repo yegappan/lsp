@@ -303,6 +303,7 @@ export def JumpToLspLocation(location: dict<any>, cmdmods: string)
   endif
   setcursorcharpos(range.start.line + 1,
 		   GetCharIdxWithoutCompChar(bufnr(), range.start) + 1)
+  :normal! zv
 enddef
 
 # indexof() function is not present in older Vim 9 versions.  So use this

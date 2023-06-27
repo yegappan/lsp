@@ -237,10 +237,22 @@ def g:Test_LspShowReferences()
   assert_match('XshowRefs', filePopupAttrs.title)
   assert_equal('Symbol References', refPopupAttrs.title)
   assert_equal(10, line('.', ids[0]))
+  assert_equal(1, line('.', ids[1]))
   assert_equal(3, line('$', ids[1]))
   feedkeys("jj\<CR>", 'xt')
   assert_equal(12, line('.'))
   assert_equal([], popup_list())
+  popup_clear()
+
+  # LspShowReferences should start with the current symbol
+  cursor(12, 6)
+  :LspPeekReferences
+  sleep 50m
+  ids = popup_list()
+  assert_equal(2, ids->len())
+  assert_equal(12, line('.', ids[0]))
+  assert_equal(3, line('.', ids[1]))
+  feedkeys("\<CR>", 'xt')
   popup_clear()
 
   bw!

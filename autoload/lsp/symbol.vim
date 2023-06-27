@@ -142,6 +142,7 @@ def JumpToWorkspaceSymbol(cmdmods: string, popupID: number, result: number): voi
     setcursorcharpos(symTbl[result - 1].pos.line + 1,
 		     util.GetCharIdxWithoutCompChar(bufnr(),
 						    symTbl[result - 1].pos) + 1)
+    :normal! zv
   catch
     # ignore exceptions
   endtry
@@ -360,6 +361,9 @@ def PeekLocations(lspserver: dict<any>, locations: list<dict<any>>,
   var w: number = &columns
   var fnamelen = float2nr(w * 0.4)
 
+  var curlnum = line('.')
+  var symIdx = 1
+  var curSymIdx = 1
   var menuItems: list<string> = []
   for loc in locations
     var [uri, range] = util.LspLocationParse(loc)
@@ -373,6 +377,11 @@ def PeekLocations(lspserver: dict<any>, locations: list<dict<any>>,
     var lnum = range.start.line + 1
     var text: string = bnr->getbufline(lnum)->get(0, '')
     menuItems->add($'{lnum}: {text}')
+
+    if lnum == curlnum
+      curSymIdx = symIdx
+    endif
+    symIdx += 1
   endfor
 
   var popupAttrs = {
@@ -391,6 +400,11 @@ def PeekLocations(lspserver: dict<any>, locations: list<dict<any>>,
     callback: function(LocPopupCallback, [lspserver, locations])
   }
   lspserver.peekSymbolPopup = popup_menu(menuItems, popupAttrs)
+  # Select the current symbol in the menu
+  var cmds =<< trim eval END
+    [{curSymIdx}, 1]->cursor()
+  END
+  win_execute(lspserver.peekSymbolPopup, cmds, 'silent!')
   UpdatePeekFilePopup(lspserver, locations)
 enddef
 
@@ -765,8 +779,13 @@ def SymbolMenuItemSelected(symPopupMenu: number,
 
     # Jump to the selected symbol location
     var r = symTblFiltered[result - 1].selectionRange
+    if r->empty()
+      # SymbolInformation doesn't have the selectionRange field
+      r = symTblFiltered[result - 1].range
+    endif
     setcursorcharpos(r.start.line + 1,
-      util.GetCharIdxWithoutCompChar(bufnr(), r.start) + 1)
+		     util.GetCharIdxWithoutCompChar(bufnr(), r.start) + 1)
+    :normal! zv
   endif
   symInputPopup->popup_close()
   prop_remove({type: 'LspSymbolNameProp', all: true})
