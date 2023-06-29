@@ -439,22 +439,27 @@ aleSupport		|Boolean| option. If true, diagnostics will be sent to
 			Ale, instead of being displayed by this plugin.
 			This is useful to combine all LSP and linter
 			diagnostics. By default this is set to false.
+
 						*lsp-opt-autoComplete*
 autoComplete		|Boolean| option. In insert mode, automatically
 			complete the current symbol. Otherwise use
 			omni-completion. By default this is set to true.
+
 						*lsp-opt-autoHighlight*
 autoHighlight		|Boolean| option. In normal mode, automatically
 			highlight all the occurrences of the symbol under the
 			cursor. By default this is set to false.
+
 						*lsp-opt-autoHighlightDiags*
 autoHighlightDiags	|Boolean| option. Automatically place signs on the
 			lines with a diagnostic message from the language
 			server. By default this is set to true.
+
 						*lsp-opt-autoPopulateDiags*
 autoPopulateDiags	|Boolean| option. Automatically populate the location
 			list with diagnostics from the language server.
 			By default this is set to false.
+
 						*lsp-opt-completionMatcher*
 completionMatcher	|String| option.  Enable fuzzy or case insensitive
 			completion for language servers that replies with a
@@ -469,127 +474,163 @@ completionMatcher	|String| option.  Enable fuzzy or case insensitive
 			    case  - case sensitive matching (default).
 			    fuzzy - fuzzy match completion items.
 			    icase - ignore case when matching items.
+
 						*lsp-opt-completionTextEdit*
 completionTextEdit	|Boolean| option.  If true, apply the LSP server
 			supplied text edits after a completion.  If a snippet
 			plugin is going to apply the text edits, then set
 			this to false to avoid applying the text edits twice.
 			By default this is set to true.
+
                                                 *lsp-opt-completionKinds*
 completionKinds		|Dictionary| option. See |lsp-custom-kinds| for all
                         completion kind names.
+
 					*lsp-opt-customCompletionKinds*
 customCompletionKinds   |Boolean| option.  If you set this to true, you can
 			set custom completion kinds using the option
 			completionKinds.
+
 						*lsp-opt-diagSignErrorText*
 diagSignErrorText       |String| option. Change diag sign text for errors
                         By default 'E>'
+
 						*lsp-opt-diagSignHintText*
 diagSignHintText        |String| option. Change diag sign text for hints
                         By default 'H>',
+
 						*lsp-opt-diagSignInfoText*
 diagSignInfoText        |String| option. Change diag sign text for info
                         By default 'I>',
+
 						*lsp-opt-diagSignWarningText*
 diagSignWarningText     |String| option. Change diag sign text for warnings
                         By default 'W>',
+
 						*lsp-opt-diagVirtualTextAlign*
 diagVirtualTextAlign	|String| option.   Alignment of diagnostics messages
 			if |lsp-opt-showDiagWithVirtualText| is set to true.
 			Allowed values are 'above', 'below' or 'after'
 			By default this is set to 'above',
+
 						*lsp-opt-echoSignature*
 echoSignature		|Boolean| option.  In insert mode, echo the current
 			symbol signature instead of showing it in a popup.
 			By default this is set to false.
+
 					*lsp-opt-hideDisabledCodeActions*
 hideDisabledCodeActions |Boolean| option. Hide all the disabled code actions.
 			By default this is set to false.
+
 						*lsp-opt-highlightDiagInline*
 highlightDiagInline	|Boolean| option.  Highlight the diagnostics inline
 			By default this is set to false.
+
 						*lsp-opt-hoverInPreview*
 hoverInPreview		|Boolean| option. Show |:LspHover| in a preview window
 			instead of a popup.
 			By default this is set to false.
+
 						*lsp-opt-ignoreMissingServer*
 ignoreMissingServer	|Boolean| option.  Do not print a missing language
 			server executable.  By default this is set to false.
+
 						*lsp-opt-keepFocusInDiags*
 keepFocusInDiags     	|Boolean| option.  Focus on the location list window
 			after LspDiagShow.
 			By default this is set to true.
+
 					*lsp-opt-keepFocusInReferences*
 keepFocusInReferences	|Boolean| option.  Focus on the location list window
 			after LspShowReferences.
 			By default this is set to true.
+
 						*lsp-opt-noDiagHoverOnLine*
 noDiagHoverOnLine	|Boolean| option.  Suppress diagnostic hover from
 			appearing when the mouse is over the line instead of
 			the signature.
 			By default this is set to true.
+
 					*lsp-opt-noNewlineInCompletion*
 noNewlineInCompletion	|Boolean| option.  Suppress adding a new line on
 			completion selection with <CR>.
 			By default this is set to false.
+
 						*lsp-opt-outlineOnRight*
 outlineOnRight		|Boolean| option.  Open the outline window on the
 			right side, by default this is false.
+
 						*lsp-opt-outlineWinSize*
 outlineWinSize		|Number| option.  The size of the symbol Outline
 			window.  By default this is set to 20.
+
 						*lsp-opt-showDiagInPopup*
 showDiagInPopup		|Boolean| option.  When using the |:LspDiagCurrent|
 			command to display the diagnostic message for the
 			current line, use a popup window to display the
 			message instead of echoing in the status area.
 			By default this is set to true.
+
 						*lsp-opt-showDiagOnStatusLine*
 showDiagOnStatusLine	|Boolean| option.  Show a diagnostic message on a
 			status line.  By default this is set to false.
+
+						*lsp-opt-showDiagWithSign*
+showDiagWithSign	|Boolean| option.  Place a sign on lines with
+			diagnostics.  By default this is set to true.  The
+			"autoHighlightDiags" option should be set to true.
+
 					*lsp-opt-showDiagWithVirtualText*
 showDiagWithVirtualText	|Boolean| option.  Show diagnostic message text from
 			the language server with virtual text.  By default
 			this is set to false.  The "autoHighlightDiags" option
 			should be set to true.
 			Needs Vim version 9.0.1157 or later.
+
 						*lsp-opt-showInlayHints*
 showInlayHints		|Boolean| option.  Show inlay hints from the language
 			server.  By default this is set to false.  The inlay
 			hint text is displayed as a virtual text.  Needs Vim
 			version 9.0.0178 or later.
+
 						*lsp-opt-showSignature*
 showSignature		|Boolean| option.  In insert mode, automatically show
 			the current symbol signature in a popup.
 			By default this is set to true.
+
 						*lsp-opt-snippetSupport*
 snippetSupport		|Boolean| option.  Enable snippet completion support.
 			Need a snippet completion plugin like vim-vsnip.
 			By default this is set to false.
+
 						*lsp-opt-ultisnipsSupport*
 ultisnipsSupport	|Boolean| option.  Enable SirVer/ultisnips support.
 			Need a snippet completion plugin SirVer/ultisnips.
 			By default this is set to false.
+
 						*lsp-opt-vssnipSupport*
 vsnipSupport		|Boolean| option.  Enable hrsh7th/vim-vsnip support.
 			Need snippet completion plugins hrsh7th/vim-vsnip
 			and hrsh7th/vim-vsnip-integ.  Make sure
 			ultisnipsSupport is set to false before enabling this.
 			By default this option is set to false.
+
 						*lsp-opt-usePopupInCodeAction*
 usePopupInCodeAction    |Boolean| option.  When using the |:LspCodeAction|
 			command to display the code action for the current
 			line, use a popup menu instead of echoing.
 			By default this is set to false.
+
 					*lsp-opt-useQuickfixForLocations*
 useQuickfixForLocations	|Boolean| option.  Show |:LspShowReferences| in a
 			quickfix list instead of a location list.
 			By default this is set to false.
+
 						*lsp-opt-useBufferCompletion*
 useBufferCompletion     |Boolean| option. If enabled, the words from the
 			current buffer are added to the auto completion list.
 			By default this is set to false.
+
 						*lsp-opt-bufferCompletionTimeout*
 bufferCompletionTimeout |Number| option. Specifies how long (in milliseconds) 
 			to wait while processing current buffer for 
@@ -1383,6 +1424,18 @@ override them.
 *LspDiagVirtualText*		Used to highlight diagnostic virtual text.
 				By default, linked to the "LineNr" highlight
 				group.
+*LspDiagVirtualTextError*	Used to highlight virtual text for error diags.
+				By default, linked to the "SpellBad" highlight
+				group.
+*LspDiagVirtualTextHint*	Used to highlight virtual text for hint
+				diags.  By default, linked to the "SpellLocal"
+				highlight group.
+*LspDiagVirtualTextInfo*	Used to highlight virtual text for info
+				diags.  By default, linked to the "SpellRare"
+				highlight group.
+*LspDiagVirtualTextWarning*	Used to highlight virtual text for warning
+				diags.  By default, linked to the "SpellCap"
+				highlight group.
 *LspInlayHintsParam*		Used to highlight inlay hints of kind
 				"parameter".  By default, linked to the
 				"Label" highlight group.

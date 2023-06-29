@@ -21,12 +21,14 @@ var diagsMap: dict<dict<any>> = {}
 
 # Initialize the signs and the text property type used for diagnostics.
 export def InitOnce()
-  # Signs used for LSP diagnostics
-  hlset([{name: 'LspDiagLine', default: true, linksto: 'DiffAdd'}])
-  hlset([{name: 'LspDiagSignErrorText', default: true, linksto: 'ErrorMsg'}])
-  hlset([{name: 'LspDiagSignWarningText', default: true, linksto: 'Search'}])
-  hlset([{name: 'LspDiagSignInfoText', default: true, linksto: 'Pmenu'}])
-  hlset([{name: 'LspDiagSignHintText', default: true, linksto: 'Question'}])
+  # Signs and their highlight groups used for LSP diagnostics
+  hlset([
+    {name: 'LspDiagLine', default: true, linksto: 'DiffAdd'},
+    {name: 'LspDiagSignErrorText', default: true, linksto: 'ErrorMsg'},
+    {name: 'LspDiagSignWarningText', default: true, linksto: 'Search'},
+    {name: 'LspDiagSignInfoText', default: true, linksto: 'Pmenu'},
+    {name: 'LspDiagSignHintText', default: true, linksto: 'Question'}
+  ])
   sign_define([
     {
       name: 'LspDiagError',
@@ -54,34 +56,49 @@ export def InitOnce()
     }
   ])
 
-  hlset([{name: 'LspDiagInlineError', default: true, linksto: 'SpellBad'}])
-  hlset([{name: 'LspDiagInlineWarning', default: true, linksto: 'SpellCap'}])
-  hlset([{name: 'LspDiagInlineInfo', default: true, linksto: 'SpellRare'}])
-  hlset([{name: 'LspDiagInlineHint', default: true, linksto: 'SpellLocal'}])
+  # Diag inline highlight groups and text property types
+  hlset([
+    {name: 'LspDiagInlineError', default: true, linksto: 'SpellBad'},
+    {name: 'LspDiagInlineWarning', default: true, linksto: 'SpellCap'},
+    {name: 'LspDiagInlineInfo', default: true, linksto: 'SpellRare'},
+    {name: 'LspDiagInlineHint', default: true, linksto: 'SpellLocal'}
+  ])
 
   var override = &cursorline
       && &cursorlineopt =~ '\<line\>\|\<screenline\>\|\<both\>'
 
   prop_type_add('LspDiagInlineError',
-                      { highlight: 'LspDiagInlineError',
-                        priority: 10,
-                        override: override })
+		{highlight: 'LspDiagInlineError',
+		 priority: 10,
+		 override: override})
   prop_type_add('LspDiagInlineWarning',
-                      { highlight: 'LspDiagInlineWarning',
-                        priority: 9,
-                        override: override })
+		{highlight: 'LspDiagInlineWarning',
+		 priority: 9,
+		 override: override})
   prop_type_add('LspDiagInlineInfo',
-                      { highlight: 'LspDiagInlineInfo',
-                        priority: 8,
-                        override: override })
+		{highlight: 'LspDiagInlineInfo',
+		 priority: 8,
+		 override: override})
   prop_type_add('LspDiagInlineHint',
-                      { highlight: 'LspDiagInlineHint',
-                        priority: 7,
-                        override: override })
+		{highlight: 'LspDiagInlineHint',
+		 priority: 7,
+		 override: override})
 
-  hlset([{name: 'LspDiagVirtualText', default: true, linksto: 'LineNr'}])
-  prop_type_add('LspDiagVirtualText', {highlight: 'LspDiagVirtualText',
-                                       override: true})
+  # Diag virtual text highlight groups and text property types
+  hlset([
+    {name: 'LspDiagVirtualTextError', default: true, linksto: 'SpellBad'},
+    {name: 'LspDiagVirtualTextWarning', default: true, linksto: 'SpellCap'},
+    {name: 'LspDiagVirtualTextInfo', default: true, linksto: 'SpellRare'},
+    {name: 'LspDiagVirtualTextHint', default: true, linksto: 'SpellLocal'},
+  ])
+  prop_type_add('LspDiagVirtualTextError',
+		{highlight: 'LspDiagVirtualTextError', override: true})
+  prop_type_add('LspDiagVirtualTextWarning',
+		{highlight: 'LspDiagVirtualTextWarning', override: true})
+  prop_type_add('LspDiagVirtualTextInfo',
+		{highlight: 'LspDiagVirtualTextInfo', override: true})
+  prop_type_add('LspDiagVirtualTextHint',
+		{highlight: 'LspDiagVirtualTextHint', override: true})
 
   if opt.lspOptions.aleSupport
     autocmd_add([{group: 'LspAleCmds', event: 'User', pattern: 'ALEWantResults', cmd: 'AleHook(g:ale_want_results_buffer)'}])
@@ -128,6 +145,19 @@ def DiagSevToInlineHLName(severity: number): string
   return typeMap[severity - 1]
 enddef
 
+def DiagSevToVirtualTextHLName(severity: number): string
+  var typeMap: list<string> = [
+    'LspDiagVirtualTextError',
+    'LspDiagVirtualTextWarning',
+    'LspDiagVirtualTextInfo',
+    'LspDiagVirtualTextHint'
+  ]
+  if severity > 4
+    return 'LspDiagVirtualTextHint'
+  endif
+  return typeMap[severity - 1]
+enddef
+
 def DiagSevToSymbolText(severity: number): string
   var typeMap: list<string> = [
     opt.lspOptions.diagSignErrorText,
@@ -143,12 +173,17 @@ enddef
 
 # Remove signs and text properties for diagnostics in buffer
 def RemoveDiagVisualsForBuffer(bnr: number)
-  # Remove all the existing diagnostic signs
-  sign_unplace('LSPDiag', {buffer: bnr})
+  if opt.lspOptions.showDiagWithSign
+    # Remove all the existing diagnostic signs
+    sign_unplace('LSPDiag', {buffer: bnr})
+  endif
 
   if opt.lspOptions.showDiagWithVirtualText
     # Remove all the existing virtual text
-    prop_remove({type: 'LspDiagVirtualText', bufnr: bnr, all: true})
+    prop_remove({type: 'LspDiagVirtualTextError', bufnr: bnr, all: true})
+    prop_remove({type: 'LspDiagVirtualTextWarning', bufnr: bnr, all: true})
+    prop_remove({type: 'LspDiagVirtualTextInfo', bufnr: bnr, all: true})
+    prop_remove({type: 'LspDiagVirtualTextHint', bufnr: bnr, all: true})
   endif
 
   if opt.lspOptions.highlightDiagInline
@@ -193,10 +228,11 @@ def DiagsRefresh(bnr: number)
     # TODO: prioritize most important severity if there are multiple diagnostics
     # from the same line
     var lnum = diag.range.start.line + 1
-    signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
-				lnum: lnum,
-				name: DiagSevToSignName(diag.severity),
-				priority: 10 - diag.severity})
+    if opt.lspOptions.showDiagWithSign
+      signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
+		  lnum: lnum, name: DiagSevToSignName(diag.severity),
+		  priority: 10 - diag.severity})
+    endif
 
     try
       if opt.lspOptions.highlightDiagInline
@@ -225,7 +261,7 @@ def DiagsRefresh(bnr: number)
         endif
 
         prop_add(lnum, 0, {bufnr: bnr,
-                           type: 'LspDiagVirtualText',
+			   type: DiagSevToVirtualTextHLName(diag.severity),
                            text: $'{symbol} {diag.message}',
                            text_align: diag_align,
                            text_wrap: diag_wrap,
@@ -237,7 +273,9 @@ def DiagsRefresh(bnr: number)
     endtry
   endfor
 
-  signs->sign_placelist()
+  if opt.lspOptions.showDiagWithSign
+    signs->sign_placelist()
+  endif
 enddef
 
 # Sends diagnostics to Ale

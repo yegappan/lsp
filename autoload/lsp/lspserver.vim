@@ -837,13 +837,14 @@ def SwitchSourceHeader(lspserver: dict<any>)
   param.uri = util.LspFileToUri(@%)
   var reply = lspserver.rpc('textDocument/switchSourceHeader', param)
   if reply->empty() || reply.result->empty()
-    util.WarnMsg('No alternate file found')
+    util.WarnMsg('Source/Header file is not found')
     return
   endif
 
   # process the 'textDocument/switchSourceHeader' reply from the LSP server
   # Result: URI | null
   var fname = util.LspUriToFile(reply.result)
+  # TODO: Add support for cmd modifiers
   if (&modified && !&hidden) || &buftype != ''
     # if the current buffer has unsaved changes and 'hidden' is not set,
     # or if the current buffer is a special buffer, then ask to save changes

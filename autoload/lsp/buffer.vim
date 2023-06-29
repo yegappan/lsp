@@ -4,9 +4,13 @@ vim9script
 
 import './util.vim'
 
-# Buffer number to LSP server map
+# A buffer can have one or more attached language servers.  The
+# "bufnrToServers" Dict contains the list of language servers attached to a
+# buffer. The buffer number is the key for the "bufnrToServers" Dict.  The
+# value is the List of attached language servers.
 var bufnrToServers: dict<list<dict<any>>> = {}
 
+# Add "lspserver" to "bufnrToServers" map for buffer "bnr".
 export def BufLspServerSet(bnr: number, lspserver: dict<any>)
   if !bufnrToServers->has_key(bnr)
     bufnrToServers[bnr] = []
@@ -15,6 +19,7 @@ export def BufLspServerSet(bnr: number, lspserver: dict<any>)
   bufnrToServers[bnr]->add(lspserver)
 enddef
 
+# Remove "lspserver" from "bufnrToServers" map for buffer "bnr".
 export def BufLspServerRemove(bnr: number, lspserver: dict<any>)
   if !bufnrToServers->has_key(bnr)
     return
@@ -70,7 +75,8 @@ export def BufLspServerGet(bnr: number, feature: string = null_string): dict<any
   endif
 
   if !SupportedCheckFns->has_key(feature)
-    # If this happns it is a programming error, and should be fixed in the source code
+    # If this happns it is a programming error, and should be fixed in the
+    # source code
     :throw $'Error: ''{feature}'' is not a valid feature'
   endif
 
