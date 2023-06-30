@@ -523,7 +523,7 @@ hideDisabledCodeActions |Boolean| option. Hide all the disabled code actions.
 			By default this is set to false.
 
 						*lsp-opt-highlightDiagInline*
-highlightDiagInline	|Boolean| option.  Highlight the diagnostics inline
+highlightDiagInline	|Boolean| option.  Highlight the diagnostics inline.
 			By default this is set to false.
 
 						*lsp-opt-hoverInPreview*
@@ -1256,16 +1256,34 @@ display the entire diagnostic message from the language server for the current
 line.
 
 By default, the lines with a diagnostic message have a sign placed on them and
-are highlighted.  You can temporarily disable them for the current Vim session
-using the |:LspDiagHighlightDisable| command and re-enable them using the
-|:LspDiagHighlightEnable| command.
+are highlighted.  You can disable the automatic sign placement by setting the
+"showDiagWithSign" option to v:false.  By default, this option is set to
+v:true.  The line with the diagnostics is highlighted using the "LspDiagLine"
+highlight group.
 
-To disable the automatic placement of signs on the lines with a diagnostic
-message, you can set the 'autoHighlightDiags' option to false: >
+You can also display the diagnostic message as a virtual text near the
+location of the diagnostics by setting the "showDiagWithVirtualText" option to
+v:true.  This needs Vim version 9.0.1157 or later.  By default this option is
+set to v:false.  The position of the virtual text is controlled by the
+"diagVirtualTextAlign" option.  By default, this is set to 'above'.  The other
+supported values are 'below' and 'after'.
+
+The range of text for a diagnostic message can be automatically highlighted by
+setting the "highlightDiagInline" option to v:true.  By default, this option
+is set to v:false.  The text is highlighted using the "LspDiagInlineError" or
+"LspDiagInlineHint" or "LspDiagInlineInfo" or "LspDiagInlineWarning" highlight
+group.
+
+You can temporarily disable the automatic diagnostic highlighting for the
+current Vim session using the |:LspDiagHighlightDisable| command and re-enable
+them using the |:LspDiagHighlightEnable| command.
+
+To disable the automatic highlighting of the diagnostics, you can set the
+'autoHighlightDiags' option to v:false: >
 
 	LspOptionsSet({'autoHighlightDiags': false})
 <
-By default the 'autoHighlightDiags' option is set to true.
+By default the 'autoHighlightDiags' option is set to v:true.
 
 The function lsp#lsp#ErrorCount() function can be used to get the count of the
 diagnostic messages in the current buffer by type.  This function returns a

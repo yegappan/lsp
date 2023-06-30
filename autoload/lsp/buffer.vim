@@ -85,7 +85,7 @@ export def BufLspServerGet(bnr: number, feature: string = null_string): dict<any
   var possibleLSPs: list<dict<any>> = []
 
   for lspserver in bufnrToServers[bnr]
-    if !SupportedCheckFn(lspserver)
+    if !lspserver.ready || !SupportedCheckFn(lspserver)
       continue
     endif
 
