@@ -90,7 +90,8 @@ def LspCompleteItemKindChar(kind: number): string
   var kindName = kindMap[kind]
   var kindValue = defaultKinds[kindName]
 
-  if opt.lspOptions.customCompletionKinds && opt.lspOptions.completionKinds->has_key(kindName)
+  if opt.lspOptions.customCompletionKinds
+      && opt.lspOptions.completionKinds->has_key(kindName)
     kindValue = opt.lspOptions.completionKinds[kindName]
   endif
 
@@ -532,11 +533,11 @@ enddef
 # then set the 'filetype' to "lspgfm".
 def LspSetPopupFileType()
   var item = v:event.completed_item
-  if !item->has_key('user_data') || item.user_data->empty()
+  var cItem = item->get('user_data', {})
+  if cItem->empty()
     return
   endif
 
-  var cItem = item.user_data
   if cItem->type() != v:t_dict || !cItem->has_key('documentation')
 	\ || cItem.documentation->type() != v:t_dict
 	\ || cItem.documentation.kind != 'markdown'
