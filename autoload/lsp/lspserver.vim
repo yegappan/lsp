@@ -964,10 +964,12 @@ def DocHighlightReply(lspserver: dict<any>, docHighlightReply: any,
       propName = 'LspTextRef'
     endif
     try
-      prop_add(docHL.range.start.line + 1,
-                  util.GetLineByteFromPos(bnr, docHL.range.start) + 1,
-                  {end_lnum: docHL.range.end.line + 1,
-                    end_col: util.GetLineByteFromPos(bnr, docHL.range.end) + 1,
+      var docHL_start = docHL.range.start
+      var docHL_end = docHL.range.end
+      prop_add(docHL_start.line + 1,
+                  util.GetLineByteFromPos(bnr, docHL_start) + 1,
+                  {end_lnum: docHL_end.line + 1,
+                    end_col: util.GetLineByteFromPos(bnr, docHL_end) + 1,
                     bufnr: bnr,
                     type: propName})
     catch /E966\|E964/ # Invalid lnum | Invalid col

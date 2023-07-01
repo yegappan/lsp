@@ -14,12 +14,14 @@ import './outline.vim'
 # document symbol search
 export def InitOnce()
   # Use a high priority value to override other highlights in the line
-  hlset([{name: 'LspSymbolName', default: true, linksto: 'Search'}])
+  hlset([
+    {name: 'LspSymbolName', default: true, linksto: 'Search'},
+    {name: 'LspSymbolRange', default: true, linksto: 'Visual'}
+  ])
   prop_type_add('LspSymbolNameProp', {highlight: 'LspSymbolName',
 				       combine: false,
 				       override: true,
 				       priority: 201})
-  hlset([{name: 'LspSymbolRange', default: true, linksto: 'Visual'}])
   prop_type_add('LspSymbolRangeProp', {highlight: 'LspSymbolRange',
 				       combine: false,
 				       override: true,
@@ -307,17 +309,18 @@ def UpdatePeekFilePopup(lspserver: dict<any>, locations: list<dict<any>>)
   }
 
   lspserver.peekSymbolFilePopup = popup_create(bnr, popupAttrs)
+  var rstart = range.start
   var cmds =<< trim eval END
     :setlocal number
-    [{range.start.line + 1}, 1]->cursor()
+    [{rstart.line + 1}, 1]->cursor()
     :normal! z.
   END
   win_execute(lspserver.peekSymbolFilePopup, cmds)
 
   lspserver.peekSymbolFilePopup->clearmatches()
-  var start_col = util.GetLineByteFromPos(bnr, range.start) + 1
+  var start_col = util.GetLineByteFromPos(bnr, rstart) + 1
   var end_col = util.GetLineByteFromPos(bnr, range.end)
-  var pos = [[range.start.line + 1,
+  var pos = [[rstart.line + 1,
 	     start_col, end_col - start_col + 1]]
   matchaddpos('Search', pos, 10, -1, {window: lspserver.peekSymbolFilePopup})
 enddef
@@ -425,10 +428,11 @@ export def ShowLocations(lspserver: dict<any>, locations: list<dict<any>>,
       bnr = fname->bufadd()
     endif
     :silent! bnr->bufload()
-    var text: string = bnr->getbufline(range.start.line + 1)->get(0, '')->trim("\t ", 1)
+    var rstart = range.start
+    var text: string = bnr->getbufline(rstart.line + 1)->get(0, '')->trim("\t ", 1)
     qflist->add({filename: fname,
-			lnum: range.start.line + 1,
-			col: util.GetLineByteFromPos(bnr, range.start) + 1,
+			lnum: rstart.line + 1,
+			col: util.GetLineByteFromPos(bnr, rstart) + 1,
 			text: text})
   endfor
 
@@ -499,13 +503,14 @@ def PeekSymbolLocation(lspserver: dict<any>, location: dict<any>)
   var pos: list<number> = []
   var start_col: number
   var end_col: number
-  start_col = util.GetLineByteFromPos(pwbuf, range.start) + 1
+  var rstart = range.start
+  start_col = util.GetLineByteFromPos(pwbuf, rstart) + 1
   end_col = util.GetLineByteFromPos(pwbuf, range.end) + 1
-  pos->add(range.start.line + 1)
+  pos->add(rstart.line + 1)
   pos->extend([start_col, end_col - start_col])
   matchaddpos('Search', [pos], 10, 101, {window: pwid})
   var cmds =<< trim eval END
-    [{range.start.line + 1}, 1]->cursor()
+    [{rstart.line + 1}, 1]->cursor()
     :normal! z.
   END
   win_execute(pwid, cmds, 'silent!')
@@ -539,8 +544,9 @@ export def TagFunc(lspserver: dict<any>,
     var [uri, range] = util.LspLocationParse(tagloc)
     tagitem.filename = util.LspUriToFile(uri)
     var bnr = util.LspUriToBufnr(uri)
-    var startByteIdx = util.GetLineByteFromPos(bnr, range.start)
-    tagitem.cmd = $"/\\%{range.start.line + 1}l\\%{startByteIdx + 1}c"
+    var rstart = range.start
+    var startByteIdx = util.GetLineByteFromPos(bnr, rstart)
+    tagitem.cmd = $"/\\%{rstart.line + 1}l\\%{startByteIdx + 1}c"
 
     retval->add(tagitem)
   endfor

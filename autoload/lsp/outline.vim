@@ -82,8 +82,9 @@ def AddSymbolText(bnr: number,
     for s in symbols
       text->add(prefix .. s.name)
       # remember the line number for the symbol
-      var start_col: number = util.GetLineByteFromPos(bnr, s.range.start) + 1
-      lnumMap->add({name: s.name, lnum: s.range.start.line + 1,
+      var s_start = s.range.start
+      var start_col: number = util.GetLineByteFromPos(bnr, s_start) + 1
+      lnumMap->add({name: s.name, lnum: s_start.line + 1,
 			col: start_col})
       s.outlineLine = lnumMap->len()
       if s->has_key('children') && !s.children->empty()
@@ -172,11 +173,11 @@ def OutlineHighlightCurrentSymbol()
   var mid: number
   while left <= right
     mid = (left + right) / 2
-    if lnum >= (symbolTable[mid].range.start.line + 1) &&
-		lnum <= (symbolTable[mid].range.end.line + 1)
+    var r = symbolTable[mid].range
+    if lnum >= (r.start.line + 1) && lnum <= (r.end.line + 1)
       break
     endif
-    if lnum > (symbolTable[mid].range.start.line + 1)
+    if lnum > (r.start.line + 1)
       left = mid + 1
     else
       right = mid - 1

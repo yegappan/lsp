@@ -6,12 +6,14 @@ import './util.vim'
 
 # Visually (character-wise) select the text in a range
 def SelectText(bnr: number, range: dict<dict<number>>)
-  var start_col: number = util.GetLineByteFromPos(bnr, range.start) + 1
-  var end_col: number = util.GetLineByteFromPos(bnr, range.end)
+  var rstart = range.start
+  var rend = range.end
+  var start_col: number = util.GetLineByteFromPos(bnr, rstart) + 1
+  var end_col: number = util.GetLineByteFromPos(bnr, rend)
 
   :normal! v"_y
-  setcharpos("'<", [0, range.start.line + 1, start_col, 0])
-  setcharpos("'>", [0, range.end.line + 1, end_col, 0])
+  setcharpos("'<", [0, rstart.line + 1, start_col, 0])
+  setcharpos("'>", [0, rend.line + 1, end_col, 0])
   :normal! gv
 enddef
 
@@ -48,10 +50,12 @@ enddef
 # Returns true if the current visual selection matches a range in the
 # selection reply from LSP.
 def SelectionFromLSP(range: dict<any>, startpos: list<number>, endpos: list<number>): bool
-  return startpos[1] == range.start.line + 1
-			&& endpos[1] == range.end.line + 1
-			&& startpos[2] == range.start.character + 1
-			&& endpos[2] == range.end.character
+  var rstart = range.start
+  var rend = range.end
+  return startpos[1] == rstart.line + 1
+			&& endpos[1] == rend.line + 1
+			&& startpos[2] == rstart.character + 1
+			&& endpos[2] == rend.character
 enddef
 
 # Expand or Shrink the current selection or start a new one.

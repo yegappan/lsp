@@ -9,8 +9,10 @@ import './options.vim' as opt
 # Initialize the highlight group and the text property type used for
 # inlay hints.
 export def InitOnce()
-  hlset([{name: 'LspInlayHintsType', default: true, linksto: 'Label'}])
-  hlset([{name: 'LspInlayHintsParam', default: true, linksto: 'Conceal'}])
+  hlset([
+    {name: 'LspInlayHintsType', default: true, linksto: 'Label'},
+    {name: 'LspInlayHintsParam', default: true, linksto: 'Conceal'}
+  ])
   prop_type_add('LspInlayHintsType', {highlight: 'LspInlayHintsType'})
   prop_type_add('LspInlayHintsParam', {highlight: 'LspInlayHintsParam'})
 enddef

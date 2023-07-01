@@ -301,8 +301,9 @@ export def JumpToLspLocation(location: dict<any>, cmdmods: string)
       exe $'{cmdmods} sbuffer {bnr}'
     endif
   endif
-  setcursorcharpos(range.start.line + 1,
-		   GetCharIdxWithoutCompChar(bufnr(), range.start) + 1)
+  var rstart = range.start
+  setcursorcharpos(rstart.line + 1,
+		   GetCharIdxWithoutCompChar(bufnr(), rstart) + 1)
   :normal! zv
 enddef
 

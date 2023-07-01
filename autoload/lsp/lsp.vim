@@ -31,9 +31,11 @@ var ftypeServerMap: dict<list<dict<any>>> = {}
 var lspInitializedOnce = false
 
 def LspInitOnce()
-  hlset([{name: 'LspTextRef', default: true, linksto: 'Search'}])
-  hlset([{name: 'LspReadRef', default: true, linksto: 'DiffChange'}])
-  hlset([{name: 'LspWriteRef', default: true, linksto: 'DiffDelete'}])
+  hlset([
+    {name: 'LspTextRef', default: true, linksto: 'Search'},
+    {name: 'LspReadRef', default: true, linksto: 'DiffChange'},
+    {name: 'LspWriteRef', default: true, linksto: 'DiffDelete'}
+  ])
 
   var override = &cursorline
       && &cursorlineopt =~ '\<line\>\|\<screenline\>\|\<both\>'

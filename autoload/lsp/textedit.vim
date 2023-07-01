@@ -119,12 +119,15 @@ export def ApplyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   var idx = 0
   for e in text_edits
     # Adjust the start and end columns for multibyte characters
-    start_row = e.range.start.line
-    start_col = util.GetCharIdxWithoutCompChar(bnr, e.range.start)
-    end_row = e.range.end.line
-    end_col = util.GetCharIdxWithoutCompChar(bnr, e.range.end)
-    start_line = [e.range.start.line, start_line]->min()
-    finish_line = [e.range.end.line, finish_line]->max()
+    var r = e.range
+    var rstart: dict<any> = r.start
+    var rend: dict<any> = r.end
+    start_row = rstart.line
+    start_col = util.GetCharIdxWithoutCompChar(bnr, rstart)
+    end_row = rend.line
+    end_col = util.GetCharIdxWithoutCompChar(bnr, rend)
+    start_line = [rstart.line, start_line]->min()
+    finish_line = [rend.line, finish_line]->max()
 
     updated_edits->add({A: [start_row, start_col],
 			B: [end_row, end_col],
@@ -140,7 +143,7 @@ export def ApplyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   var lines: list<string> = bnr->getbufline(start_line + 1, finish_line + 1)
   var fix_eol: bool = bnr->getbufvar('&fixeol')
   var set_eol = fix_eol && bnr->getbufinfo()[0].linecount <= finish_line + 1
-  if set_eol && lines[-1]->len() != 0
+  if !lines->empty() && set_eol && lines[-1]->len() != 0
     lines->add('')
   endif
 
@@ -156,7 +159,7 @@ export def ApplyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   #echomsg $'lines(2) = {string(lines)}'
 
   # If the last line is empty and we need to set EOL, then remove it.
-  if set_eol && lines[-1]->len() == 0
+  if !lines->empty() && set_eol && lines[-1]->len() == 0
     lines->remove(-1)
   endif
 

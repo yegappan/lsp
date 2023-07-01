@@ -108,9 +108,11 @@ enddef
 # Sort diagnostics ascending based on line and character offset
 def SortDiags(diags: list<dict<any>>): list<dict<any>>
   return diags->sort((a, b) => {
-    var linediff = a.range.start.line - b.range.start.line
+    var a_start = a.range.start
+    var b_start = b.range.start
+    var linediff = a_start.line - b_start.line
     if linediff == 0
-      return a.range.start.character - b.range.start.character
+      return a_start.character - b_start.character
     endif
     return linediff
   })
@@ -227,7 +229,9 @@ def DiagsRefresh(bnr: number)
   for diag in diags
     # TODO: prioritize most important severity if there are multiple diagnostics
     # from the same line
-    var lnum = diag.range.start.line + 1
+    var d_start = diag.range.start
+    var d_end = diag.range.end
+    var lnum = d_start.line + 1
     if opt.lspOptions.showDiagWithSign
       signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
 		  lnum: lnum, name: DiagSevToSignName(diag.severity),
@@ -236,12 +240,11 @@ def DiagsRefresh(bnr: number)
 
     try
       if opt.lspOptions.highlightDiagInline
-        prop_add(diag.range.start.line + 1,
-                  util.GetLineByteFromPos(bnr, diag.range.start) + 1,
-                  {end_lnum: diag.range.end.line + 1,
-                    end_col: util.GetLineByteFromPos(bnr, diag.range.end) + 1,
-                    bufnr: bnr,
-                    type: DiagSevToInlineHLName(diag.severity)})
+        prop_add(lnum, util.GetLineByteFromPos(bnr, d_start) + 1,
+                 {end_lnum: d_end.line + 1,
+                  end_col: util.GetLineByteFromPos(bnr, d_end) + 1,
+                  bufnr: bnr,
+                  type: DiagSevToInlineHLName(diag.severity)})
       endif
 
       if opt.lspOptions.showDiagWithVirtualText
@@ -253,10 +256,10 @@ def DiagsRefresh(bnr: number)
           padding = 3
           symbol = DiagSevToSymbolText(diag.severity)
         else
-	  var charIdx = util.GetCharIdxWithoutCompChar(bnr, diag.range.start)
+	  var charIdx = util.GetCharIdxWithoutCompChar(bnr, d_start)
           padding = charIdx
           if padding > 0
-            padding = strdisplaywidth(getline(diag.range.start.line + 1)[ : charIdx - 1])
+            padding = strdisplaywidth(getline(lnum)[ : charIdx - 1])
           endif
         endif
 
@@ -285,14 +288,16 @@ def SendAleDiags(bnr: number, timerid: number)
   endif
 
   # Convert to Ale's diagnostics format (:h ale-loclist-format)
-  ale#other_source#ShowResults(bnr, 'lsp', diagsMap[bnr].sortedDiagnostics->mapnew((_, v) => {
+  ale#other_source#ShowResults(bnr, 'lsp',
+    diagsMap[bnr].sortedDiagnostics->mapnew((_, v) => {
      return {text: v.message,
              lnum: v.range.start.line + 1,
              col: util.GetLineByteFromPos(bnr, v.range.start) + 1,
              end_lnum: v.range.end.line + 1,
              end_col: util.GetLineByteFromPos(bnr, v.range.end) + 1,
              type: "EWIH"[v.severity - 1]}
-  }))
+    })
+  )
 enddef
 
 # Hook called when Ale wants to retrieve new diagnostics
@@ -332,8 +337,9 @@ enddef
 # Notification: textDocument/publishDiagnostics
 # Param: PublishDiagnosticsParams
 export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<dict<any>>): void
-  # Diagnostics are disabled for this server
-  if lspserver.features->has_key('diagnostics') && !lspserver.features.diagnostics
+  # Diagnostics are disabled for this server?
+  var diagSupported = lspserver.features->get('diagnostics', true)
+  if !diagSupported
     return
   endif
 
@@ -366,12 +372,13 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<d
 
   var diagWithinRange: list<dict<any>> = []
   for diag in newDiags
-    if diag.range.start.line + 1 > lastlnum
+    var d_start = diag.range.start
+    if d_start.line + 1 > lastlnum
       # Make sure the line number is a valid buffer line number
-      diag.range.start.line = lastlnum - 1
+      d_start.line = lastlnum - 1
     endif
 
-    var lnum = diag.range.start.line + 1
+    var lnum = d_start.line + 1
     if !diagsByLnum->has_key(lnum)
       diagsByLnum[lnum] = []
     endif
@@ -485,12 +492,14 @@ def DiagsUpdateLocList(bnr: number, calledByCmd: bool = false): bool
 
   var diags = diagsMap[bnr].sortedDiagnostics
   for diag in diags
+    var d_start = diag.range.start
+    var d_end = diag.range.end
     text = diag.message->substitute("\n\\+", "\n", 'g')
     qflist->add({filename: fname,
-		    lnum: diag.range.start.line + 1,
-		    col: util.GetLineByteFromPos(bnr, diag.range.start) + 1,
-		    end_lnum: diag.range.end.line + 1,
-                    end_col: util.GetLineByteFromPos(bnr, diag.range.end) + 1,
+		    lnum: d_start.line + 1,
+		    col: util.GetLineByteFromPos(bnr, d_start) + 1,
+		    end_lnum: d_end.line + 1,
+                    end_col: util.GetLineByteFromPos(bnr, d_end) + 1,
 		    text: text,
 		    type: DiagSevToQfType(diag.severity)})
   endfor
@@ -531,9 +540,10 @@ enddef
 # Display the message of "diag" in a popup window right below the position in
 # the diagnostic message.
 def ShowDiagInPopup(diag: dict<any>)
-  var dlnum = diag.range.start.line + 1
+  var d_start = diag.range.start
+  var dlnum = d_start.line + 1
   var ltext = dlnum->getline()
-  var dlcol = ltext->byteidxcomp(diag.range.start.character) + 1
+  var dlcol = ltext->byteidxcomp(d_start.character) + 1
 
   var lastline = line('$')
   if dlnum > lastline
@@ -622,8 +632,9 @@ export def GetDiagByPos(bnr: number, lnum: number, col: number,
   var diags_in_line = GetDiagsByLine(bnr, lnum)
 
   for diag in diags_in_line
-    var startCharIdx = util.GetCharIdxWithoutCompChar(bnr, diag.range.start)
-    var endCharIdx = util.GetCharIdxWithoutCompChar(bnr, diag.range.end)
+    var r = diag.range
+    var startCharIdx = util.GetCharIdxWithoutCompChar(bnr, r.start)
+    var endCharIdx = util.GetCharIdxWithoutCompChar(bnr, r.end)
     if atPos
       if col >= startCharIdx + 1 && col < endCharIdx + 1
         return diag
@@ -715,8 +726,9 @@ export def LspDiagsJump(which: string, a_count: number = 0): void
   var curcol: number = charcol('.')
   for diag in (which == 'next' || which == 'here') ?
 					diags : diags->copy()->reverse()
-    var lnum = diag.range.start.line + 1
-    var col = util.GetCharIdxWithoutCompChar(bnr, diag.range.start) + 1
+    var d_start = diag.range.start
+    var lnum = d_start.line + 1
+    var col = util.GetCharIdxWithoutCompChar(bnr, d_start) + 1
     if (which == 'next' && (lnum > curlnum || lnum == curlnum && col > curcol))
 	  || (which == 'prev' && (lnum < curlnum || lnum == curlnum
 							&& col < curcol))
