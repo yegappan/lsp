@@ -191,7 +191,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     var d: dict<any> = {}
 
     # TODO: Add proper support for item.textEdit.newText and
-    # item.textEdit.range Keep in mind that item.textEdit.range can start be
+    # item.textEdit.range.  Keep in mind that item.textEdit.range can start
     # way before the typed keyword.
     if item->has_key('textEdit') &&
 	lspOpts.completionMatcherValue != opt.COMPLETIONMATCHER_FUZZY
@@ -202,8 +202,14 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
 	start_charcol = chcol
       endif
       var textEdit = item.textEdit
+      var textEditRange: dict<any> = {}
+      if textEdit->has_key('range')
+	textEditRange = textEdit.range
+      elseif textEdit->has_key('insert')
+	textEditRange = textEdit.insert
+      endif
       var textEditStartCol =
-		util.GetCharIdxWithoutCompChar(bufnr(), textEdit.range.start)
+		util.GetCharIdxWithoutCompChar(bufnr(), textEditRange.start)
       if textEditStartCol != start_charcol
 	var offset = start_charcol - textEditStartCol - 1
 	d.word = textEdit.newText[offset : ]

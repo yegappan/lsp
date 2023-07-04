@@ -323,7 +323,8 @@ export def GetClientCaps(): dict<any>
 	completionItem: {
 	  documentationFormat: ['markdown', 'plaintext'],
 	  resolveSupport: {properties: ['detail', 'documentation']},
-	  snippetSupport: opt.lspOptions.snippetSupport
+	  snippetSupport: opt.lspOptions.snippetSupport,
+	  insertReplaceSupport: false
 	},
 	completionItemKind: {valueSet: range(1, 25)}
       },
