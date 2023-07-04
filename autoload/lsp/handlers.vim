@@ -17,7 +17,8 @@ enddef
 # Notification: textDocument/publishDiagnostics
 # Param: PublishDiagnosticsParams
 def ProcessDiagNotif(lspserver: dict<any>, reply: dict<any>): void
-  diag.DiagNotification(lspserver, reply.params.uri, reply.params.diagnostics)
+  var params = reply.params
+  diag.DiagNotification(lspserver, params.uri, params.diagnostics)
 enddef
 
 # Convert LSP message type to a string
@@ -34,18 +35,19 @@ enddef
 # Notification: window/showMessage
 # Param: ShowMessageParams
 def ProcessShowMsgNotif(lspserver: dict<any>, reply: dict<any>)
-  if reply.params.type >= 4
+  var msgType = reply.params.type
+  if msgType >= 4
     # ignore log messages from the LSP server (too chatty)
     # TODO: Add a configuration to control the message level that will be
     # displayed. Also store these messages and provide a command to display
     # them.
     return
   endif
-  if reply.params.type == 1
+  if msgType == 1
     util.ErrMsg($'Lsp({lspserver.name}) {reply.params.message}')
-  elseif reply.params.type == 2
+  elseif msgType == 2
     util.WarnMsg($'Lsp({lspserver.name}) {reply.params.message}')
-  elseif reply.params.type == 3
+  elseif msgType == 3
     util.InfoMsg($'Lsp({lspserver.name}) {reply.params.message}')
   endif
 enddef
@@ -54,8 +56,9 @@ enddef
 # Notification: window/logMessage
 # Param: LogMessageParams
 def ProcessLogMsgNotif(lspserver: dict<any>, reply: dict<any>)
-  var mtype = LspMsgTypeToString(reply.params.type)
-  lspserver.addMessage(mtype, reply.params.message)
+  var params = reply.params
+  var mtype = LspMsgTypeToString(params.type)
+  lspserver.addMessage(mtype, params.message)
 enddef
 
 # process the log trace notification messages

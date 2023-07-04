@@ -90,9 +90,10 @@ def LspCompleteItemKindChar(kind: number): string
   var kindName = kindMap[kind]
   var kindValue = defaultKinds[kindName]
 
-  if opt.lspOptions.customCompletionKinds
-      && opt.lspOptions.completionKinds->has_key(kindName)
-    kindValue = opt.lspOptions.completionKinds[kindName]
+  var lspOpts = opt.lspOptions
+  if lspOpts.customCompletionKinds &&
+      lspOpts.completionKinds->has_key(kindName)
+    kindValue = lspOpts.completionKinds[kindName]
   endif
 
   return kindValue
@@ -134,7 +135,8 @@ def CompletionFromBuffer(items: list<dict<any>>)
       endif
     endfor
     # Check every 200 lines if timeout is exceeded
-    if timeout > 0 && linenr % 200 == 0 && start->reltime()->reltimefloat() * 1000 > timeout
+    if timeout > 0 && linenr % 200 == 0 &&
+	start->reltime()->reltimefloat() * 1000 > timeout
       break
     endif
     linenr += 1
@@ -162,23 +164,25 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     lspserver.completeItemsIsIncomplete = cItems->get('isIncomplete', false)
   endif
 
+  var lspOpts = opt.lspOptions
+
   # Get the keyword prefix before the current cursor column.
   var chcol = charcol('.')
   var starttext = chcol == 1 ? '' : getline('.')[ : chcol - 2]
   var [prefix, start_idx, end_idx] = starttext->matchstrpos('\k*$')
-  if opt.lspOptions.completionMatcher == 'icase'
+  if lspOpts.completionMatcherValue == opt.COMPLETIONMATCHER_ICASE
     prefix = prefix->tolower()
   endif
 
   var start_col = start_idx + 1
 
-  if opt.lspOptions.ultisnipsSupport
+  if lspOpts.ultisnipsSupport
     snippet.CompletionUltiSnips(prefix, items)
-  elseif opt.lspOptions.vsnipSupport
+  elseif lspOpts.vsnipSupport
     snippet.CompletionVsnip(items)
   endif
 
-  if opt.lspOptions.useBufferCompletion
+  if lspOpts.useBufferCompletion
     CompletionFromBuffer(items)
   endif
 
@@ -186,12 +190,13 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
   for item in items
     var d: dict<any> = {}
 
-    # TODO: Add proper support for item.textEdit.newText and item.textEdit.range
-    # Keep in mind that item.textEdit.range can start be way before the typed
-    # keyword.
-    if item->has_key('textEdit') && opt.lspOptions.completionMatcher != 'fuzzy'
+    # TODO: Add proper support for item.textEdit.newText and
+    # item.textEdit.range Keep in mind that item.textEdit.range can start be
+    # way before the typed keyword.
+    if item->has_key('textEdit') &&
+	lspOpts.completionMatcherValue != opt.COMPLETIONMATCHER_FUZZY
       var start_charcol: number
-      if prefix != ''
+      if !prefix->empty()
 	start_charcol = charidx(starttext, start_idx) + 1
       else
 	start_charcol = chcol
@@ -215,22 +220,22 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
       # snippet completion.  Needs a snippet plugin to expand the snippet.
       # Remove all the snippet placeholders
       d.word = MakeValidWord(d.word)
-    elseif !lspserver.completeItemsIsIncomplete || opt.lspOptions.useBufferCompletion
+    elseif !lspserver.completeItemsIsIncomplete || lspOpts.useBufferCompletion
       # Filter items only when "isIncomplete" is set (otherwise server would
       #   have done the filtering) or when buffer completion is enabled
 
       # plain text completion
-      if prefix != ''
+      if !prefix->empty()
 	# If the completion item text doesn't start with the current (case
 	# ignored) keyword prefix, skip it.
 	var filterText: string = item->get('filterText', d.word)
-	if opt.lspOptions.completionMatcher == 'icase'
+	if lspOpts.completionMatcherValue == opt.COMPLETIONMATCHER_ICASE
 	  if filterText->tolower()->stridx(prefix) != 0
 	    continue
 	  endif
 	# If the completion item text doesn't fuzzy match with the current
 	# keyword prefix, skip it.
-	elseif opt.lspOptions.completionMatcher == 'fuzzy'
+	elseif lspOpts.completionMatcherValue == opt.COMPLETIONMATCHER_FUZZY
 	  if matchfuzzy([filterText], prefix)->empty()
 	    continue
 	  endif
@@ -247,7 +252,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     d.abbr = item.label
     d.dup = 1
 
-    if opt.lspOptions.completionMatcher == 'icase'
+    if lspOpts.completionMatcherValue == opt.COMPLETIONMATCHER_ICASE
       d.icase = 1
     endif
 
@@ -260,18 +265,19 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     if lspserver.completionLazyDoc
       d.info = 'Lazy doc'
     else
-      if item->has_key('detail') && item.detail != ''
+      if item->has_key('detail') && !item.detail->empty()
 	# Solve a issue where if a server send a detail field
 	# with a "\n", on the menu will be everything joined with
 	# a "^@" separating it. (example: clangd)
 	d.menu = item.detail->split("\n")[0]
       endif
       if item->has_key('documentation')
-	if item.documentation->type() == v:t_string && item.documentation != ''
-	  d.info = item.documentation
-	elseif item.documentation->type() == v:t_dict
-	    && item.documentation.value->type() == v:t_string
-	  d.info = item.documentation.value
+	var itemDoc = item.documentation
+	if itemDoc->type() == v:t_string && !itemDoc->empty()
+	  d.info = itemDoc
+	elseif itemDoc->type() == v:t_dict
+	    && itemDoc.value->type() == v:t_string
+	  d.info = itemDoc.value
 	endif
       endif
     endif
@@ -286,13 +292,13 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     completeItems->add(d)
   endfor
 
-  if opt.lspOptions.completionMatcher != 'fuzzy'
+  if lspOpts.completionMatcherValue != opt.COMPLETIONMATCHER_FUZZY
     # Lexographical sort (case-insensitive).
     completeItems->sort((a, b) =>
       a.score == b.score ? 0 : a.score >? b.score ? 1 : -1)
   endif
 
-  if opt.lspOptions.autoComplete && !lspserver.omniCompletePending
+  if lspOpts.autoComplete && !lspserver.omniCompletePending
     if completeItems->empty()
       # no matches
       return
@@ -348,22 +354,23 @@ def ShowCompletionDocumentation(cItem: any)
     if !infoText->empty()
       infoText->extend(['- - -'])
     endif
-    if cItem.documentation->type() == v:t_dict
+    var cItemDoc = cItem.documentation
+    if cItemDoc->type() == v:t_dict
       # MarkupContent
-      if cItem.documentation.kind == 'plaintext'
-	infoText->extend(cItem.documentation.value->split("\n"))
+      if cItemDoc.kind == 'plaintext'
+	infoText->extend(cItemDoc.value->split("\n"))
 	infoKind = 'text'
-      elseif cItem.documentation.kind == 'markdown'
-	infoText->extend(cItem.documentation.value->split("\n"))
+      elseif cItemDoc.kind == 'markdown'
+	infoText->extend(cItemDoc.value->split("\n"))
 	infoKind = 'lspgfm'
       else
-	util.ErrMsg($'Unsupported documentation type ({cItem.documentation.kind})')
+	util.ErrMsg($'Unsupported documentation type ({cItemDoc.kind})')
 	return
       endif
-    elseif cItem.documentation->type() == v:t_string
-      infoText->extend(cItem.documentation->split("\n"))
+    elseif cItemDoc->type() == v:t_string
+      infoText->extend(cItemDoc->split("\n"))
     else
-      util.ErrMsg($'Unsupported documentation ({cItem.documentation->string()})')
+      util.ErrMsg($'Unsupported documentation ({cItemDoc->string()})')
       return
     endif
   endif
@@ -461,12 +468,14 @@ def g:LspOmniFunc(findstart: number, base: string): any
       return res
     endif
 
-    if opt.lspOptions.completionMatcher == 'fuzzy'
+    var lspOpts = opt.lspOptions
+    if lspOpts.completionMatcherValue == opt.COMPLETIONMATCHER_FUZZY
       return res->matchfuzzy(prefix, { key: 'word' })
     endif
 
-    if opt.lspOptions.completionMatcher == 'icase'
-      return res->filter((i, v) => v.word->tolower()->stridx(prefix->tolower()) == 0)
+    if lspOpts.completionMatcherValue == opt.COMPLETIONMATCHER_ICASE
+      return res->filter((i, v) =>
+	v.word->tolower()->stridx(prefix->tolower()) == 0)
     endif
 
     return res->filter((i, v) => v.word->stridx(prefix) == 0)
@@ -595,7 +604,8 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
     else
       setbufvar(bnr, '&completeopt', 'menuone,popup,noinsert,noselect')
     endif
-    setbufvar(bnr, '&completepopup', 'width:80,highlight:Pmenu,align:item,border:off')
+    setbufvar(bnr, '&completepopup',
+	      'width:80,highlight:Pmenu,align:item,border:off')
     # <Enter> in insert mode stops completion and inserts a <Enter>
     if !opt.lspOptions.noNewlineInCompletion
       :inoremap <expr> <buffer> <CR> pumvisible() ? "\<C-Y>\<CR>" : "\<CR>"

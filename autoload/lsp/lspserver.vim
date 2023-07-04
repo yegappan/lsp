@@ -292,11 +292,12 @@ enddef
 
 # create a LSP server request message
 def CreateRequest(lspserver: dict<any>, method: string): dict<any>
-  var req = {}
-  req.jsonrpc = '2.0'
-  req.id = lspserver.nextReqID()
-  req.method = method
-  req.params = {}
+  var req = {
+    jsonrpc: '2.0',
+    id: lspserver.nextReqID(),
+    method: method,
+    params: {}
+  }
 
   # Save the request, so that the corresponding response can be processed
   lspserver.requests->extend({[req.id->string()]: req})
@@ -306,19 +307,20 @@ enddef
 
 # create a LSP server response message
 def CreateResponse(lspserver: dict<any>, req_id: number): dict<any>
-  var resp = {}
-  resp.jsonrpc = '2.0'
-  resp.id = req_id
-
+  var resp = {
+    jsonrpc: '2.0',
+    id: req_id
+  }
   return resp
 enddef
 
 # create a LSP server notification message
 def CreateNotification(lspserver: dict<any>, notif: string): dict<any>
-  var req = {}
-  req.jsonrpc = '2.0'
-  req.method = notif
-  req.params = {}
+  var req = {
+    jsonrpc: '2.0',
+    method: notif,
+    params: {}
+  }
 
   return req
 enddef
@@ -537,12 +539,14 @@ enddef
 def TextdocDidOpen(lspserver: dict<any>, bnr: number, ftype: string): void
   # Notification: 'textDocument/didOpen'
   # Params: DidOpenTextDocumentParams
-  var tdi = {}
-  tdi.uri = util.LspBufnrToUri(bnr)
-  tdi.languageId = ftype
-  tdi.version = 1
-  tdi.text = bnr->getbufline(1, '$')->join("\n") .. "\n"
-  var params = {textDocument: tdi}
+  var params = {
+    textDocument: {
+      uri: util.LspBufnrToUri(bnr),
+      languageId: ftype,
+      version: 1,
+      text: bnr->getbufline(1, '$')->join("\n") .. "\n"
+    }
+  }
   lspserver.sendNotification('textDocument/didOpen', params)
 enddef
 
@@ -550,9 +554,11 @@ enddef
 def TextdocDidClose(lspserver: dict<any>, bnr: number): void
   # Notification: 'textDocument/didClose'
   # Params: DidCloseTextDocumentParams
-  var tdid = {}
-  tdid.uri = util.LspBufnrToUri(bnr)
-  var params = {textDocument: tdid}
+  var params = {
+    textDocument: {
+      uri: util.LspBufnrToUri(bnr)
+    }
+  }
   lspserver.sendNotification('textDocument/didClose', params)
 enddef
 
@@ -563,10 +569,6 @@ def TextdocDidChange(lspserver: dict<any>, bnr: number, start: number,
 			changes: list<dict<number>>): void
   # Notification: 'textDocument/didChange'
   # Params: DidChangeTextDocumentParams
-  var vtdid: dict<any> = {}
-  vtdid.uri = util.LspBufnrToUri(bnr)
-  # Use Vim 'changedtick' as the LSP document version number
-  vtdid.version = bnr->getbufvar('changedtick')
 
   var changeset: list<dict<any>>
 
@@ -607,7 +609,14 @@ def TextdocDidChange(lspserver: dict<any>, bnr: number, start: number,
   # endfor
 
   changeset->add({text: bnr->getbufline(1, '$')->join("\n") .. "\n"})
-  var params = {textDocument: vtdid, contentChanges: changeset}
+  var params = {
+    textDocument: {
+      uri: util.LspBufnrToUri(bnr),
+      # Use Vim 'changedtick' as the LSP document version number
+      version: bnr->getbufvar('changedtick')
+    },
+    contentChanges: changeset
+  }
   lspserver.sendNotification('textDocument/didChange', params)
 enddef
 
@@ -833,8 +842,9 @@ enddef
 # Param: TextDocumentIdentifier
 # Clangd specific extension
 def SwitchSourceHeader(lspserver: dict<any>)
-  var param = {}
-  param.uri = util.LspFileToUri(@%)
+  var param = {
+    uri: util.LspFileToUri(@%)
+  }
   var reply = lspserver.rpc('textDocument/switchSourceHeader', param)
   if reply->empty() || reply.result->empty()
     util.WarnMsg('Source/Header file is not found')
@@ -964,8 +974,9 @@ def DocHighlightReply(lspserver: dict<any>, docHighlightReply: any,
       propName = 'LspTextRef'
     endif
     try
-      var docHL_start = docHL.range.start
-      var docHL_end = docHL.range.end
+      var docHL_range = docHL.range
+      var docHL_start = docHL_range.start
+      var docHL_end = docHL_range.end
       prop_add(docHL_start.line + 1,
                   util.GetLineByteFromPos(bnr, docHL_start) + 1,
                   {end_lnum: docHL_end.line + 1,
@@ -1041,13 +1052,16 @@ def TextDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
   # interface DocumentFormattingParams
   #   interface TextDocumentIdentifier
   #   interface FormattingOptions
-  var param = {}
-  param.textDocument = {uri: util.LspFileToUri(fname)}
   var fmtopts: dict<any> = {
     tabSize: shiftwidth(),
     insertSpaces: &expandtab ? true : false,
   }
-  param.options = fmtopts
+  var param = {
+    textDocument: {
+      uri: util.LspFileToUri(fname)
+    },
+    options: fmtopts
+  }
 
   if rangeFormat
     var r: dict<dict<number>> = {
@@ -1124,11 +1138,12 @@ def IncomingCalls(lspserver: dict<any>, fname: string)
   callhier.IncomingCalls(lspserver)
 enddef
 
-def GetIncomingCalls(lspserver: dict<any>, item: dict<any>): any
+def GetIncomingCalls(lspserver: dict<any>, item_arg: dict<any>): any
   # Request: "callHierarchy/incomingCalls"
   # Param: CallHierarchyIncomingCallsParams
-  var param = {}
-  param.item = item
+  var param = {
+    item: item_arg
+  }
   var reply = lspserver.rpc('callHierarchy/incomingCalls', param)
   if reply->empty()
     return null
@@ -1136,7 +1151,7 @@ def GetIncomingCalls(lspserver: dict<any>, item: dict<any>): any
 
   if lspserver.needOffsetEncoding
     # Decode the position encoding in all the incoming call locations
-    var bnr = util.LspUriToBufnr(item.uri)
+    var bnr = util.LspUriToBufnr(item_arg.uri)
     reply.result->map((_, hierItem) => {
       lspserver.decodeRange(bnr, hierItem.from.range)
       return hierItem
@@ -1157,11 +1172,12 @@ def OutgoingCalls(lspserver: dict<any>, fname: string)
   callhier.OutgoingCalls(lspserver)
 enddef
 
-def GetOutgoingCalls(lspserver: dict<any>, item: dict<any>): any
+def GetOutgoingCalls(lspserver: dict<any>, item_arg: dict<any>): any
   # Request: "callHierarchy/outgoingCalls"
   # Param: CallHierarchyOutgoingCallsParams
-  var param = {}
-  param.item = item
+  var param = {
+    item: item_arg
+  }
   var reply = lspserver.rpc('callHierarchy/outgoingCalls', param)
   if reply->empty()
     return null
@@ -1169,7 +1185,7 @@ def GetOutgoingCalls(lspserver: dict<any>, item: dict<any>): any
 
   if lspserver.needOffsetEncoding
     # Decode the position encoding in all the outgoing call locations
-    var bnr = util.LspUriToBufnr(item.uri)
+    var bnr = util.LspUriToBufnr(item_arg.uri)
     reply.result->map((_, hierItem) => {
       lspserver.decodeRange(bnr, hierItem.to.range)
       return hierItem
@@ -1460,8 +1476,9 @@ def WorkspaceQuerySymbols(lspserver: dict<any>, query: string, firstCall: bool, 
   endif
 
   # Param: WorkspaceSymbolParams
-  var param = {}
-  param.query = query
+  var param = {
+    query: query
+  }
   var reply = lspserver.rpc('workspace/symbol', param)
   if reply->empty() || reply.result->empty()
     util.WarnMsg($'Symbol "{query}" is not found')
@@ -1560,10 +1577,12 @@ def SelectionRange(lspserver: dict<any>, fname: string)
 
   # interface SelectionRangeParams
   # interface TextDocumentIdentifier
-  var param = {}
-  param.textDocument = {}
-  param.textDocument.uri = util.LspFileToUri(fname)
-  param.positions = [lspserver.getPosition(false)]
+  var param = {
+    textDocument: {
+      uri: util.LspFileToUri(fname)
+    },
+    positions: [lspserver.getPosition(false)]
+  }
   var reply = lspserver.rpc('textDocument/selectionRange', param)
 
   if reply->empty() || reply.result->empty()

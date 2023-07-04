@@ -101,7 +101,14 @@ export def InitOnce()
 		{highlight: 'LspDiagVirtualTextHint', override: true})
 
   if opt.lspOptions.aleSupport
-    autocmd_add([{group: 'LspAleCmds', event: 'User', pattern: 'ALEWantResults', cmd: 'AleHook(g:ale_want_results_buffer)'}])
+    autocmd_add([
+      {
+	group: 'LspAleCmds',
+	event: 'User',
+	pattern: 'ALEWantResults',
+	cmd: 'AleHook(g:ale_want_results_buffer)'
+      }
+    ])
   endif
 enddef
 
@@ -161,26 +168,28 @@ def DiagSevToVirtualTextHLName(severity: number): string
 enddef
 
 def DiagSevToSymbolText(severity: number): string
+  var lspOpts = opt.lspOptions
   var typeMap: list<string> = [
-    opt.lspOptions.diagSignErrorText,
-    opt.lspOptions.diagSignWarningText,
-    opt.lspOptions.diagSignInfoText,
-    opt.lspOptions.diagSignHintText
+    lspOpts.diagSignErrorText,
+    lspOpts.diagSignWarningText,
+    lspOpts.diagSignInfoText,
+    lspOpts.diagSignHintText
   ]
   if severity > 4
-    return opt.lspOptions.diagSignHintText
+    return lspOpts.diagSignHintText
   endif
   return typeMap[severity - 1]
 enddef
 
 # Remove signs and text properties for diagnostics in buffer
 def RemoveDiagVisualsForBuffer(bnr: number)
-  if opt.lspOptions.showDiagWithSign
+  var lspOpts = opt.lspOptions
+  if lspOpts.showDiagWithSign
     # Remove all the existing diagnostic signs
     sign_unplace('LSPDiag', {buffer: bnr})
   endif
 
-  if opt.lspOptions.showDiagWithVirtualText
+  if lspOpts.showDiagWithVirtualText
     # Remove all the existing virtual text
     prop_remove({type: 'LspDiagVirtualTextError', bufnr: bnr, all: true})
     prop_remove({type: 'LspDiagVirtualTextWarning', bufnr: bnr, all: true})
@@ -188,7 +197,7 @@ def RemoveDiagVisualsForBuffer(bnr: number)
     prop_remove({type: 'LspDiagVirtualTextHint', bufnr: bnr, all: true})
   endif
 
-  if opt.lspOptions.highlightDiagInline
+  if lspOpts.highlightDiagInline
     # Remove all the existing virtual text
     prop_remove({type: 'LspDiagInlineError', bufnr: bnr, all: true})
     prop_remove({type: 'LspDiagInlineWarning', bufnr: bnr, all: true})
@@ -213,12 +222,13 @@ def DiagsRefresh(bnr: number)
   var diag_align: string = 'above'
   var diag_wrap: string = 'truncate'
   var diag_symbol: string = '┌─'
+  var lspOpts = opt.lspOptions
 
-  if opt.lspOptions.diagVirtualTextAlign == 'below'
+  if lspOpts.diagVirtualTextAlign == 'below'
     diag_align = 'below'
     diag_wrap = 'truncate'
     diag_symbol = '└─'
-  elseif opt.lspOptions.diagVirtualTextAlign == 'after'
+  elseif lspOpts.diagVirtualTextAlign == 'after'
     diag_align = 'after'
     diag_wrap = 'wrap'
     diag_symbol = 'E>'
@@ -227,19 +237,20 @@ def DiagsRefresh(bnr: number)
   var signs: list<dict<any>> = []
   var diags: list<dict<any>> = diagsMap[bnr].sortedDiagnostics
   for diag in diags
-    # TODO: prioritize most important severity if there are multiple diagnostics
-    # from the same line
-    var d_start = diag.range.start
-    var d_end = diag.range.end
+    # TODO: prioritize most important severity if there are multiple
+    # diagnostics from the same line
+    var d_range = diag.range
+    var d_start = d_range.start
+    var d_end = d_range.end
     var lnum = d_start.line + 1
-    if opt.lspOptions.showDiagWithSign
+    if lspOpts.showDiagWithSign
       signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
 		  lnum: lnum, name: DiagSevToSignName(diag.severity),
 		  priority: 10 - diag.severity})
     endif
 
     try
-      if opt.lspOptions.highlightDiagInline
+      if lspOpts.highlightDiagInline
         prop_add(lnum, util.GetLineByteFromPos(bnr, d_start) + 1,
                  {end_lnum: d_end.line + 1,
                   end_col: util.GetLineByteFromPos(bnr, d_end) + 1,
@@ -247,7 +258,7 @@ def DiagsRefresh(bnr: number)
                   type: DiagSevToInlineHLName(diag.severity)})
       endif
 
-      if opt.lspOptions.showDiagWithVirtualText
+      if lspOpts.showDiagWithVirtualText
 
         var padding: number
         var symbol: string = diag_symbol
@@ -271,12 +282,12 @@ def DiagsRefresh(bnr: number)
                            text_padding_left: padding})
       endif
     catch /E966\|E964/ # Invalid lnum | Invalid col
-      # Diagnostics arrive asynchronous and the document changed while they wore
-      # send. Ignore this as new once will arrive shortly.
+      # Diagnostics arrive asynchronous and the document changed while they
+      # wore send. Ignore this as new once will arrive shortly.
     endtry
   endfor
 
-  if opt.lspOptions.showDiagWithSign
+  if lspOpts.showDiagWithSign
     signs->sign_placelist()
   endif
 enddef
@@ -311,10 +322,11 @@ enddef
 export def ProcessNewDiags(bnr: number)
   DiagsUpdateLocList(bnr)
 
-  if opt.lspOptions.aleSupport
+  var lspOpts = opt.lspOptions
+  if lspOpts.aleSupport
     SendAleDiags(bnr, -1)
     return
-  elseif !opt.lspOptions.autoHighlightDiags
+  elseif !lspOpts.autoHighlightDiags
     return
   endif
 
@@ -492,8 +504,9 @@ def DiagsUpdateLocList(bnr: number, calledByCmd: bool = false): bool
 
   var diags = diagsMap[bnr].sortedDiagnostics
   for diag in diags
-    var d_start = diag.range.start
-    var d_end = diag.range.end
+    var d_range = diag.range
+    var d_start = d_range.start
+    var d_end = d_range.end
     text = diag.message->substitute("\n\\+", "\n", 'g')
     qflist->add({filename: fname,
 		    lnum: d_start.line + 1,
