@@ -16,7 +16,7 @@ endtry
 
 b:lsp_syntax = document.syntax
 md.list_pattern->setbufvar(bnr, '&formatlistpat')
-var settings = 'encoding=utf-8 linebreak breakindent breakindentopt=list:-1'
+var settings = 'linebreak breakindent breakindentopt=list:-1'
 win_execute(popup_id, $'setlocal {settings}')
 popup_id->popup_settext(document.content)
 
