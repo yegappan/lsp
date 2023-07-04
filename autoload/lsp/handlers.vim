@@ -70,16 +70,16 @@ enddef
 
 # process unsupported notification messages
 def ProcessUnsupportedNotif(lspserver: dict<any>, reply: dict<any>)
-  util.ErrMsg($'Unsupported notification message received from the LSP server ({lspserver.path}), message = {reply->string()}')
+  util.WarnMsg($'Unsupported notification message received from the LSP server ({lspserver.name}), message = {reply->string()}')
 enddef
 
-# per-filetype private map inside to record if ntf once or not
-var ftypeNtfOnceMap: dict<bool> = {}
-# process unsupported notification messages but only notify once
+# Dict to process telemetry notification messages only once per filetype
+var telemetryProcessed: dict<bool> = {}
+# process unsupported notification messages only once
 def ProcessUnsupportedNotifOnce(lspserver: dict<any>, reply: dict<any>)
-  if !ftypeNtfOnceMap->get(&ft, v:false)
-	ProcessUnsupportedNotif(lspserver, reply)
-	ftypeNtfOnceMap->extend({[&ft]: v:true})
+  if !telemetryProcessed->get(&ft, false)
+    ProcessUnsupportedNotif(lspserver, reply)
+    telemetryProcessed->extend({[&ft]: true})
   endif
 enddef
 
@@ -112,7 +112,11 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       '$/typescriptVersion',
       # Dart language server sends the '$/analyzerStatus' notification which
       # is not in the LSP specification.
-      '$/analyzerStatus'
+      '$/analyzerStatus',
+      # pyright language server notifications
+      'pyright/beginProgress',
+      'pyright/reportProgress',
+      'pyright/endProgress'
     ]
 
   if lsp_notif_handlers->has_key(reply.method)
@@ -120,7 +124,7 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
   elseif lspserver.customNotificationHandlers->has_key(reply.method)
     lspserver.customNotificationHandlers[reply.method](lspserver, reply)
   elseif lsp_ignored_notif_handlers->index(reply.method) == -1
-    util.ErrMsg($'Unsupported notification received from LSP server {reply->string()}')
+    ProcessUnsupportedNotif(lspserver, reply)
   endif
 enddef
 
@@ -220,7 +224,7 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
   elseif lspserver.customRequestHandlers->has_key(request.method)
     lspserver.customRequestHandlers[request.method](lspserver, request)
   elseif lspIgnoredRequestHandlers->index(request.method) == -1
-    util.ErrMsg($'Unsupported request message received from the LSP server ({lspserver.path}), message = {request->string()}')
+    util.ErrMsg($'Unsupported request message received from the LSP server ({lspserver.name}), message = {request->string()}')
   endif
 enddef
 

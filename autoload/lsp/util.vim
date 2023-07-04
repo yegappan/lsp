@@ -210,7 +210,7 @@ export def GetCharIdxWithoutCompChar(bnr: number, pos: dict<number>): number
       # Byte index points to the byte after the last byte.
       return ltext->strcharlen()
     else
-      return ltext->charidx(byteIdx, v:false)
+      return ltext->charidx(byteIdx, false)
     endif
   endif
 
@@ -235,7 +235,7 @@ export def GetCharIdxWithCompChar(ltext: string, charIdx: number): number
     if byteIdx == ltext->strlen()
       return ltext->strchars()
     else
-      return ltext->charidx(byteIdx, v:true)
+      return ltext->charidx(byteIdx, true)
     endif
   endif
 

@@ -595,7 +595,7 @@ export def AddServer(serverList: list<dict<any>>)
       continue
     endif
     # Enable omni-completion by default
-    server.omnicompl = get(server, 'omnicompl', v:true)
+    server.omnicompl = server->get('omnicompl', true)
 
     if !server.path->executable()
       if !opt.lspOptions.ignoreMissingServer
@@ -654,7 +654,7 @@ export def AddServer(serverList: list<dict<any>>)
     endif
 
     if !server->has_key('syncInit')
-      server.syncInit = v:false
+      server.syncInit = false
     endif
 
     if !server->has_key('name') || server.name->type() != v:t_string
