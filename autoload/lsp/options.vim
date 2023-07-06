@@ -91,6 +91,8 @@ export const COMPLETIONMATCHER_CASE = 1
 export const COMPLETIONMATCHER_ICASE = 2
 export const COMPLETIONMATCHER_FUZZY = 3
 
+lspOptions.completionMatcherValue = COMPLETIONMATCHER_CASE
+
 # set the LSP plugin options from the user provided option values
 export def OptionsSet(opts: dict<any>)
   lspOptions->extend(opts)
@@ -103,11 +105,12 @@ export def OptionsSet(opts: dict<any>)
 
   # For faster comparison, convert the 'completionMatcher' option value from a
   # string to a number.
-  lspOptions.completionMatcherValue = COMPLETIONMATCHER_CASE
   if lspOptions.completionMatcher == 'icase'
     lspOptions.completionMatcherValue = COMPLETIONMATCHER_ICASE
   elseif lspOptions.completionMatcher == 'fuzzy'
     lspOptions.completionMatcherValue = COMPLETIONMATCHER_FUZZY
+  else
+    lspOptions.completionMatcherValue = COMPLETIONMATCHER_CASE
   endif
 enddef
 
