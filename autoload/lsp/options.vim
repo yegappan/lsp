@@ -1,5 +1,9 @@
 vim9script
 
+export const COMPLETIONMATCHER_CASE = 1
+export const COMPLETIONMATCHER_ICASE = 2
+export const COMPLETIONMATCHER_FUZZY = 3
+
 # LSP plugin options
 # User can override these by calling the OptionsSet() function.
 export var lspOptions: dict<any> = {
@@ -19,6 +23,9 @@ export var lspOptions: dict<any> = {
   # icase | fuzzy | case match for language servers that replies with a full
   # list of completion items
   completionMatcher: 'case',
+  # Due to a bug in the earlier versions of Vim, cannot use the
+  # COMPLETIONMATCHER_CASE constant here for initialization.
+  completionMatcherValue: 1,
   # diagnostics signs options
   diagSignErrorText: 'E>',
   diagSignHintText: 'H>',
@@ -86,12 +93,6 @@ export var lspOptions: dict<any> = {
   # A dictionary with all completion kinds that you want to customize
   completionKinds: {}
 }
-
-export const COMPLETIONMATCHER_CASE = 1
-export const COMPLETIONMATCHER_ICASE = 2
-export const COMPLETIONMATCHER_FUZZY = 3
-
-lspOptions.completionMatcherValue = COMPLETIONMATCHER_CASE
 
 # set the LSP plugin options from the user provided option values
 export def OptionsSet(opts: dict<any>)
