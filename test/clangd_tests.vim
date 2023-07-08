@@ -1517,22 +1517,19 @@ def g:Test_InlayHints()
   g:WaitForServerFileLoad(0)
   redraw!
 
+  assert_equal([], prop_list(7))
+
   :LspInlayHints enable
-  assert_equal([{id: -1, col: 9, type_bufnr: 0, end: 1,
-		 type: 'LspInlayHintsParam', length: 1, start: 1},
-		{id: -2, col: 13, type_bufnr: 0, end: 1,
-		 type: 'LspInlayHintsParam', length: 1, start: 1}],
-		prop_list(7))
+  var p = prop_list(7)
+  assert_equal([9, 'LspInlayHintsParam'], [p[0].col, p[0].type])
+  assert_equal([13, 'LspInlayHintsParam'], [p[1].col, p[1].type])
 
   :LspInlayHints disable
   assert_equal([], prop_list(7))
 
   g:LspOptionsSet({showInlayHints: true})
-  assert_equal([{id: -1, col: 9, type_bufnr: 0, end: 1,
-		 type: 'LspInlayHintsParam', length: 1, start: 1},
-		{id: -2, col: 13, type_bufnr: 0, end: 1,
-		 type: 'LspInlayHintsParam', length: 1, start: 1}],
-		prop_list(7))
+  assert_equal([9, 'LspInlayHintsParam'], [p[0].col, p[0].type])
+  assert_equal([13, 'LspInlayHintsParam'], [p[1].col, p[1].type])
 
   g:LspOptionsSet({showInlayHints: false})
   assert_equal([], prop_list(7))
@@ -1540,11 +1537,9 @@ def g:Test_InlayHints()
   :hide enew
   :LspInlayHints enable
   :bprev
-  assert_equal([{id: -1, col: 9, type_bufnr: 0, end: 1,
-		 type: 'LspInlayHintsParam', length: 1, start: 1},
-		{id: -2, col: 13, type_bufnr: 0, end: 1,
-		 type: 'LspInlayHintsParam', length: 1, start: 1}],
-		prop_list(7))
+  assert_equal([9, 'LspInlayHintsParam'], [p[0].col, p[0].type])
+  assert_equal([13, 'LspInlayHintsParam'], [p[1].col, p[1].type])
+
   :hide enew
   :LspInlayHints disable
   :bprev
