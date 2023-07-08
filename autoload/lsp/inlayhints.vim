@@ -158,6 +158,14 @@ export def BufferInit(lspserver: dict<any>, bnr: number)
 		group: 'LspInlayHints',
 		cmd: $'LspInlayHintsUpdateStop({bnr})'})
 
+  # Inlay hints maybe a bit delayed if it was a sync init lsp server.
+  if lspserver.syncInit
+    acmds->add({bufnr: bnr,
+		  event: ['User'],
+		  group: 'LspAttached',
+		  cmd: $'LspInlayHintsChanged({bnr})'})
+  endif
+
   autocmd_add(acmds)
 enddef
 
