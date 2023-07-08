@@ -113,6 +113,11 @@ export def OptionsSet(opts: dict<any>)
   else
     lspOptions.completionMatcherValue = COMPLETIONMATCHER_CASE
   endif
+
+  # Apply the changed options
+  if exists('#LspOptionsChanged#User')
+    :doautocmd <nomodeline> LspOptionsChanged User
+  endif
 enddef
 
 # return a copy of the LSP plugin options

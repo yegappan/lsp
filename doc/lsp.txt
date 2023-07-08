@@ -107,6 +107,7 @@ The following commands are provided:
 			in a popup window.
 :LspIncomingCalls	Display the list of symbols calling the current symbol
 			in a window.
+:LspInlayHints		Enable or disable inlay hints.
 :LspOutgoingCalls	Display the list of symbols called by the current
 			symbol in a window.
 :LspOutline		Show the list of symbols defined in the current file
@@ -870,6 +871,13 @@ can map these commands to keys and make it easier to invoke them.
 			under the cursor in a window.  See
 			|lsp-call-hierarchy| for more information.  Note that
 			not all the language servers support this feature.
+
+						*:LspInlayHints*
+:LspInlayHints		Enable or disable inlay hints.  Supports the "enable"
+			and "disable" arguments.  When "enable" is specified,
+			enables the inlay hints for all the buffers with a
+			language server that supports inlay hints.  When
+			"disable" is specified, disables the inlay hints.
 
 						*:LspOutoingCalls*
 :LspOutoingCalls	Display a hierarchy of symbols called by the symbol

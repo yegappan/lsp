@@ -15,28 +15,32 @@ export def InitOnce()
   ])
   prop_type_add('LspInlayHintsType', {highlight: 'LspInlayHintsType'})
   prop_type_add('LspInlayHintsParam', {highlight: 'LspInlayHintsParam'})
+
+  autocmd_add([{group: 'LspOptionsChanged',
+	        event: 'User',
+		pattern: '*',
+		cmd: 'LspInlayHintsOptionsChanged()'}])
 enddef
 
 # Clear all the inlay hints text properties in the current buffer
-def InlayHintsClear(lspserver: dict<any>)
-  prop_remove({type: 'LspInlayHintsType', bufnr: bufnr('%'), all: true})
-  prop_remove({type: 'LspInlayHintsParam', bufnr: bufnr('%'), all: true})
+def InlayHintsClear(bnr: number)
+  prop_remove({type: 'LspInlayHintsType', bufnr: bnr, all: true})
+  prop_remove({type: 'LspInlayHintsParam', bufnr: bnr, all: true})
 enddef
 
 # LSP inlay hints reply message handler
-export def InlayHintsReply(lspserver: dict<any>, inlayHints: any)
+export def InlayHintsReply(lspserver: dict<any>, bnr: number, inlayHints: any)
   if inlayHints->empty()
     return
   endif
 
-  InlayHintsClear(lspserver)
+  InlayHintsClear(bnr)
 
   if mode() != 'n'
     # Update inlay hints only in normal mode
     return
   endif
 
-  var bnr = bufnr('%')
   for hint in inlayHints
     var label = ''
     if hint.label->type() == v:t_list
@@ -65,56 +69,61 @@ export def InlayHintsReply(lspserver: dict<any>, inlayHints: any)
 enddef
 
 # Timer callback to display the inlay hints.
-def InlayHintsCallback(lspserver: dict<any>, timerid: number)
-  lspserver.inlayHintsShow()
-  b:LspInlayHintsNeedsUpdate = false
+def InlayHintsTimerCb(lspserver: dict<any>, bnr: number, timerid: number)
+  lspserver.inlayHintsShow(bnr)
+  setbufvar(bnr, 'LspInlayHintsNeedsUpdate', false)
 enddef
 
 # Update all the inlay hints.  A timer is used to throttle the updates.
-def LspInlayHintsUpdate()
-  if !get(b:, 'LspInlayHintsNeedsUpdate', true)
+def LspInlayHintsUpdate(bnr: number)
+  if !getbufvar(bnr, 'LspInlayHintsNeedsUpdate', true)
     return
   endif
 
-  var timerid = get(b:, 'LspInlayHintsTimer', -1)
+  var timerid = getbufvar(bnr, 'LspInlayHintsTimer', -1)
   if timerid != -1
     timerid->timer_stop()
-    b:LspInlayHintsTimer = -1
+    setbufvar(bnr, 'LspInlayHintsTimer', -1)
   endif
 
-  var lspserver: dict<any> = buf.CurbufGetServerChecked('inlayHint')
+  var lspserver: dict<any> = buf.BufLspServerGet(bnr, 'inlayHint')
   if lspserver->empty()
     return
   endif
 
-  timerid = timer_start(300, function('InlayHintsCallback', [lspserver]))
-  b:LspInlayHintsTimer = timerid
+  if get(g:, 'LSPTest')
+    # When running tests, update the inlay hints immediately
+    InlayHintsTimerCb(lspserver, bnr, -1)
+  else
+    timerid = timer_start(300, function('InlayHintsTimerCb', [lspserver, bnr]))
+    setbufvar(bnr, 'LspInlayHintsTimer', timerid)
+  endif
 enddef
 
 # Text is modified. Need to update the inlay hints.
-def LspInlayHintsChanged()
-  b:LspInlayHintsNeedsUpdate = true
+def LspInlayHintsChanged(bnr: number)
+  setbufvar(bnr, 'LspInlayHintsNeedsUpdate', true)
 enddef
 
 # Trigger an update of the inlay hints in the current buffer.
-export def LspInlayHintsUpdateNow()
-  b:LspInlayHintsNeedsUpdate = true
-  LspInlayHintsUpdate()
+export def LspInlayHintsUpdateNow(bnr: number)
+  setbufvar(bnr, 'LspInlayHintsNeedsUpdate', true)
+  LspInlayHintsUpdate(bnr)
 enddef
 
 # Stop updating the inlay hints.
-def LspInlayHintsUpdateStop()
-  var timerid = get(b:, 'LspInlayHintsTimer', -1)
+def LspInlayHintsUpdateStop(bnr: number)
+  var timerid = getbufvar(bnr, 'LspInlayHintsTimer', -1)
   if timerid != -1
     timerid->timer_stop()
-    b:LspInlayHintsTimer = -1
+    setbufvar(bnr, 'LspInlayHintsTimer', -1)
   endif
 enddef
 
 # Do buffer-local initialization for displaying inlay hints
 export def BufferInit(lspserver: dict<any>, bnr: number)
   if !lspserver.isInlayHintProvider && !lspserver.isClangdInlayHintsProvider
-    # no support for inley hints
+    # no support for inlay hints
     return
   endif
 
@@ -129,26 +138,75 @@ export def BufferInit(lspserver: dict<any>, bnr: number)
   # time.
   acmds->add({bufnr: bnr,
 		event: ['CursorHold'],
-		group: 'LSPBufferAutocmds',
-		cmd: 'LspInlayHintsUpdate()'})
+		group: 'LspInlayHints',
+		cmd: $'LspInlayHintsUpdate({bnr})'})
   # After the text in the current buffer is modified, the inlay hints need to
   # be updated.
   acmds->add({bufnr: bnr,
 		event: ['TextChanged'],
-		group: 'LSPBufferAutocmds',
-		cmd: 'LspInlayHintsChanged()'})
+		group: 'LspInlayHints',
+		cmd: $'LspInlayHintsChanged({bnr})'})
   # Editing a file should trigger an inlay hint update.
   acmds->add({bufnr: bnr,
 		event: ['BufReadPost'],
-		group: 'LSPBufferAutocmds',
-		cmd: 'LspInlayHintsUpdateNow()'})
+		group: 'LspInlayHints',
+		cmd: $'LspInlayHintsUpdateNow({bnr})'})
   # Inlay hints need not be updated if a buffer is no longer active.
   acmds->add({bufnr: bnr,
 		event: ['BufLeave'],
-		group: 'LSPBufferAutocmds',
-		cmd: 'LspInlayHintsUpdateStop()'})
+		group: 'LspInlayHints',
+		cmd: $'LspInlayHintsUpdateStop({bnr})'})
 
   autocmd_add(acmds)
+enddef
+
+var inlayHintsEnabled = opt.lspOptions.showInlayHints
+
+# Enable inlay hints.  For all the buffers with an attached language server
+# that supports inlay hints, refresh the inlay hints.
+export def InlayHintsEnable()
+  opt.lspOptions.showInlayHints = true
+  for binfo in getbufinfo()
+    var lspservers: list<dict<any>> = buf.BufLspServersGet(binfo.bufnr)
+    if lspservers->empty()
+      continue
+    endif
+    for lspserver in lspservers
+      if !lspserver.isInlayHintProvider &&
+	  !lspserver.isClangdInlayHintsProvider
+	continue
+      endif
+      BufferInit(lspserver, binfo.bufnr)
+      LspInlayHintsUpdateNow(binfo.bufnr)
+    endfor
+  endfor
+  inlayHintsEnabled = true
+enddef
+
+# Disable inlay hints for the current Vim session.  Clear the inlay hints in
+# all the buffers.
+export def InlayHintsDisable()
+  opt.lspOptions.showInlayHints = false
+  for binfo in getbufinfo()
+    var lspserver: dict<any> = buf.BufLspServerGet(binfo.bufnr, 'inlayHint')
+    if lspserver->empty()
+      continue
+    endif
+    LspInlayHintsUpdateStop(binfo.bufnr)
+    :silent! autocmd_delete([{bufnr: binfo.bufnr, group: 'LspInlayHints'}])
+    InlayHintsClear(binfo.bufnr)
+  endfor
+  inlayHintsEnabled = false
+enddef
+
+# Some options are changed.  If 'showInlayHints' option is changed, then
+# either enable or disable inlay hints.
+export def LspInlayHintsOptionsChanged()
+  if inlayHintsEnabled && !opt.lspOptions.showInlayHints
+    InlayHintsDisable()
+  elseif !inlayHintsEnabled && opt.lspOptions.showInlayHints
+    InlayHintsEnable()
+  endif
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2

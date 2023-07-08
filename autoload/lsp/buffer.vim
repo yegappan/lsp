@@ -48,7 +48,8 @@ var SupportedCheckFns = {
   foldingRange: (lspserver) => lspserver.isFoldingRangeProvider,
   hover: (lspserver) => lspserver.isHoverProvider,
   implementation: (lspserver) => lspserver.isImplementationProvider,
-  inlayHint: (lspserver) => lspserver.isInlayHintProvider,
+  inlayHint: (lspserver) => lspserver.isInlayHintProvider ||
+					lspserver.isClangdInlayHintsProvider,
   references: (lspserver) => lspserver.isReferencesProvider,
   rename: (lspserver) => lspserver.isRenameProvider,
   selectionRange: (lspserver) => lspserver.isSelectionRangeProvider,

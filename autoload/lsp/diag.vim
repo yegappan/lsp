@@ -782,7 +782,7 @@ export def DiagsHighlightDisable()
   # turn off all diags highlight
   opt.lspOptions.autoHighlightDiags = false
   for binfo in getbufinfo({bufloaded: true})
-      RemoveDiagVisualsForBuffer(binfo.bufnr)
+    RemoveDiagVisualsForBuffer(binfo.bufnr)
   endfor
 enddef
 

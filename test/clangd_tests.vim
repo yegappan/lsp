@@ -1499,6 +1499,60 @@ def g:Test_OmniComplete_Struct()
   :%bw!
 enddef
 
+# Test for inlay hints
+def g:Test_InlayHints()
+  :silent! edit XinlayHints.c
+  sleep 200m
+  var lines: list<string> =<< trim END
+    void func1(int a, int b)
+    {
+    }
+
+    void func2()
+    {
+      func1(10, 20);
+    }
+  END
+  setline(1, lines)
+  g:WaitForServerFileLoad(0)
+  redraw!
+
+  :LspInlayHints enable
+  assert_equal([{id: -1, col: 9, type_bufnr: 0, end: 1,
+		 type: 'LspInlayHintsParam', length: 1, start: 1},
+		{id: -2, col: 13, type_bufnr: 0, end: 1,
+		 type: 'LspInlayHintsParam', length: 1, start: 1}],
+		prop_list(7))
+
+  :LspInlayHints disable
+  assert_equal([], prop_list(7))
+
+  g:LspOptionsSet({showInlayHints: true})
+  assert_equal([{id: -1, col: 9, type_bufnr: 0, end: 1,
+		 type: 'LspInlayHintsParam', length: 1, start: 1},
+		{id: -2, col: 13, type_bufnr: 0, end: 1,
+		 type: 'LspInlayHintsParam', length: 1, start: 1}],
+		prop_list(7))
+
+  g:LspOptionsSet({showInlayHints: false})
+  assert_equal([], prop_list(7))
+
+  :hide enew
+  :LspInlayHints enable
+  :bprev
+  assert_equal([{id: -1, col: 9, type_bufnr: 0, end: 1,
+		 type: 'LspInlayHintsParam', length: 1, start: 1},
+		{id: -2, col: 13, type_bufnr: 0, end: 1,
+		 type: 'LspInlayHintsParam', length: 1, start: 1}],
+		prop_list(7))
+  :hide enew
+  :LspInlayHints disable
+  :bprev
+  assert_equal([], prop_list(7))
+
+  :%bw!
+enddef
+
 # Test for the :LspServer command.
 def g:Test_LspServer()
   new a.raku

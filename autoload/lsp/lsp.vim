@@ -799,6 +799,23 @@ export def Hover(cmdmods: string)
   lspserver.hover(cmdmods)
 enddef
 
+# Enable or disable inlay hints
+export def InlayHints(ctl: string)
+  if ctl == 'enable'
+    inlayhints.InlayHintsEnable()
+  elseif ctl == 'disable'
+    inlayhints.InlayHintsDisable()
+  else
+    util.ErrMsg($'LspInlayHints - Unsupported argument "{ctl}"')
+  endif
+enddef
+
+# Command-line completion for the ":LspInlayHints" command
+export def LspInlayHintsComplete(arglead: string, cmdline: string, cursorPos: number): list<string>
+  var l = ['enable', 'disable']
+  return filter(l, (_, val) => val =~ $'^{arglead}')
+enddef
+
 # show symbol references
 export def ShowReferences(peek: bool)
   var lspserver: dict<any> = buf.CurbufGetServerChecked('references')

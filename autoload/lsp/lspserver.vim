@@ -151,7 +151,7 @@ def ServerInitReply(lspserver: dict<any>, initResult: dict<any>): void
   # Update the inlay hints (if enabled)
   if opt.lspOptions.showInlayHints && (lspserver.isInlayHintProvider
 				    || lspserver.isClangdInlayHintsProvider)
-    inlayhints.LspInlayHintsUpdateNow()
+    inlayhints.LspInlayHintsUpdateNow(bufnr())
   endif
 enddef
 
@@ -1197,24 +1197,33 @@ enddef
 
 # Request: "textDocument/inlayHint"
 # Inlay hints.
-def InlayHintsShow(lspserver: dict<any>)
+def InlayHintsShow(lspserver: dict<any>, bnr: number)
   # Check whether LSP server supports type hierarchy
   if !lspserver.isInlayHintProvider && !lspserver.isClangdInlayHintsProvider
     util.ErrMsg('LSP server does not support inlay hint')
     return
   endif
 
-  var lastlnum = line('$')
+  var binfo = bnr->getbufinfo()
+  if binfo->empty()
+    return
+  endif
+  var lastlnum = binfo[0].linecount
+  var lastline = bnr->getbufline('$')
+  var lastcol = 1
+  if !lastline->empty() && !lastline[0]->empty()
+    lastcol = lastline[0]->strchars()
+  endif
   var param = {
-      textDocument: {uri: util.LspFileToUri(@%)},
+      textDocument: {uri: util.LspBufnrToUri(bnr)},
       range:
       {
 	start: {line: 0, character: 0},
-	end: {line: lastlnum - 1, character: charcol([lastlnum, '$']) - 1}
+	end: {line: lastlnum - 1, character: lastcol - 1}
       }
   }
 
-  lspserver.encodeRange(bufnr(), param.range)
+  lspserver.encodeRange(bnr, param.range)
 
   var msg: string
   if lspserver.isClangdInlayHintsProvider
@@ -1223,7 +1232,9 @@ def InlayHintsShow(lspserver: dict<any>)
   else
     msg = 'textDocument/inlayHint'
   endif
-  var reply = lspserver.rpc_a(msg, param, inlayhints.InlayHintsReply)
+  var reply = lspserver.rpc_a(msg, param, (_, reply) => {
+    inlayhints.InlayHintsReply(lspserver, bnr, reply)
+  })
 enddef
 
 def DecodeTypeHierarchy(lspserver: dict<any>, isSuper: bool, typeHier: dict<any>)
