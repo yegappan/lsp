@@ -1548,6 +1548,31 @@ def g:Test_InlayHints()
   :%bw!
 enddef
 
+# Test for reloading a modified buffer with diags
+def g:Test_ReloadBufferWithDiags()
+  var lines: list<string> =<< trim END
+    void ReloadBufferFunc1(void)
+    {
+      int a:
+    }
+  END
+  writefile(lines, 'Xreloadbuffer.c')
+  :silent! edit Xreloadbuffer.c
+  g:WaitForServerFileLoad(1)
+  var signs = sign_getplaced('%', {group: '*'})[0].signs
+  assert_equal(3, signs[0].lnum)
+  append(0, ['', ''])
+  signs = sign_getplaced('%', {group: '*'})[0].signs
+  assert_equal(5, signs[0].lnum)
+  :edit!
+  sleep 200m
+  signs = sign_getplaced('%', {group: '*'})[0].signs
+  assert_equal(3, signs[0].lnum)
+
+  :%bw!
+  delete('Xreloadbuffer.c')
+enddef
+
 # Test for the :LspServer command.
 def g:Test_LspServer()
   new a.raku

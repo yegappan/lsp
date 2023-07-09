@@ -543,7 +543,8 @@ def TextdocDidOpen(lspserver: dict<any>, bnr: number, ftype: string): void
     textDocument: {
       uri: util.LspBufnrToUri(bnr),
       languageId: ftype,
-      version: 1,
+      # Use Vim 'changedtick' as the LSP document version number
+      version: bnr->getbufvar('changedtick'),
       text: bnr->getbufline(1, '$')->join("\n") .. "\n"
     }
   }
@@ -570,7 +571,7 @@ def TextdocDidChange(lspserver: dict<any>, bnr: number, start: number,
   # Notification: 'textDocument/didChange'
   # Params: DidChangeTextDocumentParams
 
-  var changeset: list<dict<any>>
+  # var changeset: list<dict<any>>
 
   ##### FIXME: Sending specific buffer changes to the LSP server doesn't
   ##### work properly as the computed line range numbers is not correct.
@@ -608,14 +609,15 @@ def TextdocDidChange(lspserver: dict<any>, bnr: number, start: number,
   #   changeset->add({'range': range, 'text': lines})
   # endfor
 
-  changeset->add({text: bnr->getbufline(1, '$')->join("\n") .. "\n"})
   var params = {
     textDocument: {
       uri: util.LspBufnrToUri(bnr),
       # Use Vim 'changedtick' as the LSP document version number
       version: bnr->getbufvar('changedtick')
     },
-    contentChanges: changeset
+    contentChanges: [
+      {text: bnr->getbufline(1, '$')->join("\n") .. "\n"}
+    ]
   }
   lspserver.sendNotification('textDocument/didChange', params)
 enddef

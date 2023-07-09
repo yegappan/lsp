@@ -529,6 +529,23 @@ export def RemoveFile(bnr: number): void
   endfor
 enddef
 
+# Buffer 'bnr' is loaded in a window, send the latest buffer contents to the
+# language servers.
+export def BufferLoadedInWin(bnr: number)
+  var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)
+  if lspservers->empty()
+    # No language servers for this buffer
+    return
+  endif
+  for lspserver in lspservers
+    if !lspserver->empty() && lspserver.ready
+      lspserver.textdocDidChange(bnr, 0, 0, 0, [])
+    endif
+  endfor
+  # Refresh the displayed diags visuals
+  diag.DiagsRefresh(bnr)
+enddef
+
 # Stop all the LSP servers
 export def StopAllServers()
   for lspserver in LSPServers

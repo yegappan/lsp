@@ -49,6 +49,7 @@ augroup LSPAutoCmds
   # Note that when BufWipeOut is invoked, the current buffer may be different
   # from the buffer getting wiped out.
   autocmd BufWipeOut * lsp.RemoveFile(expand('<abuf>')->str2nr())
+  autocmd BufWinEnter * lsp.BufferLoadedInWin(expand('<abuf>')->str2nr())
 augroup END
 
 # TODO: Is it needed to shutdown all the LSP servers when exiting Vim?
