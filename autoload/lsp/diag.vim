@@ -107,6 +107,7 @@ export def InitOnce()
 
   # ALE plugin support
   if opt.lspOptions.aleSupport
+    opt.lspOptions.autoHighlightDiags = false
     autocmd_add([
       {
 	group: 'LspAleCmds',
@@ -216,7 +217,7 @@ enddef
 # This inline signs, inline props, and virtual text diagnostics
 export def DiagsRefresh(bnr: number, all: bool = false)
   var lspOpts = opt.lspOptions
-  if !lspOpts.autoHighlightDiags || lspOpts.aleSupport
+  if !lspOpts.autoHighlightDiags
     return
   endif
 
