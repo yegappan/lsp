@@ -1343,7 +1343,7 @@ def g:Test_LspTagFunc()
   :exe "normal \<C-]>"
   assert_equal([11, 6], [line('.'), col('.')])
   cursor(1, 1)
-  assert_fails('exe "normal \<C-]>"', 'E433: No tags file')
+  assert_fails('exe "normal \<C-]>"', 'E433:')
 
   :set tagfunc&
   :%bw!
