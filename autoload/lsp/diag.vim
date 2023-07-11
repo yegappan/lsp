@@ -100,6 +100,12 @@ export def InitOnce()
   prop_type_add('LspDiagVirtualTextHint',
 		{highlight: 'LspDiagVirtualTextHint', override: true})
 
+  autocmd_add([{group: 'LspOptionsChanged',
+	        event: 'User',
+		pattern: '*',
+		cmd: 'LspDiagsOptionsChanged()'}])
+
+  # ALE plugin support
   if opt.lspOptions.aleSupport
     autocmd_add([
       {
@@ -182,14 +188,14 @@ def DiagSevToSymbolText(severity: number): string
 enddef
 
 # Remove signs and text properties for diagnostics in buffer
-def RemoveDiagVisualsForBuffer(bnr: number)
+def RemoveDiagVisualsForBuffer(bnr: number, all: bool = false)
   var lspOpts = opt.lspOptions
-  if lspOpts.showDiagWithSign
+  if lspOpts.showDiagWithSign || all
     # Remove all the existing diagnostic signs
     sign_unplace('LSPDiag', {buffer: bnr})
   endif
 
-  if lspOpts.showDiagWithVirtualText
+  if lspOpts.showDiagWithVirtualText || all
     # Remove all the existing virtual text
     prop_remove({type: 'LspDiagVirtualTextError', bufnr: bnr, all: true})
     prop_remove({type: 'LspDiagVirtualTextWarning', bufnr: bnr, all: true})
@@ -197,7 +203,7 @@ def RemoveDiagVisualsForBuffer(bnr: number)
     prop_remove({type: 'LspDiagVirtualTextHint', bufnr: bnr, all: true})
   endif
 
-  if lspOpts.highlightDiagInline
+  if lspOpts.highlightDiagInline || all
     # Remove all the existing virtual text
     prop_remove({type: 'LspDiagInlineError', bufnr: bnr, all: true})
     prop_remove({type: 'LspDiagInlineWarning', bufnr: bnr, all: true})
@@ -208,10 +214,10 @@ enddef
 
 # Refresh the placed diagnostics in buffer "bnr"
 # This inline signs, inline props, and virtual text diagnostics
-export def DiagsRefresh(bnr: number)
+export def DiagsRefresh(bnr: number, all: bool = false)
   :silent! bnr->bufload()
 
-  RemoveDiagVisualsForBuffer(bnr)
+  RemoveDiagVisualsForBuffer(bnr, all)
 
   if !diagsMap->has_key(bnr) ||
       diagsMap[bnr].sortedDiagnostics->empty()
@@ -481,7 +487,7 @@ def DiagsUpdateLocList(bnr: number, calledByCmd: bool = false): bool
   var LspQfId: number = bnr->getbufvar('LspQfId', 0)
   if LspQfId == 0 && !opt.lspOptions.autoPopulateDiags && !calledByCmd
     # Diags location list is not present. Create the location list only if
-    # the 'autoPopulateDiags' option is set or the :LspDiagShow command is
+    # the 'autoPopulateDiags' option is set or the ":LspDiag show" command is
     # invoked.
     return false
   endif
@@ -777,23 +783,6 @@ export def LspDiagsJump(which: string, a_count: number = 0): void
   endif
 enddef
 
-# Disable the LSP diagnostics highlighting in all the buffers
-export def DiagsHighlightDisable()
-  # turn off all diags highlight
-  opt.lspOptions.autoHighlightDiags = false
-  for binfo in getbufinfo({bufloaded: true})
-    RemoveDiagVisualsForBuffer(binfo.bufnr)
-  endfor
-enddef
-
-# Enable the LSP diagnostics highlighting
-export def DiagsHighlightEnable()
-  opt.lspOptions.autoHighlightDiags = true
-  for binfo in getbufinfo({bufloaded: true})
-    DiagsRefresh(binfo.bufnr)
-  endfor
-enddef
-
 # Return the sorted diagnostics for buffer "bnr".  Default is the current
 # buffer.  A copy of the diagnostics is returned so that the caller can modify
 # the diagnostics.
@@ -804,6 +793,59 @@ export def GetDiagsForBuf(bnr: number = bufnr()): list<dict<any>>
   endif
 
   return diagsMap[bnr].sortedDiagnostics->deepcopy()
+enddef
+
+# Track the current diagnostics auto highlight enabled/disabled state.  Used
+# when the "autoHighlightDiags" option value is changed.
+var save_autoHighlightDiags = opt.lspOptions.autoHighlightDiags
+var save_highlightDiagInline = opt.lspOptions.highlightDiagInline
+var save_showDiagWithSign = opt.lspOptions.showDiagWithSign
+var save_showDiagWithVirtualText = opt.lspOptions.showDiagWithVirtualText
+
+# Enable the LSP diagnostics highlighting
+export def DiagsHighlightEnable()
+  opt.lspOptions.autoHighlightDiags = true
+  save_autoHighlightDiags = true
+  for binfo in getbufinfo({bufloaded: true})
+    if diagsMap->has_key(binfo.bufnr)
+      DiagsRefresh(binfo.bufnr)
+    endif
+  endfor
+enddef
+
+# Disable the LSP diagnostics highlighting in all the buffers
+export def DiagsHighlightDisable()
+  # turn off all diags highlight
+  opt.lspOptions.autoHighlightDiags = false
+  save_autoHighlightDiags = false
+  for binfo in getbufinfo()
+    if diagsMap->has_key(binfo.bufnr)
+      RemoveDiagVisualsForBuffer(binfo.bufnr)
+    endif
+  endfor
+enddef
+
+# Some options are changed.  If 'autoHighlightDiags' option is changed, then
+# either enable or disable diags auto highlight.
+export def LspDiagsOptionsChanged()
+  if save_autoHighlightDiags && !opt.lspOptions.autoHighlightDiags
+    DiagsHighlightDisable()
+  elseif !save_autoHighlightDiags && opt.lspOptions.autoHighlightDiags
+    DiagsHighlightEnable()
+  endif
+
+  if save_highlightDiagInline != opt.lspOptions.highlightDiagInline
+    || save_showDiagWithSign != opt.lspOptions.showDiagWithSign
+    || save_showDiagWithVirtualText != opt.lspOptions.showDiagWithVirtualText
+    save_highlightDiagInline = opt.lspOptions.highlightDiagInline
+    save_showDiagWithSign = opt.lspOptions.showDiagWithSign
+    save_showDiagWithVirtualText = opt.lspOptions.showDiagWithVirtualText
+    for binfo in getbufinfo({bufloaded: true})
+      if diagsMap->has_key(binfo.bufnr)
+	DiagsRefresh(binfo.bufnr, true)
+      endif
+    endfor
+  endif
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2

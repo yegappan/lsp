@@ -167,14 +167,14 @@ Command|Description
 -------|-----------
 :LspCodeAction|Apply the code action supplied by the language server to the diagnostic in the current line.
 :LspCodeLens|Display a list of code lens commands and apply a selected code lens command to the current file.
-:LspDiagCurrent|Display the diagnostic message for the current line.
-:LspDiagFirst|Jump to the first diagnostic message for the current buffer.
-:LspDiagHere|Jump to the next diagnostic message in the current line.
-:LspDiagHighlightDisable|Disable diagnostic message highlights.
-:LspDiagHighlightEnable|Enable diagnostic message highlights.
-:LspDiagNext|Jump to the next diagnostic message after the current position.
-:LspDiagPrev|Jump to the previous diagnostic message before the current position.
-:LspDiagShow|Display the diagnostics messages from the language server for the current buffer in a new location list.
+:LspDiag current|Display the diagnostic message for the current line.
+:LspDiag first|Jump to the first diagnostic message for the current buffer.
+:LspDiag here|Jump to the next diagnostic message in the current line.
+:LspDiag highlight disable|Disable diagnostic message highlights.
+:LspDiag highlight enable|Enable diagnostic message highlights.
+:LspDiag next|Jump to the next diagnostic message after the current position.
+:LspDiag prev|Jump to the previous diagnostic message before the current position.
+:LspDiag show|Display the diagnostics messages from the language server for the current buffer in a new location list.
 :LspDocumentSymbol|Display the symbols in the current file in a popup menu and jump to the selected symbol.
 :LspFold|Fold the current file.
 :LspFormat|Format a range of lines in the current file using the language server. The **shiftwidth** and **expandtab** values set for the current buffer are used when format is applied.  The default range is the entire file.

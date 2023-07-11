@@ -543,7 +543,9 @@ export def BufferLoadedInWin(bnr: number)
     endif
   endfor
   # Refresh the displayed diags visuals
-  diag.DiagsRefresh(bnr)
+  if opt.lspOptions.autoHighlightDiags
+    diag.DiagsRefresh(bnr)
+  endif
 enddef
 
 # Stop all the LSP servers
@@ -1162,8 +1164,9 @@ export def RegisterCmdHandler(cmd: string, Handler: func)
   codeaction.RegisterCmdHandler(cmd, Handler)
 enddef
 
-# Command-line completion for the ":LspServer <cmd>" sub command
-def LspServerSubCmdComplete(cmds: list<string>, arglead: string, cmdline: string, cursorPos: number): list<string>
+# Command-line completion for the ":LspServer <cmd>" and ":LspDiag <cmd>" sub
+# commands
+def LspSubCmdComplete(cmds: list<string>, arglead: string, cmdline: string, cursorPos: number): list<string>
   var wordBegin = cmdline->match('\s\+\zs\S', cursorPos)
   if wordBegin == -1
     return cmds
@@ -1178,23 +1181,88 @@ def LspServerSubCmdComplete(cmds: list<string>, arglead: string, cmdline: string
   return []
 enddef
 
+# Command-line completion for the ":LspDiag highlight" command
+def LspDiagHighlightComplete(arglead: string, cmdline: string, cursorPos: number): list<string>
+  return LspSubCmdComplete(['enable', 'disable'], arglead, cmdline, cursorPos)
+enddef
+
+# Command-line completion for the ":LspDiag" command
+export def LspDiagComplete(arglead: string, cmdline: string, cursorPos: number): list<string>
+  var wordBegin = -1
+  var wordEnd = -1
+  var l = ['first', 'current', 'here', 'highlight', 'last', 'next', 'prev',
+	   'show']
+
+  # Skip the command name
+  var i = cmdline->stridx(' ', 0)
+  wordBegin = cmdline->match('\s\+\zs\S', i)
+  if wordBegin == -1
+    return l
+  endif
+
+  wordEnd = cmdline->stridx(' ', wordBegin)
+  if wordEnd == -1
+    return filter(l, (_, val) => val =~ $'^{arglead}')
+  endif
+
+  var cmd = cmdline->strpart(wordBegin, wordEnd - wordBegin)
+  if cmd == 'highlight'
+    return LspDiagHighlightComplete(arglead, cmdline, wordEnd)
+  endif
+
+  return []
+enddef
+
+# ":LspDiag" command handler
+export def LspDiagCmd(args: string, cmdCount: number, force: bool)
+  if args->stridx('highlight') == 0
+    if args[9] == ' '
+      var subcmd = args[10 : ]->trim()
+      if subcmd == 'enable'
+	diag.DiagsHighlightEnable()
+      elseif subcmd == 'disable'
+	diag.DiagsHighlightDisable()
+      else
+	util.ErrMsg($':LspDiag highlight - Unsupported argument "{subcmd}"')
+      endif
+    else
+      util.ErrMsg('Argument required for ":LspDiag highlight"')
+    endif
+  elseif args == 'first'
+    diag.LspDiagsJump('first', 0)
+  elseif args == 'current'
+    LspShowCurrentDiag(force)
+  elseif args == 'here'
+    diag.LspDiagsJump('here', 0)
+  elseif args == 'last'
+    diag.LspDiagsJump('last', 0)
+  elseif args == 'next'
+    diag.LspDiagsJump('next', cmdCount)
+  elseif args == 'prev'
+    diag.LspDiagsJump('prev', cmdCount)
+  elseif args == 'show'
+    ShowDiagnostics()
+  else
+    util.ErrMsg($':LspDiag - Unsupported argument "{args}"')
+  endif
+enddef
+
 # Command-line completion for the ":LspServer debug" command
 def LspServerDebugComplete(arglead: string, cmdline: string, cursorPos: number): list<string>
-  return LspServerSubCmdComplete(['errors', 'messages', 'off', 'on'],
-				 arglead, cmdline, cursorPos)
+  return LspSubCmdComplete(['errors', 'messages', 'off', 'on'], arglead,
+			   cmdline, cursorPos)
 enddef
 
 # Command-line completion for the ":LspServer show" command
 def LspServerShowComplete(arglead: string, cmdline: string, cursorPos: number): list<string>
-  return LspServerSubCmdComplete(['capabilities', 'initializeRequest',
-				  'messages', 'status'], arglead, cmdline,
-				  cursorPos)
+  return LspSubCmdComplete(['capabilities', 'initializeRequest', 'messages',
+			    'status'], arglead, cmdline, cursorPos)
 enddef
 
 # Command-line completion for the ":LspServer trace" command
 def LspServerTraceComplete(arglead: string, cmdline: string, cursorPos: number): list<string>
-  return LspServerSubCmdComplete(['messages', 'off', 'verbose'],
-				 arglead, cmdline, cursorPos)
+  return LspSubCmdComplete(['messages', 'off', 'verbose'], arglead, cmdline,
+			   cursorPos)
 enddef
 
 # Command-line completion for the ":LspServer" command
@@ -1235,7 +1303,7 @@ export def LspServerCmd(args: string)
       var subcmd = args[6 : ]->trim()
       ServerDebug(subcmd)
     else
-      util.ErrMsg('Argument required')
+      util.ErrMsg('Argument required for ":LspServer debug"')
     endif
   elseif args == 'restart'
     RestartServer()
@@ -1244,14 +1312,14 @@ export def LspServerCmd(args: string)
       var subcmd = args[5 : ]->trim()
       ShowServer(subcmd)
     else
-      util.ErrMsg('Argument required')
+      util.ErrMsg('Argument required for ":LspServer show"')
     endif
   elseif args->stridx('trace') == 0
     if args[5] == ' '
       var subcmd = args[6 : ]->trim()
       ServerTraceSet(subcmd)
     else
-      util.ErrMsg('Argument required')
+      util.ErrMsg('Argument required for ":LspServer trace"')
     endif
   else
     util.ErrMsg($'LspServer - Unsupported argument "{args}"')

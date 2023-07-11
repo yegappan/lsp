@@ -115,7 +115,7 @@ def g:WaitForDiags(errCount: number)
 
   assert_equal(errCount, lsp#lsp#ErrorCount().Error)
   if lsp#lsp#ErrorCount().Error != errCount
-    :LspDiagShow
+    :LspDiag show
     assert_report(getloclist(0)->string())
     :lclose
   endif

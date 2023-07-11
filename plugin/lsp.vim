@@ -59,10 +59,9 @@ augroup END
 # LSP commands
 command! -nargs=? -bar -range LspCodeAction lsp.CodeAction(<line1>, <line2>, <q-args>)
 command! -nargs=0 -bar LspCodeLens lsp.CodeLens()
+command! -nargs=+ -bar -bang -count -complete=customlist,lsp.LspDiagComplete LspDiag lsp.LspDiagCmd(<q-args>, <count>, <bang>false)
 command! -nargs=0 -bar -bang LspDiagCurrent lsp.LspShowCurrentDiag(<bang>false)
 command! -nargs=0 -bar LspDiagFirst lsp.JumpToDiag('first')
-command! -nargs=0 -bar LspDiagHighlightDisable lsp.DiagHighlightDisable()
-command! -nargs=0 -bar LspDiagHighlightEnable lsp.DiagHighlightEnable()
 command! -nargs=0 -bar LspDiagLast lsp.JumpToDiag('last')
 command! -nargs=0 -bar -count=1 LspDiagNext lsp.JumpToDiag('next', <count>)
 command! -nargs=0 -bar -count=1 LspDiagPrev lsp.JumpToDiag('prev', <count>)
@@ -127,13 +126,13 @@ if has('gui_running')
   anoremenu <silent> L&sp.Highlight\ Clear :LspHighlightClear<CR>
 
   # Diagnostics
-  anoremenu <silent> L&sp.Diagnostics.Current :LspDiagCurrent<CR>
-  anoremenu <silent> L&sp.Diagnostics.Show\ All :LspDiagShow<CR>
-  anoremenu <silent> L&sp.Diagnostics.First :LspDiagFirst<CR>
-  anoremenu <silent> L&sp.Diagnostics.Last :LspDiagLast<CR>
-  anoremenu <silent> L&sp.Diagnostics.Next :LspDiagNext<CR>
-  anoremenu <silent> L&sp.Diagnostics.Prev :LspDiagPrev<CR>
-  anoremenu <silent> L&sp.Diagnostics.This :LspDiagHere<CR>
+  anoremenu <silent> L&sp.Diagnostics.Current :LspDiag current<CR>
+  anoremenu <silent> L&sp.Diagnostics.Show\ All :LspDiag show<CR>
+  anoremenu <silent> L&sp.Diagnostics.First :LspDiag first<CR>
+  anoremenu <silent> L&sp.Diagnostics.Last :LspDiag last<CR>
+  anoremenu <silent> L&sp.Diagnostics.Next :LspDiag next<CR>
+  anoremenu <silent> L&sp.Diagnostics.Previous :LspDiag prev<CR>
+  anoremenu <silent> L&sp.Diagnostics.This :LspDiag here<CR>
 
   if &mousemodel =~ 'popup'
     anoremenu <silent> PopUp.L&sp.Go\ to\ Definition

@@ -3,7 +3,7 @@ vim9script
 
 source common.vim
 
-var lspOpts = {autoComplete: false, highlightDiagInline: true}
+var lspOpts = {autoComplete: false}
 g:LspOptionsSet(lspOpts)
 
 g:LSPTest_modifyDiags = false
@@ -194,7 +194,7 @@ def g:Test_LspShowReferences()
   :lclose
 
   # Test for opening in qf list
-  g:LspOptionsSet({ useQuickfixForLocations: true })
+  g:LspOptionsSet({useQuickfixForLocations: true})
   cursor(5, 2)
   :LspShowReferences
   sleep 100m
@@ -212,14 +212,14 @@ def g:Test_LspShowReferences()
   qfl = getqflist()
   assert_equal([1, 5], [qfl[0].lnum, qfl[0].col])
   :cclose
-  g:LspOptionsSet({ useQuickfixForLocations: false })
+  g:LspOptionsSet({useQuickfixForLocations: false})
 
   # Test for maintaining buffer focus
-  g:LspOptionsSet({ keepFocusInReferences: false })
+  g:LspOptionsSet({keepFocusInReferences: false})
   :LspShowReferences
   assert_equal('', getwinvar(0, '&buftype'))
   :lclose
-  g:LspOptionsSet({ keepFocusInReferences: true })
+  g:LspOptionsSet({keepFocusInReferences: true})
 
   # Test for LspPeekReferences
 
@@ -286,7 +286,7 @@ def g:Test_LspDiag()
   g:WaitForServerFileLoad(1)
   var bnr: number = bufnr()
   :redraw!
-  :LspDiagShow
+  :LspDiag show
   var qfl: list<dict<any>> = getloclist(0)
   assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
   assert_equal(bnr, qfl[0].bufnr)
@@ -297,54 +297,54 @@ def g:Test_LspDiag()
   close
   g:LspOptionsSet({showDiagInPopup: false})
   normal gg
-  var output = execute('LspDiagCurrent')->split("\n")
+  var output = execute('LspDiag current')->split("\n")
   assert_equal('Warn: No diagnostic messages found for current line', output[0])
-  :LspDiagFirst
+  :LspDiag first
   assert_equal([3, 14], [line('.'), col('.')])
-  output = execute('LspDiagCurrent')->split("\n")
+  output = execute('LspDiag current')->split("\n")
   assert_equal("Expected ';' at end of declaration (fix available)", output[0])
   :normal! 0
-  :LspDiagHere
+  :LspDiag here
   assert_equal([3, 14], [line('.'), col('.')])
-  :LspDiagNext
+  :LspDiag next
   assert_equal([5, 2], [line('.'), col('.')])
-  :LspDiagNext
+  :LspDiag next
   assert_equal([7, 2], [line('.'), col('.')])
-  output = execute('LspDiagNext')->split("\n")
+  output = execute('LspDiag next')->split("\n")
   assert_equal('Warn: No more diagnostics found', output[0])
-  :LspDiagPrev
-  :LspDiagPrev
-  :LspDiagPrev
-  output = execute('LspDiagPrev')->split("\n")
+  :LspDiag prev
+  :LspDiag prev
+  :LspDiag prev
+  output = execute('LspDiag prev')->split("\n")
   assert_equal('Warn: No more diagnostics found', output[0])
 
   # Test for maintaining buffer focus
-  g:LspOptionsSet({ keepFocusInDiags: false })
-  :LspDiagShow
+  g:LspOptionsSet({keepFocusInDiags: false})
+  :LspDiag show
   assert_equal('', getwinvar(0, '&buftype'))
   :lclose
-  g:LspOptionsSet({ keepFocusInDiags: true })
+  g:LspOptionsSet({keepFocusInDiags: true})
 
-  # :[count]LspDiagNext
+  # :[count]LspDiag next
   cursor(3, 1)
-  :2LspDiagNext
+  :2LspDiag next
   assert_equal([5, 2], [line('.'), col('.')])
-  :2LspDiagNext
+  :2LspDiag next
   assert_equal([7, 2], [line('.'), col('.')])
-  output = execute(':2LspDiagNext')->split("\n")
+  output = execute(':2LspDiag next')->split("\n")
   assert_equal('Warn: No more diagnostics found', output[0])
 
-  # :[count]LspDiagPrev
+  # :[count]LspDiag prev
   cursor(7, 2)
-  :4LspDiagPrev
+  :4LspDiag prev
   assert_equal([3, 14], [line('.'), col('.')])
-  output = execute(':4LspDiagPrev')->split("\n")
+  output = execute(':4LspDiag prev')->split("\n")
   assert_equal('Warn: No more diagnostics found', output[0])
 
   :%d
   setline(1, ['void blueFunc()', '{', '}'])
   g:WaitForDiags(0)
-  output = execute('LspDiagShow')->split("\n")
+  output = execute('LspDiag show')->split("\n")
   assert_match('Warn: No diagnostic messages found for', output[0])
   g:LspOptionsSet({showDiagInPopup: true})
 
@@ -370,10 +370,10 @@ def g:Test_LspProcessDiagHandler()
   :redraw!
   normal gg
 
-  :LspDiagFirst
+  :LspDiag first
   assert_equal([3, 14], [line('.'), col('.')])
 
-  var output = execute('LspDiagCurrent')->split("\n")
+  var output = execute('LspDiag current')->split("\n")
   assert_equal("this is overridden", output[0])
 
   g:LspOptionsSet({showDiagInPopup: true})
@@ -399,7 +399,7 @@ def g:Test_DiagLocListAutoUpdate()
   assert_equal({start: {line: 0, character: 5}, end: {line: 0, character: 6}},
 	       d.range)
 
-  :LspDiagShow
+  :LspDiag show
   assert_equal(1, line('$'))
   wincmd w
   setline(2, 'int j:')
@@ -479,7 +479,7 @@ def g:Test_LspDiag_Multi()
   else
 	g:WaitForServerFileLoad(2)
   endif
-  :LspDiagShow
+  :LspDiag show
   var qfl: list<dict<any>> = getloclist(0)
   assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
   assert_equal(bnr, qfl[0].bufnr)
@@ -495,35 +495,35 @@ def g:Test_LspDiag_Multi()
 
   :sleep 100m
   cursor(2, 1)
-  assert_equal('', execute('LspDiagPrev'))
+  assert_equal('', execute('LspDiag prev'))
   assert_equal([1, 9], [line('.'), col('.')])
 
-  assert_equal('', execute('LspDiagPrev'))
+  assert_equal('', execute('LspDiag prev'))
   assert_equal([1, 5], [line('.'), col('.')])
 
-  var output = execute('LspDiagPrev')->split("\n")
+  var output = execute('LspDiag prev')->split("\n")
   assert_equal('Warn: No more diagnostics found', output[0])
 
   cursor(2, 1)
-  assert_equal('', execute('LspDiagFirst'))
+  assert_equal('', execute('LspDiag first'))
   assert_equal([1, 5], [line('.'), col('.')])
-  assert_equal('', execute('LspDiagNext'))
+  assert_equal('', execute('LspDiag next'))
   assert_equal([1, 9], [line('.'), col('.')])
   cursor(1, 1)
-  assert_equal('', execute('LspDiagLast'))
+  assert_equal('', execute('LspDiag last'))
   assert_equal([2, 9], [line('.'), col('.')])
   popup_clear()
 
-  # Test for :LspDiagHere on a line with multiple diagnostics
+  # Test for :LspDiag here on a line with multiple diagnostics
   cursor(1, 1)
-  :LspDiagHere
+  :LspDiag here
   assert_equal([1, 5], [line('.'), col('.')])
   var ids = popup_list()
   assert_equal(1, ids->len())
   assert_match('Incompatible pointer to integer', getbufline(ids[0]->winbufnr(), 1, '$')[0])
   popup_clear()
   cursor(1, 6)
-  :LspDiagHere
+  :LspDiag here
   assert_equal([1, 9], [line('.'), col('.')])
   ids = popup_list()
   assert_equal(1, ids->len())
@@ -532,83 +532,83 @@ def g:Test_LspDiag_Multi()
 
   # Line without diagnostics
   cursor(3, 1)
-  output = execute('LspDiagHere')->split("\n")
+  output = execute('LspDiag here')->split("\n")
   assert_equal('Warn: No more diagnostics found on this line', output[0])
 
   g:LspOptionsSet({showDiagInPopup: false})
   for i in range(1, 5)
     cursor(1, i)
-    output = execute('LspDiagCurrent')->split('\n')
+    output = execute('LspDiag current')->split('\n')
     assert_match('Incompatible pointer to integer', output[0])
   endfor
   for i in range(6, 12)
     cursor(1, i)
-    output = execute('LspDiagCurrent')->split('\n')
+    output = execute('LspDiag current')->split('\n')
     assert_match('Initializer element is not ', output[0])
   endfor
   g:LspOptionsSet({showDiagInPopup: true})
 
-  # Check for exact diag ":LspDiagCurrent!"
+  # Check for exact diag ":LspDiag current!"
   g:LspOptionsSet({showDiagInPopup: false})
   for i in range(1, 4)
     cursor(1, i)
-    output = execute('LspDiagCurrent!')->split('\n')
+    output = execute('LspDiag! current')->split('\n')
     assert_equal('Warn: No diagnostic messages found for current position', output[0])
   endfor
 
   cursor(1, 5)
-  output = execute('LspDiagCurrent!')->split('\n')
+  output = execute('LspDiag! current')->split('\n')
   assert_match('Incompatible pointer to integer', output[0])
 
   for i in range(6, 8)
     cursor(1, i)
-    output = execute('LspDiagCurrent!')->split('\n')
+    output = execute('LspDiag! current')->split('\n')
     assert_equal('Warn: No diagnostic messages found for current position', output[0])
   endfor
 
   for i in range(9, 11)
     cursor(1, i)
-    output = execute('LspDiagCurrent!')->split('\n')
+    output = execute('LspDiag! current')->split('\n')
     assert_match('Initializer element is not ', output[0])
   endfor
   for i in range(12, 12)
     cursor(1, i)
-    output = execute('LspDiagCurrent!')->split('\n')
+    output = execute('LspDiag! current')->split('\n')
     assert_equal('Warn: No diagnostic messages found for current position', output[0])
   endfor
 
   g:LspOptionsSet({showDiagInPopup: true})
 
-  # :[count]LspDiagNext
+  # :[count]LspDiag next
   g:LspOptionsSet({showDiagInPopup: false})
   cursor(1, 1)
-  :2LspDiagNext
+  :2LspDiag next
   assert_equal([1, 9], [line('.'), col('.')])
-  :2LspDiagNext
+  :2LspDiag next
   assert_equal([2, 9], [line('.'), col('.')])
-  output = execute(':2LspDiagNext')->split("\n")
+  output = execute(':2LspDiag next')->split("\n")
   assert_equal('Warn: No more diagnostics found', output[0])
 
   cursor(1, 1)
-  :99LspDiagNext
+  :99LspDiag next
   assert_equal([2, 9], [line('.'), col('.')])
   g:LspOptionsSet({showDiagInPopup: true})
 
-  # :[count]LspDiagPrev
+  # :[count]LspDiag prev
   g:LspOptionsSet({showDiagInPopup: false})
   cursor(1, 1)
-  :2LspDiagPrev
+  :2LspDiag prev
   assert_equal('Warn: No more diagnostics found', output[0])
   cursor(3, 3)
-  :2LspDiagPrev
+  :2LspDiag prev
   assert_equal([1, 9], [line('.'), col('.')])
-  :2LspDiagPrev
+  :2LspDiag prev
   assert_equal([1, 5], [line('.'), col('.')])
-  output = execute(':2LspDiagPrev')->split("\n")
+  output = execute(':2LspDiag prev')->split("\n")
   assert_equal('Warn: No more diagnostics found', output[0])
 
   cursor(3, 3)
-  :99LspDiagPrev
+  :99LspDiag prev
   assert_equal([1, 5], [line('.'), col('.')])
   g:LspOptionsSet({showDiagInPopup: true})
 
@@ -631,6 +631,8 @@ def g:Test_LspHighlightDiagInline()
   # TODO: Waiting count doesn't include Warning, Info, and Hint diags
   g:WaitForDiags(2)
 
+  g:LspOptionsSet({highlightDiagInline: true})
+
   var props = prop_list(1)
   assert_equal(0, props->len())
   props = prop_list(2)
@@ -647,6 +649,10 @@ def g:Test_LspHighlightDiagInline()
   assert_equal(1, props->len())
   assert_equal([{'id': 0, 'col': 5, 'type_bufnr': 0, 'end': 1, 'type': 'LspDiagInlineError', 'length': 6, 'start': 1}], props)
   props = prop_list(6)
+  assert_equal(0, props->len())
+
+  g:LspOptionsSet({highlightDiagInline: false})
+  props = prop_list(1, {end_lnum: line('$')})
   assert_equal(0, props->len())
 
   :%bw!
@@ -1117,7 +1123,7 @@ def g:Test_LspHover()
   # Show current diagnostic as to open another popup.
   # Then we can test that LspHover closes all existing popups
   cursor(10, 6)
-  :LspDiagCurrent
+  :LspDiag current
   assert_equal(1, popup_list()->len())
   :LspHover
   assert_equal(1, popup_list()->len())
@@ -1270,14 +1276,14 @@ def g:Test_LspOutline()
   execute $':{bnum}bw'
 
   # Validate position vert botright
-  g:LspOptionsSet({ outlineOnRight: true })
+  g:LspOptionsSet({outlineOnRight: true})
   :LspOutline
   assert_equal(2, winnr('$'))
   bnum = winbufnr(winid + 2)
   assert_equal('LSP-Outline', bufname(bnum))
   assert_equal(['Function', '  aFuncOutline', '  bFuncOutline'], getbufline(bnum, 4, '$'))
   assert_equal(['row', [['leaf', winid], ['leaf', winid + 2]]], winlayout())
-  g:LspOptionsSet({ outlineOnRight: false })
+  g:LspOptionsSet({outlineOnRight: false})
   execute $':{bnum}bw'
 
   # Validate <mods> position botright (below)
@@ -1290,7 +1296,7 @@ def g:Test_LspOutline()
   execute $':{bnum}bw'
 
   # Validate that outlineWinSize works for LspOutline
-  g:LspOptionsSet({ outlineWinSize: 40 })
+  g:LspOptionsSet({outlineWinSize: 40})
   :LspOutline
   assert_equal(2, winnr('$'))
   bnum = winbufnr(winid + 4)
@@ -1298,7 +1304,7 @@ def g:Test_LspOutline()
   assert_equal(['Function', '  aFuncOutline', '  bFuncOutline'], getbufline(bnum, 4, '$'))
   assert_equal(40, winwidth(winid + 4))
   execute $':{bnum}bw'
-  g:LspOptionsSet({ outlineWinSize: 20 })
+  g:LspOptionsSet({outlineWinSize: 20})
 
   # Validate that <count> works for LspOutline
   :37LspOutline
@@ -1573,6 +1579,40 @@ def g:Test_ReloadBufferWithDiags()
   delete('Xreloadbuffer.c')
 enddef
 
+# Test for ":LspDiag" sub commands
+def g:Test_LspDiagsSubcmd()
+  new XLspDiagsSubCmd.raku
+
+  feedkeys(":LspDiag \<C-A>\<CR>", 'xt')
+  assert_equal('LspDiag first current here highlight last next prev show', @:)
+  feedkeys(":LspDiag highlight \<C-A>\<CR>", 'xt')
+  assert_equal('LspDiag highlight enable disable', @:)
+  assert_equal(['Error: :LspDiag - Unsupported argument "xyz"'],
+	       execute('LspDiag xyz')->split("\n"))
+  assert_equal(['Error: :LspDiag - Unsupported argument "first xyz"'],
+	       execute('LspDiag first xyz')->split("\n"))
+  assert_equal(['Error: :LspDiag - Unsupported argument "current xyz"'],
+	       execute('LspDiag current xyz')->split("\n"))
+  assert_equal(['Error: :LspDiag - Unsupported argument "here xyz"'],
+	       execute('LspDiag here xyz')->split("\n"))
+  assert_equal(['Error: Argument required for ":LspDiag highlight"'],
+	       execute('LspDiag highlight')->split("\n"))
+  assert_equal(['Error: :LspDiag highlight - Unsupported argument "xyz"'],
+	       execute('LspDiag highlight xyz')->split("\n"))
+  assert_equal(['Error: :LspDiag highlight - Unsupported argument "enable xyz"'],
+	       execute('LspDiag highlight enable xyz')->split("\n"))
+  assert_equal(['Error: :LspDiag - Unsupported argument "last xyz"'],
+	       execute('LspDiag last xyz')->split("\n"))
+  assert_equal(['Error: :LspDiag - Unsupported argument "next xyz"'],
+	       execute('LspDiag next xyz')->split("\n"))
+  assert_equal(['Error: :LspDiag - Unsupported argument "prev xyz"'],
+	       execute('LspDiag prev xyz')->split("\n"))
+  assert_equal(['Error: :LspDiag - Unsupported argument "show xyz"'],
+	       execute('LspDiag show xyz')->split("\n"))
+
+  :%bw!
+enddef
+
 # Test for the :LspServer command.
 def g:Test_LspServer()
   new a.raku
@@ -1586,24 +1626,92 @@ def g:Test_LspServer()
 	       execute('LspServer trace verbose')->split("\n"))
   assert_equal(['Error: LspServer - Unsupported argument "xyz"'],
 	       execute('LspServer xyz')->split("\n"))
-  assert_equal(['Error: Argument required'],
+  assert_equal(['Error: Argument required for ":LspServer debug"'],
 	       execute('LspServer debug')->split("\n"))
   assert_equal(['Error: Unsupported argument "xyz"'],
 	       execute('LspServer debug xyz')->split("\n"))
   assert_equal(['Error: Unsupported argument "on xyz"'],
 	       execute('LspServer debug on xyz')->split("\n"))
-  assert_equal(['Error: Argument required'],
+  assert_equal(['Error: Argument required for ":LspServer show"'],
 	       execute('LspServer show')->split("\n"))
   assert_equal(['Error: Unsupported argument "xyz"'],
 	       execute('LspServer show xyz')->split("\n"))
   assert_equal(['Error: Unsupported argument "status xyz"'],
 	       execute('LspServer show status xyz')->split("\n"))
-  assert_equal(['Error: Argument required'],
+  assert_equal(['Error: Argument required for ":LspServer trace"'],
 	       execute('LspServer trace')->split("\n"))
   assert_equal(['Error: Unsupported argument "xyz"'],
 	       execute('LspServer trace xyz')->split("\n"))
   assert_equal(['Error: Unsupported argument "verbose xyz"'],
 	       execute('LspServer trace verbose xyz')->split("\n"))
+  :%bw!
+enddef
+
+# Test for the diagnostics virtual text text property
+def g:Test_DiagVirtualText()
+  if !has('patch-9.0.1157')
+    # Doesn't support virtual text
+    return
+  endif
+  :silent! edit XdiagVirtualText.c
+  sleep 200m
+  var lines: list<string> =<< trim END
+    void DiagVirtualTextFunc1()
+    {
+      int i:
+    }
+  END
+  setline(1, lines)
+  g:WaitForServerFileLoad(1)
+  redraw!
+
+  var p = prop_list(1, {end_lnum: line('$')})
+  assert_equal(0, p->len())
+
+  g:LspOptionsSet({showDiagWithVirtualText: true})
+  p = prop_list(1, {end_lnum: line('$')})
+  assert_equal(1, p->len())
+  assert_equal([3, 8, 'LspDiagVirtualTextError'], [p[0].lnum, p[0].length, p[0].type])
+
+  g:LspOptionsSet({showDiagWithVirtualText: false})
+  p = prop_list(1, {end_lnum: line('$')})
+  assert_equal(0, p->len())
+
+  :%bw!
+enddef
+
+# Test for enabling and disabling the "showDiagWithSign" option.
+def g:Test_DiagSigns()
+  :silent! edit Xdiagsigns.c
+  sleep 200m
+  var lines: list<string> =<< trim END
+    void DiagSignsFunc1(void)
+    {
+      int a:
+    }
+  END
+  setline(1, lines)
+  g:WaitForServerFileLoad(1)
+  redraw!
+
+  var signs = sign_getplaced('%', {group: '*'})[0].signs
+  assert_equal([1, 3], [signs->len(), signs[0].lnum])
+
+  g:LspOptionsSet({showDiagWithSign: false})
+  signs = sign_getplaced('%', {group: '*'})[0].signs
+  assert_equal([], signs)
+  g:LspOptionsSet({showDiagWithSign: true})
+  signs = sign_getplaced('%', {group: '*'})[0].signs
+  assert_equal([1, 3], [signs->len(), signs[0].lnum])
+
+  # Test for enabling/disabling "autoHighlightDiags"
+  g:LspOptionsSet({autoHighlightDiags: false})
+  signs = sign_getplaced('%', {group: '*'})[0].signs
+  assert_equal([], signs)
+  g:LspOptionsSet({autoHighlightDiags: true})
+  signs = sign_getplaced('%', {group: '*'})[0].signs
+  assert_equal([1, 3], [signs->len(), signs[0].lnum])
+
   :%bw!
 enddef
 

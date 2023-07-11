@@ -16,7 +16,7 @@ if !has('patch-9.0.1629')
   finish
 endif
 
-var lspOpts = {autoComplete: false, highlightDiagInline: true}
+var lspOpts = {autoComplete: false}
 g:LspOptionsSet(lspOpts)
 
 var lspServers = [{
@@ -62,7 +62,7 @@ def g:Test_LspCodeAction_multibyte()
   :%bw!
 enddef
 
-# Test for :LspDiagShow when using multibyte and composing characters
+# Test for ":LspDiag show" when using multibyte and composing characters
 def g:Test_LspDiagShow_multibyte()
   :silent! edit XLspDiagShow_mb.c
   sleep 200m
@@ -79,7 +79,7 @@ def g:Test_LspDiagShow_multibyte()
   setline(1, lines)
   g:WaitForServerFileLoad(3)
   :redraw!
-  :LspDiagShow
+  :LspDiag show
   var qfl: list<dict<any>> = getloclist(0)
   assert_equal([5, 37], [qfl[0].lnum, qfl[0].col])
   assert_equal([6, 33], [qfl[1].lnum, qfl[1].col])

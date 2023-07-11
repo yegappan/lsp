@@ -160,7 +160,9 @@ export def BufferInit(lspserver: dict<any>, bnr: number)
   autocmd_add(acmds)
 enddef
 
-var inlayHintsEnabled = opt.lspOptions.showInlayHints
+# Track the current inlay hints enabled/disabled state.  Used when the
+# "showInlayHints" option value is changed.
+var save_showInlayHints = opt.lspOptions.showInlayHints
 
 # Enable inlay hints.  For all the buffers with an attached language server
 # that supports inlay hints, refresh the inlay hints.
@@ -180,7 +182,7 @@ export def InlayHintsEnable()
       LspInlayHintsUpdateNow(binfo.bufnr)
     endfor
   endfor
-  inlayHintsEnabled = true
+  save_showInlayHints = true
 enddef
 
 # Disable inlay hints for the current Vim session.  Clear the inlay hints in
@@ -196,15 +198,15 @@ export def InlayHintsDisable()
     :silent! autocmd_delete([{bufnr: binfo.bufnr, group: 'LspInlayHints'}])
     InlayHintsClear(binfo.bufnr)
   endfor
-  inlayHintsEnabled = false
+  save_showInlayHints = false
 enddef
 
 # Some options are changed.  If 'showInlayHints' option is changed, then
 # either enable or disable inlay hints.
 export def LspInlayHintsOptionsChanged()
-  if inlayHintsEnabled && !opt.lspOptions.showInlayHints
+  if save_showInlayHints && !opt.lspOptions.showInlayHints
     InlayHintsDisable()
-  elseif !inlayHintsEnabled && opt.lspOptions.showInlayHints
+  elseif !save_showInlayHints && opt.lspOptions.showInlayHints
     InlayHintsEnable()
   endif
 enddef

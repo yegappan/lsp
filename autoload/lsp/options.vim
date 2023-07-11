@@ -42,7 +42,7 @@ export var lspOptions: dict<any> = {
   hoverInPreview: false,
   # Don't print message when a configured language server is missing.
   ignoreMissingServer: false,
-  # Focus on the location list window after LspDiagShow
+  # Focus on the location list window after ":LspDiag show"
   keepFocusInDiags: true,
   # Focus on the location list window after LspShowReferences
   keepFocusInReferences: true,
