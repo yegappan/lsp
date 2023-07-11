@@ -215,6 +215,11 @@ enddef
 # Refresh the placed diagnostics in buffer "bnr"
 # This inline signs, inline props, and virtual text diagnostics
 export def DiagsRefresh(bnr: number, all: bool = false)
+  var lspOpts = opt.lspOptions
+  if !lspOpts.autoHighlightDiags || lspOpts.aleSupport
+    return
+  endif
+
   :silent! bnr->bufload()
 
   RemoveDiagVisualsForBuffer(bnr, all)
@@ -228,7 +233,6 @@ export def DiagsRefresh(bnr: number, all: bool = false)
   var diag_align: string = 'above'
   var diag_wrap: string = 'truncate'
   var diag_symbol: string = '┌─'
-  var lspOpts = opt.lspOptions
 
   if lspOpts.diagVirtualTextAlign == 'below'
     diag_align = 'below'
@@ -331,9 +335,6 @@ export def ProcessNewDiags(bnr: number)
   var lspOpts = opt.lspOptions
   if lspOpts.aleSupport
     SendAleDiags(bnr, -1)
-    return
-  elseif !lspOpts.autoHighlightDiags
-    return
   endif
 
   if bnr == -1 || !diagsMap->has_key(bnr)
