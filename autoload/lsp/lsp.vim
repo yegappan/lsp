@@ -49,7 +49,6 @@ def LspInitOnce()
   signature.InitOnce()
   symbol.InitOnce()
 
-  :set ballooneval balloonevalterm
   lspInitializedOnce = true
 enddef
 
@@ -353,35 +352,6 @@ def LspSavedFile()
   endfor
 enddef
 
-# Return the diagnostic text from the LSP server for the current mouse line to
-# display in a balloon
-var lspDiagPopupID: number = 0
-var lspDiagPopupInfo: dict<any> = {}
-def g:LspDiagExpr(): any
-  # Display the diagnostic message only if the mouse is over the gutter for
-  # the signs.
-  if opt.lspOptions.noDiagHoverOnLine && v:beval_col >= 2
-    return ''
-  endif
-
-  var diagsInfo: list<dict<any>> = diag.GetDiagsByLine(
-    v:beval_bufnr,
-    v:beval_lnum
-  )
-  if diagsInfo->empty()
-    # No diagnostic for the current cursor location
-    return ''
-  endif
-
-  # Include all diagnostics from the current line in the message
-  var message: list<string> = []
-  for diag in diagsInfo
-    message->extend(diag.message->split("\n"))
-  endfor
-
-  return message
-enddef
-
 # Called after leaving insert mode. Used to process diag messages (if any)
 def LspLeftInsertMode()
   if !exists('b:LspDiagsUpdatePending')
@@ -445,8 +415,7 @@ def BufferInit(lspserverId: number, bnr: number): void
 
   AddBufLocalAutocmds(lspserver, bnr)
 
-  setbufvar(bnr, '&balloonexpr', 'g:LspDiagExpr()')
-
+  diag.BufferInit(lspserver, bnr)
   signature.BufferInit(lspserver)
   inlayhints.BufferInit(lspserver, bnr)
 

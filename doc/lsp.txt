@@ -526,7 +526,7 @@ hideDisabledCodeActions |Boolean| option. Hide all the disabled code actions.
 
 						*lsp-opt-highlightDiagInline*
 highlightDiagInline	|Boolean| option.  Highlight the diagnostics inline.
-			By default this is set to false.
+			By default this is set to true.
 
 						*lsp-opt-hoverInPreview*
 hoverInPreview		|Boolean| option. Show |:LspHover| in a preview window
@@ -547,12 +547,6 @@ keepFocusInReferences	|Boolean| option.  Focus on the location list window
 			after LspShowReferences.
 			By default this is set to true.
 
-						*lsp-opt-noDiagHoverOnLine*
-noDiagHoverOnLine	|Boolean| option.  Suppress diagnostic hover from
-			appearing when the mouse is over the line instead of
-			the signature.
-			By default this is set to true.
-
 					*lsp-opt-noNewlineInCompletion*
 noNewlineInCompletion	|Boolean| option.  Suppress adding a new line on
 			completion selection with <CR>.
@@ -565,6 +559,17 @@ outlineOnRight		|Boolean| option.  Open the outline window on the
 						*lsp-opt-outlineWinSize*
 outlineWinSize		|Number| option.  The size of the symbol Outline
 			window.  By default this is set to 20.
+
+						*lsp-opt-showDiagInBalloon*
+showDiagInBalloon	|Boolean| option.  When the mouse is over a range of
+			text referenced by a diagnostic, display the
+			diagnostic text in a balloon.  By default this is set
+			to true.  In a GUI Vim, this needs the |+balloon_eval|
+			feature.  In a terminal Vim, this needs the
+			|+balloon_eval_term| feature.  In a terminal Vim,
+			'mouse' option should be set to enable mouse.
+			If this option is set to true, then the 'ballooneval'
+			and 'balloonevalterm' options are set.
 
 						*lsp-opt-showDiagInPopup*
 showDiagInPopup		|Boolean| option.  When using the ":LspDiag current"
@@ -1265,10 +1270,12 @@ current" command to display the entire diagnostic message from the language
 server for the current line.
 
 By default, the lines with a diagnostic message have a sign placed on them and
-are highlighted.  You can disable the automatic sign placement by setting the
-"showDiagWithSign" option to v:false.  By default, this option is set to
-v:true.  The line with the diagnostics is highlighted using the "LspDiagLine"
-highlight group.
+the range of text with the diagnostic is highlighted.  You can disable the
+automatic sign placement by setting the "showDiagWithSign" option to v:false.
+By default, this option is set to v:true.  You can disable the diagnostic text
+highlighting by setting the "highlightDiagInline" option to v:false. The line
+with the diagnostics is highlighted using the "LspDiagLine" highlight group.
+By default this highlight group is not set.
 
 You can also display the diagnostic message as a virtual text near the
 location of the diagnostics by setting the "showDiagWithVirtualText" option to
@@ -1279,7 +1286,7 @@ supported values are 'below' and 'after'.
 
 The range of text for a diagnostic message can be automatically highlighted by
 setting the "highlightDiagInline" option to v:true.  By default, this option
-is set to v:false.  The text is highlighted using the "LspDiagInlineError" or
+is set to v:true.  The text is highlighted using the "LspDiagInlineError" or
 "LspDiagInlineHint" or "LspDiagInlineInfo" or "LspDiagInlineWarning" highlight
 group.
 
@@ -1313,13 +1320,11 @@ true.  By default this option is set to false.  When new diagnostics are
 received for a buffer, if a location list with the diagnostics is already
 present, then it is refreshed with the new diagnostics.
 
-When using GUI Vim or in a terminal Vim with 'ballooneval' option set, when
-the mouse is moved over the diagnostic sign displayed in the sign column, then
-the diagnostic message is displayed in a popup.  By default, the diagnostic
-message popup is not displayed when the mouse is moved over the text in the
-line. To display the diagnostic message when hovering the mouse over the text
-of the line, you can set the 'noDiagHoverOnLine' option to false.  By
-default, this option is set to true.
+When using GUI Vim or in a terminal Vim with 'balloonevalterm' option set,
+when the mouse is moved over the range of text referenced by a diagnostic,
+then the diagnostic message is displayed in a popup.  If the
+"showDiagInBalloon" option is set to false, then the balloon popup will not be
+displayed.  By default, this option is set to true.
 
 To display the diagnostic message for the current line in the status area, you
 can set the 'showDiagOnStatusLine' option to true.  By default, this option
@@ -1437,9 +1442,9 @@ override them.
 				By default, linked to the "SpellCap" highlight
 				group.
 *LspDiagLine*			Used to highlight a line with one or more
-				diagnostics.  By default linked to the
-				"DiffAdd" highlight group.  Use "NONE" to
-				disable.
+				diagnostics.  By default linked to "NONE"
+				(cleared).  You can link this to a highlight
+				group to highlight the line.
 *LspDiagSignErrorText*		Used to highlight the sign text for error
 				diags.  By default linked to 'ErrorMsg'.
 *LspDiagSignHintText*		Used to highlight the sign text for hint
@@ -1487,7 +1492,7 @@ can use the following: >
 <
 or >
 
-    highlight link LspDiagLine NONE
+    highlight link LspDiagLine DiffAdd
     highlight link LspDiagVirtualText WarningMsg
 <
 ==============================================================================

@@ -23,7 +23,7 @@ var diagsMap: dict<dict<any>> = {}
 export def InitOnce()
   # Signs and their highlight groups used for LSP diagnostics
   hlset([
-    {name: 'LspDiagLine', default: true, linksto: 'DiffAdd'},
+    {name: 'LspDiagLine', default: true, linksto: 'NONE'},
     {name: 'LspDiagSignErrorText', default: true, linksto: 'ErrorMsg'},
     {name: 'LspDiagSignWarningText', default: true, linksto: 'Search'},
     {name: 'LspDiagSignInfoText', default: true, linksto: 'Pmenu'},
@@ -116,6 +116,14 @@ export def InitOnce()
 	cmd: 'AleHook(g:ale_want_results_buffer)'
       }
     ])
+  endif
+enddef
+
+# Initialize the diagnostics features for the buffer 'bnr'
+export def BufferInit(lspserver: dict<any>, bnr: number)
+  if opt.lspOptions.showDiagInBalloon
+    :set ballooneval balloonevalterm
+    setbufvar(bnr, '&balloonexpr', 'g:LspDiagExpr()')
   endif
 enddef
 
@@ -795,6 +803,38 @@ export def GetDiagsForBuf(bnr: number = bufnr()): list<dict<any>>
   endif
 
   return diagsMap[bnr].sortedDiagnostics->deepcopy()
+enddef
+
+# Return the diagnostic text from the LSP server for the current mouse line to
+# display in a balloon
+def g:LspDiagExpr(): any
+  if !opt.lspOptions.showDiagInBalloon
+    return ''
+  endif
+
+  var diagsInfo: list<dict<any>> =
+			GetDiagsByLine(v:beval_bufnr, v:beval_lnum)
+  if diagsInfo->empty()
+    # No diagnostic for the current cursor location
+    return ''
+  endif
+  var diagFound: dict<any> = {}
+  for diag in diagsInfo
+    var r = diag.range
+    var startcol = util.GetLineByteFromPos(v:beval_bufnr, r.start) + 1
+    var endcol = util.GetLineByteFromPos(v:beval_bufnr, r.end) + 1
+    if v:beval_col >= startcol && v:beval_col < endcol
+      diagFound = diag
+      break
+    endif
+  endfor
+  if diagFound->empty()
+    # mouse is outside of the diagnostics range
+    return ''
+  endif
+
+  # return the found diagnostic
+  return diagFound.message->split("\n")
 enddef
 
 # Track the current diagnostics auto highlight enabled/disabled state.  Used

@@ -37,7 +37,7 @@ export var lspOptions: dict<any> = {
   # hide disabled code actions
   hideDisabledCodeActions: false,
   # Highlight diagnostics inline
-  highlightDiagInline: false,
+  highlightDiagInline: true,
   # Show the symbol documentation in the preview window instead of in a popup
   hoverInPreview: false,
   # Don't print message when a configured language server is missing.
@@ -53,14 +53,14 @@ export var lspOptions: dict<any> = {
   # Alignment of virtual diagnostic text, when showDiagWithVirtualText is true
   # Allowed values: 'above' | 'below' | 'after' (default is 'above')
   diagVirtualTextAlign: 'above',
-  # instead of the signature
-  noDiagHoverOnLine: true,
   # Suppress adding a new line on completion selection with <CR>
   noNewlineInCompletion: false,
   # Open outline window on right side
   outlineOnRight: false,
   # Outline window size
   outlineWinSize: 20,
+  # Show diagnostic text in a balloon when the mouse is over the diagnostic
+  showDiagInBalloon: true,
   # Make diagnostics show in a popup instead of echoing
   showDiagInPopup: true,
   # Suppress diagnostic hover from appearing when the mouse is over the line

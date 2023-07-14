@@ -475,9 +475,9 @@ def g:Test_LspDiag_Multi()
   :redraw!
   # TODO: Waiting count doesn't include Warning, Info, and Hint diags
   if clangdVerMajor > 14
-	g:WaitForServerFileLoad(3)
+    g:WaitForServerFileLoad(3)
   else
-	g:WaitForServerFileLoad(2)
+    g:WaitForServerFileLoad(2)
   endif
   :LspDiag show
   var qfl: list<dict<any>> = getloclist(0)
@@ -485,9 +485,9 @@ def g:Test_LspDiag_Multi()
   assert_equal(bnr, qfl[0].bufnr)
   assert_equal(3, qfl->len())
   if clangdVerMajor > 14
-	assert_equal([1, 5, 'E'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
+    assert_equal([1, 5, 'E'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
   else
-	assert_equal([1, 5, 'W'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
+    assert_equal([1, 5, 'W'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
   endif
   assert_equal([1, 9, 'E'], [qfl[1].lnum, qfl[1].col, qfl[1].type])
   assert_equal([2, 9, 'E'], [qfl[2].lnum, qfl[2].col, qfl[2].type])
@@ -1653,6 +1653,7 @@ def g:Test_DiagVirtualText()
     # Doesn't support virtual text
     return
   endif
+  g:LspOptionsSet({highlightDiagInline: false})
   :silent! edit XdiagVirtualText.c
   sleep 200m
   var lines: list<string> =<< trim END
@@ -1677,6 +1678,7 @@ def g:Test_DiagVirtualText()
   p = prop_list(1, {end_lnum: line('$')})
   assert_equal(0, p->len())
 
+  g:LspOptionsSet({highlightDiagInline: true})
   :%bw!
 enddef
 
