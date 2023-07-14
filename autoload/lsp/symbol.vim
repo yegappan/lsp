@@ -510,6 +510,7 @@ def PeekSymbolLocation(lspserver: dict<any>, location: dict<any>)
   pos->extend([start_col, end_col - start_col])
   matchaddpos('Search', [pos], 10, 101, {window: pwid})
   var cmds =<< trim eval END
+    :setlocal number
     [{rstart.line + 1}, 1]->cursor()
     :normal! z.
   END
