@@ -84,7 +84,7 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string): 
   endif
 
   if opt.lspOptions.hoverInPreview
-    execute $':silent! {cmdmods} pedit LspHoverReply'
+    execute $':silent! {cmdmods} pedit LspHover'
     :wincmd P
     :setlocal buftype=nofile
     :setlocal bufhidden=delete

@@ -1102,9 +1102,9 @@ def g:Test_LspHover()
   END
   setline(1, lines)
   if clangdVerMajor > 14
-	g:WaitForServerFileLoad(1)
+    g:WaitForServerFileLoad(1)
   else
-	g:WaitForServerFileLoad(0)
+    g:WaitForServerFileLoad(0)
   endif
   cursor(8, 4)
   var output = execute(':LspHover')->split("\n")
@@ -1128,6 +1128,18 @@ def g:Test_LspHover()
   :LspHover
   assert_equal(1, popup_list()->len())
   popup_clear()
+
+  # Show hover information in a preview window
+  g:LspOptionsSet({hoverInPreview: true})
+  cursor(8, 4)
+  :LspHover
+  assert_equal([2, 2, 'preview'], [winnr('$'), winnr(), win_gettype(1)])
+  assert_equal('LspHover', winbufnr(1)->bufname())
+  cursor(9, 9)
+  :LspHover
+  assert_equal([2, 2, 'preview'], [winnr('$'), winnr(), win_gettype(1)])
+  g:LspOptionsSet({hoverInPreview: false})
+  :pclose
 
   :%bw!
 enddef
