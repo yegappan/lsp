@@ -353,13 +353,13 @@ def LspSavedFile()
 enddef
 
 # Called after leaving insert mode. Used to process diag messages (if any)
-def LspLeftInsertMode()
-  if !exists('b:LspDiagsUpdatePending')
+def LspLeftInsertMode(bnr: number)
+  var updatePending: bool = bnr->getbufvar('LspDiagsUpdatePending', false)
+  if !updatePending
     return
   endif
-  :unlet b:LspDiagsUpdatePending
+  setbufvar(bnr, 'LspDiagsUpdatePending', false)
 
-  var bnr: number = bufnr()
   diag.ProcessNewDiags(bnr)
 enddef
 
@@ -377,7 +377,7 @@ def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
   acmds->add({bufnr: bnr,
 	      event: 'InsertLeave',
 	      group: 'LSPBufferAutocmds',
-	      cmd: 'LspLeftInsertMode()'})
+	      cmd: $'LspLeftInsertMode({bnr})'})
 
   # Auto highlight all the occurrences of the current keyword
   if opt.lspOptions.autoHighlight &&
@@ -559,7 +559,7 @@ def RestartServer()
     endif
 
     # Start the server again
-    lspserver.startServer(bufnr(''))
+    lspserver.startServer(bufnr())
   endfor
 
   AddBuffersToLsp(ftype)
@@ -768,7 +768,7 @@ export def ErrorCount(): dict<number>
     return res
   endif
 
-  return diag.DiagsGetErrorCount()
+  return diag.DiagsGetErrorCount(bufnr())
 enddef
 
 # jump to the next/previous/first diagnostic message in the current buffer

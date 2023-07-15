@@ -213,7 +213,7 @@ enddef
 # when the outline window is closed, do the cleanup
 def OutlineCleanup()
   # Remove the outline autocommands
-  silent! autocmd_delete([{group: 'LSPOutline'}])
+  :silent! autocmd_delete([{group: 'LSPOutline'}])
 
   :silent! syntax clear LSPTitle
 enddef

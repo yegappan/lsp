@@ -567,8 +567,8 @@ def LspSetPopupFileType()
 enddef
 
 # complete done handler (LSP server-initiated actions after completion)
-def LspCompleteDone()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked('completion')
+def LspCompleteDone(bnr: number)
+  var lspserver: dict<any> = buf.BufLspServerGet(bnr, 'completion')
   if lspserver->empty()
     return
   endif
@@ -584,7 +584,6 @@ def LspCompleteDone()
     return
   endif
 
-  var bnr: number = bufnr()
   textedit.ApplyTextEdits(bnr, completionData.additionalTextEdits)
 enddef
 
@@ -643,7 +642,7 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
   acmds->add({bufnr: bnr,
 	      event: 'CompleteDone',
 	      group: 'LSPBufferAutocmds',
-	      cmd: 'LspCompleteDone()'})
+	      cmd: $'LspCompleteDone({bnr})'})
 
   autocmd_add(acmds)
 enddef

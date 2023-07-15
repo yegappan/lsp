@@ -41,7 +41,7 @@ export def CompletionVsnip(items: list<dict<any>>)
     return
   endif
   var starttext = getline('.')->slice(0, charcol('.') - 1)
-  for item in vsnip#get_complete_items(bufnr('%'))
+  for item in vsnip#get_complete_items(bufnr())
     var match = starttext->matchstrpos(Pattern(item.abbr))
     if match[0] != ''
       var user_data = item.user_data->json_decode()

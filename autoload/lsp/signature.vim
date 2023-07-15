@@ -94,10 +94,10 @@ export def SignatureHelp(lspserver: dict<any>, sighelp: any): void
     lspserver.signaturePopup->popup_close()
 
     var popupID = text->popup_atcursor({moved: [col('.') - 1, 9999999]})
-    var bnum: number = popupID->winbufnr()
-    prop_type_add('signature', {bufnr: bnum, highlight: 'LspSigActiveParameter'})
+    var bnr: number = popupID->winbufnr()
+    prop_type_add('signature', {bufnr: bnr, highlight: 'LspSigActiveParameter'})
     if hllen > 0
-      prop_add(1, startcol + 1, {bufnr: bnum, length: hllen, type: 'signature'})
+      prop_add(1, startcol + 1, {bufnr: bnr, length: hllen, type: 'signature'})
     endif
     lspserver.signaturePopup = popupID
   endif

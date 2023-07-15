@@ -354,7 +354,7 @@ export def ProcessNewDiags(bnr: number)
   if curmode == 'i' || curmode == 'R' || curmode == 'Rv'
     # postpone placing signs in insert mode and replace mode. These will be
     # placed after the user returns to Normal mode.
-    b:LspDiagsUpdatePending = true
+    setbufvar(bnr, 'LspDiagsUpdatePending', true)
     return
   endif
 
@@ -448,30 +448,22 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<d
 enddef
 
 # get the count of error in the current buffer
-export def DiagsGetErrorCount(): dict<number>
-  var errCount = 0
-  var warnCount = 0
-  var infoCount = 0
-  var hintCount = 0
-
-  var bnr: number = bufnr()
+export def DiagsGetErrorCount(bnr: number): dict<number>
+  var diagSevCount: list<number> = [0, 0, 0, 0, 0]
   if diagsMap->has_key(bnr)
     var diags = diagsMap[bnr].sortedDiagnostics
     for diag in diags
-      var severity = diag->get('severity', -1)
-      if severity == 1
-	errCount += 1
-      elseif severity == 2
-	warnCount += 1
-      elseif severity == 3
-	infoCount += 1
-      elseif severity == 4
-	hintCount += 1
-      endif
+      var severity = diag->get('severity', 0)
+      diagSevCount[severity] += 1
     endfor
   endif
 
-  return {Error: errCount, Warn: warnCount, Info: infoCount, Hint: hintCount}
+  return {
+    Error: diagSevCount[1],
+    Warn: diagSevCount[2],
+    Info: diagSevCount[3],
+    Hint: diagSevCount[4]
+  }
 enddef
 
 # Map the LSP DiagnosticSeverity to a quickfix type character
@@ -550,14 +542,15 @@ enddef
 # Display the diagnostic messages from the LSP server for the current buffer
 # in a location list
 export def ShowAllDiags(): void
-  if !DiagsUpdateLocList(bufnr(), true)
+  var bnr: number = bufnr()
+  if !DiagsUpdateLocList(bnr, true)
     util.WarnMsg($'No diagnostic messages found for {@%}')
     return
   endif
 
   var save_winid = win_getid()
   # make the diagnostics error list the active one and open it
-  var LspQfId: number = getbufvar(bufnr(), 'LspQfId', 0)
+  var LspQfId: number = bnr->getbufvar('LspQfId', 0)
   var LspQfNr: number = getloclist(0, {id: LspQfId, nr: 0}).nr
   exe $':{LspQfNr} lhistory'
   :lopen
