@@ -127,17 +127,21 @@ export def BufferInit(lspserver: dict<any>, bnr: number)
   endif
 enddef
 
+# Function to sort the diagnostics in ascending order based on the line and
+# character offset
+def DiagsSortFunc(a: dict<any>, b: dict<any>): number
+  var a_start: dict<number> = a.range.start
+  var b_start: dict<number> = b.range.start
+  var linediff: number = a_start.line - b_start.line
+  if linediff == 0
+    return a_start.character - b_start.character
+  endif
+  return linediff
+enddef
+
 # Sort diagnostics ascending based on line and character offset
 def SortDiags(diags: list<dict<any>>): list<dict<any>>
-  return diags->sort((a, b) => {
-    var a_start = a.range.start
-    var b_start = b.range.start
-    var linediff = a_start.line - b_start.line
-    if linediff == 0
-      return a_start.character - b_start.character
-    endif
-    return linediff
-  })
+  return diags->sort(DiagsSortFunc)
 enddef
 
 # Remove the diagnostics stored for buffer "bnr"
@@ -255,6 +259,7 @@ export def DiagsRefresh(bnr: number, all: bool = false)
 
   var signs: list<dict<any>> = []
   var diags: list<dict<any>> = diagsMap[bnr].sortedDiagnostics
+  var inlineHLprops: list<list<list<number>>> = [[], [], [], [], []]
   for diag in diags
     # TODO: prioritize most important severity if there are multiple
     # diagnostics from the same line
@@ -270,15 +275,14 @@ export def DiagsRefresh(bnr: number, all: bool = false)
 
     try
       if lspOpts.highlightDiagInline
-        prop_add(lnum, util.GetLineByteFromPos(bnr, d_start) + 1,
-                 {end_lnum: d_end.line + 1,
-                  end_col: util.GetLineByteFromPos(bnr, d_end) + 1,
-                  bufnr: bnr,
-                  type: DiagSevToInlineHLName(diag.severity)})
+	var propLocation: list<number> = [
+	  lnum, util.GetLineByteFromPos(bnr, d_start) + 1,
+	  d_end.line + 1, util.GetLineByteFromPos(bnr, d_end) + 1
+	]
+	inlineHLprops[diag.severity]->add(propLocation)
       endif
 
       if lspOpts.showDiagWithVirtualText
-
         var padding: number
         var symbol: string = diag_symbol
 
@@ -301,10 +305,22 @@ export def DiagsRefresh(bnr: number, all: bool = false)
                            text_padding_left: padding})
       endif
     catch /E966\|E964/ # Invalid lnum | Invalid col
-      # Diagnostics arrive asynchronous and the document changed while they
-      # wore send. Ignore this as new once will arrive shortly.
+      # Diagnostics arrive asynchronously and the document changed while they
+      # were in transit. Ignore this as new once will arrive shortly.
     endtry
   endfor
+
+  if lspOpts.highlightDiagInline
+    for i in range(1, 4)
+      if !inlineHLprops[i]->empty()
+	try
+	  prop_add_list({bufnr: bnr, type: DiagSevToInlineHLName(i)},
+	    inlineHLprops[i])
+	catch /E966\|E964/ # Invalid lnum | Invalid col
+	endtry
+      endif
+    endfor
+  endif
 
   if lspOpts.showDiagWithSign
     signs->sign_placelist()
@@ -426,9 +442,7 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<d
   # store the diagnostic for each line separately
   var joinedServerDiags: list<dict<any>> = []
   for diags in serverDiags->values()
-    for diag in diags
-      joinedServerDiags->add(diag)
-    endfor
+    joinedServerDiags->extend(diags)
   endfor
 
   var sortedDiags = SortDiags(joinedServerDiags)

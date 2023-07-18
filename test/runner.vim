@@ -47,7 +47,7 @@ try
   g:StartLangServer()
   LspRunTests()
 catch
-  writefile([$'FAIL: Tests in {g:TestName} failed with exception {v:exception} at {v:throwpoint} '], 'results.txt', 'a')
+  writefile(['FAIL: Tests in ' .. g:TestName .. ' failed with exception ' .. v:exception .. ' at ' .. v:throwpoint], 'results.txt', 'a')
 endtry
 
 qall!
