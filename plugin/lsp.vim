@@ -74,7 +74,7 @@ command! -nargs=0 -bar -count LspGotoDeclaration lsp.GotoDeclaration(v:false, <q
 command! -nargs=0 -bar -count LspGotoDefinition lsp.GotoDefinition(v:false, <q-mods>, <count>)
 command! -nargs=0 -bar -count LspGotoImpl lsp.GotoImplementation(v:false, <q-mods>, <count>)
 command! -nargs=0 -bar -count LspGotoTypeDef lsp.GotoTypedef(v:false, <q-mods>, <count>)
-command! -nargs=0 -bar LspHighlight call LspDocHighlight(<q-mods>)
+command! -nargs=0 -bar LspHighlight call LspDocHighlight(bufnr(), <q-mods>)
 command! -nargs=0 -bar LspHighlightClear call LspDocHighlightClear()
 command! -nargs=? -bar LspHover lsp.Hover(<q-mods>)
 command! -nargs=1 -bar -complete=customlist,lsp.LspInlayHintsComplete LspInlayHints lsp.InlayHints(<q-args>)

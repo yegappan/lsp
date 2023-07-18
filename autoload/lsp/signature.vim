@@ -34,7 +34,7 @@ export def BufferInit(lspserver: dict<any>)
   endif
 
   if !opt.lspOptions.showSignature
-    # Show signature are disabled
+    # Show signature support is disabled
     return
   endif
 
@@ -59,7 +59,6 @@ export def SignatureHelp(lspserver: dict<any>, sighelp: any): void
   endif
 
   if sighelp.signatures->len() <= 0
-    util.WarnMsg('No signature help available')
     CloseSignaturePopup(lspserver)
     return
   endif

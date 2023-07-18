@@ -995,12 +995,15 @@ enddef
 
 # Request: "textDocument/documentHighlight"
 # Param: DocumentHighlightParams
-def DocHighlight(lspserver: dict<any>, cmdmods: string): void
+def DocHighlight(lspserver: dict<any>, bnr: number, cmdmods: string): void
   # Check whether LSP server supports getting highlight information
   if !lspserver.isDocumentHighlightProvider
     util.ErrMsg('LSP server does not support document highlight')
     return
   endif
+
+  # Send the pending buffer changes to the language server
+  bnr->listener_flush()
 
   # interface DocumentHighlightParams
   #   interface TextDocumentPositionParams
@@ -1205,6 +1208,9 @@ def InlayHintsShow(lspserver: dict<any>, bnr: number)
     util.ErrMsg('LSP server does not support inlay hint')
     return
   endif
+
+  # Send the pending buffer changes to the language server
+  bnr->listener_flush()
 
   var binfo = bnr->getbufinfo()
   if binfo->empty()

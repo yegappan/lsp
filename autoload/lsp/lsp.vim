@@ -337,8 +337,7 @@ def g:LspShowSignature(): string
 enddef
 
 # A buffer is saved. Send the "textDocument/didSave" LSP notification
-def LspSavedFile()
-  var bnr: number = expand('<abuf>')->str2nr()
+def LspSavedFile(bnr: number)
   var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)->filter(
     (key, lspsrv) => !lspsrv->empty() && lspsrv.running
   )
@@ -371,7 +370,7 @@ def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
   acmds->add({bufnr: bnr,
 	      event: 'BufWritePost',
 	      group: 'LSPBufferAutocmds',
-	      cmd: 'LspSavedFile()'})
+	      cmd: $'LspSavedFile({bnr})'})
 
   # Update the diagnostics when insert mode is stopped
   acmds->add({bufnr: bnr,
@@ -385,7 +384,7 @@ def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
     acmds->add({bufnr: bnr,
 		event: 'CursorMoved',
 		group: 'LSPBufferAutocmds',
-		cmd: 'call LspDocHighlightClear() | call LspDocHighlight("silent")'})
+		cmd: $'call LspDocHighlightClear({bnr}) | call LspDocHighlight({bnr}, "silent")'})
   endif
 
   # Show diagnostics on the status line
@@ -399,6 +398,8 @@ def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
   autocmd_add(acmds)
 enddef
 
+# The LSP server with ID "lspserverId" is ready, initialize the LSP features
+# for buffer "bnr".
 def BufferInit(lspserverId: number, bnr: number): void
   var lspserver = buf.BufLspServerGetById(bnr, lspserverId)
   if lspserver->empty() || !lspserver.running
@@ -815,28 +816,29 @@ export def ShowReferences(peek: bool)
 enddef
 
 # highlight all the places where a symbol is referenced
-def g:LspDocHighlight(cmdmods: string = '')
+def g:LspDocHighlight(bnr: number = bufnr(), cmdmods: string = '')
   var lspserver: dict<any> = buf.CurbufGetServerChecked('documentHighlight')
   if lspserver->empty()
     return
   endif
 
-  lspserver.docHighlight(cmdmods)
+  lspserver.docHighlight(bnr, cmdmods)
 enddef
 
 # clear the symbol reference highlight
-def g:LspDocHighlightClear()
+def g:LspDocHighlightClear(bnr: number = bufnr())
   var lspserver: dict<any> = buf.CurbufGetServerChecked('documentHighlight')
   if lspserver->empty()
     return
   endif
 
+  var propNames = ['LspTextRef', 'LspReadRef', 'LspWriteRef']
   if has('patch-9.0.0233')
-    prop_remove({types: ['LspTextRef', 'LspReadRef', 'LspWriteRef'], all: true})
+    prop_remove({types: propNames, bufnr: bnr, all: true})
   else
-    prop_remove({type: 'LspTextRef', all: true})
-    prop_remove({type: 'LspReadRef', all: true})
-    prop_remove({type: 'LspWriteRef', all: true})
+    for propName in propNames
+      prop_remove({type: propName, bufnr: bnr, all: true})
+    endfor
   endif
 enddef
 

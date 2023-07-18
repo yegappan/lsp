@@ -78,15 +78,17 @@ export var lspOptions: dict<any> = {
   snippetSupport: false,
   # enable SirVer/ultisnips completion support
   ultisnipsSupport: false,
-  # enable hrsh7th/vim-vsnip completion support
-  vsnipSupport: false,
-  # Use a floating menu to show the code action menu instead of asking for input
+  # add to autocomplition list current buffer words
+  useBufferCompletion: false,
+  # Use a floating menu to show the code action menu instead of asking for
+  # input
   usePopupInCodeAction: false,
   # ShowReferences in a quickfix list instead of a location list`
   useQuickfixForLocations: false,
-  # add to autocomplition list current buffer words
-  useBufferCompletion: false,
-  # Limit the time autocompletion searches for words in current buffer (in milliseconds)
+  # enable hrsh7th/vim-vsnip completion support
+  vsnipSupport: false,
+  # Limit the time autocompletion searches for words in current buffer (in
+  # milliseconds)
   bufferCompletionTimeout: 100,
   # Enable support for custom completion kinds
   customCompletionKinds: false,

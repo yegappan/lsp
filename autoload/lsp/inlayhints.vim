@@ -76,11 +76,11 @@ enddef
 
 # Update all the inlay hints.  A timer is used to throttle the updates.
 def LspInlayHintsUpdate(bnr: number)
-  if !getbufvar(bnr, 'LspInlayHintsNeedsUpdate', true)
+  if !bnr->getbufvar('LspInlayHintsNeedsUpdate', true)
     return
   endif
 
-  var timerid = getbufvar(bnr, 'LspInlayHintsTimer', -1)
+  var timerid = bnr->getbufvar('LspInlayHintsTimer', -1)
   if timerid != -1
     timerid->timer_stop()
     setbufvar(bnr, 'LspInlayHintsTimer', -1)
@@ -113,7 +113,7 @@ enddef
 
 # Stop updating the inlay hints.
 def LspInlayHintsUpdateStop(bnr: number)
-  var timerid = getbufvar(bnr, 'LspInlayHintsTimer', -1)
+  var timerid = bnr->getbufvar('LspInlayHintsTimer', -1)
   if timerid != -1
     timerid->timer_stop()
     setbufvar(bnr, 'LspInlayHintsTimer', -1)

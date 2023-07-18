@@ -294,10 +294,12 @@ enddef
 export def GetClientCaps(): dict<any>
   # client capabilities (ClientCapabilities)
   var clientCaps: dict<any> = {
-    workspace: {
-      workspaceFolders: true,
-      applyEdit: true,
-      configuration: true
+    general: {
+      # Currently we always send character count as position offset,
+      # which meanas only utf-32 is supported.
+      # Adding utf-16 simply for good mesure, as I'm scared some servers will
+      # give up if they don't support utf-32 only.
+      positionEncodings: ['utf-32', 'utf-16']
     },
     textDocument: {
       callHierarchy: {
@@ -322,43 +324,105 @@ export def GetClientCaps(): dict<any>
 	dynamicRegistration: false,
 	completionItem: {
 	  documentationFormat: ['markdown', 'plaintext'],
-	  resolveSupport: {properties: ['detail', 'documentation']},
+	  resolveSupport: {
+	    properties: ['detail', 'documentation']
+	  },
 	  snippetSupport: opt.lspOptions.snippetSupport,
 	  insertReplaceSupport: false
 	},
-	completionItemKind: {valueSet: range(1, 25)}
+	completionItemKind: {
+	  valueSet: range(1, 25)
+	}
+      },
+      declaration: {
+	dynamicRegistration: false,
+	linkSupport: true
+      },
+      definition: {
+	dynamicRegistration: false,
+	linkSupport: true
+      },
+      documentHighlight: {
+	dynamicRegistration: false
       },
       documentSymbol: {
 	dynamicRegistration: false,
+	symbolKind: {
+	  valueSet: range(1, 25)
+	},
 	hierarchicalDocumentSymbolSupport: true,
-	symbolKind: {valueSet: range(1, 25)}
+	labelSupport: false
+      },
+      foldingRange: {
+	dynamicRegistration: false,
+	rangeLimit: 5000,
+	lineFoldingOnly: true,
+	foldingRangeKind: {
+	  valueSet: ['comment', 'imports', 'region']
+	},
+	foldingRange: {
+	  collapsedText: true
+	}
+      },
+      formatting: {
+	dynamicRegistration: false
       },
       hover: {
+	dynamicRegistration: false,
 	contentFormat: ['markdown', 'plaintext']
       },
-      foldingRange: {lineFoldingOnly: true},
-      inlayHint: {dynamicRegistration: false},
-      synchronization: {
-	didSave: true
+      implementation: {
+	dynamicRegistration: false,
+	linkSupport: true
       },
-      declaration: {linkSupport: true},
-      definition: {linkSupport: true},
-      typeDefinition: {linkSupport: true},
-      implementation: {linkSupport: true},
+      inlayHint: {
+	dynamicRegistration: false
+      },
+      publishDiagnostics: {
+	relatedInformation: false,
+	versionSupport: true,
+	codeDescriptionSupport: true,
+	dataSupport: true
+      },
+      rangeFormatting: {
+	dynamicRegistration: false
+      },
+      references: {
+	dynamicRegistration: false
+      },
+      rename: {
+	dynamicRegistration: false,
+	prepareSupport: false,
+      },
       signatureHelp: {
+	dynamicRegistration: false,
 	signatureInformation: {
 	  documentationFormat: ['markdown', 'plaintext'],
 	  activeParameterSupport: true
 	}
+      },
+      synchronization: {
+	dynamicRegistration: false,
+	didSave: true,
+	willSave: false,
+	WillSaveWaitUntil: false
+      },
+      typeDefinition: {
+	dynamicRegistration: false,
+	linkSupport: true
+      },
+      typeHierarchy: {
+	dynamicRegistration: false,
       }
     },
     window: {},
-    general: {
-      # Currently we always send character count as position offset,
-      # which meanas only utf-32 is supported.
-      # Adding utf-16 simply for good mesure, as I'm scared some servers will
-      # give up if they don't support utf-32 only.
-      positionEncodings: ['utf-32', 'utf-16']
+    workspace: {
+      workspaceFolders: true,
+      applyEdit: true,
+      configuration: true,
+      symbol: {
+	dynamicRegistration: false
+      }
     },
     # This is the way clangd expects to be informated about supported encodings:
     # https://clangd.llvm.org/extensions#utf-8-offsets

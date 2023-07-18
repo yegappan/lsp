@@ -861,11 +861,14 @@ can map these commands to keys and make it easier to invoke them.
 						*:LspHover*
 :LspHover		Show the documentation for the symbol under the cursor
 			in a popup window. If you want to show the symbol
-			documentation in the preview window instead of in a
-			popup set >
+			documentation in the |preview-window| instead of in a
+			popup window set >
 
 			    LspOptionsSet({'hoverInPreview': true})
 <
+			You can use the |:pclose| command to close the preview
+			window.
+
 			You can use the |K| key in normal mode to display the
 			documentation for the keyword under the cursor by
 			setting the 'keywordprg' Vim option: >
