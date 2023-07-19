@@ -441,15 +441,10 @@ def g:LspOmniFunc(findstart: number, base: string): any
     lspserver.getCompletion(1, '')
 
     # locate the start of the word
-    var line = getline('.')
-    var start = charcol('.') - 1
-    var keyword: string = ''
-    while start > 0 && line[start - 1] =~ '\k'
-      keyword = line[start - 1] .. keyword
-      start -= 1
-    endwhile
+    var line = getline('.')->strpart(0, col('.') - 1)
+    var keyword = line->matchstr('\k\+$')
     lspserver.omniCompleteKeyword = keyword
-    return line->byteidx(start)
+    return line->len() - keyword->len()
   else
     # Wait for the list of matches from the LSP server
     var count: number = 0
