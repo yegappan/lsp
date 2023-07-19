@@ -441,15 +441,10 @@ def g:LspOmniFunc(findstart: number, base: string): any
     lspserver.getCompletion(1, '')
 
     # locate the start of the word
-    var line = getline('.')
-    var start = charcol('.') - 1
-    var keyword: string = ''
-    while start > 0 && line[start - 1] =~ '\k'
-      keyword = line[start - 1] .. keyword
-      start -= 1
-    endwhile
+    var line = getline('.')->strpart(0, col('.') - 1)
+    var keyword = line->matchstr('\k\+$')
     lspserver.omniCompleteKeyword = keyword
-    return line->byteidx(start)
+    return line->len() - keyword->len()
   else
     # Wait for the list of matches from the LSP server
     var count: number = 0
@@ -486,6 +481,13 @@ def g:LspOmniFunc(findstart: number, base: string): any
 
     return res->filter((i, v) => v.word->stridx(prefix) == 0)
   endif
+enddef
+
+# For plugins that implement async completion this function indicates if
+# omnifunc is waiting for LSP response.
+def g:LspOmniCompletePending(): bool
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('completion')
+  return !lspserver->empty() && lspserver.omniCompletePending
 enddef
 
 # Insert mode completion handler. Used when 24x7 completion is enabled

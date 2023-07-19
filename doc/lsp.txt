@@ -1257,6 +1257,19 @@ do the filtering.  By default, case sensitive comparison is used to filter the
 returned items.  You can modify the 'completionMatcher' option to use either
 case insensitive or fuzzy comparison.
 
+In addition to the automatic completion and omni completion, it is possible to
+use external completion engines.  LSP client can be used as a completion source
+by repurposing `g:LspOmniFunc` function.  The adapter which interfaces with
+the external completion engine should invoke this function twice as
+described in |complete-functions|.  After the first invocation a request is
+sent to the LSP server to find completion candidates.  Second invocation
+returns the matches from LSP server.  If the LSP server is not ready to reply
+`g:LspOmniFunc` waits for up to 2 seconds.  This wait blocks the caller from
+doing other work, which may be a concern for asynchronous completion engines.
+To avoid blocking wait call `g:LspOmniCompletePending` function which returns
+`true` immediately if LSP server is not ready.  `g:LspOmniFunc` can be
+called (the second time) only after this function returns `false`.
+
 ==============================================================================
 7. Diagnostics						*lsp-diagnostics*
 
