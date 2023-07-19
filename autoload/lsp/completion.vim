@@ -488,6 +488,13 @@ def g:LspOmniFunc(findstart: number, base: string): any
   endif
 enddef
 
+# For plugins that implement async completion this function indicates if
+# omnifunc is waiting for LSP response.
+def g:LspOmniCompletePending(): bool
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('completion')
+  return !lspserver->empty() && lspserver.omniCompletePending
+enddef
+
 # Insert mode completion handler. Used when 24x7 completion is enabled
 # (default).
 def LspComplete()
