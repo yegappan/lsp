@@ -545,12 +545,28 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
   endfor
 enddef
 
+def ExpandTabs(line: string): string
+  var block_marker = line->matchstrpos($'^ \{{,3}}>[ \t]\+\|^[ \t]*\%({list_marker}\)\=[ \t]*')
+  if block_marker[0]->match('\t') < 0
+    return line
+  endif
+  var begin: string = ""
+  for char in block_marker[0]
+    if char == '	'
+      begin ..= ' '->repeat(4 - (begin->strlen() % 4))
+    else
+      begin ..= char
+    endif
+  endfor
+  return begin .. line[block_marker[2] :]
+enddef
+
 export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>>
   var document: dict<list<any>> = {content: [], syntax: []}
   var open_blocks: list<dict<any>> = []
 
   for l in data
-    var line: string = l
+    var line: string = ExpandTabs(l)
     var cur = 0
 
     # for each open block check if current line continue it
