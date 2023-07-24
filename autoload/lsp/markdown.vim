@@ -22,7 +22,7 @@ var blank_line = '^\s*$'
 var thematic_break = '^ \{,3\}\([-_*]\)\%(\s*\1\)\{2,\}\s*$'
 var code_fence = '^ \{,3\}\(`\{3,\}\|\~\{3,\}\)\s*\(\S*\)'
 var code_indent = '^ \{4\}\zs\s*\S.*'
-var paragraph = '^\s*\zs\S.\{-}\ze\s*$'
+var paragraph = '^\s*\zs\S.\{-}\s*\ze$'
 
 var atx_heading = '^ \{,3}\zs\(#\{1,6}\) \(.\{-}\)\ze\%( #\{1,}\s*\)\=$'
 var setext_heading = '^ \{,3}\zs\%(=\{1,}\|-\{1,}\)\ze *$'
@@ -125,7 +125,7 @@ def GetCodeSpans(text: string): list<dict<any>>
     if code_span[1] < 0
       break
     endif
-    var code_text = text->matchstrpos('^\(`\+\)\%(\zs \+\ze\|\( \=\)\zs.\{-}\S.\{-}\ze\2\)`\@1<!\1`\@!', pos)
+    var code_text = text->matchstrpos('^\(`\+\)\%(\zs \+\ze\|\([ \n]\=\)\zs.\{-}\S.\{-}\ze\2\)`\@1<!\1`\@!', pos)
     code_spans->add({
 	marker: '`',
 	start: [code_span[1], code_text[1]],
@@ -138,9 +138,16 @@ enddef
 
 def Unescape(text: string, block_marker: string = ""): string
   if block_marker == '`'
-    return text
+    # line breaks do not occur inside code spans
+    return text->substitute('\n', ' ', 'g')
   endif
-  return text->substitute($'\\\({punctuation}\)', '\1', 'g')
+  # use 2 spaces instead of \ for hard line break
+  var result = text->substitute('\\\@<!\(\(\\\\\)*\)\\\n', '\1  \n', 'g')
+  # change soft line breaks
+  result = result->substitute(' \@<! \=\n', ' ', 'g')
+  # change hard line breaks
+  result = result->substitute(' \{2,}\n', '\n', 'g')
+  return result->substitute($'\\\({punctuation}\)', '\1', 'g')
 enddef
 
 def GetNextInlineDelimiter(text: string, start_pos: number, end_pos: number): dict<any>
@@ -405,6 +412,44 @@ def NeedBlankLine(prev: string, cur: string): bool
   return false
 enddef
 
+def SplitLine(line: dict<any>, indent: number = 0): list<dict<any>>
+  var lines: list<dict<any>> = []
+  var pos = line.text->match('\n')
+  if pos < 0
+    lines->add(line)
+    return lines
+  endif
+  var cur_line: dict<any> = {
+    text: line.text[: pos],
+    props: []
+  }
+  var next_line: dict<any> = {
+    text: (' '->repeat(indent) .. line.text[pos + 1 :]),
+    props: []
+  }
+  for prop in line.props
+    if prop.col + prop.length < pos
+      cur_line.props->add(prop)
+    elseif prop.col >= pos
+      prop.col -= pos - indent + 1
+      next_line.props->add(prop)
+    else
+      cur_line.props->add({
+        type: prop.type,
+        col: prop.col,
+        length: pos - prop.col + 1
+      })
+      next_line.props->add({
+        type: prop.type,
+        col: indent + 1,
+        length: prop.col + prop.length - pos - 2
+      })
+    endif
+  endfor
+  lines->add(cur_line)
+  return lines + SplitLine(next_line, indent)
+enddef
+
 var last_block: string = ''
 
 def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: number = 0): void
@@ -487,7 +532,7 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
 	var format = ParseInlines(block.text, line.text->len())
 	line.text ..= format.text
 	line.props += line.props
-	document.content->add(line)
+	document.content += SplitLine(line)
       elseif block.type == 'table'
 	var indent = line.text
 	var head = block.header->split('\\\@1<!|')
@@ -536,10 +581,11 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
 	  document.content->add(data)
 	endfor
       elseif block.type == 'paragraph'
-	var format = ParseInlines(block.text->join(' '), line.text->len())
+	var indent = line.text->len()
+	var format = ParseInlines(block.text->join("\n")->substitute('\s\+$', '', ''), indent)
 	line.text ..= format.text
 	line.props += format.props
-	document.content->add(line)
+	document.content += SplitLine(line, indent)
       endif
     endif
   endfor
@@ -603,8 +649,8 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
 	  var marker = line->matchstrpos(setext_heading)
 	  open_blocks->add(CreateLeafBlock(
 				  'heading',
-				  open_blocks->remove(cur).text->join(' '),
-				  setext_heading_level[marker[0]]))
+				  open_blocks->remove(cur).text->join("\n")->substitute('\s\+$', '', ''),
+				  setext_heading_level[marker[0][0]]))
 	  CloseBlocks(document, open_blocks, cur)
 	  cur = -1
 	elseif open_blocks[cur].text->len() == 1
