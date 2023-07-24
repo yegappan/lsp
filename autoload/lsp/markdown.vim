@@ -420,7 +420,7 @@ def SplitLine(line: dict<any>, indent: number = 0): list<dict<any>>
     return lines
   endif
   var cur_line: dict<any> = {
-    text: line.text[: pos],
+    text: line.text[: pos - 1],
     props: []
   }
   var next_line: dict<any> = {
