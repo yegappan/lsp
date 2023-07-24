@@ -428,9 +428,9 @@ def SplitLine(line: dict<any>, indent: number = 0): list<dict<any>>
     props: []
   }
   for prop in line.props
-    if prop.col + prop.length < pos
+    if prop.col + prop.length - 1 < pos + 1
       cur_line.props->add(prop)
-    elseif prop.col >= pos
+    elseif prop.col > pos + 1
       prop.col -= pos - indent + 1
       next_line.props->add(prop)
     else
@@ -531,7 +531,7 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
 				      block.level))
 	var format = ParseInlines(block.text, line.text->len())
 	line.text ..= format.text
-	line.props += line.props
+	line.props += format.props
 	document.content += SplitLine(line)
       elseif block.type == 'table'
 	var indent = line.text
@@ -676,7 +676,7 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
       continue
     endif
 
-    # a themaic break close all previous blocks
+    # a thematic break close all previous blocks
     if line =~ thematic_break
       CloseBlocks(document, open_blocks)
       if &g:encoding == 'utf-8'
