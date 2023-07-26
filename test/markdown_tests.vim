@@ -13,7 +13,14 @@ def g:Test_Markdown()
       [
 	'# First level heading',
 	'## Second level heading',
-	'### Third level heading'
+	'### Third level heading',
+	'#  	  Heading with leading and trailing whitespaces  	   ',
+	'Multiline setext heading  ',
+	'of level 1',
+	'===',
+	'Multiline setext heading\',
+	'of level 2',
+	'---'
       ],
       # Expected text
       [
@@ -21,7 +28,15 @@ def g:Test_Markdown()
 	'',
 	'Second level heading',
 	'',
-	'Third level heading'
+	'Third level heading',
+	'',
+	'Heading with leading and trailing whitespaces',
+	'',
+	'Multiline setext heading',
+	'of level 1',
+	'',
+	'Multiline setext heading',
+	'of level 2'
       ],
       # Expected text properties
       [
@@ -29,7 +44,15 @@ def g:Test_Markdown()
 	[],
 	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 20}],
 	[],
-	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 19}]
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 19}],
+	[],
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 45}],
+	[],
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 24}],
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 10}],
+	[],
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 24}],
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 10}],
       ]
     ],
     [
@@ -173,6 +196,77 @@ def g:Test_Markdown()
       [
 	[], [], []
       ]
+    ],
+    [
+      # line breaks
+      # Input text
+      [
+	'This paragraph contains ',
+	'a soft line break',
+	'',
+	'This paragraph contains  ',
+	'an hard line break',
+	'',
+	'This paragraph contains an emphasis _before_\',
+	'an hard line break',
+	'',
+	'This paragraph contains an emphasis  ',
+	'_after_ an hard line break',
+	'',
+	'This paragraph _contains\',
+	'an emphasis_ with an hard line break in the middle',
+	'',
+	'→ This paragraph contains an hard line break  ',
+	'and starts with the multibyte character "\u2192"',
+	'',
+	'Line breaks `',
+	'do\',
+	'not  ',
+	'occur',
+	'` inside code spans'
+      ],
+      # Expected text
+      [
+	'This paragraph contains a soft line break',
+	'',
+	'This paragraph contains',
+	'an hard line break',
+	'',
+	'This paragraph contains an emphasis before',
+	'an hard line break',
+	'',
+	'This paragraph contains an emphasis',
+	'after an hard line break',
+	'',
+	'This paragraph contains',
+	'an emphasis with an hard line break in the middle',
+	'',
+	'→ This paragraph contains an hard line break',
+	'and starts with the multibyte character "\u2192"',
+	'',
+	'Line breaks do\ not   occur inside code spans'
+      ],
+      # Expected text properties
+      [
+	[],
+	[],
+	[],
+	[],
+	[],
+	[{'col': 37, 'type': 'LspMarkdownItalic', 'length': 6}],
+	[],
+	[],
+	[],
+	[{'col': 1, 'type': 'LspMarkdownItalic', 'length': 5}],
+	[],
+	[{'col': 16, 'type': 'LspMarkdownItalic', 'length': 8}],
+	[{'col': 1, 'type': 'LspMarkdownItalic', 'length': 11}],
+	[],
+	[],
+	[],
+	[],
+	[{'col': 13, 'type': 'LspMarkdownCode', 'length': 15}]
+      ]
     ]
   ]
 
@@ -193,4 +287,4 @@ def g:StartLangServer(): bool
   return true
 enddef
 
-# vim: shiftwidth=2 softtabstop=2 noexpandtab
+# vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab

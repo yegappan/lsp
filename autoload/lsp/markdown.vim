@@ -24,7 +24,7 @@ var code_fence = '^ \{,3\}\(`\{3,\}\|\~\{3,\}\)\s*\(\S*\)'
 var code_indent = '^ \{4\}\zs\s*\S.*'
 var paragraph = '^\s*\zs\S.\{-}\s*\ze$'
 
-var atx_heading = '^ \{,3}\zs\(#\{1,6}\) \(.\{-}\)\ze\%( #\{1,}\s*\)\=$'
+var atx_heading = '^ \{,3}\zs\(#\{1,6}\) \s*\(.\{-}\)\s*\ze\%( #\{1,}\s*\)\=$'
 var setext_heading = '^ \{,3}\zs\%(=\{1,}\|-\{1,}\)\ze *$'
 var setext_heading_level = {"=": 1, "-": 2}
 
@@ -414,40 +414,41 @@ enddef
 
 def SplitLine(line: dict<any>, indent: number = 0): list<dict<any>>
   var lines: list<dict<any>> = []
-  var pos = line.text->match('\n')
-  if pos < 0
+  var tokens: list<string> = line.text->split("\n", true)
+  if tokens->len() == 1
     lines->add(line)
     return lines
   endif
-  var cur_line: dict<any> = {
-    text: line.text[: pos - 1],
-    props: []
-  }
-  var next_line: dict<any> = {
-    text: (' '->repeat(indent) .. line.text[pos + 1 :]),
-    props: []
-  }
-  for prop in line.props
-    if prop.col + prop.length - 1 < pos + 1
-      cur_line.props->add(prop)
-    elseif prop.col > pos + 1
-      prop.col -= pos - indent + 1
-      next_line.props->add(prop)
-    else
-      cur_line.props->add({
-        type: prop.type,
-        col: prop.col,
-        length: pos - prop.col + 1
-      })
-      next_line.props->add({
-        type: prop.type,
-        col: indent + 1,
-        length: prop.col + prop.length - pos - 2
-      })
-    endif
+  var props: list<dict<any>> = line.props
+  for cur_text in tokens
+    var cur_props: list<dict<any>> = []
+    var next_props: list<dict<any>> = []
+    var length: number = cur_text->len()
+    for prop in props
+      if prop.col + prop.length - 1 <= length
+        cur_props->add(prop)
+      elseif prop.col > length
+        prop.col -= length + 1
+        next_props->add(prop)
+      else
+        var cur_length: number = length - prop.col + 1
+        cur_props->add({
+          type: prop.type,
+          col: prop.col,
+          length: cur_length
+        })
+        prop.col = 1
+        prop.length -= cur_length + 1
+        next_props->add(prop)
+      endif
+    endfor
+    lines->add({
+      text: cur_text,
+      props: cur_props
+    })
+    props = next_props
   endfor
-  lines->add(cur_line)
-  return lines + SplitLine(next_line, indent)
+  return lines
 enddef
 
 var last_block: string = ''
@@ -599,7 +600,7 @@ def ExpandTabs(line: string): string
   var begin: string = ""
   for char in block_marker[0]
     if char == '	'
-      begin ..= ' '->repeat(4 - (begin->strlen() % 4))
+      begin ..= ' '->repeat(4 - (begin->len() % 4))
     else
       begin ..= char
     endif
