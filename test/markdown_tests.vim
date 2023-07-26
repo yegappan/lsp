@@ -13,7 +13,8 @@ def g:Test_Markdown()
       [
 	'# First level heading',
 	'## Second level heading',
-	'### Third level heading'
+	'### Third level heading',
+	'#  	  Heading with leading and trailing whitespaces  	   '
       ],
       # Expected text
       [
@@ -21,7 +22,9 @@ def g:Test_Markdown()
 	'',
 	'Second level heading',
 	'',
-	'Third level heading'
+	'Third level heading',
+	'',
+	'Heading with leading and trailing whitespaces'
       ],
       # Expected text properties
       [
@@ -29,7 +32,9 @@ def g:Test_Markdown()
 	[],
 	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 20}],
 	[],
-	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 19}]
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 19}],
+	[],
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 45}]
       ]
     ],
     [

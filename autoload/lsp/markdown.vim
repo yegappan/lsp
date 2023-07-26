@@ -24,7 +24,7 @@ var code_fence = '^ \{,3\}\(`\{3,\}\|\~\{3,\}\)\s*\(\S*\)'
 var code_indent = '^ \{4\}\zs\s*\S.*'
 var paragraph = '^\s*\zs\S.\{-}\s*\ze$'
 
-var atx_heading = '^ \{,3}\zs\(#\{1,6}\) \(.\{-}\)\ze\%( #\{1,}\s*\)\=$'
+var atx_heading = '^ \{,3}\zs\(#\{1,6}\) \s*\(.\{-}\)\s*\ze\%( #\{1,}\s*\)\=$'
 var setext_heading = '^ \{,3}\zs\%(=\{1,}\|-\{1,}\)\ze *$'
 var setext_heading_level = {"=": 1, "-": 2}
 
