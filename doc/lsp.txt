@@ -3,7 +3,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: June 25, 2023
+Last change: July 26, 2023
 
 ==============================================================================
 CONTENTS                                                     *lsp-contents*
@@ -405,7 +405,7 @@ Additionally the following configurations can be made:
 
 						*lsp-cfg-traceLevel*
 	traceLevel	(Optional) set the debug trace level for this language
-			server.  Supported values are: "off", "debug" and
+			server.  Supported values are: "off", "debug" and
 			"verbose".  By default this is seto "off".
 
 The language servers are added using the LspAddServer() function. This
@@ -1206,7 +1206,7 @@ can map these commands to keys and make it easier to invoke them.
 			Remove a folder from the workspace
 
 ==============================================================================
-6. Insert mode completion		    *lsp-ins-mode-completion*
+6. Insert Mode Completion		    *lsp-ins-mode-completion*
 
 By default, in insert mode, the LSP plugin automatically displays the matches
 for the symbol under the cursor in an insert-completion popup menu. You can
@@ -1332,7 +1332,7 @@ the current line.
 The ":LspDiag show" command creates a new location list with the current list
 of diagnostics for the current buffer.  To automatically add the diagnostics
 messages to the location list, you can set the 'autoPopulateDiags' option to
-true.  By default this option is set to false.  When new diagnostics are
+true.  By default this option is set to false.  When new diagnostics are
 received for a buffer, if a location list with the diagnostics is already
 present, then it is refreshed with the new diagnostics.
 
@@ -1352,10 +1352,10 @@ message area instead, you can set the 'showDiagInPopup' option to false.  By
 default this is set to true.
 
 The lsp#diag#GetDiagsForBuf() function can be used to get all the LSP
-diagnostics in a buffer.  This function optionally accepts a buffer number.
+diagnostics in a buffer.  This function optionally accepts a buffer number.
 If the buffer number argument is not specified, then the current buffer is
-used.  This function returns a |List| of diagnostics sorted by their line and
-column number.  Each diagnostic is a |Dict| returned by the language server.
+used.  This function returns a |List| of diagnostics sorted by their line and
+column number.  Each diagnostic is a |Dict| returned by the language server.
 
 ==============================================================================
 8. Tag Function					*lsp-tagfunc*
@@ -1434,7 +1434,7 @@ LspAttached			A |User| autocommand fired when the LSP client
 LspDiagsUpdated			A |User| autocommand invoked when new
 				diagnostics are received from the language
 				server.  This is invoked after the LSP client
-				has processed the diagnostics.  The function
+				has processed the diagnostics.  The function
 				lsp#diag#GetDiagsForBuf() can be used to get
 				all the diagnostics for a buffer.
 

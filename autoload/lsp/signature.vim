@@ -8,12 +8,14 @@ import './buffer.vim' as buf
 
 # close the signature popup window
 def CloseSignaturePopup(lspserver: dict<any>)
-  lspserver.signaturePopup->popup_close()
+  if lspserver.signaturePopup != -1
+    lspserver.signaturePopup->popup_close()
+  endif
   lspserver.signaturePopup = -1
 enddef
 
 def CloseCurBufSignaturePopup()
-  var lspserver: dict<any> = buf.CurbufGetServer()
+  var lspserver: dict<any> = buf.CurbufGetServer('signatureHelp')
   if lspserver->empty()
     return
   endif
@@ -34,6 +36,7 @@ export def BufferInit(lspserver: dict<any>)
   endif
 
   if !opt.lspOptions.showSignature
+      || !lspserver.featureEnabled('signatureHelp')
     # Show signature support is disabled
     return
   endif

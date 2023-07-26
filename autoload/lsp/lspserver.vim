@@ -508,6 +508,12 @@ def WaitForResponse(lspserver: dict<any>, req: dict<any>)
   endwhile
 enddef
 
+# Returns true when the "lspserver" has "feature" enabled.
+# By default, all the features of a lsp server are enabled.
+def FeatureEnabled(lspserver: dict<any>, feature: string): bool
+  return lspserver.features->get(feature, true)
+enddef
+
 # Retrieve the Workspace configuration asked by the server.
 # Request: workspace/configuration
 def WorkspaceConfigGet(lspserver: dict<any>, configItem: dict<any>): dict<any>
@@ -1864,6 +1870,7 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     decodeLocation: function(offset.DecodeLocation, [lspserver]),
     getPosition: function(GetPosition, [lspserver]),
     getTextDocPosition: function(GetTextDocPosition, [lspserver]),
+    featureEnabled: function(FeatureEnabled, [lspserver]),
     textdocDidOpen: function(TextdocDidOpen, [lspserver]),
     textdocDidClose: function(TextdocDidClose, [lspserver]),
     textdocDidChange: function(TextdocDidChange, [lspserver]),

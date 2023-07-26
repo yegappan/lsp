@@ -129,7 +129,7 @@ def JumpToWorkspaceSymbol(cmdmods: string, popupID: number, result: number): voi
 	  # page, then use it.
 	  var winID = fname->bufwinid()
 	  if winID == -1
-	    # not present in the current tab page.  Use the first window.
+	    # not present in the current tab page.  Use the first window.
 	    winID = winList[0]
 	  endif
 	  winID->win_gotoid()

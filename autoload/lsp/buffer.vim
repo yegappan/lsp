@@ -4,9 +4,9 @@ vim9script
 
 import './util.vim'
 
-# A buffer can have one or more attached language servers.  The
+# A buffer can have one or more attached language servers.  The
 # "bufnrToServers" Dict contains the list of language servers attached to a
-# buffer. The buffer number is the key for the "bufnrToServers" Dict.  The
+# buffer. The buffer number is the key for the "bufnrToServers" Dict.  The
 # value is the List of attached language servers.
 var bufnrToServers: dict<list<dict<any>>> = {}
 
@@ -99,7 +99,7 @@ export def BufLspServerGet(bnr: number, feature: string = null_string): dict<any
 
   # LSP server is configured to be a provider for "feature"
   for lspserver in possibleLSPs
-    var has_feature = lspserver.features->get(feature, false)
+    var has_feature: bool = lspserver.features->get(feature, false)
     if has_feature
       return lspserver
     endif
@@ -108,7 +108,7 @@ export def BufLspServerGet(bnr: number, feature: string = null_string): dict<any
   # Return the first LSP server that supports "feature" and doesn't have it
   # disabled
   for lspserver in possibleLSPs
-    if !lspserver.features->has_key(feature)
+    if lspserver.featureEnabled(feature)
       return lspserver
     endif
   endfor

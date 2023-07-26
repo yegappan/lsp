@@ -382,8 +382,7 @@ enddef
 # Param: PublishDiagnosticsParams
 export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<dict<any>>): void
   # Diagnostics are disabled for this server?
-  var diagSupported = lspserver.features->get('diagnostics', true)
-  if !diagSupported
+  if !lspserver.featureEnabled('diagnostics')
     return
   endif
 
@@ -800,8 +799,8 @@ export def LspDiagsJump(which: string, a_count: number = 0): void
   endif
 enddef
 
-# Return the sorted diagnostics for buffer "bnr".  Default is the current
-# buffer.  A copy of the diagnostics is returned so that the caller can modify
+# Return the sorted diagnostics for buffer "bnr".  Default is the current
+# buffer.  A copy of the diagnostics is returned so that the caller can modify
 # the diagnostics.
 export def GetDiagsForBuf(bnr: number = bufnr()): list<dict<any>>
   if !diagsMap->has_key(bnr) ||
