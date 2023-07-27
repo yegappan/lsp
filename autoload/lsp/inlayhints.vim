@@ -129,6 +129,7 @@ export def BufferInit(lspserver: dict<any>, bnr: number)
 
   # Inlays hints are disabled
   if !opt.lspOptions.showInlayHints
+      || !lspserver.featureEnabled('inlayHint')
     return
   endif
 
@@ -174,8 +175,9 @@ export def InlayHintsEnable()
       continue
     endif
     for lspserver in lspservers
-      if !lspserver.isInlayHintProvider &&
-	  !lspserver.isClangdInlayHintsProvider
+      if !lspserver.featureEnabled('inlayHint')
+	  || (!lspserver.isInlayHintProvider &&
+	      !lspserver.isClangdInlayHintsProvider)
 	continue
       endif
       BufferInit(lspserver, binfo.bufnr)

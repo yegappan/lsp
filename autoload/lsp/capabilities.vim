@@ -394,6 +394,9 @@ export def GetClientCaps(): dict<any>
 	dynamicRegistration: false,
 	prepareSupport: false,
       },
+      selectionRange: {
+	dynamicRegistration: false,
+      },
       signatureHelp: {
 	dynamicRegistration: false,
 	signatureInformation: {
