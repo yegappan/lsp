@@ -429,8 +429,8 @@ language server and to set the language server options.  For example: >
     var lspOpts = {'autoHighlightDiags': true}
     autocmd VimEnter * LspOptionsSet(lspOpts)
 <
-						*lsp-options* *LspOptionsSet*
-						*g:LspOptionsSet*
+						*lsp-options* *LspOptionsSet()*
+						*g:LspOptionsSet()*
 
 Some of the LSP plugin features can be enabled or disabled by using the
 LspOptionsSet() function. This function accepts a dictionary argument with the
@@ -658,8 +658,9 @@ bufferCompletionTimeout |Number| option. Specifies how long (in milliseconds)
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file: >
 
-	LspOptionsSet({'autoHighlightDiags': false})
+	call LspOptionsSet({'autoHighlightDiags': false})
 <
+						*LspOptionsGet()*
 The LspOptionsGet() function returns a |Dict| of all the LSP plugin options,
 To get a particular option value you can use the following: >
 
@@ -1215,26 +1216,37 @@ can map these commands to keys and make it easier to invoke them.
 ==============================================================================
 6. Insert Mode Completion		    *lsp-ins-mode-completion*
 
-By default, in insert mode, the LSP plugin automatically displays the matches
-for the symbol under the cursor in an insert-completion popup menu. You can
-use the keys described in |popupmenu-keys| with this menu.
+By default, when you are in insert mode, the LSP plugin will automatically
+display suggestions for the symbol under the cursor in an insert-completion
+popup menu. The keys specified in |popupmenu-keys| can be used to interact
+with this menu.
 
-To disable the auto-completion for all the files, you can set the
-'autoComplete' option to false in your .vimrc file: >
+To disable this auto-completion feature for all files, you can set the
+"autoComplete" option to false in your .vimrc file using the |LspOptionsSet()|
+function: >
 
-	LspOptionsSet({'autoComplete': false})
+    call LspOptionsSet({'autoComplete': false})
 <
-If this variable is set, then the LSP plugin will not automatically start
-completion in insert mode and instead supports omni-completion (|compl-omni|).
-It sets the 'omnifunc' option for the buffers which have a registered language
-server. To complete a symbol in insert mode manually, you can press CTRL-X
-CTRL-O to invoke completion using the items suggested by the language server.
+By setting the "autoComplete" option to |v:false|, the LSP plugin will no
+longer automatically trigger completion suggestions in insert mode. Instead,
+it will use omni-completion (|compl-omni|) and set the 'omnifunc' option for
+buffers that have a registered language server. To manually trigger symbol
+completion in insert mode, you can press CTRL-X CTRL-O. This key combination
+will invoke completion using the suggestions provided by the language server.
 
-You can also enable or disable omni-completion for a specific language
-server by setting the 'omnicompl' item to 'false' when registering a lsp
-server for the filetype. If this item is not specified, then omni-completion
-is enabled by default. The following example disables omni-completion for
-python: >
+To enable omni-completion for all the buffers, set the "omniComplete" option
+to v:true.  To explicitly disable omni-completion for all the buffers, set the
+"omniComplete" option to v:false (default).
+
+In addition to the general auto-completion behavior discussed above, you
+have the option to enable or disable omni-completion for a specific language
+server when registering it for a particular filetype.
+
+To do this, you can set the 'omnicompl' item to |v:false| in the configuration
+when registering the language server for the desired filetype. If the
+'omnicompl' item is not specified, omni-completion is enabled by default.
+
+Here's an example of how to disable omni-completion for Python: >
 
     vim9script
     var lspServers = [
@@ -1246,99 +1258,166 @@ python: >
 		     }
 		   ]
 <
-If you want to use omni completion, in addition to the automatic completion,
-then you can set the 'omnifunc' option to the "g:LspOmniFunc" function: >
+In this example, the language server for Python is registered using the
+|LspAddServer()| function, and the 'omnicompl' item is explicitly set to
+|v:false|. As a result, omni-completion will be disabled for Python files
+associated with this language server.
 
-	set omnifunc=g:LspOmniFunc
-<
-To use omni completion, press CTRL-X CTRL-O in insert mode.  Refer to
-|compl-omni| for more information.
+Please note that if 'omnicompl' is not included in the configuration
+when registering the language server, omni-completion will be enabled by
+default.
 
-When doing insert-mode completion, the plugin sends a request message to the
-language server to return a list of possible completion matches for the
-current cursor position.  The plugin retrieves the keyword before the cursor
-(see 'iskeyword') and then filters the returned list of completion items
-against this keyword and displays the completion menu.  Some language servers
-does completion filtering in the server, while other relies on the client to
-do the filtering.  By default, case sensitive comparison is used to filter the
-returned items.  You can modify the 'completionMatcher' option to use either
-case insensitive or fuzzy comparison.
+In insert-mode completion, the plugin sends a completion request message to
+the language server and obtains a list of potential completion matches based
+on the current cursor position. To achieve this, the plugin retrieves the
+keyword immediately preceding the cursor (refer to 'iskeyword' setting) and
+then filters the list of completion items received from the language server
+based on this keyword.  The resulting filtered list is displayed as the
+completion menu.
 
-To enable auto completion for all the buffers, set the "autoComplete" option
-to v:true (default).  To disable auto completion for all the buffers, set the
-"autoComplete" option to v:false.  If auto completion is disabled for all the
-buffers, then omni-completion is enabled.  To disable omni-completion for all
-the buffers, set the "omniComplete" option to v:false (default).  To enable
-omni-completion for all the buffers, set the "omniComplete" option to v:true.
-You can also enable or disable omni-completion for a specific language server,
-by setting the "omnicompl" item when registering the language server.
+It's worth noting that different language servers handle completion filtering
+in distinct ways. Some servers perform the filtering directly on the
+server-side, while others delegate this task to the client-side, which is the
+plugin in this context.
 
-In addition to the automatic completion and omni completion, it is possible to
-use external completion engines.  LSP client can be used as a completion source
-by repurposing `g:LspOmniFunc` function.  The adapter which interfaces with
-the external completion engine should invoke this function twice as
-described in |complete-functions|.  After the first invocation a request is
-sent to the LSP server to find completion candidates.  Second invocation
-returns the matches from LSP server.  If the LSP server is not ready to reply
-`g:LspOmniFunc` waits for up to 2 seconds.  This wait blocks the caller from
-doing other work, which may be a concern for asynchronous completion engines.
-To avoid blocking wait call `g:LspOmniCompletePending` function which returns
-`true` immediately if the language server is not ready.  `g:LspOmniFunc` can be
-called (the second time) only after this function returns `false`.
+By default, the plugin uses a case-sensitive comparison method to filter the
+returned completion items. However, you have the flexibility to customize this
+behavior by modifying the "completionMatcher" option. This option allows you
+to switch between case-insensitive or fuzzy comparison methods as per your
+preference and requirements for completion matching.
+
+In addition to automatic completion and omni completion, there is a
+possibility to utilize external completion engines with the LSP client. This
+can be achieved by repurposing the |g:LspOmniFunc| function. The external
+completion engine adapter needs to invoke this function twice, following the
+approach outlined in the |complete-functions| documentation.
+
+The process works as follows:
+
+1. First Invocation: The external completion engine adapter calls
+   |g:LspOmniFunc| to initiate a request to the LSP server for completion
+   candidates.
+2. After the first invocation, a request is sent to the LSP server to find
+   completion candidates.
+3. Second Invocation: The external completion engine adapter calls
+   |g:LspOmniFunc| again to retrieve the matches returned by the LSP server.
+4. If the LSP server is not ready to reply immediately, |g:LspOmniFunc| waits
+   for up to 2 seconds.
+5. However, this wait could block the caller from performing other tasks,
+   which might be a concern for asynchronous completion engines.
+6. To address this issue, the adapter can use the |g:LspOmniCompletePending|
+   function, which allows for a non-blocking check. It returns true
+   immediately if the language server is not ready to respond yet.
+7. To proceed with the second invocation of g:LspOmniFunc, it is crucial to
+   ensure that |g:LspOmniCompletePending| returns false, indicating that the
+   language server is now ready to provide the completion matches.
 
 ==============================================================================
 7. Diagnostics						*lsp-diagnostics*
 
-When a source file has syntax errors or warnings or static analysis warnings,
-the LSP plugin highlights them by placing |signs| in the |sign-column|.  You
-can use the ":LspDiag show" command to display all the diagnostic messages for
-the current file in a |location-list-window|.  You can use the
-":LspDiag first" command to jump to the line with the first diagnostic
-message, the ":LspDiag next" command to jump to the next nearest line with the
-diagnostic message, the ":LspDiag prev" command to jump to the previous
-nearest line with the diagnostic message, the ":LspDiag here" command to jump
-to the diagnostic message in the current line.  You can use the ":LspDiag
-current" command to display the entire diagnostic message from the language
-server for the current line.
+The LSP plugin offers a feature to highlight syntax errors, warnings, and
+static analysis warnings in a source file by placing signs in the sign column.
+These signs serve as visual indicators of the diagnostics reported by the
+language server.
 
-By default, the lines with a diagnostic message have a sign placed on them and
-the range of text with the diagnostic is highlighted.  You can disable the
-automatic sign placement by setting the "showDiagWithSign" option to v:false.
-By default, this option is set to v:true.  You can disable the diagnostic text
-highlighting by setting the "highlightDiagInline" option to v:false. The line
-with the diagnostics is highlighted using the "LspDiagLine" highlight group.
-By default this highlight group is not set.
+To interact with these diagnostics, you can use various commands provided by
+the LSP plugin:
 
-You can also display the diagnostic message as a virtual text near the
-location of the diagnostics by setting the "showDiagWithVirtualText" option to
-v:true.  This needs Vim version 9.0.1157 or later.  By default this option is
-set to v:false.  The position of the virtual text is controlled by the
-"diagVirtualTextAlign" option.  By default, this is set to 'above'.  The other
-supported values are 'below' and 'after'.
+1. ":LspDiag show": This command displays all the diagnostic messages for the
+   current file in a location-list window.  The location-list window allows
+   you to view a list of all the diagnostic messages, along with their
+   corresponding line numbers and descriptions.
+2. ":LspDiag first": Use this command to jump directly to the line containing
+   the first diagnostic message.  It helps you quickly navigate to the
+   location of the initial issue detected by the language server.
+3. ":LspDiag next": With this command, you can navigate to the next nearest
+   line with a diagnostic message.  It helps you step through the list of
+   diagnostics one by one.
+4. ":LspDiag prev": Conversely, this command allows you to jump to the
+   previous nearest line with a diagnostic message.  It is useful for
+   reviewing diagnostics in reverse order.
+5. ":LspDiag here": If you want to focus solely on the diagnostic message for
+   the current line, you can use this command to jump directly to it.
+6. ":LspDiag current": This command displays the entire diagnostic message
+   from the language server for the current line.  It provides detailed
+   information about the specific issue and its description.
 
-The range of text for a diagnostic message can be automatically highlighted by
-setting the "highlightDiagInline" option to v:true.  By default, this option
-is set to v:true.  The text is highlighted using the "LspDiagInlineError" or
-"LspDiagInlineHint" or "LspDiagInlineInfo" or "LspDiagInlineWarning" highlight
-group.
+By using these commands, you can efficiently navigate and inspect the
+diagnostics reported by the language server, making it easier to identify and
+address syntax errors, warnings, or static analysis issues in your code.
 
-You can temporarily disable the automatic diagnostic highlighting for the
-current Vim session using the ":LspDiag highlight disable" command and
-re-enable them using the ":LspDiag highlight enable" command.
+By default, the LSP plugin marks lines with diagnostic messages by placing a
+sign on them and highlighting the range of text associated with the
+diagnostic.  However, you have the option to customize this behavior by
+adjusting certain configuration settings:
 
-To disable the automatic highlighting of the diagnostics, you can set the
-'autoHighlightDiags' option to v:false: >
+1. Disabling Automatic Sign Placement: If you wish to prevent the automatic
+   placement of signs on lines with diagnostic messages, you can achieve this
+   by setting the "showDiagWithSign" option to |v:false|.  By default, this
+   option is set to |v:true|, meaning that signs are automatically placed on
+   lines with diagnostics.
+2. Disabling Diagnostic Text Highlighting: If you prefer not to have the
+   diagnostic text highlighted, you can do so by setting the
+   "highlightDiagInline" option to |v:false|.  By default, this option is set
+   to |v:true|, resulting in the highlighting of the text range associated
+   with each diagnostic.
+3. Highlight Group for Line with Diagnostics: The LSP plugin uses the
+   "LspDiagLine" highlight group to highlight lines containing diagnostics.
+   By default, this highlight group is not set, allowing you to define your
+   own highlighting style for lines with diagnostics if desired.
 
-	LspOptionsSet({'autoHighlightDiags': false})
+In addition to the default display of the diagnostic messages with signs and
+text highlighting, the LSP plugin offers the option to present the diagnostic
+message as virtual text, located near the relevant location of the
+diagnostics.  To enable this feature, you can set the
+"showDiagWithVirtualText" option to |v:true|.  However, please note that this
+functionality requires Vim version 9.0.1157 or later.  By default, this option
+is set to |v:false|, meaning that virtual text display is not activated.
+
+The position of the virtual text can be controlled using the
+"diagVirtualTextAlign" option, which determines its alignment relative to the
+affected line.  By default, this option is set to 'above', which places the
+virtual text above the line with the diagnostic message.  The other supported
+values for "diagVirtualTextAlign" are 'below', which positions the virtual
+text below the affected line, and 'after', which displays the virtual text
+immediately after the text on the affected line.
+
+The LSP plugin offers convenient ways to highlight diagnostic messages, making
+it easier to spot errors, warnings, hints, or informational notices within
+your code.  By default, the plugin automatically highlights the range of text
+associated with each diagnostic message when the "highlightDiagInline" option
+is set to |v:true.|
+
+The highlighting is done using different highlight groups based on the type of
+diagnostic message:
+
+    "LspDiagInlineError" for error messages.
+    "LspDiagInlineHint" for hints.
+    "LspDiagInlineInfo" for informational messages.
+    "LspDiagInlineWarning" for warning messages.
+
+If you wish to temporarily disable the automatic diagnostic highlighting for
+the current Vim session, you can achieve this using the ":LspDiag highlight
+disable" command.  When you want to re-enable the highlighting, you can use
+the ":LspDiag highlight enable" command.
+
+To permanently disable the automatic highlighting of diagnostics, you can set
+the "autoHighlightDiags" option to |v:false| in your .vimrc file.  This
+configuration can be achieved using the |LspOptionsSet()| function: >
+
+    call LspOptionsSet({'autoHighlightDiags': v:false})
 <
-By default the 'autoHighlightDiags' option is set to v:true.
+By default, the "autoHighlightDiags" option is set to |v:true|, ensuring that
+diagnostic messages are automatically highlighted during your coding sessions.
 
-The function lsp#lsp#ErrorCount() function can be used to get the count of the
-diagnostic messages in the current buffer by type.  This function returns a
-Dictionary with the following keys: Info, Hint, Warn and Error.  The value for
-these keys is the number of diagnostic messages of the corresponding type.
-This function can be used to display the number of diagnostics in the current
-buffer in a 'statusline'.
+The lsp#lsp#ErrorCount() function returns the count of diagnostic messages in
+the current buffer, categorized by their types.  When called, this function
+returns a Dictionary containing four keys: "Info," "Hint," "Warn," and
+"Error." Each key corresponds to a specific diagnostic type, and its
+associated value is the number of diagnostic messages of that particular type
+found in the buffer.  With the information gathered using this function, you
+can easily display the number of diagnostics in the current buffer in your
+'statusline'.
 
 For some diagnostic errors/warnings, the language server may provide an
 automatic fix.  To apply this fix, you can use the |:LspCodeAction| command.
@@ -1346,26 +1425,40 @@ This command applies the action provided by the language server (if any) for
 the current line.
 
 The ":LspDiag show" command creates a new location list with the current list
-of diagnostics for the current buffer.  To automatically add the diagnostics
-messages to the location list, you can set the 'autoPopulateDiags' option to
-true.  By default this option is set to false.  When new diagnostics are
-received for a buffer, if a location list with the diagnostics is already
-present, then it is refreshed with the new diagnostics.
+of diagnostics for the current buffer.  To automatically refresh the location
+list with the latest diagnostics received from the language server, you can
+set the "autoPopulateDiags" option to |v:true|.  By default this option is set
+to |v:false|.  When new diagnostics are received for a buffer, if a location
+list with the diagnostics is already present, then it is refreshed with the
+new diagnostics.
 
-When using GUI Vim or in a terminal Vim with 'balloonevalterm' option set,
-when the mouse is moved over the range of text referenced by a diagnostic,
-then the diagnostic message is displayed in a popup.  If the
-"showDiagInBalloon" option is set to false, then the balloon popup will not be
-displayed.  By default, this option is set to true.
+In GUI Vim or terminal Vim with the 'balloonevalterm' option enabled, a
+helpful feature allows you to view diagnostic messages in a popup balloon when
+you hover the mouse over the affected range of text.  This provides a
+convenient way to quickly access diagnostic information without the need to
+execute additional commands or navigate through the location list.
+
+By default, the LSP plugin is configured to display diagnostic messages in the
+popup balloon, enhancing the user experience and providing visual feedback as
+you interact with your code.  This default behavior is governed by the
+"showDiagInBalloon" option, which is set to |v:true| by default.
+
+However, if you prefer not to see the diagnostic messages in the popup
+balloons and prefer to rely solely on other methods, you have the flexibility
+to customize this behavior.  By setting the "showDiagInBalloon" option to
+|v:false|, you can disable the display of diagnostic messages in the popup
+balloons.  This can be useful if you find the balloons intrusive or if you
+prefer to view diagnostics through other means, such as the location list or
+the status line.
 
 To display the diagnostic message for the current line in the status area, you
-can set the 'showDiagOnStatusLine' option to true.  By default, this option
-is set to false.
+can set the "showDiagOnStatusLine" option to |v:true|.  By default, this
+option is set to |v:false|.
 
-By default, the ":LspDiag current" command displays the diagnostic message
-for the current line in a popup window.  To display the message in the status
-message area instead, you can set the 'showDiagInPopup' option to false.  By
-default this is set to true.
+By default, the ":LspDiag current" command displays the diagnostic message for
+the current line in a popup window.  To display the message in the status
+message area instead, you can set the 'showDiagInPopup' option to |v:false|.
+By default this is set to |v:true|.
 
 The lsp#diag#GetDiagsForBuf() function can be used to get all the LSP
 diagnostics in a buffer.  This function optionally accepts a buffer number.

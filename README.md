@@ -29,9 +29,10 @@ The following language server protocol (LSP) features are supported:
 
 * Code completion
 * Jump to definition, declaration, implementation, type definition
+* Peek definition, declaration, implementation, type definition and references
 * Display warning and error diagnostics
 * Find all symbol references
-* Workspace symbol search
+* Document and Workspace symbol search
 * Display code outline
 * Rename symbol
 * Display type and documentation on hover
@@ -39,6 +40,7 @@ The following language server protocol (LSP) features are supported:
 * Code action
 * Display Call hierarchy
 * Display Type hierarchy
+* Highlight current symbol references
 * Formatting code
 * Folding code
 * Inlay hints
