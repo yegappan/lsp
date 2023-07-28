@@ -516,6 +516,7 @@ export def BufferLoadedInWin(bnr: number)
   if opt.lspOptions.autoHighlightDiags
     diag.DiagsRefresh(bnr)
   endif
+  completion.BufferLoadedInWin(bnr)
 enddef
 
 # Stop all the LSP servers
@@ -584,7 +585,13 @@ export def AddServer(serverList: list<dict<any>>)
       continue
     endif
     # Enable omni-completion by default
-    server.omnicompl = server->get('omnicompl', true)
+    var omnicompl_def: bool = false
+    if opt.lspOptions.omniComplete == true
+	|| (opt.lspOptions.omniComplete == null
+	    && !opt.lspOptions.autoComplete)
+      omnicompl_def = true
+    endif
+    server.omnicompl = server->get('omnicompl', omnicompl_def)
 
     if !server.path->executable()
       if !opt.lspOptions.ignoreMissingServer

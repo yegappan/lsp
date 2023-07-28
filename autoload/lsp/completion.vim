@@ -623,7 +623,9 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
 		event: 'TextChangedI',
 		group: 'LSPBufferAutocmds',
 		cmd: 'LspComplete()'})
-  else
+  endif
+
+  if LspOmniComplEnabled(ftype)
     setbufvar(bnr, '&omnifunc', 'g:LspOmniFunc')
   endif
 
@@ -647,6 +649,15 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
 	      cmd: $'LspCompleteDone({bnr})'})
 
   autocmd_add(acmds)
+enddef
+
+# Buffer "bnr" is loaded in a window.  If omni-completion is enabled for this
+# buffer, then set the 'omnifunc' option.
+export def BufferLoadedInWin(bnr: number)
+  if !opt.lspOptions.autoComplete
+      && LspOmniComplEnabled(bnr->getbufvar('&filetype'))
+    setbufvar(bnr, '&omnifunc', 'g:LspOmniFunc')
+  endif
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2

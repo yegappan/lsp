@@ -552,6 +552,13 @@ noNewlineInCompletion	|Boolean| option.  Suppress adding a new line on
 			completion selection with <CR>.
 			By default this is set to false.
 
+						*lsp-opt-omniComplete*
+omniComplete		|Boolean| option. Enables or disables omni-completion.
+			By default this is set to v:false.  If "autoComplete"
+			is set to v:false, then omni-completion is enabled by
+			default.  By setting "omniComplete" option to v:false,
+			omni-completion can also be disabled.
+
 						*lsp-opt-outlineOnRight*
 outlineOnRight		|Boolean| option.  Open the outline window on the
 			right side, by default this is false.
@@ -1257,6 +1264,15 @@ do the filtering.  By default, case sensitive comparison is used to filter the
 returned items.  You can modify the 'completionMatcher' option to use either
 case insensitive or fuzzy comparison.
 
+To enable auto completion for all the buffers, set the "autoComplete" option
+to v:true (default).  To disable auto completion for all the buffers, set the
+"autoComplete" option to v:false.  If auto completion is disabled for all the
+buffers, then omni-completion is enabled.  To disable omni-completion for all
+the buffers, set the "omniComplete" option to v:false (default).  To enable
+omni-completion for all the buffers, set the "omniComplete" option to v:true.
+You can also enable or disable omni-completion for a specific language server,
+by setting the "omnicompl" item when registering the language server.
+
 In addition to the automatic completion and omni completion, it is possible to
 use external completion engines.  LSP client can be used as a completion source
 by repurposing `g:LspOmniFunc` function.  The adapter which interfaces with
@@ -1267,7 +1283,7 @@ returns the matches from LSP server.  If the LSP server is not ready to reply
 `g:LspOmniFunc` waits for up to 2 seconds.  This wait blocks the caller from
 doing other work, which may be a concern for asynchronous completion engines.
 To avoid blocking wait call `g:LspOmniCompletePending` function which returns
-`true` immediately if LSP server is not ready.  `g:LspOmniFunc` can be
+`true` immediately if the language server is not ready.  `g:LspOmniFunc` can be
 called (the second time) only after this function returns `false`.
 
 ==============================================================================
