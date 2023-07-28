@@ -387,14 +387,6 @@ def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
 		cmd: $'call LspDocHighlightClear({bnr}) | call LspDocHighlight({bnr}, "silent")'})
   endif
 
-  # Show diagnostics on the status line
-  if opt.lspOptions.showDiagOnStatusLine
-    acmds->add({bufnr: bnr,
-		event: 'CursorMoved',
-		group: 'LSPBufferAutocmds',
-		cmd: 'LspShowCurrentDiagInStatusLine()'})
-  endif
-
   autocmd_add(acmds)
 enddef
 
@@ -756,16 +748,6 @@ enddef
 # Show the diagnostic message for the current line
 export def LspShowCurrentDiag(atPos: bool)
   diag.ShowCurrentDiag(atPos)
-enddef
-
-# Display the diagnostics for the current line in the status line.
-export def LspShowCurrentDiagInStatusLine()
-  var fname: string = @%
-  if fname->empty()
-    return
-  endif
-
-  diag.ShowCurrentDiagInStatusLine()
 enddef
 
 # get the count of diagnostics in the current buffer

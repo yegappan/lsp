@@ -125,6 +125,16 @@ export def BufferInit(lspserver: dict<any>, bnr: number)
     :set ballooneval balloonevalterm
     setbufvar(bnr, '&balloonexpr', 'g:LspDiagExpr()')
   endif
+
+  var acmds: list<dict<any>> = []
+  # Show diagnostics on the status line
+  if opt.lspOptions.showDiagOnStatusLine
+    acmds->add({bufnr: bnr,
+		event: 'CursorMoved',
+		group: 'LSPBufferAutocmds',
+		cmd: 'ShowCurrentDiagInStatusLine()'})
+  endif
+  autocmd_add(acmds)
 enddef
 
 # Function to sort the diagnostics in ascending order based on the line and
@@ -641,7 +651,7 @@ export def ShowCurrentDiag(atPos: bool)
 enddef
 
 # Show the diagnostic message for the current line without linebreak
-export def ShowCurrentDiagInStatusLine()
+def ShowCurrentDiagInStatusLine()
   var bnr: number = bufnr()
   var lnum: number = line('.')
   var col: number = charcol('.')
@@ -653,9 +663,11 @@ export def ShowCurrentDiagInStatusLine()
     if diag->has_key('code')
       code = $'[{diag.code}] '
     endif
-    var msgNoLineBreak = code .. substitute(substitute(diag.message, "\n", ' ', ''), "\\n", ' ', '')
+    var msgNoLineBreak = code ..
+	diag.message->substitute("\n", ' ', '')->substitute("\\n", ' ', '')
     :echo msgNoLineBreak[ : max_width]
   else
+    # clear the previous message
     :echo ''
   endif
 enddef
