@@ -697,16 +697,23 @@ enddef
 # Get lazy properties for a completion item.
 # Request: "completionItem/resolve"
 # Param: CompletionItem
-def ResolveCompletion(lspserver: dict<any>, item: dict<any>): void
+def ResolveCompletion(lspserver: dict<any>, item: dict<any>, sync: bool = false): dict<any>
   # Check whether LSP server supports completion item resolve
   if !lspserver.isCompletionResolveProvider
-    util.ErrMsg('LSP server does not support completion item resolve')
-    return
+    return {}
   endif
 
   # interface CompletionItem
-  lspserver.rpc_a('completionItem/resolve', item,
-			completion.CompletionResolveReply)
+  if sync
+    var reply = lspserver.rpc('completionItem/resolve', item)
+    if !reply->empty() && !reply.result->empty()
+      return reply.result
+    endif
+  else
+    lspserver.rpc_a('completionItem/resolve', item,
+			  completion.CompletionResolveReply)
+  endif
+  return {}
 enddef
 
 # Jump to or peek a symbol location.
