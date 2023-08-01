@@ -322,20 +322,6 @@ export def SwitchSourceHeader()
   lspserver.switchSourceHeader()
 enddef
 
-# Show the signature using "textDocument/signatureHelp" LSP method
-# Invoked from an insert-mode mapping, so return an empty string.
-def g:LspShowSignature(): string
-  var lspserver: dict<any> = buf.CurbufGetServerChecked('signatureHelp')
-  if lspserver->empty()
-    return ''
-  endif
-
-  # first send all the changes in the current buffer to the LSP server
-  listener_flush()
-  lspserver.showSignature()
-  return ''
-enddef
-
 # A buffer is saved. Send the "textDocument/didSave" LSP notification
 def LspSavedFile(bnr: number)
   var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)->filter(
@@ -409,8 +395,6 @@ def BufferInit(lspserverId: number, bnr: number): void
   AddBufLocalAutocmds(lspserver, bnr)
 
   diag.BufferInit(lspserver, bnr)
-  signature.BufferInit(lspserver)
-  inlayhints.BufferInit(lspserver, bnr)
 
   var allServersReady = true
   var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)
@@ -423,11 +407,22 @@ def BufferInit(lspserverId: number, bnr: number): void
 
   if allServersReady
     for lspsrv in lspservers
-      # It's only possible to initialize completion when all server capabilities
+      # It's only possible to initialize the features when the server
+      # capabilities of all the registered language servers for this file type
       # are known.
       var completionServer = buf.BufLspServerGet(bnr, 'completion')
       if !completionServer->empty() && lspsrv.id == completionServer.id
         completion.BufferInit(lspsrv, bnr, ftype)
+      endif
+
+      var signatureServer = buf.BufLspServerGet(bnr, 'signatureHelp')
+      if !signatureServer->empty() && lspsrv.id == signatureServer.id
+	signature.BufferInit(lspsrv)
+      endif
+
+      var inlayHintServer = buf.BufLspServerGet(bnr, 'inlayHint')
+      if !inlayHintServer->empty() && lspsrv.id == inlayHintServer.id
+	inlayhints.BufferInit(lspsrv, bnr)
       endif
     endfor
 

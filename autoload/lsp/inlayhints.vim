@@ -16,9 +16,9 @@ export def InitOnce()
   prop_type_add('LspInlayHintsType', {highlight: 'LspInlayHintsType'})
   prop_type_add('LspInlayHintsParam', {highlight: 'LspInlayHintsParam'})
 
-  autocmd_add([{group: 'LspOptionsChanged',
+  autocmd_add([{group: 'LspCmds',
 	        event: 'User',
-		pattern: '*',
+		pattern: 'LspOptionsChanged',
 		cmd: 'LspInlayHintsOptionsChanged()'}])
 enddef
 
@@ -175,7 +175,8 @@ export def InlayHintsEnable()
       continue
     endif
     for lspserver in lspservers
-      if !lspserver.featureEnabled('inlayHint')
+      if !lspserver.ready
+	  || !lspserver.featureEnabled('inlayHint')
 	  || (!lspserver.isInlayHintProvider &&
 	      !lspserver.isClangdInlayHintsProvider)
 	continue

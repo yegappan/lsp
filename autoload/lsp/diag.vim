@@ -100,9 +100,9 @@ export def InitOnce()
   prop_type_add('LspDiagVirtualTextHint',
 		{highlight: 'LspDiagVirtualTextHint', override: true})
 
-  autocmd_add([{group: 'LspOptionsChanged',
+  autocmd_add([{group: 'LspCmds',
 	        event: 'User',
-		pattern: '*',
+		pattern: 'LspOptionsChanged',
 		cmd: 'LspDiagsOptionsChanged()'}])
 
   # ALE plugin support

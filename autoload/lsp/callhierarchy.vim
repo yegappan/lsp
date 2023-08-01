@@ -23,7 +23,7 @@ def CallHierarchyTreeItemRefresh(idx: number)
 
   if !treeItem->has_key('children')
     # First time retrieving the children for the item at index "idx"
-    var lspserver = buf.BufLspServerGet(w:LspBufnr)
+    var lspserver = buf.BufLspServerGet(w:LspBufnr, 'callHierarchy')
     if lspserver->empty() || !lspserver.running
       return
     endif

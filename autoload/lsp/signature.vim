@@ -23,6 +23,20 @@ def CloseCurBufSignaturePopup()
   CloseSignaturePopup(lspserver)
 enddef
 
+# Show the signature using "textDocument/signatureHelp" LSP method
+# Invoked from an insert-mode mapping, so return an empty string.
+def g:LspShowSignature(): string
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('signatureHelp')
+  if lspserver->empty()
+    return ''
+  endif
+
+  # first send all the changes in the current buffer to the LSP server
+  listener_flush()
+  lspserver.showSignature()
+  return ''
+enddef
+
 export def InitOnce()
   hlset([{name: 'LspSigActiveParameter', default: true, linksto: 'LineNr'}])
 enddef
@@ -43,7 +57,7 @@ export def BufferInit(lspserver: dict<any>)
 
   # map characters that trigger signature help
   for ch in lspserver.caps.signatureHelpProvider.triggerCharacters
-    exe $"inoremap <buffer> <silent> {ch} {ch}<C-R>=LspShowSignature()<CR>"
+    exe $"inoremap <buffer> <silent> {ch} {ch}<C-R>=g:LspShowSignature()<CR>"
   endfor
 
   # close the signature popup when leaving insert mode
