@@ -73,9 +73,8 @@ export var lspOptions: dict<any> = {
   # Suppress adding a new line on completion selection with <CR>
   noNewlineInCompletion: false,
 
-  # Omni-completion support.  To keep backward compatibility, this option is
-  # set to null by default instead of false.
-  omniComplete: null,
+  # Omni-completion support.
+  omniComplete: true,
 
   # Open outline window on right side
   outlineOnRight: false,
