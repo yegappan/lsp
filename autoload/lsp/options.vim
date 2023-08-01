@@ -156,7 +156,7 @@ export def OptionsSet(opts: dict<any>)
   endif
 
   # Apply the changed options
-  if exists('LspCmds##User#LspOptionsChanged')
+  if exists('#LspCmds#User#LspOptionsChanged')
     :doautocmd <nomodeline> LspCmds User LspOptionsChanged
   endif
 enddef
