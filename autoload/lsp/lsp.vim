@@ -764,12 +764,14 @@ enddef
 # Display the hover message from the LSP server for the current cursor
 # location
 export def Hover(cmdmods: string)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked('hover')
-  if lspserver->empty()
+  var lspservers: list<dict<any>> = buf.CurbufGetServerCheckedList('hover')
+  if lspservers->empty()
     return
   endif
 
-  lspserver.hover(cmdmods)
+  for lspserver in lspservers
+    lspserver.hover(cmdmods)
+  endfor
 enddef
 
 # Enable or disable inlay hints

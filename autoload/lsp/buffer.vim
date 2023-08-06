@@ -59,6 +59,54 @@ var SupportedCheckFns = {
   workspaceSymbol: (lspserver) => lspserver.isWorkspaceSymbolProvider
 }
 
+# Returns the LSP servers for the buffer "bnr".  If "feature" is specified,
+# then returns the LSP servers that provides the "feature".
+# Returns an  empty list if the server is not found.
+export def BufLspServerGetList(bnr: number, feature: string = null_string): list<dict<any>>
+  if !bufnrToServers->has_key(bnr)
+    return []
+  endif
+
+  if bufnrToServers[bnr]->empty()
+    return []
+  endif
+
+  if feature == null_string
+    return bufnrToServers[bnr]
+  endif
+
+  if !SupportedCheckFns->has_key(feature)
+    # If this happns it is a programming error, and should be fixed in the
+    # source code
+    :throw $'Error: ''{feature}'' is not a valid feature'
+  endif
+
+  var SupportedCheckFn = SupportedCheckFns[feature]
+
+  var possibleLSPs: list<dict<any>> = []
+
+  for lspserver in bufnrToServers[bnr]
+    if !lspserver.ready || !SupportedCheckFn(lspserver)
+      continue
+    endif
+
+    possibleLSPs->add(lspserver)
+  endfor
+
+  if possibleLSPs->empty()
+    return []
+  endif
+
+  # LSP server is configured to be a provider for "feature"
+  possibleLSPs->filter((_, lsp) => lsp.features->get(feature, false))
+
+  # Return the LSP servers that supports "feature" and doesn't have it
+  # disabled
+  possibleLSPs->filter((_, lsp) => lsp.featureEnabled(feature))
+
+  return possibleLSPs
+enddef
+
 # Returns the LSP server for the buffer "bnr".  If "feature" is specified,
 # then returns the LSP server that provides the "feature".
 # Returns an empty dict if the server is not found.
@@ -142,6 +190,12 @@ export def BufLspServersGet(bnr: number): list<dict<any>>
   return bufnrToServers[bnr]
 enddef
 
+# Returns the LSP servers for the current buffer with the optionally "feature".
+# Returns an empty list if the server is not found.
+export def CurbufGetServerList(feature: string = null_string): list<dict<any>>
+  return BufLspServerGetList(bufnr(), feature)
+enddef
+
 # Returns the LSP server for the current buffer with the optionally "feature".
 # Returns an empty dict if the server is not found.
 export def CurbufGetServer(feature: string = null_string): dict<any>
@@ -158,6 +212,29 @@ export def BufHasLspServer(bnr: number): bool
   var lspserver = BufLspServerGet(bnr)
 
   return !lspserver->empty()
+enddef
+
+# Returns the LSP servers for the current buffer with the optinally "feature" if
+# it is running and is ready.
+# Returns an empty list if the server is not found or is not ready.
+export def CurbufGetServerCheckedList(feature: string = null_string): list<dict<any>>
+  var fname: string = @%
+  if fname->empty()
+    return []
+  endif
+
+  var lspservers: list<dict<any>> = CurbufGetServerList(feature)
+  if lspservers->empty()
+    if feature == null_string
+      util.ErrMsg($'Language server for "{&filetype}" file type is not found')
+    else
+      util.ErrMsg($'Language server for "{&filetype}" file type supporting "{feature}" feature is not found')
+    endif
+    return []
+  endif
+  lspservers->filter((_, lspserver) => lspserver.running && lspserver.ready)
+
+  return lspservers
 enddef
 
 # Returns the LSP server for the current buffer with the optinally "feature" if
