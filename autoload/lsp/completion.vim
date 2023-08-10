@@ -538,7 +538,7 @@ def LspResolve()
 
   var item = v:event.completed_item
   if item->has_key('user_data') && !item.user_data->empty()
-      if !item.user_data->has_key('documentation')
+      if item.user_data->type() == v:t_dict && !item.user_data->has_key('documentation')
 	lspserver.resolveCompletion(item.user_data)
       else
 	ShowCompletionDocumentation(item.user_data)
