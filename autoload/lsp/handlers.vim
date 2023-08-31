@@ -116,7 +116,9 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       # pyright language server notifications
       'pyright/beginProgress',
       'pyright/reportProgress',
-      'pyright/endProgress'
+      'pyright/endProgress',
+      'eslint/status',
+      'taplo/didChangeSchemaAssociation'
     ]
 
   if lsp_notif_handlers->has_key(reply.method)
