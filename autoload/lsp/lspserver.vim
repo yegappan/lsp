@@ -1826,6 +1826,7 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     forceOffsetEncoding: serverParams.forceOffsetEncoding,
     initializationOptions: serverParams.initializationOptions->deepcopy(),
     messages: [],
+    needOffsetEncoding: false,
     omniCompletePending: false,
     peekSymbolFilePopup: -1,
     peekSymbolPopup: -1,
