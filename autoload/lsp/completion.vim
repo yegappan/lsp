@@ -7,6 +7,7 @@ import './buffer.vim' as buf
 import './options.vim' as opt
 import './textedit.vim'
 import './snippet.vim'
+import './codeaction.vim'
 
 # per-filetype omni-completion enabled/disabled table
 var ftypeOmniCtrlMap: dict<bool> = {}
@@ -590,12 +591,17 @@ def LspCompleteDone(bnr: number)
     # additional text edits.  So try to resolve the completion item now to get
     # the text edits.
     completionData = lspserver.resolveCompletion(completionData, true)
-    if completionData->get('additionalTextEdits', {})->empty()
-      return
+    if !completionData->get('additionalTextEdits', {})->empty()
+      textedit.ApplyTextEdits(bnr, completionData.additionalTextEdits)
     endif
   endif
 
-  textedit.ApplyTextEdits(bnr, completionData.additionalTextEdits)
+  if completionData->has_key('command')
+    # Some language servers (e.g. haskell-language-server) want to apply
+    # additional commands after completion.
+    codeaction.DoCommand(lspserver, completionData.command)
+  endif
+
 enddef
 
 # Initialize buffer-local completion options and autocmds
