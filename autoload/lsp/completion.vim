@@ -591,9 +591,9 @@ def LspCompleteDone(bnr: number)
     # additional text edits.  So try to resolve the completion item now to get
     # the text edits.
     completionData = lspserver.resolveCompletion(completionData, true)
-    if !completionData->get('additionalTextEdits', {})->empty()
-      textedit.ApplyTextEdits(bnr, completionData.additionalTextEdits)
-    endif
+  endif
+  if !completionData->get('additionalTextEdits', {})->empty()
+    textedit.ApplyTextEdits(bnr, completionData.additionalTextEdits)
   endif
 
   if completionData->has_key('command')
