@@ -213,7 +213,6 @@ export def ApplyWorkspaceEdit(workspaceEdit: dict<any>)
     return
   endif
 
-  var save_cursor: list<number> = getcurpos()
   for [uri, changes] in workspaceEdit.changes->items()
     var bnr: number = util.LspUriToBufnr(uri)
     if bnr == 0
@@ -224,8 +223,6 @@ export def ApplyWorkspaceEdit(workspaceEdit: dict<any>)
     # interface TextEdit
     ApplyTextEdits(bnr, changes)
   endfor
-  # Restore the cursor to the location before the edit
-  save_cursor->setpos('.')
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2
