@@ -1820,7 +1820,7 @@ typescript-language-server for everything else: >
 		},
 		# this language server will be used for documentFormatting
 		{
-			filetype: ['efm-langserver'],
+			filetype: ['javascript', 'typescript'],
 			path: '/usr/local/bin/efm-langserver',
 			args: [],
 			features: {
