@@ -76,7 +76,7 @@ enddef
 
 # Update all the inlay hints.  A timer is used to throttle the updates.
 def LspInlayHintsUpdate(bnr: number)
-  if !bnr->getbufvar('LspInlayHintsNeedsUpdate', true)
+  if !bnr->getbufvar('LspInlayHintsNeedsUpdate', false)
     return
   endif
 
@@ -87,7 +87,7 @@ def LspInlayHintsUpdate(bnr: number)
   endif
 
   var lspserver: dict<any> = buf.BufLspServerGet(bnr, 'inlayHint')
-  if lspserver->empty()
+  if lspserver->empty() || !lspserver.ready
     return
   endif
 
@@ -95,7 +95,7 @@ def LspInlayHintsUpdate(bnr: number)
     # When running tests, update the inlay hints immediately
     InlayHintsTimerCb(lspserver, bnr, -1)
   else
-    timerid = timer_start(300, function('InlayHintsTimerCb', [lspserver, bnr]))
+    timerid = timer_start(800, function('InlayHintsTimerCb', [lspserver, bnr]))
     setbufvar(bnr, 'LspInlayHintsTimer', timerid)
   endif
 enddef
@@ -115,6 +115,7 @@ enddef
 def LspInlayHintsUpdateStop(bnr: number)
   var timerid = bnr->getbufvar('LspInlayHintsTimer', -1)
   if timerid != -1
+    setbufvar(bnr, 'LspInlayHintsNeedsUpdate', false)
     timerid->timer_stop()
     setbufvar(bnr, 'LspInlayHintsTimer', -1)
   endif
