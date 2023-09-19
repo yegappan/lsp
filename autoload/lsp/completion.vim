@@ -582,7 +582,6 @@ def LspCompleteDone(bnr: number)
 
   var completionData: any = v:completed_item->get('user_data', '')
   if completionData->type() != v:t_dict
-      || !opt.lspOptions.completionTextEdit
     return
   endif
 
@@ -593,6 +592,7 @@ def LspCompleteDone(bnr: number)
     completionData = lspserver.resolveCompletion(completionData, true)
   endif
   if !completionData->get('additionalTextEdits', {})->empty()
+	\ && opt.lspOptions.completionTextEdit
     textedit.ApplyTextEdits(bnr, completionData.additionalTextEdits)
   endif
 
