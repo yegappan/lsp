@@ -95,7 +95,7 @@ def LspInlayHintsUpdate(bnr: number)
     # When running tests, update the inlay hints immediately
     InlayHintsTimerCb(lspserver, bnr, -1)
   else
-    timerid = timer_start(800, function('InlayHintsTimerCb', [lspserver, bnr]))
+    timerid = timer_start(600, function('InlayHintsTimerCb', [lspserver, bnr]))
     setbufvar(bnr, 'LspInlayHintsTimer', timerid)
   endif
 enddef
