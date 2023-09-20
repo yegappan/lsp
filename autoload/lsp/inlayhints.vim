@@ -87,7 +87,7 @@ def LspInlayHintsUpdate(bnr: number)
   endif
 
   var lspserver: dict<any> = buf.BufLspServerGet(bnr, 'inlayHint')
-  if lspserver->empty() || !lspserver.ready
+  if lspserver->empty()
     return
   endif
 
