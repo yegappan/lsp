@@ -163,7 +163,7 @@ export def BufferInit(lspserver: dict<any>, bnr: number)
     acmds->add({bufnr: bnr,
 		  event: ['User'],
 		  group: 'LspAttached',
-		  cmd: $'LspInlayHintsChanged({bnr})'})
+		  cmd: $'LspInlayHintsUpdateNow({bnr})'})
   endif
 
   autocmd_add(acmds)
