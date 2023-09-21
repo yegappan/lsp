@@ -296,6 +296,9 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     endif
 
     d.user_data = item
+
+    # Some servers like volar-server sends duplicates
+    completeItems = filter(completeItems, (_, i) => i.abbr != d.abbr && i.kind != d.kind)
     completeItems->add(d)
   endfor
 
