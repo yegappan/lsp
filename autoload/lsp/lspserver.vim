@@ -908,8 +908,13 @@ def DidSaveFile(lspserver: dict<any>, bnr: number): void
   # Params: DidSaveTextDocumentParams
   var params: dict<any> = {textDocument: {uri: util.LspBufnrToUri(bnr)}}
 
-  if lspserver.caps.textDocumentSync->get("save", {})->get("includeText", v:false)
-    params.text = bnr->getbufline(1, '$')->join("\n") .. "\n"
+  if lspserver.caps.textDocumentSync->type() == v:t_dict
+      && lspserver.caps.textDocumentSync->has_key('save')
+    if lspserver.caps.textDocumentSync.save->type() == v:t_dict
+	&& lspserver.caps.textDocumentSync.save->has_key('includeText')
+	&& lspserver.caps.textDocumentSync.save.includeText
+      params.text = bnr->getbufline(1, '$')->join("\n") .. "\n"
+    endif
   endif
 
   lspserver.sendNotification('textDocument/didSave', params)
