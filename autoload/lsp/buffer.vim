@@ -99,7 +99,7 @@ export def BufLspServerGet(bnr: number, feature: string = null_string): dict<any
 
   # LSP server is configured to be a provider for "feature"
   for lspserver in possibleLSPs
-    var has_feature: bool = lspserver.featureEnabled(feature)
+    var has_feature: bool = lspserver.features->get(feature, false)
     if has_feature
       return lspserver
     endif

@@ -908,7 +908,7 @@ def DidSaveFile(lspserver: dict<any>, bnr: number): void
   # Params: DidSaveTextDocumentParams
   var params: dict<any> = {textDocument: {uri: util.LspBufnrToUri(bnr)}}
 
-  if lspserver.caps.textDocumentSync.save.includeText
+  if lspserver.caps.textDocumentSync->get("save", {})->get("includeText", v:false)
     params.text = bnr->getbufline(1, '$')->join("\n") .. "\n"
   endif
 
