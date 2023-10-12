@@ -118,6 +118,13 @@ def g:Test_LspFormat()
     }
   END
   assert_equal(expected, getline(1, '$'))
+
+  deletebufline('', 1, '$')
+  # shrinking multiple lines into a single one works
+  setline(1, ['int \', 'i \', '= \', '42;'])
+  :redraw!
+  :4LspFormat
+  assert_equal(['int i = 42;'], getline(1, '$'))
   bw!
 
   # empty file
