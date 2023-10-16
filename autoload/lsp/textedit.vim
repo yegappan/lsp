@@ -166,9 +166,6 @@ export def ApplyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   #echomsg $'ApplyTextEdits: start_line = {start_line}, finish_line = {finish_line}'
   #echomsg $'lines = {string(lines)}'
 
-  # Delete all the lines that need to be modified
-  bnr->deletebufline(start_line + 1, finish_line + 1)
-
   # if the buffer is empty, appending lines before the first line adds an
   # extra empty line at the end. Delete the empty line after appending the
   # lines.
@@ -178,8 +175,34 @@ export def ApplyTextEdits(bnr: number, text_edits: list<dict<any>>): void
     dellastline = true
   endif
 
-  # Append the updated lines
-  appendbufline(bnr, start_line, lines)
+  # Now we apply the textedits to the actual buffer.
+  # In theory we could just delete all old lines and append the new lines.
+  # This would however cause the cursor to change position: It will always be
+  # on the last line added.
+  #
+  # Luckily there is an even simpler solution, that has no cursor sideeffects.
+  #
+  # Logically this method is split into the following three cases:
+  #
+  # 1. The number of new lines is equal to the number of old lines:
+  #    Just replace the lines inline with setbufline()
+  #
+  # 2. The number of new lines is greater than the old ones:
+  #    First append the missing lines at the **end** of the range, then use
+  #    setbufline() again. This does not cause the cursor to change position.
+  #
+  # 3. The number of new lines is less than before:
+  #    First use setbufline() to replace the lines that we can replace.
+  #    Then remove superfluous lines.
+  #
+  # Luckily, the three different cases exist only logically, we can reduce
+  # them to a single case practically, because appendbufline() does not append
+  # anything if an empty list is passed just like deletebufline() does not
+  # delete anything, if the last line of the range is before the first line.
+  # We just need to be careful with all indices.
+  appendbufline(bnr, finish_line + 1, lines[finish_line - start_line + 1 : -1])
+  setbufline(bnr, start_line + 1, lines)
+  deletebufline(bnr, start_line + 1 + lines->len(), finish_line + 1)
 
   if dellastline
     bnr->deletebufline(bnr->getbufinfo()[0].linecount)
