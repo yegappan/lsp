@@ -114,7 +114,7 @@ def ServerInitReply(lspserver: dict<any>, initResult: dict<any>): void
   capabilities.ProcessServerCaps(lspserver, caps)
 
   if caps->has_key('completionProvider')
-    if opt.lspOptions.autoComplete
+    if opt.lspOptions.autoComplete || opt.lspOptions.omniComplete
       lspserver.completionTriggerChars =
 			caps.completionProvider->get('triggerCharacters', [])
     endif

@@ -433,19 +433,23 @@ def g:LspOmniFunc(findstart: number, base: string): any
   endif
 
   if findstart
-    # first send all the changes in the current buffer to the LSP server
-    listener_flush()
+    var triggerKind = LspGetCompletion(lspserver)
+    if triggerKind < 0
+      return triggerKind
+    else
+      lspserver.completeItems = []
+      lspserver.omniCompletePending = true
+      if triggerKind == 2 # completion caused by triggerChars
+        lspserver.omniCompleteKeyword = ''
+        return charcol('.') - 1
+      else
+        var line = getline('.')->strpart(0, col('.') - 1)
+        var keyword = line->matchstr('\k\+$')
+        lspserver.omniCompleteKeyword = keyword
+        return line->len() - keyword->len()
+      endif
+    endif
 
-    lspserver.omniCompletePending = true
-    lspserver.completeItems = []
-    # initiate a request to LSP server to get list of completions
-    lspserver.getCompletion(1, '')
-
-    # locate the start of the word
-    var line = getline('.')->strpart(0, col('.') - 1)
-    var keyword = line->matchstr('\k\+$')
-    lspserver.omniCompleteKeyword = keyword
-    return line->len() - keyword->len()
   else
     # Wait for the list of matches from the LSP server
     var count: number = 0
@@ -491,19 +495,12 @@ def g:LspOmniCompletePending(): bool
   return !lspserver->empty() && lspserver.omniCompletePending
 enddef
 
-# Insert mode completion handler. Used when 24x7 completion is enabled
-# (default).
-def LspComplete()
-  var lspserver: dict<any> = buf.CurbufGetServer('completion')
-  if lspserver->empty() || !lspserver.running || !lspserver.ready
-    return
-  endif
-
-  var cur_col: number = charcol('.')
+# Initiate request to server to get completion and return trigger kind
+def LspGetCompletion(lspserver: dict<any>): number
   var line: string = getline('.')
-
+  var cur_col: number = charcol('.')
   if cur_col == 0 || line->empty()
-    return
+    return -1
   endif
 
   # Trigger kind is 1 for 24x7 code complete or manual invocation
@@ -516,7 +513,7 @@ def LspComplete()
     var trigChars = lspserver.completionTriggerChars
     var trigidx = trigChars->index(line[cur_col - 2])
     if trigidx == -1
-      return
+      return -1
     endif
     # completion triggered by one of the trigger characters
     triggerKind = 2
@@ -528,6 +525,17 @@ def LspComplete()
 
   # initiate a request to LSP server to get list of completions
   lspserver.getCompletion(triggerKind, triggerChar)
+  return triggerKind
+enddef
+
+# Insert mode completion handler. Used when 24x7 completion is enabled
+# (default).
+def LspComplete()
+  var lspserver: dict<any> = buf.CurbufGetServer('completion')
+  if lspserver->empty() || !lspserver.running || !lspserver.ready
+    return
+  endif
+  LspGetCompletion(lspserver)
 enddef
 
 # Lazy complete documentation handler
