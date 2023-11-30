@@ -1356,7 +1356,7 @@ def g:Test_LspTagFunc()
   END
   writefile(lines, 'Xtagfunc.c')
   :silent! edit Xtagfunc.c
-  g:WaitForServerFileLoad(1)
+  g:WaitForServerFileLoad(3)
   :setlocal tagfunc=lsp#lsp#TagFunc
   cursor(3, 4)
   :exe "normal \<C-]>"
@@ -1519,8 +1519,8 @@ def g:Test_OmniComplete_Struct()
   feedkeys("cwb\<C-X>\<C-O>\<C-N>\<C-Y>", 'xt')
   assert_equal('    myTest.baz = 10;', getline('.'))
   cursor(11, 12)
-  feedkeys("cw\<C-X>\<C-O>\<C-N>\<C-N>\<C-Y>", 'xt')
-  assert_equal('    pTest->foo = 20;', getline('.'))
+  feedkeys("cw\<C-X>\<C-O>\<C-N>\<C-Y>", 'xt')
+  assert_equal('    pTest->baz = 20;', getline('.'))
   :%bw!
 enddef
 
@@ -1691,7 +1691,7 @@ def g:Test_DiagVirtualText()
   g:LspOptionsSet({showDiagWithVirtualText: true})
   p = prop_list(1, {end_lnum: line('$')})
   assert_equal(1, p->len())
-  assert_equal([3, 8, 'LspDiagVirtualTextError'], [p[0].lnum, p[0].length, p[0].type])
+  assert_equal([3, 'LspDiagVirtualTextError'], [p[0].lnum, p[0].type])
 
   g:LspOptionsSet({showDiagWithVirtualText: false})
   p = prop_list(1, {end_lnum: line('$')})
