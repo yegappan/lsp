@@ -1519,8 +1519,8 @@ def g:Test_OmniComplete_Struct()
   feedkeys("cwb\<C-X>\<C-O>\<C-N>\<C-Y>", 'xt')
   assert_equal('    myTest.baz = 10;', getline('.'))
   cursor(11, 12)
-  feedkeys("cw\<C-X>\<C-O>\<C-N>\<C-N>\<C-Y>", 'xt')
-  assert_equal('    pTest->foo = 20;', getline('.'))
+  feedkeys("cw\<C-X>\<C-O>\<C-N>\<C-Y>", 'xt')
+  assert_equal('    pTest->baz = 20;', getline('.'))
   :%bw!
 enddef
 

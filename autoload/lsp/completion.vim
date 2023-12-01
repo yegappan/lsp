@@ -425,6 +425,29 @@ export def CompletionResolveReply(lspserver: dict<any>, cItem: any)
   ShowCompletionDocumentation(cItem)
 enddef
 
+# Return trigger kind and trigger char. If completion trigger is not a keyword
+# and not one of the triggerCharacters, return -1 for triggerKind.
+def GetTriggerAttributes(lspserver: dict<any>): list<any>
+  var triggerKind: number = 1
+  var triggerChar: string = ''
+
+  # Trigger kind is 1 for keyword and 2 for trigger char initiated completion.
+  var line: string = getline('.')
+  var cur_col = charcol('.')
+  if line[cur_col - 2] !~ '\k'
+    var trigChars = lspserver.completionTriggerChars
+    var trigidx = trigChars->index(line[cur_col - 2])
+    if trigidx == -1
+      triggerKind = -1
+    else
+      triggerKind = 2
+      triggerChar = trigChars[trigidx]
+    endif
+  endif
+  return [triggerKind, triggerChar]
+enddef
+
+
 # omni complete handler
 def g:LspOmniFunc(findstart: number, base: string): any
   var lspserver: dict<any> = buf.CurbufGetServerChecked('completion')
@@ -433,13 +456,20 @@ def g:LspOmniFunc(findstart: number, base: string): any
   endif
 
   if findstart
+
+    var [triggerKind, triggerChar] = GetTriggerAttributes(lspserver)
+    if triggerKind < 0
+      return -1
+    endif
+
     # first send all the changes in the current buffer to the LSP server
     listener_flush()
 
     lspserver.omniCompletePending = true
     lspserver.completeItems = []
+
     # initiate a request to LSP server to get list of completions
-    lspserver.getCompletion(1, '')
+    lspserver.getCompletion(triggerKind, triggerChar)
 
     # locate the start of the word
     var line = getline('.')->strpart(0, col('.') - 1)
@@ -462,7 +492,6 @@ def g:LspOmniFunc(findstart: number, base: string): any
     endif
 
     var res: list<dict<any>> = lspserver.completeItems
-
     var prefix = lspserver.omniCompleteKeyword
 
     # Don't attempt to filter on the items, when "isIncomplete" is set
@@ -499,28 +528,9 @@ def LspComplete()
     return
   endif
 
-  var cur_col: number = charcol('.')
-  var line: string = getline('.')
-
-  if cur_col == 0 || line->empty()
+  var [triggerKind, triggerChar] = GetTriggerAttributes(lspserver)
+  if triggerKind < 0
     return
-  endif
-
-  # Trigger kind is 1 for 24x7 code complete or manual invocation
-  var triggerKind: number = 1
-  var triggerChar: string = ''
-
-  # If the character before the cursor is not a keyword character or is not
-  # one of the LSP completion trigger characters, then do nothing.
-  if line[cur_col - 2] !~ '\k'
-    var trigChars = lspserver.completionTriggerChars
-    var trigidx = trigChars->index(line[cur_col - 2])
-    if trigidx == -1
-      return
-    endif
-    # completion triggered by one of the trigger characters
-    triggerKind = 2
-    triggerChar = trigChars[trigidx]
   endif
 
   # first send all the changes in the current buffer to the LSP server
