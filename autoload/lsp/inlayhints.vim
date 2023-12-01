@@ -44,7 +44,7 @@ export def InlayHintsReply(lspserver: dict<any>, bnr: number, inlayHints: any)
   for hint in inlayHints
     var label = ''
     if hint.label->type() == v:t_list
-      label = hint.label->copy()->map((_, v) => v.value)->join(', ')
+      label = hint.label->copy()->map((_, v) => v.value)->join('')
     else
       label = hint.label
     endif
