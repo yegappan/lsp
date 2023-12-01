@@ -476,7 +476,6 @@ def g:LspOmniFunc(findstart: number, base: string): any
     var keyword = line->matchstr('\k\+$')
     lspserver.omniCompleteKeyword = keyword
     return line->len() - keyword->len()
-
   else
     # Wait for the list of matches from the LSP server
     var count: number = 0

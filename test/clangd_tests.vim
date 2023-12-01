@@ -1356,7 +1356,7 @@ def g:Test_LspTagFunc()
   END
   writefile(lines, 'Xtagfunc.c')
   :silent! edit Xtagfunc.c
-  g:WaitForServerFileLoad(3)
+  g:WaitForServerFileLoad(1)
   :setlocal tagfunc=lsp#lsp#TagFunc
   cursor(3, 4)
   :exe "normal \<C-]>"
