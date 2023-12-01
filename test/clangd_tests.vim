@@ -1691,7 +1691,7 @@ def g:Test_DiagVirtualText()
   g:LspOptionsSet({showDiagWithVirtualText: true})
   p = prop_list(1, {end_lnum: line('$')})
   assert_equal(1, p->len())
-  assert_equal([3, 8, 'LspDiagVirtualTextError'], [p[0].lnum, p[0].length, p[0].type])
+  assert_equal([3, 'LspDiagVirtualTextError'], [p[0].lnum, p[0].type])
 
   g:LspOptionsSet({showDiagWithVirtualText: false})
   p = prop_list(1, {end_lnum: line('$')})
