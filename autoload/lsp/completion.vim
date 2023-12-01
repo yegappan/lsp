@@ -426,7 +426,7 @@ export def CompletionResolveReply(lspserver: dict<any>, cItem: any)
 enddef
 
 # Return trigger kind and trigger char. If completion trigger is not a keyword
-# and not one of the triggerCharacters, return -1.
+# and not one of the triggerCharacters, return -1 for triggerKind.
 def GetTriggerAttributes(lspserver: dict<any>): list<any>
   var triggerKind: number = 1
   var triggerChar: string = ''
