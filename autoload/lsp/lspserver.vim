@@ -25,6 +25,7 @@ import './codelens.vim'
 import './callhierarchy.vim' as callhier
 import './typehierarchy.vim' as typehier
 import './inlayhints.vim'
+import './semantichighlight.vim'
 
 # LSP server standard output handler
 def Output_cb(lspserver: dict<any>, chan: channel, msg: any): void
@@ -529,6 +530,44 @@ def WorkspaceConfigGet(lspserver: dict<any>, configItem: dict<any>): dict<any>
     config = config[part]
   endfor
   return config
+enddef
+
+# Update semantic highlighting for buffer "bnr"
+# Request: textDocument/semanticTokens/full or
+#	   textDocument/semanticTokens/full/delta
+def SemanticHighlightUpdate(lspserver: dict<any>, bnr: number)
+  if !lspserver.isSemanticTokensProvider
+    return
+  endif
+
+  # Send the pending buffer changes to the language server
+  bnr->listener_flush()
+
+  var method = 'textDocument/semanticTokens/full'
+  var params: dict<any> = {
+    textDocument: {
+      uri: util.LspBufnrToUri(bnr)
+    }
+  }
+
+  # Should we send a semantic tokens delta request instead of a full request?
+  if lspserver.semanticTokensDelta
+    var prevResultId: string = ''
+    prevResultId = bnr->getbufvar('LspSemanticResultId', '')
+    if prevResultId != ''
+      # semantic tokens delta request
+      params.previousResultId = prevResultId
+      method ..= '/delta'
+    endif
+  endif
+
+  var reply = lspserver.rpc(method, params)
+
+  if reply->empty() || reply.result->empty()
+    return
+  endif
+
+  semantichighlight.UpdateTokens(lspserver, bnr, reply.result)
 enddef
 
 # Send a "workspace/didChangeConfiguration" notification to the language
@@ -1925,6 +1964,7 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     foldRange: function(FoldRange, [lspserver]),
     executeCommand: function(ExecuteCommand, [lspserver]),
     workspaceConfigGet: function(WorkspaceConfigGet, [lspserver]),
+    semanticHighlightUpdate: function(SemanticHighlightUpdate, [lspserver]),
     getCapabilities: function(GetCapabilities, [lspserver]),
     getInitializeRequest: function(GetInitializeRequest, [lspserver]),
     addMessage: function(AddMessage, [lspserver]),

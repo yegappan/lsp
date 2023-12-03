@@ -3,7 +3,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: July 26, 2023
+Last change: Dec 2, 2023
 
 ==============================================================================
 CONTENTS                                                     *lsp-contents*
@@ -426,7 +426,7 @@ language server and to set the language server options.  For example: >
 		   ]
     autocmd VimEnter * LspAddServer(lspServers)
 
-    var lspOpts = {'autoHighlightDiags': true}
+    var lspOpts = {autoHighlightDiags: true}
     autocmd VimEnter * LspOptionsSet(lspOpts)
 <
 						*lsp-options* *LspOptionsSet()*
@@ -566,6 +566,11 @@ outlineOnRight		|Boolean| option.  Open the outline window on the
 						*lsp-opt-outlineWinSize*
 outlineWinSize		|Number| option.  The size of the symbol Outline
 			window.  By default this is set to 20.
+
+						*lsp-opt-semanticHighlight*
+semanticHighlight	|Boolean| option.  Enables or disables semantic
+			highlighting.
+			By default this is set to false.
 
 						*lsp-opt-showDiagInBalloon*
 showDiagInBalloon	|Boolean| option.  When the mouse is over a range of

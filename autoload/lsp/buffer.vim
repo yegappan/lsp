@@ -53,6 +53,7 @@ var SupportedCheckFns = {
   references: (lspserver) => lspserver.isReferencesProvider,
   rename: (lspserver) => lspserver.isRenameProvider,
   selectionRange: (lspserver) => lspserver.isSelectionRangeProvider,
+  semanticTokens: (lspserver) => lspserver.isSemanticTokensProvider,
   signatureHelp: (lspserver) => lspserver.isSignatureHelpProvider,
   typeDefinition: (lspserver) => lspserver.isTypeDefinitionProvider,
   typeHierarchy: (lspserver) => lspserver.isTypeHierarchyProvider,

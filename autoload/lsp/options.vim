@@ -83,6 +83,9 @@ export var lspOptions: dict<any> = {
   # Outline window size
   outlineWinSize: 20,
 
+  # Enable semantic highlighting
+  semanticHighlight: false,
+
   # Show diagnostic text in a balloon when the mouse is over the diagnostic
   showDiagInBalloon: true,
 

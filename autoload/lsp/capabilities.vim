@@ -168,6 +168,35 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
     lspserver.isCallHierarchyProvider = false
   endif
 
+  # semanticTokensProvider
+  if lspserver.caps->has_key('semanticTokensProvider')
+    lspserver.isSemanticTokensProvider = true
+    lspserver.semanticTokensLegend =
+      lspserver.caps.semanticTokensProvider.legend
+    lspserver.semanticTokensRange =
+      lspserver.caps.semanticTokensProvider->get('range', false)
+    if lspserver.caps.semanticTokensProvider->has_key('full')
+      if lspserver.caps.semanticTokensProvider.full->type() == v:t_bool
+	lspserver.semanticTokensFull =
+	  lspserver.caps.semanticTokensProvider.full
+	lspserver.semanticTokensDelta = false
+      else
+	lspserver.semanticTokensFull = true
+	if lspserver.caps.semanticTokensProvider.full->has_key('delta')
+	  lspserver.semanticTokensDelta =
+	    lspserver.caps.semanticTokensProvider.full.delta
+	else
+	  lspserver.semanticTokensDelta = false
+	endif
+      endif
+    else
+      lspserver.semanticTokensfull = false
+      lspserver.semanticTokensdelta = false
+    endif
+  else
+    lspserver.isSemanticTokensProvider = false
+  endif
+
   # typeHierarchyProvider
   if lspserver.caps->has_key('typeHierarchyProvider')
     lspserver.isTypeHierarchyProvider = true
@@ -403,6 +432,31 @@ export def GetClientCaps(): dict<any>
 	  documentationFormat: ['markdown', 'plaintext'],
 	  activeParameterSupport: true
 	}
+      },
+      semanticTokens: {
+	dynamicRegistration: false,
+	requests: {
+	  range: false,
+	  full: {
+	    delta: true
+	  }
+	},
+	tokenTypes: [
+	  'type', 'class', 'enum', 'interface', 'struct', 'typeParameter',
+	  'parameter', 'variable', 'property', 'enumMember', 'event',
+	  'function', 'method', 'macro', 'keyword', 'modifier', 'comment',
+	  'string', 'number', 'regexp', 'operator'
+	],
+	tokenModifiers: [
+	  'declaration', 'definition', 'readonly', 'static', 'deprecated',
+	  'abstract', 'async', 'modification', 'documentation',
+	  'defaultLibrary'
+	],
+	formats: ['relative'],
+	overlappingTokenSupport: false,
+	multilineTokenSupport: false,
+	serverCancelSupport: false,
+	augmentsSyntaxTokens: true
       },
       synchronization: {
 	dynamicRegistration: false,

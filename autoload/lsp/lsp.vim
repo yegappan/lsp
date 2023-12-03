@@ -21,6 +21,7 @@ import './outline.vim'
 import './signature.vim'
 import './codeaction.vim'
 import './inlayhints.vim'
+import './semantichighlight.vim'
 
 # LSP server information
 var LSPServers: list<dict<any>> = []
@@ -48,6 +49,7 @@ def LspInitOnce()
   inlayhints.InitOnce()
   signature.InitOnce()
   symbol.InitOnce()
+  semantichighlight.InitOnce()
 
   lspInitializedOnce = true
 enddef
@@ -424,6 +426,11 @@ def BufferInit(lspserverId: number, bnr: number): void
       if !inlayHintServer->empty() && lspsrv.id == inlayHintServer.id
 	inlayhints.BufferInit(lspsrv, bnr)
       endif
+
+      var semanticServer = buf.BufLspServerGet(bnr, 'semanticTokens')
+      if !semanticServer->empty() && lspsrv.id == semanticServer.id
+	semantichighlight.BufferInit(lspserver, bnr)
+      endif
     endfor
 
     if exists('#User#LspAttached')
@@ -503,7 +510,16 @@ export def BufferLoadedInWin(bnr: number)
   if opt.lspOptions.autoHighlightDiags
     diag.DiagsRefresh(bnr)
   endif
+
   completion.BufferLoadedInWin(bnr)
+
+  # Refresh the semantic highlights
+  if opt.lspOptions.semanticHighlight
+    var semanticServer = buf.BufLspServerGet(bnr, 'semanticTokens')
+    if !semanticServer->empty()
+      semanticServer.semanticHighlightUpdate(bnr)
+    endif
+  endif
 enddef
 
 # Stop all the LSP servers
