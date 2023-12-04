@@ -190,8 +190,8 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
 	endif
       endif
     else
-      lspserver.semanticTokensfull = false
-      lspserver.semanticTokensdelta = false
+      lspserver.semanticTokensFull = false
+      lspserver.semanticTokensDelta = false
     endif
   else
     lspserver.isSemanticTokensProvider = false
