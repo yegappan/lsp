@@ -131,7 +131,7 @@ call LspOptionsSet(#{
         \   completionTextEdit: v:true,
         \   diagVirtualTextAlign: 'above',
         \   noNewlineInCompletion: v:false,
-        \   omniComplete: null,
+        \   omniComplete: v:null,
         \   outlineOnRight: v:false,
         \   outlineWinSize: 20,
         \   semanticHighlight: v:true,
