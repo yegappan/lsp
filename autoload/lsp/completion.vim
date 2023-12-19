@@ -586,6 +586,7 @@ def LspCompleteDone(bnr: number)
   endif
 
   if !completionData->has_key('additionalTextEdits')
+	\ && opt.lspOptions.completionTextEdit
     # Some language servers (e.g. typescript) delay the computation of the
     # additional text edits.  So try to resolve the completion item now to get
     # the text edits.
