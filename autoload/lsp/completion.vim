@@ -263,7 +263,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
       d.icase = 1
     endif
 
-    if item->has_key('kind')
+    if item->has_key('kind') && !item.kind->empty()
       # namespace CompletionItemKind
       # map LSP kind to complete-item-kind
       d.kind = LspCompleteItemKindChar(item.kind)
