@@ -171,13 +171,12 @@ enddef
 def ProcessWorkspaceConfiguration(lspserver: dict<any>, request: dict<any>)
   var items = request.params.items
   var response = items->map((_, item) => lspserver.workspaceConfigGet(item))
-  
+
   # Server expect null value if no config is given
-  # TODO: Proper null return from workspaceConfigGet if no config is found
-  if response->type() == v:t_list 
+  if response->type() == v:t_list && response->len() == 1
     && response[0]->type() == v:t_dict
     && response[0] == null_dict
-    response[0] = null 
+    response[0] = null
   endif
 
   lspserver.sendResponse(request, response, {})
