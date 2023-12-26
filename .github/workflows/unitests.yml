@@ -4,6 +4,11 @@ jobs:
   linux:
     name: linux
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        vim:
+          - nightly
+          - v9.0.0000
     steps:
       - name: Install packages
         run: |
@@ -23,9 +28,9 @@ jobs:
         uses: rhysd/action-setup-vim@v1
         id: vim
         with:
-          version: v9.0.0000
-      - name: Checkout LSP Code
-        uses: actions/checkout@v3
+          version: ${{ matrix.vim }}
+      - name: Checkout LSP plugin Code
+        uses: actions/checkout@v4
       - name: Run Tests
         run: |
           uname -a
