@@ -188,6 +188,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
   endif
 
   var completeItems: list<dict<any>> = []
+  var itemsUsed: list<string> = []
   for item in items
     var d: dict<any> = {}
 
@@ -294,6 +295,20 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     if d.score->empty()
       d.score = item->get('label', '')
     endif
+
+    # Dont include duplicate items
+    if lspOpts.filterCompletionDuplicates       
+      var key = d->get('word', '') ..
+                d->get('info', '') ..
+                d->get('kind', '') ..
+                d->get('score', '') ..
+                d->get('abbr', '') ..
+                d->get('dup', '')
+      if index(itemsUsed, key) != -1            
+        continue                                                                          
+      endif                                                                      
+      add(itemsUsed, key)                       
+    endif  
 
     d.user_data = item
     completeItems->add(d)
