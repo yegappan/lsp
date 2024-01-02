@@ -85,7 +85,12 @@ export def LspUriToFile(uri: string): string
   if uri_decoded =~? '^file:///\a:'
     # MS-Windows URI
     uri_decoded = uri_decoded[8 : ]
-    uri_decoded = uri_decoded->substitute('/', '\\', 'g')
+    if has("win32unix")  # we're in Cygwin
+      # The substitution is to remove the '^@' escape character from the end of line.
+      uri_decoded = system($'cygpath --unix {uri_decoded}')->substitute('^\(\p*\).*$', '\=submatch(1)', "")
+    else
+      uri_decoded = uri_decoded->substitute('/', '\\', 'g')
+    endif
   # On GNU/Linux (pattern not end with `:`)
   elseif uri_decoded =~? '^file:///\a'
     uri_decoded = uri_decoded[7 : ]
