@@ -150,7 +150,8 @@ call LspOptionsSet(#{
         \   vsnipSupport: v:false,
         \   bufferCompletionTimeout: 100,
         \   customCompletionKinds: v:false,
-        \   completionKinds: {}
+        \   completionKinds: {},
+        \   filterCompletionDuplicates: false,
 	\ })
 ```
 
