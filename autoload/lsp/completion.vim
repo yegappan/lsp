@@ -345,23 +345,30 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
   endif
 enddef
 
-# process the completion documentation
+# Check if completion item is selected
+def CheckCompletionItemSel(label: string): bool
+  var cInfo = complete_info()
+  if cInfo->empty() || !cInfo.pum_visible || cInfo.selected == -1
+    return false
+  endif
+  var selItem = cInfo.items->get(cInfo.selected, {})
+  if selItem->empty()
+      || selItem->type() != v:t_dict
+      || selItem.user_data->type() != v:t_dict
+      || selItem.user_data.label != label
+    return false
+  endif
+  return true
+enddef
+
+# Process the completion documentation
 def ShowCompletionDocumentation(cItem: any)
   if cItem->empty() || cItem->type() != v:t_dict
     return
   endif
 
   # check if completion item is still selected
-  var cInfo = complete_info()
-  if cInfo->empty() || !cInfo.pum_visible || cInfo.selected == -1
-    return
-  endif
-
-  var selItem = cInfo.items->get(cInfo.selected, {})
-  if selItem->empty()
-      || selItem->type() != v:t_dict
-      || selItem.user_data->type() != v:t_dict
-      || selItem.user_data.label != cItem.label
+  if !CheckCompletionItemSel(cItem.label)
     return
   endif
 
@@ -405,13 +412,7 @@ def ShowCompletionDocumentation(cItem: any)
   endif
 
   # check if completion item is changed in meantime
-  cInfo = complete_info()
-  if cInfo->empty()
-      || !cInfo.pum_visible
-      || cInfo.selected == -1
-      || cInfo.items[cInfo.selected]->type() != v:t_dict
-      || cInfo.items[cInfo.selected].user_data->type() != v:t_dict
-      || cInfo.items[cInfo.selected].user_data.label != cItem.label
+  if !CheckCompletionItemSel(cItem.label)
     return
   endif
 
