@@ -135,7 +135,10 @@ export var lspOptions: dict<any> = {
   customCompletionKinds: false,
 
   # A dictionary with all completion kinds that you want to customize
-  completionKinds: {}
+  completionKinds: {},
+
+  # Filter duplicate completion items
+  filterCompletionDuplicates: false,
 }
 
 # set the LSP plugin options from the user provided option values

@@ -660,6 +660,11 @@ bufferCompletionTimeout |Number| option. Specifies how long (in milliseconds)
 			regard to timeout.
 			By default this is set to 100 ms.
 
+						*lsp-opt-filterCompletionDuplicates*
+filterCompletionDuplicates |Boolean| option. If enabled, duplicate completion 
+			items sent from the server will be filtered to only
+			include one instance of the duplicates. 
+
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file: >
 
