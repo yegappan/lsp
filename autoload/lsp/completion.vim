@@ -297,18 +297,16 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     endif
 
     # Dont include duplicate items
-    if lspOpts.filterCompletionDuplicates       
+    if lspOpts.filterCompletionDuplicates
       var key = d->get('word', '') ..
+                d->get('menu', '') ..
                 d->get('info', '') ..
-                d->get('kind', '') ..
-                d->get('score', '') ..
-                d->get('abbr', '') ..
-                d->get('dup', '')
-      if index(itemsUsed, key) != -1            
-        continue                                                                          
-      endif                                                                      
-      add(itemsUsed, key)                       
-    endif  
+                d->get('kind', '')
+      if index(itemsUsed, key) != -1
+        continue
+      endif
+      add(itemsUsed, key)
+    endif
 
     d.user_data = item
     completeItems->add(d)
