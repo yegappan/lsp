@@ -151,7 +151,7 @@ call LspOptionsSet(#{
         \   bufferCompletionTimeout: 100,
         \   customCompletionKinds: v:false,
         \   completionKinds: {},
-        \   filterCompletionDuplicates: false,
+        \   filterCompletionDuplicates: v:false,
 	\ })
 ```
 
