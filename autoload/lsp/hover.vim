@@ -70,6 +70,34 @@ def GetHoverText(lspserver: dict<any>, hoverResult: any): list<any>
   return ['', '']
 enddef
 
+# Key filter function for the hover popup window.
+# Only keys to scroll the popup window are supported.
+def HoverWinFilterKey(hoverWin: number, key: string): bool
+  var keyHandled = false
+
+  if key == "\<C-E>"
+      || key == "\<C-D>"
+      || key == "\<C-F>"
+      || key == "\<PageDown>"
+      || key == "\<C-Y>"
+      || key == "\<C-U>"
+      || key == "\<C-B>"
+      || key == "\<PageUp>"
+      || key == "\<C-Home>"
+      || key == "\<C-End>"
+    # scroll the hover popup window
+    win_execute(hoverWin, $'normal! {key}')
+    keyHandled = true
+  endif
+
+  if !keyHandled
+    # For any other key, close the hover window
+    hoverWin->popup_close()
+  endif
+
+  return keyHandled
+enddef
+
 # process the 'textDocument/hover' reply from the LSP server
 # Result: Hover | null
 export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string): void
@@ -101,7 +129,8 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string): 
 					   maxwidth: 80,
 					   minwidth: 80,
 					   border: [0, 1, 0, 1],
-					   borderchars: [' ']})
+					   borderchars: [' '],
+					   filter: HoverWinFilterKey})
     win_execute(winid, $'setlocal ft={hoverKind}')
   endif
 enddef

@@ -878,9 +878,26 @@ can map these commands to keys and make it easier to invoke them.
 
 						*:LspHover*
 :LspHover		Show the documentation for the symbol under the cursor
-			in a popup window. If you want to show the symbol
-			documentation in the |preview-window| instead of in a
-			popup window set >
+			in a popup window.  The following keys can be used to
+			scroll the popup window:
+
+			    <CTRL-E> - Scroll window downwards by a line.
+			    <CTRL-D> - Scroll window downwards by 'scroll'
+				       lines.
+			    <CTRL-F> - Scroll window downards by a page.
+			    <PageDown> - ditto.
+			    <CTRL-Y> - Scroll window upwards by a line.
+			    <CTRL-U> - Scroll window upwards by 'scroll'
+				       lines.
+			    <CTRL-B> - Scroll window upwards by a page.
+			    <PageUp> - ditto.
+			    <CTRL-Home> - Goto the first line
+			    <CTRL-End>  - Goto the last line
+
+			Pressing any other key will close the popup window.
+
+			If you want to show the symbol documentation in the
+			|preview-window| instead of in a popup window set >
 
 			    LspOptionsSet({'hoverInPreview': true})
 <
