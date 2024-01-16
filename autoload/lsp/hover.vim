@@ -90,11 +90,6 @@ def HoverWinFilterKey(hoverWin: number, key: string): bool
     keyHandled = true
   endif
 
-  if !keyHandled
-    # For any other key, close the hover window
-    hoverWin->popup_close()
-  endif
-
   return keyHandled
 enddef
 
