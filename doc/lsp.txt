@@ -416,6 +416,10 @@ LSP plugin, then you need to use the VimEnter autocmd to initialize the
 language server and to set the language server options.  For example: >
 
     vim9script
+
+    var lspOpts = {autoHighlightDiags: true}
+    autocmd VimEnter * LspOptionsSet(lspOpts)
+
     var lspServers = [
 		     {
 		        name: 'clangd',
@@ -425,9 +429,6 @@ language server and to set the language server options.  For example: >
 		      }
 		   ]
     autocmd VimEnter * LspAddServer(lspServers)
-
-    var lspOpts = {autoHighlightDiags: true}
-    autocmd VimEnter * LspOptionsSet(lspOpts)
 <
 						*lsp-options* *LspOptionsSet()*
 						*g:LspOptionsSet()*
