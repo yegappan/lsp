@@ -90,9 +90,9 @@ def HoverWinFilterKey(hoverWin: number, key: string): bool
     keyHandled = true
   endif
 
-  if !keyHandled
-    # For any other key, close the hover window
+  if key == "\<Esc>"
     hoverWin->popup_close()
+    keyHandled = true
   endif
 
   return keyHandled
