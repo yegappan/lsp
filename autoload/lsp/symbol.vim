@@ -454,30 +454,15 @@ export def ShowLocations(lspserver: dict<any>, locations: list<dict<any>>,
 enddef
 
 # Key filter callback function used for the symbol popup window.
-def SymbolFilterCB(symPopupWin: number, key: string): bool
-  var keyHandled = false
-
-  if key == "\<C-E>"
-      || key == "\<C-D>"
-      || key == "\<C-F>"
-      || key == "\<PageDown>"
-      || key == "\<C-Y>"
-      || key == "\<C-U>"
-      || key == "\<C-B>"
-      || key == "\<PageUp>"
-      || key == "\<C-Home>"
-      || key == "\<C-End>"
-    # scroll the popup window
-    win_execute(symPopupWin, $'normal! {key}')
-    keyHandled = true
+# Vim doesn't close the popup window when the escape key is pressed.
+# This is function supports that.
+def SymbolFilterCB(lspserver: dict<any>, id: number, key: string): bool
+  if key == "\<Esc>"
+    lspserver.peekSymbolPopup->popup_close()
+    return true
   endif
 
-  if !keyHandled
-    # For any other key, close the window
-    symPopupWin->popup_close()
-  endif
-
-  return keyHandled
+  return false
 enddef
 
 # Display the file specified by LSP "LocationLink" in a popup window and
@@ -496,6 +481,7 @@ def PeekSymbolLocation(lspserver: dict<any>, location: dict<any>)
     # If the symbol popup window is already present, close it.
     lspserver.peekSymbolPopup->popup_close()
   endif
+  var CbFunc = function(SymbolFilterCB, [lspserver])
   var popupAttrs = {
     title: $"{fnamemodify(fname, ':t')} ({fnamemodify(fname, ':h')})",
     wrap: false,
@@ -507,7 +493,7 @@ def PeekSymbolLocation(lspserver: dict<any>, location: dict<any>)
     cursorline: true,
     border: [],
     mapping: false,
-    filter: SymbolFilterCB
+    filter: CbFunc
   }
   lspserver.peekSymbolPopup = popup_atcursor(bnum, popupAttrs)
 

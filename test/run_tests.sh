@@ -2,11 +2,7 @@
 
 # Script to run the unit-tests for the LSP Vim plugin
 
-#VIMPRG=${VIMPRG:=$(which vim)}
-#VIMPRG=/home/yega/bin/vim90/bin/vim
-#VIMRUNTIME=/home/yega/bin/vim90/share/vim/vim90
-export VIMPRG=/home/yega/Documents/vim/vim9/vim/src/vim
-export VIMRUNTIME=/home/yega/Documents/vim/vim9/vim/runtime
+VIMPRG=${VIMPRG:=$(which vim)}
 if [ -z "$VIMPRG" ]; then
   echo "ERROR: vim (\$VIMPRG) is not found in PATH"
   exit 1
@@ -14,8 +10,7 @@ fi
 
 VIM_CMD="$VIMPRG -u NONE -U NONE -i NONE --noplugin -N --not-a-term"
 
-#TESTS="clangd_tests.vim tsserver_tests.vim gopls_tests.vim not_lspserver_related_tests.vim markdown_tests.vim"
-TESTS="clangd_tests.vim"
+TESTS="clangd_tests.vim tsserver_tests.vim gopls_tests.vim not_lspserver_related_tests.vim markdown_tests.vim"
 
 RunTestsInFile() {
   testfile=$1

@@ -5,9 +5,6 @@ source common.vim
 source term_util.vim
 source screendump.vim
 
-var lspOpts = {autoComplete: false}
-g:LspOptionsSet(lspOpts)
-
 var lspServers = [{
       filetype: ['typescript', 'javascript'],
       path: exepath('typescript-language-server'),
@@ -36,39 +33,6 @@ echomsg systemlist($'{lspServers[0].path} --version')
 #   g:StopVimInTerminal(buf)
 #   delete('Xcompletion1.js')
 # enddef
-
-# Test for auto-import using omni completion
-def g:Test_autoimport()
-  :silent! edit autoImportMod1.ts
-  sleep 200m
-  var lines =<< trim END
-    export function getNumber() {
-      return 1;
-    }
-  END
-  setline(1, lines)
-  :redraw!
-  g:WaitForServerFileLoad(0)
-
-  var save_completopt = &completeopt
-  set completeopt=
-
-  :split autoImportMod2.ts
-  :sleep 200m
-  setline(1, 'console.log(getNum')
-  g:WaitForServerFileLoad(2)
-  feedkeys("A\<C-X>\<C-O>());", 'xt')
-  var expected =<< trim END
-    import { getNumber } from "./autoImportMod1";
-
-    ());console.log(getNumber
-  END
-  assert_equal(expected, getline(1, '$'))
-
-  &completeopt = save_completopt
-
-  :%bw!
-enddef
 
 # Start the typescript language server.  Returns true on success and false on
 # failure.

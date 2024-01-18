@@ -45,7 +45,6 @@ The following language server protocol (LSP) features are supported:
 * Folding code
 * Inlay hints
 * Visually select symbol block/region
-* Semantic Highlight
 
 ## Configuration
 
@@ -158,9 +157,6 @@ call LspOptionsSet(#{
 
 If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, then you need to use the VimEnter autocmd to initialize the LSP server and to set the LSP server options.  For example:
 ```viml
-let lspOpts = #{autoHighlightDiags: v:true}
-autocmd VimEnter * call LspOptionsSet(lspOpts)
-
 let lspServers = [#{
 	\	  name: 'clang',
 	\	  filetype: ['c', 'cpp'],
@@ -168,6 +164,9 @@ let lspServers = [#{
 	\	  args: ['--background-index']
 	\ }]
 autocmd VimEnter * call LspAddServer(lspServers)
+
+let lspOpts = #{autoHighlightDiags: v:true}
+autocmd VimEnter * call LspOptionsSet(lspOpts)
 ```
 
 ## Supported Commands
