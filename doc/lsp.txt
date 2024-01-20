@@ -925,7 +925,7 @@ can map these commands to keys and make it easier to invoke them.
 			"disable" is specified, disables the inlay hints.
 
 						*:LspOutoingCalls*
-:LspOutoingCalls	Display a hierarchy of symbols called by the symbol
+:LspOutgoingCalls	Display a hierarchy of symbols called by the symbol
 			under the cursor in a window.  See
 			|lsp-call-hierarchy| for more information.  Note that
 			not all the language servers support this feature.
