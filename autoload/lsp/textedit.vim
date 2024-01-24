@@ -219,12 +219,66 @@ def ApplyTextDocumentEdit(textDocEdit: dict<any>)
   ApplyTextEdits(bnr, textDocEdit.edits)
 enddef
 
+# interface CreateFile
+# Create the "createFile.uri" file
+def FileCreate(createFile: dict<any>)
+  var fname: string = util.LspUriToFile(createFile.uri)
+  var opts: dict<bool> = createFile->get('options', {ignoreIfExists: false, overwrite: true})
+
+  # LSP Spec: Overwrite wins over `ignoreIfExists`
+  if (opts->has_key('ignoreIfExists') && !opts.ignoreIfExists)
+      || (opts->has_key('overwrite') && opts.overwrite)
+    fnamemodify(fname, ':p:h')->mkdir('p')
+    []->writefile(fname)
+  endif
+  fname->bufadd()
+enddef
+
+# interface DeleteFile
+# Delete the "deleteFile.uri" file
+def FileDelete(deleteFile: dict<any>)
+  util.ErrMsg($'Deleting files not supported')
+
+  # var fname: string = util.LspUriToFile(createFile.uri)
+  # var opts: dict<bool> = createFile->get('options', {recursive: false, ignoreIfNotExists: true})
+
+  # if !filereadable(fname) && opts.ignoreIfNotExists
+  #   return
+  # endif
+
+  # var flags: string = ''
+  # if opts.recursive
+  #   # NOTE: is this a dangerous operation?  The LSP server can send a
+  #   # DeleteFile message to recursively delete all the files in the disk.
+  #   flags = 'rf'
+  # elseif isdirectory(fname)
+  #   flags = 'd'
+  # endif
+  # var bnr: number = fname->bufadd()
+  # delete(fname, flags)
+  # exe $'{bnr}bwipe!'
+enddef
+
+# interface RenameFile
+# Delete the "renameFile.uri" file
+def FileRename(renameFile: dict<any>)
+  util.ErrMsg($'Renaming files not supported')
+enddef
+
 # interface WorkspaceEdit
 export def ApplyWorkspaceEdit(workspaceEdit: dict<any>)
   if workspaceEdit->has_key('documentChanges')
     for change in workspaceEdit.documentChanges
       if change->has_key('kind')
-	util.ErrMsg($'Unsupported change in workspace edit [{change.kind}]')
+	if change.kind == 'create'
+	  FileCreate(change)
+	elseif change.kind == 'delete'
+	  FileDelete(change)
+	elseif change.kind == 'rename'
+	  FileRename(change)
+	else
+	  util.ErrMsg($'Unsupported change in workspace edit [{change.kind}]')
+	endif
       else
 	ApplyTextDocumentEdit(change)
       endif
