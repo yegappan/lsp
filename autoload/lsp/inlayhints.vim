@@ -57,6 +57,7 @@ export def InlayHintsReply(lspserver: dict<any>, bnr: number, inlayHints: any)
 	prop_add(hint.position.line + 1, byteIdx + 1,
 	  {type: 'LspInlayHintsType', text: label, bufnr: bnr})
       elseif kind == "'parameter'" || kind == '2'
+        label = label .. " "
 	prop_add(hint.position.line + 1, byteIdx + 1,
 	  {type: 'LspInlayHintsParam', text: label, bufnr: bnr})
       endif
