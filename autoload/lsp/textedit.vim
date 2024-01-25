@@ -223,46 +223,61 @@ enddef
 # Create the "createFile.uri" file
 def FileCreate(createFile: dict<any>)
   var fname: string = util.LspUriToFile(createFile.uri)
-  var opts: dict<bool> = createFile->get('options', {ignoreIfExists: false, overwrite: true})
+  var opts: dict<bool> = createFile->get('options', {})
+  var ignoreIfExists: bool = opts->get('ignoreIfExists', true)
+  var overwrite: bool = opts->get('overwrite', false)
 
   # LSP Spec: Overwrite wins over `ignoreIfExists`
-  if (opts->has_key('ignoreIfExists') && !opts.ignoreIfExists)
-      || (opts->has_key('overwrite') && opts.overwrite)
-    fnamemodify(fname, ':p:h')->mkdir('p')
-    []->writefile(fname)
+  if fname->filereadable() && ignoreIfExists && !overwrite
+    return
   endif
+
+  fname->fnamemodify(':p:h')->mkdir('p')
+  []->writefile(fname)
   fname->bufadd()
 enddef
 
 # interface DeleteFile
 # Delete the "deleteFile.uri" file
 def FileDelete(deleteFile: dict<any>)
-  util.ErrMsg($'Deleting files not supported')
+  var fname: string = util.LspUriToFile(deleteFile.uri)
+  var opts: dict<bool> = deleteFile->get('options', {})
+  var recursive: bool = opts->get('recursive', false)
+  var ignoreIfNotExists: bool = opts->get('ignoreIfNotExists', true)
 
-  # var fname: string = util.LspUriToFile(createFile.uri)
-  # var opts: dict<bool> = createFile->get('options', {recursive: false, ignoreIfNotExists: true})
+  if !fname->filereadable() && ignoreIfNotExists
+    return
+  endif
 
-  # if !filereadable(fname) && opts.ignoreIfNotExists
-  #   return
-  # endif
-
-  # var flags: string = ''
-  # if opts.recursive
-  #   # NOTE: is this a dangerous operation?  The LSP server can send a
-  #   # DeleteFile message to recursively delete all the files in the disk.
-  #   flags = 'rf'
-  # elseif isdirectory(fname)
-  #   flags = 'd'
-  # endif
-  # var bnr: number = fname->bufadd()
-  # delete(fname, flags)
-  # exe $'{bnr}bwipe!'
+  var flags: string = ''
+  if recursive
+    # # NOTE: is this a dangerous operation?  The LSP server can send a
+    # # DeleteFile message to recursively delete all the files in the disk.
+    # flags = 'rf'
+    util.ErrMsg($'Recursively deleting files is not supported')
+    return
+  elseif fname->isdirectory()
+    flags = 'd'
+  endif
+  var bnr: number = fname->bufadd()
+  fname->delete(flags)
+  exe $'{bnr}bwipe!'
 enddef
 
 # interface RenameFile
-# Delete the "renameFile.uri" file
+# Rename file "renameFile.oldUri" to "renameFile.newUri"
 def FileRename(renameFile: dict<any>)
-  util.ErrMsg($'Renaming files not supported')
+  var old_fname: string = util.LspUriToFile(renameFile.oldUri)
+  var new_fname: string = util.LspUriToFile(renameFile.newUri)
+  var opts: dict<bool> = renameFile->get('options', {})
+  var overwrite: bool = opts->get('overwrite', false)
+  var ignoreIfExists: bool = opts->get('ignoreIfExists', true)
+
+  if new_fname->filereadable() && (!overwrite || ignoreIfExists)
+    return
+  endif
+
+  old_fname->rename(new_fname)
 enddef
 
 # interface WorkspaceEdit
