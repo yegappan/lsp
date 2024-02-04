@@ -838,9 +838,9 @@ def SymbolMenuFilterKey(symPopupMenu: number,
       win_execute(symPopupMenu, "normal! G")
     endif
   elseif key == "\<PageDown>"
-    win_execute(symPopupMenu, 'normal! ' .. "\<C-d>")
+    win_execute(symPopupMenu, "normal! \<C-d>")
   elseif key == "\<PageUp>"
-    win_execute(symPopupMenu, 'normal! ' .. "\<C-u>")
+    win_execute(symPopupMenu, "normal! \<C-u>")
   elseif key == "\<C-F>"
       || key == "\<C-B>"
       || key == "\<C-Home>"
