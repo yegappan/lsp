@@ -802,7 +802,7 @@ enddef
 # Key filter function for the symbol popup menu.
 def SymbolMenuFilterKey(symPopupMenu: number,
 			key: string): bool
-  var keyHandled = false
+  var keyHandled = true
   var updateInputPopup = false
   var inputText = symPopupMenu->getwinvar('inputText', '')
   var symInputPopup = symPopupMenu->getwinvar('symbolInputPopup', 0)
@@ -811,33 +811,48 @@ def SymbolMenuFilterKey(symPopupMenu: number,
     # Erase a character in the input popup
     if inputText->len() >= 1
       inputText = inputText[: -2]
-      keyHandled = true
       updateInputPopup = true
+    else
+      keyHandled = false
     endif
   elseif key == "\<C-U>"
     # Erase all the characters in the input popup
     inputText = ''
-    keyHandled = true
     updateInputPopup = true
+  elseif key == "\<tab>"
+      || key == "\<C-n>"
+      || key == "\<Down>"
+      || key == "\<ScrollWheelDown>"
+    var ln = getcurpos(symPopupMenu)[1]
+    win_execute(symPopupMenu, "normal! j")
+    if ln == getcurpos(symPopupMenu)[1]
+      win_execute(symPopupMenu, "normal! gg")
+    endif
+  elseif key == "\<S-tab>"
+      || key == "\<C-p>"
+      || key == "\<Up>"
+      || key == "\<ScrollWheelUp>"
+    var ln = getcurpos(symPopupMenu)[1]
+    win_execute(symPopupMenu, "normal! k")
+    if ln == getcurpos(symPopupMenu)[1]
+      win_execute(symPopupMenu, "normal! G")
+    endif
+  elseif key == "\<PageDown>"
+    win_execute(symPopupMenu, "normal! \<C-d>")
+  elseif key == "\<PageUp>"
+    win_execute(symPopupMenu, "normal! \<C-u>")
   elseif key == "\<C-F>"
       || key == "\<C-B>"
-      || key == "\<PageUp>"
-      || key == "\<PageDown>"
       || key == "\<C-Home>"
       || key == "\<C-End>"
-      || key == "\<C-N>"
-      || key == "\<C-P>"
-    # scroll the symbol popup window
-    var cmd: string = 'normal! ' .. (key == "\<C-N>" ? 'j' :
-				     key == "\<C-P>" ? 'k' : key)
-    win_execute(symPopupMenu, cmd)
-    keyHandled = true
+    win_execute(symPopupMenu, $"normal! {key}")
   elseif key =~ '^\k$'
     # A keyword character is typed.  Add to the input text and update the
     # popup
     inputText ..= key
-    keyHandled = true
     updateInputPopup = true
+  else
+    keyHandled = false
   endif
 
   var symTblFiltered: list<dict<any>> = []

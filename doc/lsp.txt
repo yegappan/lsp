@@ -773,10 +773,13 @@ can map these commands to keys and make it easier to invoke them.
 			pressing <Enter> or <Space>, jump to the location of
 			the symbol.
 
-			The <Up>, <Down>, <C-F>, <C-B>, <PageUp>, <PageDown>,
-			<C-Home>, <C-End>, <C-N>, <C-P> keys can be used to
-			scroll the popup menu.  The <Esc> or <Ctrl-C> keys can
-			be used to cancel the popup menu.
+			The <Up>, <Down>, <Tab>, <S-Tab>, <C-N>, <C-P>,
+			<ScrollWheelUp>, ScrollWheelDown> keys can be used to
+			scroll popup menu one item at a time. <PageUp> and
+			<PageDown> can be used to scroll a page of popup
+			window, while <C-F> and <C-B> can be used to scroll a
+			page of underlying window.  The <Esc> or <Ctrl-C> keys
+			can be used to cancel the popup menu.
 
 			If one or more keyword characters are typed, then only
 			the symbols containing the keyword characters are
