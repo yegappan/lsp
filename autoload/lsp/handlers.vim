@@ -94,7 +94,8 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       'telemetry/event': ProcessUnsupportedNotifOnce,
     }
 
-  # Explicitly ignored notification messages
+  # Explicitly ignored notification messages (many of them are specific to a
+  # particular language server)
   var lsp_ignored_notif_handlers: list<string> =
     [
       '$/progress',
@@ -119,7 +120,10 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       'pyright/endProgress',
       'eslint/status',
       'taplo/didChangeSchemaAssociation',
-      'sqlLanguageServer.finishSetup'
+      'sqlLanguageServer.finishSetup',
+      # ccls language server notifications
+      '$ccls/publishSkippedRanges',
+      '$ccls/publishSemanticHighlight',
     ]
 
   if lsp_notif_handlers->has_key(reply.method)
