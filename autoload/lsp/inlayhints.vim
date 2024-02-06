@@ -49,6 +49,16 @@ export def InlayHintsReply(lspserver: dict<any>, bnr: number, inlayHints: any)
       label = hint.label
     endif
 
+    # add a space before or after the label
+    var padLeft: bool = hint->get('paddingLeft', false)
+    var padRight: bool = hint->get('paddingRight', false)
+    if padLeft
+      label = $' {label}'
+    endif
+    if padRight
+      label = $'{label} '
+    endif
+
     var kind = hint->has_key('kind') ? hint.kind->string() : '1'
     try
       lspserver.decodePosition(bnr, hint.position)
@@ -57,7 +67,6 @@ export def InlayHintsReply(lspserver: dict<any>, bnr: number, inlayHints: any)
 	prop_add(hint.position.line + 1, byteIdx + 1,
 	  {type: 'LspInlayHintsType', text: label, bufnr: bnr})
       elseif kind == "'parameter'" || kind == '2'
-        label = label .. " "
 	prop_add(hint.position.line + 1, byteIdx + 1,
 	  {type: 'LspInlayHintsParam', text: label, bufnr: bnr})
       endif
