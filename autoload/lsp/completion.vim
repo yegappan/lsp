@@ -147,6 +147,7 @@ enddef
 # process the 'textDocument/completion' reply from the LSP server
 # Result: CompletionItem[] | CompletionList | null
 export def CompletionReply(lspserver: dict<any>, cItems: any)
+  lspserver.completeItemsIsIncomplete = false
   if cItems->empty()
     if lspserver.omniCompletePending
       lspserver.completeItems = []
@@ -154,8 +155,6 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     endif
     return
   endif
-
-  lspserver.completeItemsIsIncomplete = false
 
   var items: list<dict<any>>
   if cItems->type() == v:t_list
