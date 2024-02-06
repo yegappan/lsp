@@ -267,6 +267,10 @@ export def DiagsRefresh(bnr: number, all: bool = false)
     diag_symbol = 'E>'
   endif
 
+  if lspOpts.diagVirtualTextWrap != 'default'
+    diag_wrap = lspOpts.diagVirtualTextWrap
+  endif
+
   var signs: list<dict<any>> = []
   var diags: list<dict<any>> = diagsMap[bnr].sortedDiagnostics
   var inlineHLprops: list<list<list<number>>> = [[], [], [], [], []]
