@@ -468,7 +468,6 @@ enddef
 
 # omni complete handler
 def g:LspOmniFunc(findstart: number, base: string): any
-
   var lspserver: dict<any> = buf.CurbufGetServerChecked('completion')
   if lspserver->empty()
     return -2
