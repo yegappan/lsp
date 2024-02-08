@@ -70,6 +70,10 @@ export var lspOptions: dict<any> = {
   # Allowed values: 'above' | 'below' | 'after' (default is 'above')
   diagVirtualTextAlign: 'above',
 
+  # Wrapping of virtual diagnostic text, when showDiagWithVirtualText is true.
+  # Allowed valuse: 'default' | 'truncate' | 'wrap' (default is 'default')
+  diagVirtualTextWrap: 'default',
+
   # Suppress adding a new line on completion selection with <CR>
   noNewlineInCompletion: false,
 
