@@ -211,7 +211,7 @@ enddef
 
 # interface TextDocumentEdit
 def ApplyTextDocumentEdit(textDocEdit: dict<any>)
-  var bnr: number = bufnr(util.LspUriToFile(textDocEdit.textDocument.uri))
+  var bnr: number = util.LspUriToBufnr(textDocEdit.textDocument.uri)
   if bnr == -1
     util.ErrMsg($'Text Document edit, buffer {textDocEdit.textDocument.uri} is not found')
     return
@@ -269,6 +269,7 @@ enddef
 def FileRename(renameFile: dict<any>)
   var old_fname: string = util.LspUriToFile(renameFile.oldUri)
   var new_fname: string = util.LspUriToFile(renameFile.newUri)
+
   var opts: dict<bool> = renameFile->get('options', {})
   var overwrite: bool = opts->get('overwrite', false)
   var ignoreIfExists: bool = opts->get('ignoreIfExists', true)
