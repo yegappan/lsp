@@ -131,6 +131,7 @@ call LspOptionsSet(#{
         \   keepFocusInReferences: v:true,
         \   completionTextEdit: v:true,
         \   diagVirtualTextAlign: 'above',
+        \   diagVirtualTextWrap: 'default',
         \   noNewlineInCompletion: v:false,
         \   omniComplete: v:null,
         \   outlineOnRight: v:false,

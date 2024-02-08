@@ -3,7 +3,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: Dec 2, 2023
+Last change: Feb 7, 2024
 
 ==============================================================================
 CONTENTS                                                     *lsp-contents*
@@ -515,6 +515,12 @@ diagVirtualTextAlign	|String| option.   Alignment of diagnostics messages
 			if |lsp-opt-showDiagWithVirtualText| is set to true.
 			Allowed values are 'above', 'below' or 'after'
 			By default this is set to 'above',
+
+						*lsp-opt-diagVirtualTextWrap*
+diagVirtualTextWrap	|String| option.   Wrapping of diagnostics messages
+			if |lsp-opt-showDiagWithVirtualText| is set to true.
+			Allowed values are 'default', 'wrap' or 'truncate'
+			By default this is set to 'default',
 
 						*lsp-opt-echoSignature*
 echoSignature		|Boolean| option.  In insert mode, echo the current
@@ -1412,6 +1418,16 @@ virtual text above the line with the diagnostic message.  The other supported
 values for "diagVirtualTextAlign" are 'below', which positions the virtual
 text below the affected line, and 'after', which displays the virtual text
 immediately after the text on the affected line.
+
+The wrapping of the virtual text can be controlled using the
+"diagVirtualTextWrap" option. By default, this option is set to 'default',
+which will 'truncate' virtual text placed 'above' or 'below' the affected
+line, and 'wrap' text placed 'after' the affected line. Setting the value to
+'wrap' or 'truncate' will force the specified behavior for the current
+value of "diagVirtualTextAlign". If 'truncate' is used while
+"diagVirtualTextAlign" is set to 'after', and a diagnostic message has already
+been truncated for the affected line, then further diagnostics will be placed
+below the affected line.
 
 The LSP plugin offers convenient ways to highlight diagnostic messages, making
 it easier to spot errors, warnings, hints, or informational notices within
