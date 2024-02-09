@@ -19,11 +19,13 @@ jobs:
           sudo apt install -y curl
           curl -fsSL https://deb.nodesource.com/setup_18.x | sudo bash -
           sudo apt install -y nodejs
-          # install typescript language server
+          # install the typescript language server
           sudo npm install -g typescript-language-server typescript
-          # install golang language server
+          # install the golang language server
           sudo apt install -y golang
           sudo apt install -y gopls
+          # install the rust language server
+          sudo rustup component add rust-analyzer
       - name: Setup Vim
         uses: rhysd/action-setup-vim@v1
         id: vim
@@ -34,6 +36,7 @@ jobs:
       - name: Run Tests
         run: |
           uname -a
+          rust-analyzer --version
           export VIMPRG=${{ steps.vim.outputs.executable }}
           $VIMPRG --version
           cd test
