@@ -157,10 +157,10 @@ call LspOptionsSet(#{
 	\ })
 ```
 
-If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, then you need to use the VimEnter autocmd to initialize the LSP server and to set the LSP server options.  For example:
+If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, then you need to use the LspSetup User autocmd to initialize the LSP server and to set the LSP server options.  For example:
 ```viml
 let lspOpts = #{autoHighlightDiags: v:true}
-autocmd VimEnter * call LspOptionsSet(lspOpts)
+autocmd User LspSetup call LspOptionsSet(lspOpts)
 
 let lspServers = [#{
 	\	  name: 'clang',
@@ -168,7 +168,7 @@ let lspServers = [#{
 	\	  path: '/usr/local/bin/clangd',
 	\	  args: ['--background-index']
 	\ }]
-autocmd VimEnter * call LspAddServer(lspServers)
+autocmd User LspSetup call LspAddServer(lspServers)
 ```
 
 ## Supported Commands

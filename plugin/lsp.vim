@@ -3,10 +3,13 @@ if !has('vim9script') ||  v:version < 900
   finish
 endif
 
-vim9script
+vim9script noclear
 
 # Language Server Protocol (LSP) plugin for vim
 
+if get(g:, 'loaded_lsp', false)
+  finish
+endif
 g:loaded_lsp = true
 
 import '../autoload/lsp/options.vim'
@@ -148,6 +151,11 @@ if has('gui_running')
     anoremenu <silent> PopUp.L&sp.Highlight\ Clear
           \ :LspHighlightClear<CR>
   endif
+endif
+
+# Invoke autocmd to register LSP servers and to set LSP options
+if exists('#User#LspSetup')
+  :doautocmd <nomodeline> User LspSetup
 endif
 
 # vim: shiftwidth=2 softtabstop=2

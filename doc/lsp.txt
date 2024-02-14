@@ -3,7 +3,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: Feb 7, 2024
+Last change: Feb 13, 2024
 
 ==============================================================================
 CONTENTS                                                     *lsp-contents*
@@ -412,13 +412,13 @@ The language servers are added using the LspAddServer() function. This
 function accepts a list of language servers with the above information.
 
 If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the
-LSP plugin, then you need to use the VimEnter autocmd to initialize the
+LSP plugin, then you need to use the LspSetup User autocmd to initialize the
 language server and to set the language server options.  For example: >
 
     vim9script
 
     var lspOpts = {autoHighlightDiags: true}
-    autocmd VimEnter * LspOptionsSet(lspOpts)
+    autocmd User LspSetup LspOptionsSet(lspOpts)
 
     var lspServers = [
 		     {
@@ -428,7 +428,7 @@ language server and to set the language server options.  For example: >
 		        args: ['--background-index']
 		      }
 		   ]
-    autocmd VimEnter * LspAddServer(lspServers)
+    autocmd User LspSetup LspAddServer(lspServers)
 <
 						*lsp-options* *LspOptionsSet()*
 						*g:LspOptionsSet()*
@@ -1580,6 +1580,13 @@ In the call hierarchy tree window, the following commands are supported:
 
 ==============================================================================
 11. Autocommands				*lsp-autocmds*
+
+						*LspSetup*
+LspSetup			A |User| autocommand fired when the LSP plugin
+				is loaded.  Can be used to add language
+				servers using the |LspAddServer()| function
+				and to set plugin options using the
+				|LspOptionsSet()| function.
 
 						*LspAttached*
 LspAttached			A |User| autocommand fired when the LSP client
