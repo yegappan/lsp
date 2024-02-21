@@ -190,21 +190,21 @@ enddef
 # Request: "window/workDoneProgress/create"
 # Param: none
 def ProcessWorkDoneProgressCreate(lspserver: dict<any>, request: dict<any>)
-  lspserver.sendResponse(request, {}, {})
+  lspserver.sendResponse(request, null, {})
 enddef
 
 # process the client/registerCapability LSP server request
 # Request: "client/registerCapability"
 # Param: RegistrationParams
 def ProcessClientRegisterCap(lspserver: dict<any>, request: dict<any>)
-  lspserver.sendResponse(request, {}, {})
+  lspserver.sendResponse(request, null {})
 enddef
 
 # process the client/unregisterCapability LSP server request
 # Request: "client/unregisterCapability"
 # Param: UnregistrationParams
 def ProcessClientUnregisterCap(lspserver: dict<any>, request: dict<any>)
-  lspserver.sendResponse(request, {}, {})
+  lspserver.sendResponse(request, null, {})
 enddef
 
 # process a request message from the server
