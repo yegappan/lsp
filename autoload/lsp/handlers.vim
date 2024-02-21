@@ -197,7 +197,7 @@ enddef
 # Request: "client/registerCapability"
 # Param: RegistrationParams
 def ProcessClientRegisterCap(lspserver: dict<any>, request: dict<any>)
-  lspserver.sendResponse(request, null {})
+  lspserver.sendResponse(request, null, {})
 enddef
 
 # process the client/unregisterCapability LSP server request
