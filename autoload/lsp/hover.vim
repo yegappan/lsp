@@ -127,7 +127,6 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string): 
 					   close: 'click',
 					   fixed: true,
 					   maxwidth: 80,
-					   minwidth: 80,
 					   border: [0, 1, 0, 1],
 					   borderchars: [' '],
 					   filter: HoverWinFilterKey})
