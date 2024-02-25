@@ -509,7 +509,7 @@ def g:LspOmniFunc(findstart: number, base: string): any
       return v:none
     endif
 
-    var res: list<dict<any>> = lspserver.completeItems
+    var res: list<dict<any>> = lspserver->get('completeItems', [])
     var prefix = lspserver.omniCompleteKeyword
 
     # Don't attempt to filter on the items, when "isIncomplete" is set
