@@ -477,7 +477,9 @@ def g:LspOmniFunc(findstart: number, base: string): any
 
     var [triggerKind, triggerChar] = GetTriggerAttributes(lspserver)
     if triggerKind < 0
-      return -1
+      # previous character is not a keyword character or a trigger character,
+      # so cancel omni completion.
+      return -2
     endif
 
     # first send all the changes in the current buffer to the LSP server
@@ -509,7 +511,7 @@ def g:LspOmniFunc(findstart: number, base: string): any
       return v:none
     endif
 
-    var res: list<dict<any>> = lspserver->get('completeItems', [])
+    var res: list<dict<any>> = lspserver.completeItems
     var prefix = lspserver.omniCompleteKeyword
 
     # Don't attempt to filter on the items, when "isIncomplete" is set

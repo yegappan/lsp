@@ -1471,7 +1471,7 @@ def g:Test_OmniComplete_FirstColumn()
   :%bw!
 enddef
 
-# Test for doing omni completion from the first column
+# Test for doing omni completion with a multibyte character
 def g:Test_OmniComplete_Multibyte()
   :silent! edit XOmniCompleteMultibyte.c
   sleep 200m
@@ -1493,7 +1493,7 @@ def g:Test_OmniComplete_Multibyte()
   :%bw!
 enddef
 
-# Test for doing omni completion from the first column
+# Test for doing omni completion for a struct field
 def g:Test_OmniComplete_Struct()
   :silent! edit XOmniCompleteStruct.c
   sleep 200m
@@ -1521,6 +1521,28 @@ def g:Test_OmniComplete_Struct()
   cursor(11, 12)
   feedkeys("cw\<C-X>\<C-O>\<C-N>\<C-Y>", 'xt')
   assert_equal('    pTest->baz = 20;', getline('.'))
+  :%bw!
+enddef
+
+# Test for doing omni completion after an opening parenthesis.
+# This used to result in an error message.
+def g:Test_OmniComplete_AfterParen()
+  :silent! edit XOmniCompleteAfterParen.c
+  sleep 200m
+  var lines: list<string> =<< trim END
+    #include <stdio.h>
+    void Fn(void)
+    {
+      printf(
+    }
+  END
+  setline(1, lines)
+  g:WaitForServerFileLoad(2)
+  redraw!
+
+  cursor(4, 1)
+  feedkeys("A\<C-X>\<C-O>\<C-Y>", 'xt')
+  assert_equal('  printf(', getline('.'))
   :%bw!
 enddef
 
