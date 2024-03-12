@@ -1748,7 +1748,12 @@ enddef
 # Params: ExecuteCommandParams
 def ExecuteCommand(lspserver: dict<any>, cmd: dict<any>)
   # Need to check for lspserver.caps.executeCommandProvider?
-  var params = cmd
+  var params: dict<any> = {}
+  params.command = cmd.command
+  if cmd->has_key('arguments')
+    params.arguments = cmd.arguments
+  endif
+
   lspserver.rpc_a('workspace/executeCommand', params, WorkspaceExecuteReply)
 enddef
 
