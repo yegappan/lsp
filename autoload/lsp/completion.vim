@@ -641,7 +641,7 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
     return
   endif
 
-  if !opt.lspOptions.autoComplete && !LspOmniComplEnabled(ftype)
+  if !opt.lspOptions.autoComplete && !LspOmniComplEnabled(ftype) && !opt.lspOptions.omniComplete
     # LSP auto/omni completion support is not enabled for this buffer
     return
   endif
