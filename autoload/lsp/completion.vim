@@ -563,18 +563,17 @@ def LspComplete()
 enddef
 
 # Lazy complete documentation handler
-def LspResolve()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked('completion')
+def LspResolve(servId: number)
+  var lspserver: dict<any> = buf.CurbufGetServerByIdChecked(servId, 'completion')
   if lspserver->empty()
-    return
+    return 
   endif
-
   var item = v:event.completed_item
   if item->has_key('user_data') && !item.user_data->empty()
       if item.user_data->type() == v:t_dict && !item.user_data->has_key('documentation')
-	lspserver.resolveCompletion(item.user_data)
+        lspserver.resolveCompletion(item.user_data)
       else
-	ShowCompletionDocumentation(item.user_data)
+        ShowCompletionDocumentation(item.user_data)
       endif
   endif
 enddef
@@ -680,7 +679,7 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
     acmds->add({bufnr: bnr,
                 event: 'CompleteChanged',
                 group: 'LSPBufferAutocmds',
-                cmd: 'LspResolve()'})
+                cmd: $'LspResolve({lspserver.id})'})
   endif
 
   acmds->add({bufnr: bnr,

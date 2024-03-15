@@ -177,6 +177,13 @@ export def BufHasLspServer(bnr: number, id: number): bool
   return !lspserver->empty()
 enddef
 
+# Returns the LSP server for the current buffer, given the server id 
+# and with the optionally "feature" if it is running and is ready.
+export def CurbufGetServerByIdChecked(id: number, feature: string = null_string): dict<any>
+  var lspserver = BufLspServerGetById(bufnr(), id)
+  return CurbufGetServerChecks(lspserver, feature)
+enddef
+
 # Returns the LSP server for the current buffer with the optinally "feature" if
 # it is running and is ready.
 # Returns an empty dict if the server is not found or is not ready.
@@ -185,9 +192,13 @@ export def CurbufGetServerChecked(feature: string = null_string): dict<any>
   if fname->empty() || &filetype->empty()
     return {}
   endif
-
   var lspserver: dict<any> = CurbufGetServer(feature)
-  if lspserver->empty()
+  return CurbufGetServerChecks(lspserver, feature)
+enddef
+
+# Runs checks of the LSP
+export def CurbufGetServerChecks(lspServer: dict<any>, feature: string = null_string): dict<any>
+  if lspServer->empty()
     if feature == null_string
       util.ErrMsg($'Language server for "{&filetype}" file type is not found')
     else
@@ -195,16 +206,15 @@ export def CurbufGetServerChecked(feature: string = null_string): dict<any>
     endif
     return {}
   endif
-  if !lspserver.running
+  if !lspServer.running
     util.ErrMsg($'Language server for "{&filetype}" file type is not running')
     return {}
   endif
-  if !lspserver.ready
+  if !lspServer.ready
     util.ErrMsg($'Language server for "{&filetype}" file type is not ready')
     return {}
   endif
-
-  return lspserver
+  return lspServer
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2
