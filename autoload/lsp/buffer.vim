@@ -15,7 +15,6 @@ export def BufLspServerSet(bnr: number, lspserver: dict<any>)
   if !bufnrToServers->has_key(bnr)
     bufnrToServers[bnr] = []
   endif
-
   bufnrToServers[bnr]->add(lspserver)
 enddef
 
@@ -135,12 +134,30 @@ enddef
 
 # Returns the LSP servers for the buffer "bnr". Returns an empty list if the
 # servers are not found.
-export def BufLspServersGet(bnr: number): list<dict<any>>
+export def BufLspServersGet(bnr: number, feature: string = null_string): list<dict<any>>
   if !bufnrToServers->has_key(bnr)
     return []
   endif
 
-  return bufnrToServers[bnr]
+  if feature == null_string
+    return bufnrToServers[bnr]
+  else 
+    var SupportedCheckFn = SupportedCheckFns[feature]
+    var possibleLSPs: list<dict<any>> = []
+    for lspserver in bufnrToServers[bnr]
+      if !lspserver.ready || !SupportedCheckFn(lspserver)
+        continue
+      endif
+      possibleLSPs->add(lspserver)
+    endfor
+  
+    var servers: list<dict<any>> = []
+    for lspserver in possibleLSPs
+      # var has_feature: bool = lspserver.features->get(feature, false)
+      servers->add(lspserver)
+    endfor
+    return servers
+  endif
 enddef
 
 # Returns the LSP server for the current buffer with the optionally "feature".
@@ -151,13 +168,12 @@ enddef
 
 # Returns the LSP servers for the current buffer. Returns an empty list if the
 # servers are not found.
-export def CurbufGetServers(): list<dict<any>>
-  return BufLspServersGet(bufnr())
+export def CurbufGetServers(feature: string = null_string): list<dict<any>>
+  return BufLspServersGet(bufnr(), feature)
 enddef
 
-export def BufHasLspServer(bnr: number): bool
-  var lspserver = BufLspServerGet(bnr)
-
+export def BufHasLspServer(bnr: number, id: number): bool
+  var lspserver = BufLspServerGetById(bnr, id)
   return !lspserver->empty()
 enddef
 

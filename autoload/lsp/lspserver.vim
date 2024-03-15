@@ -727,6 +727,7 @@ def GetCompletion(lspserver: dict<any>, triggerKind_arg: number, triggerChar: st
   #   interface CompletionContext
   params.context = {triggerKind: triggerKind_arg, triggerCharacter: triggerChar}
 
+  echomsg 'request'
   lspserver.rpc_a('textDocument/completion', params,
 			completion.CompletionReply)
 enddef
@@ -1856,6 +1857,7 @@ enddef
 
 export def NewLspServer(serverParams: dict<any>): dict<any>
   var lspserver: dict<any> = {
+    now: '',
     id: GetUniqueServerId(),
     name: serverParams.name,
     path: serverParams.path,

@@ -412,10 +412,12 @@ def BufferInit(lspserverId: number, bnr: number): void
       # It's only possible to initialize the features when the server
       # capabilities of all the registered language servers for this file type
       # are known.
-      var completionServer = buf.BufLspServerGet(bnr, 'completion')
-      if !completionServer->empty() && lspsrv.id == completionServer.id
-        completion.BufferInit(lspsrv, bnr, ftype)
-      endif
+      var completionServers = buf.BufLspServersGet(bnr, 'completion')
+      for compSrv in completionServers
+        if !compSrv->empty() && lspsrv.id == compSrv.id
+	  completion.BufferInit(lspsrv, bnr, ftype)
+	endif
+      endfor
 
       var signatureServer = buf.BufLspServerGet(bnr, 'signatureHelp')
       if !signatureServer->empty() && lspsrv.id == signatureServer.id
@@ -441,11 +443,6 @@ enddef
 
 # A new buffer is opened. If LSP is supported for this buffer, then add it
 export def AddFile(bnr: number): void
-  if buf.BufHasLspServer(bnr)
-    # LSP server for this buffer is already initialized and running
-    return
-  endif
-
   # Skip remote files
   if util.LspUriRemote(bnr->bufname()->fnamemodify(':p'))
     return
@@ -455,11 +452,16 @@ export def AddFile(bnr: number): void
   if ftype->empty()
     return
   endif
+
   var lspservers: list<dict<any>> = LspGetServers(bnr, ftype)
   if lspservers->empty()
     return
   endif
+
   for lspserver in lspservers
+    if buf.BufHasLspServer(bnr, lspserver.id)
+      continue 
+    endif
     if !lspserver.running
       if !lspInitializedOnce
         LspInitOnce()

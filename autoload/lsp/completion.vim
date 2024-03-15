@@ -543,21 +543,23 @@ enddef
 # Insert mode completion handler. Used when 24x7 completion is enabled
 # (default).
 def LspComplete()
-  var lspserver: dict<any> = buf.CurbufGetServer('completion')
-  if lspserver->empty() || !lspserver.running || !lspserver.ready
-    return
-  endif
+  var lspservers: list<dict<any>> = buf.CurbufGetServers('completion')
+  for lspserver in lspservers
+    if lspserver->empty() || !lspserver.running || !lspserver.ready
+      return
+    endif
 
-  var [triggerKind, triggerChar] = GetTriggerAttributes(lspserver)
-  if triggerKind < 0
-    return
-  endif
+    var [triggerKind, triggerChar] = GetTriggerAttributes(lspserver)
+    if triggerKind < 0
+      return
+    endif
 
-  # first send all the changes in the current buffer to the LSP server
-  listener_flush()
+    # first send all the changes in the current buffer to the LSP server
+    listener_flush()
 
-  # initiate a request to LSP server to get list of completions
-  lspserver.getCompletion(triggerKind, triggerChar)
+    # initiate a request to LSP server to get list of completions
+    lspserver.getCompletion(triggerKind, triggerChar)
+  endfor
 enddef
 
 # Lazy complete documentation handler
@@ -602,36 +604,35 @@ enddef
 # complete done handler (LSP server-initiated actions after completion)
 def LspCompleteDone(bnr: number)
   var lspserver: dict<any> = buf.BufLspServerGet(bnr, 'completion')
-  if lspserver->empty()
-    return
-  endif
+    if lspserver->empty()
+      return
+    endif
 
-  if v:completed_item->type() != v:t_dict
-    return
-  endif
+    if v:completed_item->type() != v:t_dict
+      return
+    endif
 
-  var completionData: any = v:completed_item->get('user_data', '')
-  if completionData->type() != v:t_dict
-      || !opt.lspOptions.completionTextEdit
-    return
-  endif
+    var completionData: any = v:completed_item->get('user_data', '')
+    if completionData->type() != v:t_dict
+        || !opt.lspOptions.completionTextEdit
+      return
+    endif
 
-  if !completionData->has_key('additionalTextEdits')
-    # Some language servers (e.g. typescript) delay the computation of the
-    # additional text edits.  So try to resolve the completion item now to get
-    # the text edits.
-    completionData = lspserver.resolveCompletion(completionData, true)
-  endif
-  if !completionData->get('additionalTextEdits', {})->empty()
-    textedit.ApplyTextEdits(bnr, completionData.additionalTextEdits)
-  endif
+    if !completionData->has_key('additionalTextEdits')
+      # Some language servers (e.g. typescript) delay the computation of the
+      # additional text edits.  So try to resolve the completion item now to get
+      # the text edits.
+      completionData = lspserver.resolveCompletion(completionData, true)
+    endif
+    if !completionData->get('additionalTextEdits', {})->empty()
+      textedit.ApplyTextEdits(bnr, completionData.additionalTextEdits)
+    endif
 
-  if completionData->has_key('command')
-    # Some language servers (e.g. haskell-language-server) want to apply
-    # additional commands after completion.
-    codeaction.DoCommand(lspserver, completionData.command)
-  endif
-
+    if completionData->has_key('command')
+      # Some language servers (e.g. haskell-language-server) want to apply
+      # additional commands after completion.
+      codeaction.DoCommand(lspserver, completionData.command)
+    endif
 enddef
 
 # Initialize buffer-local completion options and autocmds
@@ -692,7 +693,6 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
 	      event: 'CompleteDone',
 	      group: 'LSPBufferAutocmds',
 	      cmd: $'LspCompleteDone({bnr})'})
-
   autocmd_add(acmds)
 enddef
 
