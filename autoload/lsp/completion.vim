@@ -603,7 +603,6 @@ enddef
 # complete done handler (LSP server-initiated actions after completion)
 def LspCompleteDone(servId: number, bnr: number)
   var lspserver: dict<any> = buf.BufLspServerGetById(bnr, servId)
-    echomsg lspserver.name
     if lspserver->empty()
       return
     endif
