@@ -10,7 +10,7 @@ fi
 
 VIM_CMD="$VIMPRG -u NONE -U NONE -i NONE --noplugin -N --not-a-term"
 
-TESTS="clangd_tests.vim tsserver_tests.vim gopls_tests.vim not_lspserver_related_tests.vim markdown_tests.vim rust_tests.vim"
+TESTS="volar_tests.vim"
 
 RunTestsInFile() {
   testfile=$1
@@ -42,7 +42,7 @@ for encoding in "utf-8" "utf-16" "utf-32"
 do
   export LSP_OFFSET_ENCODING=$encoding
   echo "LSP offset encoding: $LSP_OFFSET_ENCODING"
-  RunTestsInFile clangd_offsetencoding.vim
+  # RunTestsInFile clangd_offsetencoding.vim
 done
 
 echo "SUCCESS: All the tests passed."

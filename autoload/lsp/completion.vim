@@ -601,8 +601,9 @@ def LspSetPopupFileType()
 enddef
 
 # complete done handler (LSP server-initiated actions after completion)
-def LspCompleteDone(bnr: number)
-  var lspserver: dict<any> = buf.BufLspServerGet(bnr, 'completion')
+def LspCompleteDone(servId: number, bnr: number)
+  var lspserver: dict<any> = buf.BufLspServerGetById(bnr, servId)
+    echomsg lspserver.name
     if lspserver->empty()
       return
     endif
@@ -641,7 +642,9 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
     return
   endif
 
-  if !opt.lspOptions.autoComplete && !LspOmniComplEnabled(ftype)
+  if !opt.lspOptions.autoComplete && 
+      !LspOmniComplEnabled(ftype) &&
+      !opt.lspOptions.omniComplete
     # LSP auto/omni completion support is not enabled for this buffer
     return
   endif
@@ -691,7 +694,7 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
   acmds->add({bufnr: bnr,
 	      event: 'CompleteDone',
 	      group: 'LSPBufferAutocmds',
-	      cmd: $'LspCompleteDone({bnr})'})
+	      cmd: $'LspCompleteDone({lspserver.id}, {bnr})'})
   autocmd_add(acmds)
 enddef
 
