@@ -15,7 +15,6 @@ export def BufLspServerSet(bnr: number, lspserver: dict<any>)
   if !bufnrToServers->has_key(bnr)
     bufnrToServers[bnr] = []
   endif
-
   bufnrToServers[bnr]->add(lspserver)
 enddef
 
@@ -135,12 +134,30 @@ enddef
 
 # Returns the LSP servers for the buffer "bnr". Returns an empty list if the
 # servers are not found.
-export def BufLspServersGet(bnr: number): list<dict<any>>
+export def BufLspServersGet(bnr: number, feature: string = null_string): list<dict<any>>
   if !bufnrToServers->has_key(bnr)
     return []
   endif
 
-  return bufnrToServers[bnr]
+  if feature == null_string
+    return bufnrToServers[bnr]
+  else 
+    var SupportedCheckFn = SupportedCheckFns[feature]
+    var possibleLSPs: list<dict<any>> = []
+    for lspserver in bufnrToServers[bnr]
+      if !lspserver.ready || !SupportedCheckFn(lspserver)
+        continue
+      endif
+      possibleLSPs->add(lspserver)
+    endfor
+  
+    var servers: list<dict<any>> = []
+    for lspserver in possibleLSPs
+      # var has_feature: bool = lspserver.features->get(feature, false)
+      servers->add(lspserver)
+    endfor
+    return servers
+  endif
 enddef
 
 # Returns the LSP server for the current buffer with the optionally "feature".
@@ -151,14 +168,20 @@ enddef
 
 # Returns the LSP servers for the current buffer. Returns an empty list if the
 # servers are not found.
-export def CurbufGetServers(): list<dict<any>>
-  return BufLspServersGet(bufnr())
+export def CurbufGetServers(feature: string = null_string): list<dict<any>>
+  return BufLspServersGet(bufnr(), feature)
 enddef
 
-export def BufHasLspServer(bnr: number): bool
-  var lspserver = BufLspServerGet(bnr)
-
+export def BufHasLspServer(bnr: number, id: number): bool
+  var lspserver = BufLspServerGetById(bnr, id)
   return !lspserver->empty()
+enddef
+
+# Returns the LSP server for the current buffer, given the server id 
+# and with the optionally "feature" if it is running and is ready.
+export def CurbufGetServerByIdChecked(id: number, feature: string = null_string): dict<any>
+  var lspserver = BufLspServerGetById(bufnr(), id)
+  return CurbufGetServerChecks(lspserver, feature)
 enddef
 
 # Returns the LSP server for the current buffer with the optinally "feature" if
@@ -169,9 +192,13 @@ export def CurbufGetServerChecked(feature: string = null_string): dict<any>
   if fname->empty() || &filetype->empty()
     return {}
   endif
-
   var lspserver: dict<any> = CurbufGetServer(feature)
-  if lspserver->empty()
+  return CurbufGetServerChecks(lspserver, feature)
+enddef
+
+# Runs checks of the LSP
+export def CurbufGetServerChecks(lspServer: dict<any>, feature: string = null_string): dict<any>
+  if lspServer->empty()
     if feature == null_string
       util.ErrMsg($'Language server for "{&filetype}" file type is not found')
     else
@@ -179,16 +206,15 @@ export def CurbufGetServerChecked(feature: string = null_string): dict<any>
     endif
     return {}
   endif
-  if !lspserver.running
+  if !lspServer.running
     util.ErrMsg($'Language server for "{&filetype}" file type is not running')
     return {}
   endif
-  if !lspserver.ready
+  if !lspServer.ready
     util.ErrMsg($'Language server for "{&filetype}" file type is not ready')
     return {}
   endif
-
-  return lspserver
+  return lspServer
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2
