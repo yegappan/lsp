@@ -1161,8 +1161,8 @@ enddef
 export def LspDiagComplete(arglead: string, cmdline: string, cursorPos: number): list<string>
   var wordBegin = -1
   var wordEnd = -1
-  var l = ['first', 'current', 'here', 'highlight', 'last', 'next', 'prev',
-	   'show']
+  var l = ['first', 'current', 'here', 'highlight', 'last', 'next', 'nextWrap',
+           'prev', 'prevWrap', 'show']
 
   # Skip the command name
   var i = cmdline->stridx(' ', 0)
@@ -1209,8 +1209,12 @@ export def LspDiagCmd(args: string, cmdCount: number, force: bool)
     diag.LspDiagsJump('last', 0)
   elseif args == 'next'
     diag.LspDiagsJump('next', cmdCount)
+  elseif args == 'nextWrap'
+    diag.LspDiagsJump('nextWrap', cmdCount)
   elseif args == 'prev'
     diag.LspDiagsJump('prev', cmdCount)
+  elseif args == 'prevWrap'
+    diag.LspDiagsJump('prevWrap', cmdCount)
   elseif args == 'show'
     ShowDiagnostics()
   else

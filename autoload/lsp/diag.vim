@@ -775,13 +775,13 @@ export def LspDiagsJump(which: string, a_count: number = 0): void
   var count = a_count > 1 ? a_count : 1
   var curlnum: number = line('.')
   var curcol: number = charcol('.')
-  for diag in (which == 'next' || which == 'here') ?
+  for diag in (which == 'next' || which == 'nextWrap' || which == 'here') ?
 					diags : diags->copy()->reverse()
     var d_start = diag.range.start
     var lnum = d_start.line + 1
     var col = util.GetCharIdxWithoutCompChar(bnr, d_start) + 1
-    if (which == 'next' && (lnum > curlnum || lnum == curlnum && col > curcol))
-	  || (which == 'prev' && (lnum < curlnum || lnum == curlnum
+    if ((which == 'next' || which == 'nextWrap') && (lnum > curlnum || lnum == curlnum && col > curcol))
+	  || ((which == 'prev' || which == 'prevWrap') && (lnum < curlnum || lnum == curlnum
 							&& col < curcol))
 	  || (which == 'here' && (lnum == curlnum && col >= curcol))
 
@@ -797,14 +797,19 @@ export def LspDiagsJump(which: string, a_count: number = 0): void
   endfor
 
   # If [count] exceeded the remaining diags
-  if which == 'next' && a_count > 1 && a_count != count
+  if ((which == 'next' || which == 'nextWrap') && a_count > 1 && a_count != count)
     JumpDiag(diags[-1])
     return
   endif
 
   # If [count] exceeded the previous diags
-  if which == 'prev' && a_count > 1 && a_count != count
+  if ((which == 'prev' || which == 'prevWrap') && a_count > 1 && a_count != count)
     JumpDiag(diags[0])
+    return
+  endif
+
+  if which == 'nextWrap' || which == 'prevWrap'
+    JumpDiag(diags[which == 'nextWrap' ? 0 : -1])
     return
   endif
 

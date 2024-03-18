@@ -185,7 +185,9 @@ Command|Description
 :LspDiag highlight disable|Disable diagnostic message highlights.
 :LspDiag highlight enable|Enable diagnostic message highlights.
 :LspDiag next|Jump to the next diagnostic message after the current position.
+:LspDiag nextWrap|Jump to the next diagnostic message after the current position, wrapping to the first message when the last message is reached.
 :LspDiag prev|Jump to the previous diagnostic message before the current position.
+:LspDiag prevWrap|Jump to the previous diagnostic message before the current position, wrapping to the last message when the first message is reached.
 :LspDiag show|Display the diagnostics messages from the language server for the current buffer in a new location list.
 :LspDocumentSymbol|Display the symbols in the current file in a popup menu and jump to the selected symbol.
 :LspFold|Fold the current file.

@@ -88,8 +88,16 @@ The following commands are provided:
 			buffer.
 :LspDiag next		Jump to the next diagnostic message for the current
 			buffer after the current cursor position.
+:LspDiag nextWrap	Jump to the next diagnostic message for the current
+			buffer after the current cursor position.
+			Wrap back to the first message when no more messages
+			are found.
 :LspDiag prev		Jump to the previous diagnostic message for the
 			current buffer before the current current position.
+:LspDiag prevWrap	Jump to the previous diagnostic message for the
+			current buffer before the current current position.
+			Wrap back to the last message when no previous
+			messages are found.
 :LspDiag show		Display the diagnostics messages from the language
 			server for the current buffer in a location list.
 :LspDocumentSymbol	Display the symbols in the current file in a popup
