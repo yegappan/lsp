@@ -656,7 +656,7 @@ enddef
 # Process the list of symbols (LSP interface "SymbolInformation") in
 # "symbolInfoTable". For each symbol, create the name to display in the popup
 # menu along with the symbol range and return the List.
-export def GetSymbolsInfoTable(lspserver: dict<any>,
+def GetSymbolsInfoTable(lspserver: dict<any>,
 			bnr: number,
 			symbolInfoTable: list<dict<any>>): list<dict<any>>
   var symbolTable: list<dict<any>> = []
@@ -683,7 +683,7 @@ enddef
 # Process the list of symbols (LSP interface "DocumentSymbol") in
 # "docSymbolTable". For each symbol, create the name to display in the popup
 # menu along with the symbol range and return the List in "symbolTable"
-export def GetSymbolsDocSymbol(lspserver: dict<any>,
+def GetSymbolsDocSymbol(lspserver: dict<any>,
 			bnr: number,
 			docSymbolTable: list<dict<any>>,
 			symbolTable: list<dict<any>>,
