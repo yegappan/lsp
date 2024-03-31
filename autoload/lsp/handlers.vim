@@ -124,6 +124,14 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       # ccls language server notifications
       '$ccls/publishSkippedRanges',
       '$ccls/publishSemanticHighlight',
+      # omnisharp language server notifications
+      'o#/backgrounddiagnosticstatus',
+      'o#/msbuildprojectdiagnostics',
+      'o#/projectadded',
+      'o#/projectchanged',
+      'o#/projectconfiguration',
+      'o#/projectdiagnosticstatus',
+      'o#/unresolveddependencies',
     ]
 
   if lsp_notif_handlers->has_key(reply.method)
