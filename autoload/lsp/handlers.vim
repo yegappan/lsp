@@ -132,6 +132,7 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       'o#/projectconfiguration',
       'o#/projectdiagnosticstatus',
       'o#/unresolveddependencies',
+      '@/tailwindCSS/projectInitialized'
     ]
 
   if lsp_notif_handlers->has_key(reply.method)
