@@ -335,7 +335,14 @@ def LspSavedFile(bnr: number)
   endif
 
   for lspserver in lspservers
-    lspserver.didSaveFile(bnr)
+    # TODO: implement `catch` block
+    # Wrap method with `try-finally` block to solve error: 
+    # `E716: Key not present in Dictionary: "supportsDidSave"`
+    try
+      lspserver.didSaveFile(bnr)
+    finally
+      return
+    endtry
   endfor
 enddef
 
