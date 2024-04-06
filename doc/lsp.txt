@@ -1900,6 +1900,44 @@ everything else: >
 		},
 	])
 <
+Language servers can also be configured to associate themselves with specific
+syntax elements. If a syntax element is detected at the current location, the
+corresponding language server will take precedence over the standard ordering.
+
+To specify a language server for a particular syntax element, use the
+`syntaxAssociatedLSP` property in the configuration object passed to
+`LspAddServer`. The value of `syntaxAssociatedLSP` should be a string or list
+of strings representing the desired syntax elements.
+>
+	vim9script
+
+	# Add two LSP configurations for handling JavaScript, TypeScript, and
+	# GraphQL files.
+	g:LspAddServer([
+		{
+			# Configuration for Typescript-language-server:
+			# Used for general purposes when working with '.js'
+			# and '.ts' files.
+			filetype: ['javascript', ''typescript'],
+			path: 'typescript-language-server',
+			args: ['--stdio']
+		},
+		{
+			# Configuration for GraphQL-language-server:
+			# Specifically bound to 'graphqlTemplateString' syntax
+			# element. Will handle requests regarding GraphQL
+			# template literals.
+			filetype: ['javascript', ''typescript', 'graphql'],
+			path: 'graphql-lsp',
+			args: ['server', '-m', 'stream'],
+			syntaxAssociatedLSP: ['graphqlTemplateString'],
+		}
+	])
+
+<
+To discover the current syntax stack and determine the appropriate value for
+`syntaxAssociatedLSP`, you can employ `LspUtilGetCurrentSynStack` command. 
+
 ==============================================================================
 17. Language Server Features			*lsp-features*
 
