@@ -511,6 +511,9 @@ def g:Test_LspDiag_Multi()
   var output = execute('LspDiag prev')->split("\n")
   assert_equal('Warn: No more diagnostics found', output[0])
 
+  assert_equal('', execute('LspDiag prevWrap'))
+  assert_equal([2, 9], [line('.'), col('.')])
+
   cursor(2, 1)
   assert_equal('', execute('LspDiag first'))
   assert_equal([1, 5], [line('.'), col('.')])
@@ -519,6 +522,10 @@ def g:Test_LspDiag_Multi()
   cursor(1, 1)
   assert_equal('', execute('LspDiag last'))
   assert_equal([2, 9], [line('.'), col('.')])
+  assert_equal('', execute('LspDiag nextWrap'))
+  assert_equal([1, 5], [line('.'), col('.')])
+  assert_equal('', execute('LspDiag nextWrap'))
+  assert_equal([1, 9], [line('.'), col('.')])
   popup_clear()
 
   # Test for :LspDiag here on a line with multiple diagnostics
@@ -1625,7 +1632,7 @@ def g:Test_LspDiagsSubcmd()
   new XLspDiagsSubCmd.raku
 
   feedkeys(":LspDiag \<C-A>\<CR>", 'xt')
-  assert_equal('LspDiag first current here highlight last next prev show', @:)
+  assert_equal('LspDiag first current here highlight last next nextWrap prev prevWrap show', @:)
   feedkeys(":LspDiag highlight \<C-A>\<CR>", 'xt')
   assert_equal('LspDiag highlight enable disable', @:)
   assert_equal(['Error: :LspDiag - Unsupported argument "xyz"'],
