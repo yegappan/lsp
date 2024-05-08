@@ -202,6 +202,16 @@ def ProcessWorkDoneProgressCreate(lspserver: dict<any>, request: dict<any>)
   lspserver.sendResponse(request, null, {})
 enddef
 
+# process the window/showMessageRequest LSP server request
+# Request: "window/showMessageRequest"
+# Param: ShowMessageRequestParams
+def ProcessShowMessageRequest(lspserver: dict<any>, request: dict<any>)
+  # TODO: for now 'showMessageRequest' handled same like 'showMessage'
+  # regardless 'actions'
+  ProcessShowMsgNotif(lspserver, request)
+  lspserver.sendResponse(request, null, {})
+enddef
+
 # process the client/registerCapability LSP server request
 # Request: "client/registerCapability"
 # Param: RegistrationParams
@@ -223,6 +233,7 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
       'client/registerCapability': ProcessClientRegisterCap,
       'client/unregisterCapability': ProcessClientUnregisterCap,
       'window/workDoneProgress/create': ProcessWorkDoneProgressCreate,
+      'window/showMessageRequest': ProcessShowMessageRequest,
       'workspace/applyEdit': ProcessApplyEditReq,
       'workspace/configuration': ProcessWorkspaceConfiguration,
       'workspace/workspaceFolders': ProcessWorkspaceFoldersReq
