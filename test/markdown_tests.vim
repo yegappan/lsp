@@ -267,7 +267,22 @@ def g:Test_Markdown()
 	[],
 	[{'col': 13, 'type': 'LspMarkdownCode', 'length': 15}]
       ]
-    ]
+    ],
+    [
+      # non-breaking space characters
+      # Input text
+      [
+	'&nbsp;&nbsp;This is text.',
+      ],
+      # Expected text
+      [
+	'  This is text.',
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
   ]
 
   var doc: dict<list<any>>

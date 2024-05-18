@@ -147,6 +147,8 @@ def Unescape(text: string, block_marker: string = ""): string
   result = result->substitute(' \@<! \=\n', ' ', 'g')
   # change hard line breaks
   result = result->substitute(' \{2,}\n', '\n', 'g')
+  # replace non-breaking spaces with spaces
+  result = result->substitute('&nbsp;', ' ', 'g')
   return result->substitute($'\\\({punctuation}\)', '\1', 'g')
 enddef
 
