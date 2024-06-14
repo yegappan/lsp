@@ -10,6 +10,7 @@ You can install this plugin directly from github using the following steps:
 $ mkdir -p $HOME/.vim/pack/downloads/opt
 $ cd $HOME/.vim/pack/downloads/opt
 $ git clone https://github.com/yegappan/lsp
+$ vim -u NONE -c "helptags $HOME/.vim/pack/downloads/opt/lsp/doc" -c q
 ```
 
 After installing the plugin using the above steps, add the following line to

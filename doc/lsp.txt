@@ -53,6 +53,7 @@ You can install this plugin directly from github using the following steps:
     $ mkdir -p $HOME/.vim/pack/downloads/opt
     $ cd $HOME/.vim/pack/downloads/opt
     $ git clone https://github.com/yegappan/lsp
+    $ vim -u NONE -c "helptags $HOME/.vim/pack/downloads/opt/lsp/doc" -c q
 
 or you can use any one of the Vim plugin managers (dein.vim, pathogen, vam,
 vim-plug, volt, Vundle, etc.) to install and manage this plugin.
