@@ -91,6 +91,11 @@ enddef
 # Add a LSP server for a filetype
 def LspAddServer(ftype: string, lspsrv: dict<any>)
   var lspsrvlst = ftypeServerMap->has_key(ftype) ? ftypeServerMap[ftype] : []
+  for l in lspsrvlst
+    if l['name'] == lspsrv['name']
+      return
+    endif
+  endfor
   lspsrvlst->add(lspsrv)
   ftypeServerMap[ftype] = lspsrvlst
 enddef
