@@ -543,7 +543,7 @@ enddef
 
 # Restart the LSP server for the current buffer
 def RestartServer()
-  var lspservers: list<dict<any>> = buf.CurbufGetServers()
+  var lspservers: list<dict<any>> = buf.CurbufGetServers()->copy()
   if lspservers->empty()
     util.WarnMsg($'No Lsp servers found for "{@%}"')
     return
