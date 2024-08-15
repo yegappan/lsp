@@ -94,9 +94,9 @@ The following commands are provided:
 			Wrap back to the first message when no more messages
 			are found.
 :LspDiag prev		Jump to the previous diagnostic message for the
-			current buffer before the current current position.
+			current buffer before the current cursor position.
 :LspDiag prevWrap	Jump to the previous diagnostic message for the
-			current buffer before the current current position.
+			current buffer before the current cursor position.
 			Wrap back to the last message when no previous
 			messages are found.
 :LspDiag show		Display the diagnostics messages from the language
