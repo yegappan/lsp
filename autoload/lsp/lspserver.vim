@@ -614,55 +614,50 @@ def TextdocDidChange(lspserver: dict<any>, bnr: number, start: number,
   # Notification: 'textDocument/didChange'
   # Params: DidChangeTextDocumentParams
 
-  # var changeset: list<dict<any>>
+  if lspserver.caps->has_key('textDocumentSync')
+    if lspserver.caps.textDocumentSync->type() == v:t_number
 
-  ##### FIXME: Sending specific buffer changes to the LSP server doesn't
-  ##### work properly as the computed line range numbers is not correct.
-  ##### For now, send the entire buffer content to LSP server.
-  # #     Range
-  # for change in changes
-  #   var lines: string
-  #   var start_lnum: number
-  #   var end_lnum: number
-  #   var start_col: number
-  #   var end_col: number
-  #   if change.added == 0
-  #     # lines changed
-  #     start_lnum =  change.lnum - 1
-  #     end_lnum = change.end - 1
-  #     lines = getbufline(bnr, change.lnum, change.end - 1)->join("\n") .. "\n"
-  #     start_col = 0
-  #     end_col = 0
-  #   elseif change.added > 0
-  #     # lines added
-  #     start_lnum = change.lnum - 1
-  #     end_lnum = change.lnum - 1
-  #     start_col = 0
-  #     end_col = 0
-  #     lines = getbufline(bnr, change.lnum, change.lnum + change.added - 1)->join("\n") .. "\n"
-  #   else
-  #     # lines removed
-  #     start_lnum = change.lnum - 1
-  #     end_lnum = change.lnum + (-change.added) - 1
-  #     start_col = 0
-  #     end_col = 0
-  #     lines = ''
-  #   endif
-  #   var range: dict<dict<number>> = {'start': {'line': start_lnum, 'character': start_col}, 'end': {'line': end_lnum, 'character': end_col}}
-  #   changeset->add({'range': range, 'text': lines})
-  # endfor
+      var changeset: list<dict<any>>
+      var params = {
+        textDocument: {
+        uri: util.LspBufnrToUri(bnr),
+        # Use Vim 'changedtick' as the LSP document version number
+        version: bnr->getbufvar('changedtick')
+      },
+        contentChanges: changeset
+      }
 
-  var params = {
-    textDocument: {
-      uri: util.LspBufnrToUri(bnr),
-      # Use Vim 'changedtick' as the LSP document version number
-      version: bnr->getbufvar('changedtick')
-    },
-    contentChanges: [
-      {text: bnr->getbufline(1, '$')->join("\n") .. "\n"}
-    ]
-  }
-  lspserver.sendNotification('textDocument/didChange', params)
+      if lspserver.caps.textDocumentSync == 1 || 
+          ( start == 0 && end == 0 && added == 0 )
+        changeset = [{
+         text: bnr->getbufline(1, '$')->join("\n") .. "\n"
+        }]
+      endif
+
+      if lspserver.caps.textDocumentSync == 2 &&
+          (start != 0 || end != 0 || added != 0)
+        var ended = added > 0 ? end + added : end - 1
+        var endpos = added > 0 ? end + added : end
+        if start == endpos 
+          endpos += 1 
+        endif
+        var range: dict<dict<number>> = {
+          'start': {'line': start - 1, 'character': 0},
+          'end': {'line': endpos - 1, 'character': 0}
+        }
+        var lines: string = bnr->getbufline(start, ended)->join("\n") .. "\n"
+        if added < 0
+          lines = ''
+        endif
+        changeset->add({'range': range, 'text': lines})
+      endif
+
+      params.contentChanges = changeset
+      if lspserver.caps.textDocumentSync != 0
+        lspserver.sendNotification('textDocument/didChange', params)
+      endif
+    endif
+  endif
 enddef
 
 # Return the current cursor position as a LSP position.
