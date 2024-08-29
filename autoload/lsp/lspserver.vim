@@ -636,13 +636,23 @@ def TextdocDidChange(lspserver: dict<any>, bnr: number, start: number,
       
       if lspserver.caps.textDocumentSync == 2 &&
           !(start == 0 && end == 0 && added == 0)
-        var startpos = start > 1 ? (added < 0 ? start - 1 : start - 2) : 0 
-        var lines: string = added < 0 ? '' : bnr->getbufline(start - 1, end - 1 + added)->join("\n") .. "\n"
-        var range: dict<dict<number>> = {
-          start: {line: startpos, character: 0},
-          end: {line: end - 1, character: 0}
-        }
-        changeset->add({range: range, text: lines})
+        if changes->len() > 1
+          # As of now, only single line changes are incrementaly synced. 
+          # This is because multi line changes seems to have edge cases in
+          # in how they should be interpeted. At least we'll see some
+          # performance gains
+          changeset = [{
+           text: bnr->getbufline(1, '$')->join("\n") .. "\n"
+          }]
+        else
+          for c in changes 
+            var lines = getbufline(bnr, c.lnum, c.end - 1 + c.added)
+            var text = lines->len() > 0 ? lines->join("\n") .. "\n" : ''
+            changeset->add({range: { start: { line: c.lnum - 1, character: 0 },
+                                     end: { line: c.end - 1, character: 0 }},
+                            text: text })
+          endfor
+        endif
       endif
 
       params.contentChanges = changeset
