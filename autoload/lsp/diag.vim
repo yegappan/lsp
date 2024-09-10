@@ -355,7 +355,7 @@ def SendAleDiags(bnr: number, timerid: number)
              col: util.GetLineByteFromPos(bnr, v.range.start) + 1,
              end_lnum: v.range.end.line + 1,
              end_col: util.GetLineByteFromPos(bnr, v.range.end) + 1,
-             type: "EWIH"[v.severity - 1]}
+             type: "EWIH"[get(v, "severity", 3) - 1]}
     })
   )
 enddef
