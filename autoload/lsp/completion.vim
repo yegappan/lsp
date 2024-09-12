@@ -182,7 +182,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any, trigger_type: numb
     snippet.CompletionVsnip(items)
   endif
 
-  if lspOpts.useBufferCompletion
+  if lspOpts.useBufferCompletion && count(lspOpts.bufferCompletionTriggers, trigger_type) > 0
     CompletionFromBuffer(items)
   endif
 

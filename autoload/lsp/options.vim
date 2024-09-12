@@ -34,6 +34,14 @@ export var lspOptions: dict<any> = {
   # Automatically populate the location list with new diagnostics
   autoPopulateDiags: false,
 
+  # If useBufferCompletion is set to true, limit completion to the specified cases:
+  # 1: typing keyword characters (see :help iskeyword)
+  # 2: typing a trigger character (language specific, provided by the lsp server.
+  #    E.g., for C++ this might be any of '.', '<', '>', ':', '"', '/', '*'
+  # Default is to execute buffer completion in both cases. If you do not want buffer completions
+  # to come up with more specific completions (e.g., class members, file names), set it to [ 1 ].
+  bufferCompletionTriggers: [ 1, 2 ],
+
   # icase | fuzzy | case match for language servers that replies with a full
   # list of completion items
   completionMatcher: 'case',
