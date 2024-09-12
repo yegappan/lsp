@@ -16,6 +16,15 @@ export var lspOptions: dict<any> = {
   # Otherwise, use omni-completion
   autoComplete: true,
 
+  # If autoComplete is set to true, limit auto completion to the specified cases:
+  # 1: typing keyword characters (see :help iskeyword)
+  # 2: typing a trigger character (language specific, provided by the lsp server.
+  #    E.g., for C++ this might be any of '.', '<', '>', ':', '"', '/', '*'
+  # Default is to execute autocompletion in both cases.  If you want autocompletion only when typing
+  # a trigger character, set this option to [ 2 ]. You can still use omni-completion to trigger
+  # completion manually in other situations.
+  autoCompleteTriggers: [ 1, 2 ],
+
   # In normal mode, highlight the current symbol automatically
   autoHighlight: false,
 
