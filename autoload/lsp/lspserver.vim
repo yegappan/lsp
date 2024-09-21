@@ -1710,6 +1710,9 @@ def FoldRange(lspserver: dict<any>, fname: string)
     return
   endif
 
+  # Remove all the current folds
+  :normal! zE
+
   # interface FoldingRangeParams
   # interface TextDocumentIdentifier
   var params = {textDocument: {uri: util.LspFileToUri(fname)}}
@@ -1720,13 +1723,14 @@ def FoldRange(lspserver: dict<any>, fname: string)
 
   # result: FoldingRange[]
   var end_lnum: number
-  var last_lnum: number = line('$')
   for foldRange in reply.result
+    var start_lnum = foldRange.startLine + 1
     end_lnum = foldRange.endLine + 1
-    if end_lnum < foldRange.startLine + 2
-      end_lnum = foldRange.startLine + 2
+
+    if end_lnum < start_lnum
+      end_lnum = start_lnum
     endif
-    exe $':{foldRange.startLine + 2}, {end_lnum}fold'
+    exe $':{start_lnum}, {end_lnum}fold'
     # Open all the folds, otherwise the subsequently created folds are not
     # correct.
     :silent! foldopen!

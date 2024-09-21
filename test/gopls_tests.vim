@@ -38,7 +38,7 @@ def g:Test_LspGoto()
     func main() {
     }
   END
-  
+
   setline(1, lines)
   :redraw!
   g:WaitForServerFileLoad(0)
@@ -109,6 +109,42 @@ def g:Test_LspGoto()
   cursor(4, 9)
   assert_equal('', execute(':2LspGotoImpl'))
   assert_equal([13, 13], [line('.'), col('.')])
+  bw!
+enddef
+
+# Test for :LspFold command
+def g:Test_LspFold()
+  :silent! edit XLspFold1.go
+  sleep 200m
+  var lines =<< trim END
+    package main
+
+    // Some comment
+    // Some other comment
+
+    func plus(a int, b int) int {
+	return a + b
+    }
+
+    func main() {
+    }
+  END
+
+  setline(1, lines)
+  :redraw!
+  g:WaitForServerFileLoad(0)
+
+  :LspFold
+  sleep 50m
+  assert_equal(1, foldlevel(3))
+  var r = [0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0]
+  assert_equal(r, range(1, 11)->map((_, v) => foldlevel(v)))
+  r = [-1, -1, 3, 3, -1, 6, 6, -1, -1, -1, -1]
+  assert_equal(r, range(1, 11)->map((_, v) => foldclosed(v)))
+  r = [-1, -1, 4, 4, -1, 7, 7, -1, -1, -1, -1]
+  assert_equal(r, range(1, 11)->map((_, v) => foldclosedend(v)))
+
+  v:errmsg = ''
   bw!
 enddef
 
