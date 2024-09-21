@@ -777,7 +777,7 @@ def SymbolMenuItemSelected(symPopupMenu: number,
   # Restore the cursor to the location where the command was invoked
   setpos('.', save_curpos)
 
-  if result > 0
+  if result > 0 && symTblFiltered->len() > 0
     # A symbol is selected in the popup menu
 
     # Set the previous cursor location mark. Instead of using setpos(), m' is
