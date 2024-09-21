@@ -815,7 +815,8 @@ can map these commands to keys and make it easier to invoke them.
 			current buffer are used when format is applied.
 
 :{range}LspFormat	Format the specified range of lines in the current
-			file using the language server.
+			file using the language server. Map <plug>(LspFormat)
+			in normal mode to operate on text objects.
 
 						*:LspGotoDeclaration*
 :[count]LspGotoDeclaration
