@@ -482,9 +482,13 @@ export def AddFile(bnr: number): void
     if lspserver.ready
       BufferInit(lspserver.id, bnr)
     else
-      augroup LSPBufferAutocmds
-        exe $'autocmd User LspServerReady_{lspserver.id} ++once BufferInit({lspserver.id}, {bnr})'
-      augroup END
+      # Lsp server is not ready yet.  Initialize the lsp state for this buffer
+      # when the server is ready.
+      autocmd_add([{group: 'LSPBufferAutocmds',
+                   event: 'User',
+                   pattern: $'LspServerReady_{lspserver.id}',
+                   once: true,
+                   cmd: $'BufferInit({lspserver.id}, {bnr})'}])
     endif
   endfor
 enddef

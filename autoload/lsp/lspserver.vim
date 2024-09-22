@@ -132,8 +132,8 @@ def ServerInitReply(lspserver: dict<any>, initResult: dict<any>): void
     exe $'doautocmd <nomodeline> User LspServerReady{lspserver.name}'
   endif
   # Used internally, and shouldn't be used by users
-  if exists($'#User#LspServerReady_{lspserver.id}')
-    exe $'doautocmd <nomodeline> User LspServerReady_{lspserver.id}'
+  if exists($'#LSPBufferAutocmds#User#LspServerReady_{lspserver.id}')
+    exe $'doautocmd <nomodeline> LSPBufferAutocmds User LspServerReady_{lspserver.id}'
   endif
 
   # set the server debug trace level
