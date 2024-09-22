@@ -229,8 +229,10 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
   # codeLensProvider
   if lspserver.caps->has_key('codeLensProvider')
     lspserver.isCodeLensProvider = true
-    if lspserver.caps.codeLensProvider->has_key('resolveProvider')
-      lspserver.isCodeLensResolveProvider = true
+    var codeLensProvider = lspserver.caps.codeLensProvider
+    if codeLensProvider->type() == v:t_dict
+	 && codeLensProvider->has_key('resolveProvider')
+      lspserver.isCodeLensResolveProvider = codeLensProvider.resolveProvider
     else
       lspserver.isCodeLensResolveProvider = false
     endif
