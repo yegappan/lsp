@@ -361,4 +361,8 @@ export def FindNearestRootDir(startDir: string, files: list<any>): string
   return sortedList[0]
 enddef
 
+export def ListSynstackNamesAtPoint(line: number, col: number): list<string>
+  return synstack(line, col)->map((_, v) => v->synIDattr('name'))
+enddef
+
 # vim: tabstop=8 shiftwidth=2 softtabstop=2
