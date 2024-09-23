@@ -809,6 +809,8 @@ export def InlayHints(ctl: string)
     inlayhints.InlayHintsEnable()
   elseif ctl == 'disable'
     inlayhints.InlayHintsDisable()
+  elseif ctl == 'toggle'
+    inlayhints.InlayHintsToggle()
   else
     util.ErrMsg($'LspInlayHints - Unsupported argument "{ctl}"')
   endif
@@ -816,7 +818,7 @@ enddef
 
 # Command-line completion for the ":LspInlayHints" command
 export def LspInlayHintsComplete(arglead: string, cmdline: string, cursorPos: number): list<string>
-  var l = ['enable', 'disable']
+  var l = ['enable', 'disable', 'toggle']
   return filter(l, (_, val) => val =~ $'^{arglead}')
 enddef
 
