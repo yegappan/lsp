@@ -1142,6 +1142,12 @@ export def FormatExpr(): number
     return 1
   endif
 
+  if ['i', 'R', 'ic', 'ix']->index(mode()) != -1
+    # When 'formatexpr' is called in insert mode to format a line exceeding
+    # 'textwidth', use internal formatting.
+    return 1
+  endif
+
   lspserver.textDocFormat(@%, true, v:lnum, v:lnum + v:count - 1)
   return 0
 enddef
