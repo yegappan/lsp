@@ -459,7 +459,7 @@ export def GetClientCaps(): dict<any>
 	augmentsSyntaxTokens: true
       },
       synchronization: {
-	dynamicRegistration: true,
+	dynamicRegistration: false,
 	didSave: true,
 	willSave: false,
 	WillSaveWaitUntil: false
