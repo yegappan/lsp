@@ -894,6 +894,15 @@ export def DiagsHighlightDisable()
   endfor
 enddef
 
+# Toggle the LSP diagnostics highlighting in all the buffers
+export def DiagsHighlightToggle()
+  if opt.lspOptions.autoHighlightDiags
+    DiagsHighlightDisable()
+  else
+    DiagsHighlightEnable()
+  endif
+enddef
+
 # Some options are changed.  If 'autoHighlightDiags' option is changed, then
 # either enable or disable diags auto highlight.
 export def LspDiagsOptionsChanged()

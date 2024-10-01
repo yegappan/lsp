@@ -1177,7 +1177,7 @@ enddef
 
 # Command-line completion for the ":LspDiag highlight" command
 def LspDiagHighlightComplete(arglead: string, cmdline: string, cursorPos: number): list<string>
-  return LspSubCmdComplete(['enable', 'disable'], arglead, cmdline, cursorPos)
+  return LspSubCmdComplete(['enable', 'disable', 'toggle'], arglead, cmdline, cursorPos)
 enddef
 
 # Command-line completion for the ":LspDiag" command
@@ -1216,6 +1216,8 @@ export def LspDiagCmd(args: string, cmdCount: number, force: bool)
 	diag.DiagsHighlightEnable()
       elseif subcmd == 'disable'
 	diag.DiagsHighlightDisable()
+      elseif subcmd == 'toggle'
+	diag.DiagsHighlightToggle()
       else
 	util.ErrMsg($':LspDiag highlight - Unsupported argument "{subcmd}"')
       endif

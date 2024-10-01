@@ -3,7 +3,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: Feb 13, 2024
+Last change: Sep 30, 2024
 
 ==============================================================================
 CONTENTS                                                     *lsp-contents*
@@ -84,6 +84,9 @@ The following commands are provided:
 			for the current Vim session.
 :LspDiag highlight enable
 			Enable highlighting lines with a diagnostic message
+			for the current Vim session.
+:LspDiag highlight toggle
+			Toggle highlighting lines with a diagnostic message
 			for the current Vim session.
 :LspDiag last		Jump to the last diagnostic message for the current
 			buffer.
@@ -756,6 +759,11 @@ can map these commands to keys and make it easier to invoke them.
 			Enable highlighting lines with a diagnostic message
 			for the current Vim session.  Note that highlighting
 			lines with a diagnostic message is enabled by default.
+
+:LspDiag highlight toggle			*:LspDiag-highlight-toggle*
+			Toggle (enable or disable) highlighting lines with a
+			diagnostic message for the current Vim session in all
+			the buffers.
 
 						*:LspDiag-last*
 :LspDiag last		Jumps to the location of the first diagnostic message
@@ -1458,7 +1466,8 @@ diagnostic message:
 If you wish to temporarily disable the automatic diagnostic highlighting for
 the current Vim session, you can achieve this using the ":LspDiag highlight
 disable" command.  When you want to re-enable the highlighting, you can use
-the ":LspDiag highlight enable" command.
+the ":LspDiag highlight enable" command.  To toggle the highlighting, you can
+use the ":LspDiag highlight toggle" command.
 
 To permanently disable the automatic highlighting of diagnostics, you can set
 the "autoHighlightDiags" option to |v:false| in your .vimrc file.  This
