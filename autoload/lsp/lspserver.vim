@@ -413,8 +413,14 @@ def Rpc(lspserver: dict<any>, method: string, params: any, handleError: bool = t
     lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Sent {req->string()}')
   endif
 
+  # Fixes issue where clangd will hang on textDocument/semanticTokens/full/delta
+  var timeout = 2000 # vim's default
+  if method == 'textDocument/semanticTokens/full/delta'
+    timeout = 100
+  endif
+
   # Do the synchronous RPC call
-  var reply = job->ch_evalexpr(req)
+  var reply = job->ch_evalexpr(req, {timeout: timeout})
 
   if lspserver.debug
     lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Received {reply->string()}')
