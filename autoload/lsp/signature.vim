@@ -57,7 +57,11 @@ export def BufferInit(lspserver: dict<any>)
 
   # map characters that trigger signature help
   for ch in lspserver.caps.signatureHelpProvider.triggerCharacters
-    exe $"inoremap <buffer> <silent> {ch} {ch}<C-R>=g:LspShowSignature()<CR>"
+    var mapChar = ch
+    if ch =~ ' '
+      mapChar = '<Space>'
+    endif
+    exe $"inoremap <buffer> <silent> {mapChar} {mapChar}<C-R>=g:LspShowSignature()<CR>"
   endfor
 
   # close the signature popup when leaving insert mode
