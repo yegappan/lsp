@@ -514,8 +514,7 @@ def g:LspOmniFunc(findstart: number, base: string): any
     var res: list<dict<any>> = lspserver.completeItems
     var prefix = lspserver.omniCompleteKeyword
 
-    # Don't attempt to filter on the items, when "isIncomplete" is set
-    if prefix->empty() || lspserver.completeItemsIsIncomplete
+    if prefix->empty()
       return res
     endif
 
