@@ -106,6 +106,12 @@ export def BufLspServerGet(bnr: number, feature: string = null_string): dict<any
     endif
   endfor
 
+  # The LSP is explicitly associated to a specific syntax name within the syntax stack
+  var selectedLsp = SelectLSPBySyntaxNames(possibleLSPs)
+  if (!selectedLsp->empty())
+    return selectedLsp
+  endif
+
   # Return the first LSP server that supports "feature" and doesn't have it
   # disabled
   for lspserver in possibleLSPs
@@ -189,6 +195,49 @@ export def CurbufGetServerChecked(feature: string = null_string): dict<any>
   endif
 
   return lspserver
+enddef
+
+# Returns the selected LSP based on the syntax names stacked under the
+# current cursor position
+def SelectLSPBySyntaxNames(possibleLSPs: list<dict<any>>): dict<any>
+  var synnameStack = util.ListSynstackNamesAtPoint(line('.'), col('.'))->reverse()
+
+  if synnameStack->empty()
+    return {}
+  endif
+
+  # Initialize variables for tracking the selected LSP and the index of the
+  # matched word
+  # The syntax word statck is revesed so the word at a lower index is deeper
+  # in the syntax stack : use it in priority
+  var synWordIdx = 1000
+  var selected = {}
+
+  for server in possibleLSPs
+    if server.syntaxAssociatedLSP->empty()
+      continue
+    endif
+
+    # Loop through each syntax name in the stack
+    for idx in range(len(synnameStack))
+      # Skip this syntax name if it's not in the list of associated syntax
+      # names for this LSP
+      if server.syntaxAssociatedLSP->index(synnameStack[idx]) < 0
+        continue
+      endif
+
+      # Update the selected LSP and the index of the matched word if the
+      # syntax name has higher priority
+      if idx < synWordIdx
+        selected = server
+        synWordIdx = idx
+	# Break out of the loop once the LSP has been selected
+        break
+      endif
+    endfor
+  endfor
+
+  return selected
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2
