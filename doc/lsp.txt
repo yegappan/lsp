@@ -249,7 +249,8 @@ Shell script, Vim script and PHP file types: >
   augroup END
   for i in range(len(g:lspServers))
     for ft in g:lspServers[i].filetype
-      exe 'autocmd LspSetup FileType' ft 'autocmd BufWinEnter <buffer> call LspAddServer([g:lspServers[' .. i .. ']]) | autocmd! LspSetup FileType' ft
+      exe 'autocmd LspSetup FileType' ft '++once'
+          \ 'autocmd LspSetup BufWinEnter <buffer> ++once call LspAddServer([g:lspServers[' .. i .. ']])'
     endfor
   endfor
 <
