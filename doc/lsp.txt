@@ -1010,8 +1010,7 @@ can map these commands to keys and make it easier to invoke them.
 :[count]LspPeekDefinition
 			Displays the line where the symbol under the cursor is
 			defined in a popup window. The symbol is highlighted
-			in the popup window. Moving the cursor or pressing
-			<Esc> will close the popup window.
+			in the popup window.
 			When more than one symbol is found all of them will be
 			shown.  The corresponding file for the symbol is
 			displayed in another popup window.  As the selection
@@ -1019,6 +1018,24 @@ can map these commands to keys and make it easier to invoke them.
 			popup is updated.
 			When [count] is provided only the [count] symbol will
 			be shown.
+
+						*lsp-symbol-window*
+			Moving the cursor or pressing <Esc> will close the
+			popup window.  In the popup window, the following keys
+			can be used:
+
+				CTRL-F     - Scroll one page forward
+				<PageDown> - idem
+				CTRL-B     - Scroll one page backward
+				<PageUp>   - idem
+				CTRL-Home  - Jump to the first entry
+				CTRL-End   - Jump to the last entry
+				<Esc>      - Close the popup window
+				CTRL-C     - idem
+				CTRL-E     - Scroll one line forward
+				CTRL-D     - Scroll half page forward
+				CTRL-Y     - Scroll one line backward
+				CTRL-U     - Scroll half page backward
 
 						*:LspPeekImpl*
 :[count]LspPeekImpl	Displays the implementation of the symbol under the
@@ -1988,7 +2005,7 @@ workspaceSymbol			Used by the |:LspSymbolSearch| command.
 ==============================================================================
 						*lsp-license*
 License: MIT License
-Copyright (c) 2020-2023 Yegappan Lakshmanan
+Copyright (c) 2020-2024 Yegappan Lakshmanan
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to

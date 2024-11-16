@@ -457,6 +457,22 @@ enddef
 # Vim doesn't close the popup window when the escape key is pressed.
 # This is function supports that.
 def SymbolFilterCB(lspserver: dict<any>, id: number, key: string): bool
+  # Handle the keys for scrolling the symbol popup window
+  if key == "\<C-E>"
+      || key == "\<C-D>"
+      || key == "\<C-F>"
+      || key == "\<PageDown>"
+      || key == "\<C-Y>"
+      || key == "\<C-U>"
+      || key == "\<C-B>"
+      || key == "\<PageUp>"
+      || key == "\<C-Home>"
+      || key == "\<C-End>"
+    # scroll the hover popup window
+    win_execute(id, $'normal! {key}')
+    return true
+  endif
+
   if key == "\<Esc>"
     lspserver.peekSymbolPopup->popup_close()
     return true
