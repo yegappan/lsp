@@ -1894,7 +1894,8 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     typeHierPopup: -1,
     workspaceConfig: serverParams.workspaceConfig->deepcopy(),
     workspaceSymbolPopup: -1,
-    workspaceSymbolQuery: ''
+    workspaceSymbolQuery: '',
+    syntaxAssociatedLSP: serverParams.syntaxAssociatedLSP->deepcopy(),
   }
   lspserver.logfile = $'lsp-{lspserver.name}.log'
   lspserver.errfile = $'lsp-{lspserver.name}.err'

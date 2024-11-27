@@ -12,24 +12,27 @@ jobs:
     steps:
       - name: Install packages
         run: |
-          sudo apt update
+          sudo apt-get update
           # install clangd language server
-          sudo apt install -y clangd-15
+          sudo apt-get install -y clangd-15
           # install nodejs
-          sudo apt install -y curl
+          sudo apt-get install -y curl
           curl -fsSL https://deb.nodesource.com/setup_18.x | sudo bash -
-          sudo apt install -y nodejs
+          sudo apt-get install -y nodejs
           # install the typescript language server
           sudo npm install -g typescript-language-server typescript
           # install the golang language server
-          sudo apt install -y golang
-          sudo apt install -y gopls
+          sudo apt-get install -y golang
+          sudo apt-get install -y gopls
           # install the rust language server
-          sudo apt install -y cargo rust-src
+          sudo apt-get install -y cargo rust-src
           mkdir -p ~/.local/bin
           # Use version v0.3.2011 as the later versions fail the tests
           curl -L https://github.com/rust-lang/rust-analyzer/releases/download/2024-06-24/rust-analyzer-x86_64-unknown-linux-gnu.gz | gunzip -c - > ~/.local/bin/rust-analyzer
           chmod +x ~/.local/bin/rust-analyzer
+          # install markdown language server
+          curl -L https://github.com/artempyanykh/marksman/releases/latest/download/marksman-linux-x64 -o ~/.local/bin/marksman
+          chmod +x ~/.local/bin/marksman
       - name: Setup Vim
         uses: rhysd/action-setup-vim@v1
         id: vim

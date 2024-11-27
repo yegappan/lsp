@@ -10,7 +10,7 @@ fi
 
 VIM_CMD="$VIMPRG -u NONE -U NONE -i NONE --noplugin -N --not-a-term"
 
-TESTS="clangd_tests.vim tsserver_tests.vim gopls_tests.vim not_lspserver_related_tests.vim markdown_tests.vim rust_tests.vim"
+TESTS="clangd_tests.vim tsserver_tests.vim gopls_tests.vim not_lspserver_related_tests.vim markdown_tests.vim rust_tests.vim syntax_stack_lsp_chooser_test.vim"
 
 RunTestsInFile() {
   testfile=$1
