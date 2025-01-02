@@ -205,11 +205,38 @@ enddef
 # process the window/showMessageRequest LSP server request
 # Request: "window/showMessageRequest"
 # Param: ShowMessageRequestParams
-def ProcessShowMessageRequest(lspserver: dict<any>, request: dict<any>)
-  # TODO: for now 'showMessageRequest' handled same like 'showMessage'
-  # regardless 'actions'
-  ProcessShowMsgNotif(lspserver, request)
-  lspserver.sendResponse(request, null, {})
+def ProcessShowMessageRequest(lspserver: dict<any>, req: dict<any>)
+  var params: dict<any> = req.params
+  if params->has_key('actions')
+    var actions: list<dict<any>> = params.actions
+    if actions->empty()
+      util.WarnMsg($'Empty actions in showMessage request {params.message}')
+      lspserver.sendResponse(req, null, {})
+      return
+    endif
+
+    # Generate a list of strings from the action titles
+    var text: list<string> = []
+    var act: dict<any>
+    for i in actions->len()->range()
+      act = actions[i]
+      var t: string = act.title->substitute('\r\n', '\\r\\n', 'g')
+      t = t->substitute('\n', '\\n', 'g')
+      text->add(printf(" %d. %s ", i + 1, t))
+    endfor
+
+    # Ask the user to choose one of the actions
+    var choice: number = inputlist([params.message] + text)
+    if choice < 1 || choice > text->len()
+      lspserver.sendResponse(req, null, {})
+      return
+    endif
+    lspserver.sendResponse(req, actions[choice - 1], {})
+  else
+    # No actions in the message. Simply display the message.
+    ProcessShowMsgNotif(lspserver, req)
+    lspserver.sendResponse(req, null, {})
+  endif
 enddef
 
 # process the client/registerCapability LSP server request

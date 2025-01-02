@@ -355,7 +355,7 @@ def SendAleDiags(bnr: number, timerid: number)
              col: util.GetLineByteFromPos(bnr, v.range.start) + 1,
              end_lnum: v.range.end.line + 1,
              end_col: util.GetLineByteFromPos(bnr, v.range.end) + 1,
-             type: "EWIH"[v.severity - 1]}
+             type: "EWIH"[get(v, "severity", 3) - 1]}
     })
   )
 enddef
@@ -892,6 +892,15 @@ export def DiagsHighlightDisable()
       RemoveDiagVisualsForBuffer(binfo.bufnr)
     endif
   endfor
+enddef
+
+# Toggle the LSP diagnostics highlighting in all the buffers
+export def DiagsHighlightToggle()
+  if opt.lspOptions.autoHighlightDiags
+    DiagsHighlightDisable()
+  else
+    DiagsHighlightEnable()
+  endif
 enddef
 
 # Some options are changed.  If 'autoHighlightDiags' option is changed, then

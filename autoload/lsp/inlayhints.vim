@@ -222,6 +222,15 @@ export def InlayHintsDisable()
   save_showInlayHints = false
 enddef
 
+# Toggle (enable or disable) inlay hints.
+export def InlayHintsToggle()
+  if opt.lspOptions.showInlayHints
+    InlayHintsDisable()
+  else
+    InlayHintsEnable()
+  endif
+enddef
+
 # Some options are changed.  If 'showInlayHints' option is changed, then
 # either enable or disable inlay hints.
 export def LspInlayHintsOptionsChanged()

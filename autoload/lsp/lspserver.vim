@@ -132,8 +132,8 @@ def ServerInitReply(lspserver: dict<any>, initResult: dict<any>): void
     exe $'doautocmd <nomodeline> User LspServerReady{lspserver.name}'
   endif
   # Used internally, and shouldn't be used by users
-  if exists($'#User#LspServerReady_{lspserver.id}')
-    exe $'doautocmd <nomodeline> User LspServerReady_{lspserver.id}'
+  if exists($'#LSPBufferAutocmds#User#LspServerReady_{lspserver.id}')
+    exe $'doautocmd <nomodeline> LSPBufferAutocmds User LspServerReady_{lspserver.id}'
   endif
 
   # set the server debug trace level
@@ -326,11 +326,9 @@ enddef
 
 # send a response message to the server
 def SendResponse(lspserver: dict<any>, request: dict<any>, result: any, error: dict<any>)
-  if (request.id->type() == v:t_string
-	&& (request.id->trim() =~ '[^[:digit:]]\+'
-	    || request.id->trim()->empty()))
+  if (request.id->type() == v:t_string && request.id->trim()->empty())
     || (request.id->type() != v:t_string && request.id->type() != v:t_number)
-    util.ErrMsg('request.id of response to LSP server is not a correct number')
+    util.ErrMsg('request.id of response to LSP server must be a number or a string')
     return
   endif
   var resp: dict<any> = lspserver.createResponse(
@@ -614,50 +612,55 @@ def TextdocDidChange(lspserver: dict<any>, bnr: number, start: number,
   # Notification: 'textDocument/didChange'
   # Params: DidChangeTextDocumentParams
 
-  if lspserver.textDocumentSync->type() == v:t_number
-    var changeset: list<dict<any>>
-    var params = {
-      textDocument: {
+  # var changeset: list<dict<any>>
+
+  ##### FIXME: Sending specific buffer changes to the LSP server doesn't
+  ##### work properly as the computed line range numbers is not correct.
+  ##### For now, send the entire buffer content to LSP server.
+  # #     Range
+  # for change in changes
+  #   var lines: string
+  #   var start_lnum: number
+  #   var end_lnum: number
+  #   var start_col: number
+  #   var end_col: number
+  #   if change.added == 0
+  #     # lines changed
+  #     start_lnum =  change.lnum - 1
+  #     end_lnum = change.end - 1
+  #     lines = getbufline(bnr, change.lnum, change.end - 1)->join("\n") .. "\n"
+  #     start_col = 0
+  #     end_col = 0
+  #   elseif change.added > 0
+  #     # lines added
+  #     start_lnum = change.lnum - 1
+  #     end_lnum = change.lnum - 1
+  #     start_col = 0
+  #     end_col = 0
+  #     lines = getbufline(bnr, change.lnum, change.lnum + change.added - 1)->join("\n") .. "\n"
+  #   else
+  #     # lines removed
+  #     start_lnum = change.lnum - 1
+  #     end_lnum = change.lnum + (-change.added) - 1
+  #     start_col = 0
+  #     end_col = 0
+  #     lines = ''
+  #   endif
+  #   var range: dict<dict<number>> = {'start': {'line': start_lnum, 'character': start_col}, 'end': {'line': end_lnum, 'character': end_col}}
+  #   changeset->add({'range': range, 'text': lines})
+  # endfor
+
+  var params = {
+    textDocument: {
       uri: util.LspBufnrToUri(bnr),
       # Use Vim 'changedtick' as the LSP document version number
       version: bnr->getbufvar('changedtick')
     },
-      contentChanges: changeset
-    }
-
-    if lspserver.textDocumentSync == 1 || 
-        ( start == 0 && end == 0 && added == 0 )
-      changeset = [{
-       text: bnr->getbufline(1, '$')->join("\n") .. "\n"
-      }]
-    endif
-    
-    if lspserver.textDocumentSync == 2 &&
-        !(start == 0 && end == 0 && added == 0)
-      if changes->len() > 1
-        # As of now, only single line changes are incrementaly synced. 
-        # This is because multi line changes seems to have edge cases in
-        # in how they should be interpeted. At least we'll see some
-        # performance gains
-        changeset = [{
-         text: bnr->getbufline(1, '$')->join("\n") .. "\n"
-        }]
-      else
-        for c in changes 
-          var lines = getbufline(bnr, c.lnum, c.end - 1 + c.added)
-          var text = lines->len() > 0 ? lines->join("\n") .. "\n" : ''
-          changeset->add({range: { start: { line: c.lnum - 1, character: 0 },
-                                   end: { line: c.end - 1, character: 0 }},
-                          text: text })
-        endfor
-      endif
-    endif
-
-    params.contentChanges = changeset
-    if lspserver.textDocumentSync != 0
-      lspserver.sendNotification('textDocument/didChange', params)
-    endif
-  endif
+    contentChanges: [
+      {text: bnr->getbufline(1, '$')->join("\n") .. "\n"}
+    ]
+  }
+  lspserver.sendNotification('textDocument/didChange', params)
 enddef
 
 # Return the current cursor position as a LSP position.
@@ -1705,6 +1708,9 @@ def FoldRange(lspserver: dict<any>, fname: string)
     return
   endif
 
+  # Remove all the current folds
+  :normal! zE
+
   # interface FoldingRangeParams
   # interface TextDocumentIdentifier
   var params = {textDocument: {uri: util.LspFileToUri(fname)}}
@@ -1715,13 +1721,14 @@ def FoldRange(lspserver: dict<any>, fname: string)
 
   # result: FoldingRange[]
   var end_lnum: number
-  var last_lnum: number = line('$')
   for foldRange in reply.result
+    var start_lnum = foldRange.startLine + 1
     end_lnum = foldRange.endLine + 1
-    if end_lnum < foldRange.startLine + 2
-      end_lnum = foldRange.startLine + 2
+
+    if end_lnum < start_lnum
+      end_lnum = start_lnum
     endif
-    exe $':{foldRange.startLine + 2}, {end_lnum}fold'
+    exe $':{start_lnum}, {end_lnum}fold'
     # Open all the folds, otherwise the subsequently created folds are not
     # correct.
     :silent! foldopen!

@@ -1548,8 +1548,11 @@ def g:Test_OmniComplete_AfterParen()
   redraw!
 
   cursor(4, 1)
+  var save_completeopt = &completeopt
+  set completeopt+=noselect,noinsert
   feedkeys("A\<C-X>\<C-O>\<C-Y>", 'xt')
   assert_equal('  printf(', getline('.'))
+  &completeopt = save_completeopt
   :%bw!
 enddef
 
@@ -1634,7 +1637,7 @@ def g:Test_LspDiagsSubcmd()
   feedkeys(":LspDiag \<C-A>\<CR>", 'xt')
   assert_equal('LspDiag first current here highlight last next nextWrap prev prevWrap show', @:)
   feedkeys(":LspDiag highlight \<C-A>\<CR>", 'xt')
-  assert_equal('LspDiag highlight enable disable', @:)
+  assert_equal('LspDiag highlight enable disable toggle', @:)
   assert_equal(['Error: :LspDiag - Unsupported argument "xyz"'],
 	       execute('LspDiag xyz')->split("\n"))
   assert_equal(['Error: :LspDiag - Unsupported argument "first xyz"'],
@@ -1761,6 +1764,28 @@ def g:Test_DiagSigns()
   g:LspOptionsSet({autoHighlightDiags: true})
   signs = sign_getplaced('%', {group: '*'})[0].signs
   assert_equal([1, 3], [signs->len(), signs[0].lnum])
+
+  :%bw!
+enddef
+
+def g:Test_DocumentSymbol()
+  :silent! edit Xdocsymbol.c
+  sleep 200m
+  var lines: list<string> =<< trim END
+    void DocSymFunc1(void)
+    {
+    }
+  END
+  setline(1, lines)
+  g:WaitForServerFileLoad(0)
+  redraw!
+
+  v:errmsg = ''
+  :LspDocumentSymbol
+  sleep 50m
+  feedkeys("x\<CR>", 'xt')
+  popup_clear()
+  assert_equal('', v:errmsg)
 
   :%bw!
 enddef

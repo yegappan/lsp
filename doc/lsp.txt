@@ -3,7 +3,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: Feb 13, 2024
+Last change: Sep 30, 2024
 
 ==============================================================================
 CONTENTS                                                     *lsp-contents*
@@ -85,6 +85,9 @@ The following commands are provided:
 :LspDiag highlight enable
 			Enable highlighting lines with a diagnostic message
 			for the current Vim session.
+:LspDiag highlight toggle
+			Toggle highlighting lines with a diagnostic message
+			for the current Vim session.
 :LspDiag last		Jump to the last diagnostic message for the current
 			buffer.
 :LspDiag next		Jump to the next diagnostic message for the current
@@ -94,9 +97,9 @@ The following commands are provided:
 			Wrap back to the first message when no more messages
 			are found.
 :LspDiag prev		Jump to the previous diagnostic message for the
-			current buffer before the current current position.
+			current buffer before the current cursor position.
 :LspDiag prevWrap	Jump to the previous diagnostic message for the
-			current buffer before the current current position.
+			current buffer before the current cursor position.
 			Wrap back to the last message when no previous
 			messages are found.
 :LspDiag show		Display the diagnostics messages from the language
@@ -117,7 +120,7 @@ The following commands are provided:
 			in a popup window.
 :LspIncomingCalls	Display the list of symbols calling the current symbol
 			in a window.
-:LspInlayHints		Enable or disable inlay hints.
+:LspInlayHints		Enable or disable or toggle inlay hints.
 :LspOutgoingCalls	Display the list of symbols called by the current
 			symbol in a window.
 :LspOutline		Show the list of symbols defined in the current file
@@ -757,6 +760,11 @@ can map these commands to keys and make it easier to invoke them.
 			for the current Vim session.  Note that highlighting
 			lines with a diagnostic message is enabled by default.
 
+:LspDiag highlight toggle			*:LspDiag-highlight-toggle*
+			Toggle (enable or disable) highlighting lines with a
+			diagnostic message for the current Vim session in all
+			the buffers.
+
 						*:LspDiag-last*
 :LspDiag last		Jumps to the location of the first diagnostic message
 			for the current file.
@@ -815,7 +823,8 @@ can map these commands to keys and make it easier to invoke them.
 			current buffer are used when format is applied.
 
 :{range}LspFormat	Format the specified range of lines in the current
-			file using the language server.
+			file using the language server. Map <plug>(LspFormat)
+			in normal mode to operate on text objects.
 
 						*:LspGotoDeclaration*
 :[count]LspGotoDeclaration
@@ -936,11 +945,13 @@ can map these commands to keys and make it easier to invoke them.
 			not all the language servers support this feature.
 
 						*:LspInlayHints*
-:LspInlayHints		Enable or disable inlay hints.  Supports the "enable"
-			and "disable" arguments.  When "enable" is specified,
-			enables the inlay hints for all the buffers with a
-			language server that supports inlay hints.  When
-			"disable" is specified, disables the inlay hints.
+:LspInlayHints		Enable or disable inlay hints.  Supports the "enable",
+			"disable" and "toggle" arguments.  When "enable" is
+			specified, enables the inlay hints for all the buffers
+			with a language server that supports inlay hints.
+			When "disable" is specified, disables the inlay hints.
+			When "toggle" is specified, either enables or disables
+			the inlay hints.
 
 						*:LspOutoingCalls*
 :LspOutgoingCalls	Display a hierarchy of symbols called by the symbol
@@ -999,8 +1010,7 @@ can map these commands to keys and make it easier to invoke them.
 :[count]LspPeekDefinition
 			Displays the line where the symbol under the cursor is
 			defined in a popup window. The symbol is highlighted
-			in the popup window. Moving the cursor or pressing
-			<Esc> will close the popup window.
+			in the popup window.
 			When more than one symbol is found all of them will be
 			shown.  The corresponding file for the symbol is
 			displayed in another popup window.  As the selection
@@ -1008,6 +1018,24 @@ can map these commands to keys and make it easier to invoke them.
 			popup is updated.
 			When [count] is provided only the [count] symbol will
 			be shown.
+
+						*lsp-symbol-window*
+			Moving the cursor or pressing <Esc> will close the
+			popup window.  In the popup window, the following keys
+			can be used:
+
+				CTRL-F     - Scroll one page forward
+				<PageDown> - idem
+				CTRL-B     - Scroll one page backward
+				<PageUp>   - idem
+				CTRL-Home  - Jump to the first entry
+				CTRL-End   - Jump to the last entry
+				<Esc>      - Close the popup window
+				CTRL-C     - idem
+				CTRL-E     - Scroll one line forward
+				CTRL-D     - Scroll half page forward
+				CTRL-Y     - Scroll one line backward
+				CTRL-U     - Scroll half page backward
 
 						*:LspPeekImpl*
 :[count]LspPeekImpl	Displays the implementation of the symbol under the
@@ -1455,7 +1483,8 @@ diagnostic message:
 If you wish to temporarily disable the automatic diagnostic highlighting for
 the current Vim session, you can achieve this using the ":LspDiag highlight
 disable" command.  When you want to re-enable the highlighting, you can use
-the ":LspDiag highlight enable" command.
+the ":LspDiag highlight enable" command.  To toggle the highlighting, you can
+use the ":LspDiag highlight toggle" command.
 
 To permanently disable the automatic highlighting of diagnostics, you can set
 the "autoHighlightDiags" option to |v:false| in your .vimrc file.  This
@@ -1976,7 +2005,7 @@ workspaceSymbol			Used by the |:LspSymbolSearch| command.
 ==============================================================================
 						*lsp-license*
 License: MIT License
-Copyright (c) 2020-2023 Yegappan Lakshmanan
+Copyright (c) 2020-2024 Yegappan Lakshmanan
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to
