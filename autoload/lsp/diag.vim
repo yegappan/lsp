@@ -281,10 +281,11 @@ export def DiagsRefresh(bnr: number, all: bool = false)
     var d_start = d_range.start
     var d_end = d_range.end
     var lnum = d_start.line + 1
+    const d_severity = diag->get('severity', 1)
     if lspOpts.showDiagWithSign
       signs->add({id: 0, buffer: bnr, group: 'LSPDiag',
-		  lnum: lnum, name: DiagSevToSignName(diag.severity),
-		  priority: 10 - diag.severity})
+		  lnum: lnum, name: DiagSevToSignName(d_severity),
+		  priority: 10 - d_severity})
     endif
 
     try
@@ -293,7 +294,7 @@ export def DiagsRefresh(bnr: number, all: bool = false)
 	  lnum, util.GetLineByteFromPos(bnr, d_start) + 1,
 	  d_end.line + 1, util.GetLineByteFromPos(bnr, d_end) + 1
 	]
-	inlineHLprops[diag.severity]->add(propLocation)
+	inlineHLprops[d_severity]->add(propLocation)
       endif
 
       if lspOpts.showDiagWithVirtualText
@@ -302,7 +303,7 @@ export def DiagsRefresh(bnr: number, all: bool = false)
 
         if diag_align == 'after'
           padding = 3
-          symbol = DiagSevToSymbolText(diag.severity)
+          symbol = DiagSevToSymbolText(d_severity)
         else
 	  var charIdx = util.GetCharIdxWithoutCompChar(bnr, d_start)
           padding = charIdx
@@ -312,7 +313,7 @@ export def DiagsRefresh(bnr: number, all: bool = false)
         endif
 
         prop_add(lnum, 0, {bufnr: bnr,
-			   type: DiagSevToVirtualTextHLName(diag.severity),
+			   type: DiagSevToVirtualTextHLName(d_severity),
                            text: $'{symbol} {diag.message}',
                            text_align: diag_align,
                            text_wrap: diag_wrap,
@@ -355,7 +356,7 @@ def SendAleDiags(bnr: number, timerid: number)
              col: util.GetLineByteFromPos(bnr, v.range.start) + 1,
              end_lnum: v.range.end.line + 1,
              end_col: util.GetLineByteFromPos(bnr, v.range.end) + 1,
-             type: "EWIH"[get(v, "severity", 3) - 1]}
+             type: "EWIH"[get(v, "severity", 1) - 1]}
     })
   )
 enddef
@@ -549,7 +550,7 @@ def DiagsUpdateLocList(bnr: number, calledByCmd: bool = false): bool
 		    end_lnum: d_end.line + 1,
                     end_col: util.GetLineByteFromPos(bnr, d_end) + 1,
 		    text: text,
-		    type: DiagSevToQfType(diag.severity)})
+		    type: DiagSevToQfType(diag->get('severity', 1))})
   endfor
 
   var op: string = ' '
