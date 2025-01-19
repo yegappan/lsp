@@ -172,10 +172,7 @@ def ProcessSemanticTokens(lspserver: dict<any>, bnr: number, tokens: list<number
     if !props->has_key(typeStr)
       props[typeStr] = []
     endif
-    props[typeStr]->add([
-	lnum, r.start.character + 1,
-	lnum, r.end.character + 1
-      ])
+    props[typeStr]->add([lnum, r.start.character + 1, lnum, r.end.character + 1])
 
     i += 5
   endwhile
@@ -220,8 +217,7 @@ export def UpdateTokens(lspserver: dict<any>, bnr: number, semTokens: dict<any>)
   # Apply the new text properties
   for tokenType in TokenTypeMap->keys()
     if props->has_key(tokenType)
-      prop_add_list({bufnr: bnr, type: TokenTypeMap[tokenType]},
-	props[tokenType])
+      prop_add_list({bufnr: bnr, type: TokenTypeMap[tokenType]}, props[tokenType])
     endif
   endfor
 enddef
