@@ -833,7 +833,7 @@ export def ShowReferences(peek: bool)
 enddef
 
 # send custom locations request
-def g:FindLocations(server_name: string, peek: bool, method: string, args: dict<any> = {})
+def g:LspFindLocations(server_name: string, peek: bool, method: string, args: dict<any> = {})
   var lspserver: dict<any> = buf.CurbufGetServerByName(server_name)
   if lspserver->empty()
     return
