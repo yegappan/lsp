@@ -833,9 +833,17 @@ export def ShowReferences(peek: bool)
 enddef
 
 # send custom locations request
-def g:FindLocations(peek: bool, method: string, args: dict<any> = {})
-  var lspserver: dict<any> = buf.CurbufGetServerChecked('references')
+def g:FindLocations(server_name: string, peek: bool, method: string, args: dict<any> = {})
+  var lspserver: dict<any> = buf.CurbufGetServerByName(server_name)
   if lspserver->empty()
+    return
+  endif
+  if !lspserver.running
+    util.ErrMsg($'Language server "{server_name}" is not running')
+    return
+  endif
+  if !lspserver.ready
+    util.ErrMsg($'Language server "{server_name}" is not ready')
     return
   endif
 

@@ -191,4 +191,15 @@ export def CurbufGetServerChecked(feature: string = null_string): dict<any>
   return lspserver
 enddef
 
+export def CurbufGetServerByName(name: string): dict<any>
+  var lspservers: list<dict<any>> = CurbufGetServers()
+
+  for lspserver in lspservers
+    if lspserver.name == name
+      return lspserver
+    endif
+  endfor
+  return {}
+enddef
+
 # vim: tabstop=8 shiftwidth=2 softtabstop=2
