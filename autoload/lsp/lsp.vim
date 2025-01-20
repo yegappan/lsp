@@ -832,6 +832,16 @@ export def ShowReferences(peek: bool)
   lspserver.showReferences(peek)
 enddef
 
+# send custom locations request
+def g:FindLocations(peek: bool, method: string, args: dict<any> = {})
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('references')
+  if lspserver->empty()
+    return
+  endif
+
+  lspserver.findLocations(peek, method, args)
+enddef
+
 # highlight all the places where a symbol is referenced
 def g:LspDocHighlight(bnr: number = bufnr(), cmdmods: string = '')
   var lspserver: dict<any> = buf.CurbufGetServerChecked('documentHighlight')

@@ -1006,6 +1006,29 @@ def ShowReferences(lspserver: dict<any>, peek: bool): void
   symbol.ShowLocations(lspserver, reply.result, peek, 'Symbol References')
 enddef
 
+# send custom locations request
+def FindLocations(lspserver: dict<any>, peek: bool, method: string, args: dict<any>): void
+  var param: dict<any>
+  param = lspserver.getTextDocPosition(true)->extend(args)
+  var reply = lspserver.rpc(method, param)
+
+  # Result: Location[] | null
+  if reply->empty() || reply.result->empty()
+    util.WarnMsg('No references found')
+    return
+  endif
+
+  if lspserver.needOffsetEncoding
+    # Decode the position encoding in all the reference locations
+    reply.result->map((_, loc) => {
+      lspserver.decodeLocation(loc)
+      return loc
+    })
+  endif
+
+  symbol.ShowLocations(lspserver, reply.result, peek, 'Symbol References')
+enddef
+
 # process the 'textDocument/documentHighlight' reply from the LSP server
 # Result: DocumentHighlight[] | null
 def DocHighlightReply(lspserver: dict<any>, docHighlightReply: any,
@@ -1948,6 +1971,7 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     didSaveFile: function(DidSaveFile, [lspserver]),
     hover: function(ShowHoverInfo, [lspserver]),
     showReferences: function(ShowReferences, [lspserver]),
+    findLocations: function(FindLocations, [lspserver]),
     docHighlight: function(DocHighlight, [lspserver]),
     getDocSymbols: function(GetDocSymbols, [lspserver]),
     textDocFormat: function(TextDocFormat, [lspserver]),
