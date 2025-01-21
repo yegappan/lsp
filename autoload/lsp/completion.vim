@@ -310,6 +310,26 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     endif  
 
     d.user_data = item
+
+    # Condense completion menu items to single words (plus kind)
+    # Move all additional details to the info popup
+    # Caveat: LazyDoc will override moved details!
+    if lspOpts.condensedCompletionMenu
+      const SEP = (s) => empty(s) ? "" : "\n- - -\n"
+      var infoText = ''
+      if d->has_key('abbr') && len(d.abbr) > len(d.word)
+        infoText ..= SEP(infoText) .. '    ' .. d.abbr
+        d.abbr = d.word
+      endif
+      if d->has_key('menu') && !empty(d.menu)
+        infoText ..= SEP(infoText) .. '    ' .. d.menu
+        d.menu = ''
+      endif
+      if !lspserver.completionLazyDoc && !empty(infoText)
+        d.info = infoText .. (d->has_key('info') ? SEP(infoText) .. d.info : '')
+      endif
+    endif
+
     completeItems->add(d)
   endfor
 

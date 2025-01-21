@@ -684,6 +684,12 @@ filterCompletionDuplicates |Boolean| option. If enabled, duplicate completion
 			items sent from the server will be filtered to only
 			include one instance of the duplicates. 
 
+						*lsp-opt-condensedCompletionMenu*
+condensedCompletionMenu |Boolean| option. If enabled, minimizes completion 
+			menu items to single (key-) words (plus kind).
+			Moves all additional details to info popup.
+			Caveat: LazyDoc will override moved details!
+
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file: >
 

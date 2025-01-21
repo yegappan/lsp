@@ -143,6 +143,9 @@ export var lspOptions: dict<any> = {
 
   # Filter duplicate completion items
   filterCompletionDuplicates: false,
+
+  # Condenses the completion menu items to single (key-)words (plus kind)
+  condensedCompletionMenu: false,
 }
 
 # set the LSP plugin options from the user provided option values
