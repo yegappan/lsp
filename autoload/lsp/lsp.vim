@@ -708,6 +708,11 @@ export def AddServer(serverList: list<dict<any>>)
       server.runUnlessSearch = []
     endif
 
+    if !server->has_key('syntaxAssociatedLSP') ||
+	server.syntaxAssociatedLSP->type() != v:t_list
+      server.syntaxAssociatedLSP = []
+    endif
+
     var lspserver: dict<any> = lserver.NewLspServer(server)
 
     var ftypes = server.filetype

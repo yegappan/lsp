@@ -13,6 +13,7 @@ endif
 g:loaded_lsp = true
 
 import '../autoload/lsp/options.vim'
+import '../autoload/lsp/util.vim'
 import autoload '../autoload/lsp/lsp.vim'
 
 # Set LSP plugin options from 'opts'.
@@ -120,6 +121,7 @@ command! -nargs=? -bar LspSymbolSearch lsp.SymbolSearch(<q-args>, <q-mods>)
 command! -nargs=1 -bar -complete=dir LspWorkspaceAddFolder lsp.AddWorkspaceFolder(<q-args>)
 command! -nargs=0 -bar LspWorkspaceListFolders lsp.ListWorkspaceFolders()
 command! -nargs=1 -bar -complete=dir LspWorkspaceRemoveFolder lsp.RemoveWorkspaceFolder(<q-args>)
+command! -nargs=0 -bar LspUtilGetCurrentSynStack echo util.ListSynstackNamesAtPoint(line('.'), col('.'))
 
 # Add the GUI menu entries
 if has('gui_running')
