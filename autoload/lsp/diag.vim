@@ -348,15 +348,18 @@ def SendAleDiags(bnr: number, timerid: number)
     return
   endif
 
+  var typeMap: list<string> = ['E', 'W', 'I']
+
   # Convert to Ale's diagnostics format (:h ale-loclist-format)
   ale#other_source#ShowResults(bnr, 'lsp',
     diagsMap[bnr].sortedDiagnostics->mapnew((_, v) => {
+     var severity = get(v, "severity", 1)
      return {text: v.message,
              lnum: v.range.start.line + 1,
              col: util.GetLineByteFromPos(bnr, v.range.start) + 1,
              end_lnum: v.range.end.line + 1,
-             end_col: util.GetLineByteFromPos(bnr, v.range.end) + 1,
-             type: "EWIH"[get(v, "severity", 1) - 1]}
+             end_col: util.GetLineByteFromPos(bnr, v.range.end),
+             type: typeMap[(severity > 3 ? 3 : severity) - 1]}
     })
   )
 enddef
