@@ -926,7 +926,7 @@ def ShowSignature(lspserver: dict<any>): void
 
   # interface SignatureHelpParams
   #   interface TextDocumentPositionParams
-  var params = lspserver.getTextDocPosition(false)
+  var params = lspserver.getTextDocPosition(true)
   lspserver.rpc_a('textDocument/signatureHelp', params,
 			signature.SignatureHelp)
 enddef
