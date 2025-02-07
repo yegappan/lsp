@@ -612,43 +612,33 @@ def TextdocDidChange(lspserver: dict<any>, bnr: number, start: number,
   # Notification: 'textDocument/didChange'
   # Params: DidChangeTextDocumentParams
 
-  # var changeset: list<dict<any>>
+  var changeset: list<dict<any>> = []
 
-  ##### FIXME: Sending specific buffer changes to the LSP server doesn't
-  ##### work properly as the computed line range numbers is not correct.
-  ##### For now, send the entire buffer content to LSP server.
-  # #     Range
-  # for change in changes
-  #   var lines: string
-  #   var start_lnum: number
-  #   var end_lnum: number
-  #   var start_col: number
-  #   var end_col: number
-  #   if change.added == 0
-  #     # lines changed
-  #     start_lnum =  change.lnum - 1
-  #     end_lnum = change.end - 1
-  #     lines = getbufline(bnr, change.lnum, change.end - 1)->join("\n") .. "\n"
-  #     start_col = 0
-  #     end_col = 0
-  #   elseif change.added > 0
-  #     # lines added
-  #     start_lnum = change.lnum - 1
-  #     end_lnum = change.lnum - 1
-  #     start_col = 0
-  #     end_col = 0
-  #     lines = getbufline(bnr, change.lnum, change.lnum + change.added - 1)->join("\n") .. "\n"
-  #   else
-  #     # lines removed
-  #     start_lnum = change.lnum - 1
-  #     end_lnum = change.lnum + (-change.added) - 1
-  #     start_col = 0
-  #     end_col = 0
-  #     lines = ''
-  #   endif
-  #   var range: dict<dict<number>> = {'start': {'line': start_lnum, 'character': start_col}, 'end': {'line': end_lnum, 'character': end_col}}
-  #   changeset->add({'range': range, 'text': lines})
-  # endfor
+  # Compute the ranges and prepare the changeset
+  for change in changes
+    var lines: string
+    var start_lnum: number = change.lnum - 1
+    var end_lnum: number = change.end - 1
+    var start_col: number = 0
+    var end_col: number = 0
+
+    if change.added == 0
+      # lines changed
+      lines = getbufline(bnr, change.lnum, change.end - 1)->join("\n") .. "\n"
+    elseif change.added > 0
+      # lines added
+      lines = getbufline(bnr, change.lnum, change.lnum + change.added - 1)->join("\n") .. "\n"
+    else
+      # lines removed
+      lines = ''
+    endif
+
+    var range: dict<dict<number>> = {
+      'start': {'line': start_lnum, 'character': start_col},
+      'end': {'line': end_lnum, 'character': end_col}
+    }
+    changeset->add({'range': range, 'text': lines})
+  endfor
 
   var params = {
     textDocument: {
@@ -656,9 +646,7 @@ def TextdocDidChange(lspserver: dict<any>, bnr: number, start: number,
       # Use Vim 'changedtick' as the LSP document version number
       version: bnr->getbufvar('changedtick')
     },
-    contentChanges: [
-      {text: bnr->getbufline(1, '$')->join("\n") .. "\n"}
-    ]
+    contentChanges: changeset
   }
   lspserver.sendNotification('textDocument/didChange', params)
 enddef
