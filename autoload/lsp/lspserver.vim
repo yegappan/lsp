@@ -630,6 +630,7 @@ def TextdocDidChange(lspserver: dict<any>, bnr: number, start: number,
       lines = getbufline(bnr, change.lnum, change.lnum + change.added - 1)->join("\n") .. "\n"
     else
       # lines removed
+      end_lnum = change.lnum + (-change.added) - 1
       lines = ''
     endif
 
