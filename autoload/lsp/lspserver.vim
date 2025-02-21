@@ -604,51 +604,109 @@ def TextdocDidClose(lspserver: dict<any>, bnr: number): void
   lspserver.sendNotification('textDocument/didClose', params)
 enddef
 
+# Compute character position in a line taking into account composing characters
+def GetCharPosition(line: string, bytePos: number): number
+  if bytePos <= 0
+    return 0
+  endif
+
+  # Use strcharpart to get substring up to bytePos
+  var substr = strpart(line, 0, bytePos)
+  # Count characters with skipcc=1 to handle composing chars separately
+  return strchars(substr, 1)
+enddef
+
+# Process line changes for incremental sync
+def ProcessIncrementalChanges(bnr: number, start: number,
+                             end: number, added: number): dict<any>
+  # Convert 1-based line numbers to 0-based for LSP
+  var startLnum = start - 1
+  var endLnum = end - 1
+
+  # Get start and end lines safely
+  var startLine = ''
+  var startLines = getbufline(bnr, start)
+  if !startLines->empty()
+    startLine = startLines[0]
+  endif
+
+  var endLine = ''
+  if end > 0
+    var endLines = getbufline(bnr, end)
+    if !endLines->empty()
+      endLine = endLines[0]
+    endif
+  endif
+
+  # Get full line content for changed range
+  var newText = getbufline(bnr, start, end + added - 1)->join("\n")
+  if len(newText) > 0
+    newText ..= "\n"  # Add trailing newline
+  endif
+
+  # Build LSP range
+  var changes = {
+    range: {
+      start: {
+        line: startLnum,
+        character: 0
+      },
+      end: {
+        line: endLnum,
+        character: len(endLine) > 0 ? GetCharPosition(endLine, len(endLine)) : 0
+      }
+    },
+    text: newText
+  }
+
+  return changes
+enddef
+
 # Send a file/document change notification to the language server.
 # Params: DidChangeTextDocumentParams
 def TextdocDidChange(lspserver: dict<any>, bnr: number, start: number,
-			end: number, added: number,
-			changes: list<dict<number>>): void
-  # Notification: 'textDocument/didChange'
-  # Params: DidChangeTextDocumentParams
-
-  var changeset: list<dict<any>> = []
-
-  # Compute the ranges and prepare the changeset
-  for change in changes
-    var lines: string
-    var start_lnum: number = change.lnum - 1
-    var end_lnum: number = change.end - 1
-    var start_col: number = 0
-    var end_col: number = 0
-
-    if change.added == 0
-      # lines changed
-      lines = getbufline(bnr, change.lnum, change.end - 1)->join("\n") .. "\n"
-    elseif change.added > 0
-      # lines added
-      lines = getbufline(bnr, change.lnum, change.lnum + change.added - 1)->join("\n") .. "\n"
-    else
-      # lines removed
-      end_lnum = change.lnum + (-change.added) - 1
-      lines = ''
+			    end: number, added: number, changes: list<dict<number>>): void
+  # Get sync kind from server capabilities
+  var syncKind = 1  # Full sync by default
+  if lspserver.caps->has_key('textDocumentSync')
+    if lspserver.caps.textDocumentSync->type() == v:t_number
+      syncKind = lspserver.caps.textDocumentSync
+    elseif lspserver.caps.textDocumentSync->type() == v:t_dict
+          && lspserver.caps.textDocumentSync->has_key('change')
+      syncKind = lspserver.caps.textDocumentSync.change
     endif
+  endif
 
-    var range: dict<dict<number>> = {
-      'start': {'line': start_lnum, 'character': start_col},
-      'end': {'line': end_lnum, 'character': end_col}
-    }
-    changeset->add({'range': range, 'text': lines})
-  endfor
-
+  # Build base params
   var params = {
     textDocument: {
       uri: util.LspBufnrToUri(bnr),
-      # Use Vim 'changedtick' as the LSP document version number
       version: bnr->getbufvar('changedtick')
     },
-    contentChanges: changeset
+    contentChanges: []
   }
+
+  # Handle different sync types
+  if syncKind == 1  # Full sync
+    params.contentChanges = [{
+      text: bnr->getbufline(1, '$')->join("\n") .. "\n"
+    }]
+  elseif syncKind == 2  # Incremental sync
+    var contentChanges: list<dict<any>> = []
+
+    for change in changes
+      var changeInfo = ProcessIncrementalChanges(
+        bnr, change.lnum, end, added
+      )
+      contentChanges->add(changeInfo)
+    endfor
+
+    params.contentChanges = contentChanges
+  else  # None - No sync needed
+    return
+  endif
+
+  # Send notification to server
   lspserver.sendNotification('textDocument/didChange', params)
 enddef
 
