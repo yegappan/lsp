@@ -92,7 +92,8 @@ call LspAddServer([#{
 	\  }])
 ```
 
-The above lines register the language servers for C/C++, Javascript/Typescript, Go and Rust file types.  Refer to the [Wiki](https://github.com/yegappan/lsp/wiki) page for various language server specific configuration.
+The above lines register the language servers for C/C++, Javascript/Typescript, Go and Rust file types. 
+Refer to [Configs.md](https://github.com/yegappan/lsp/blob/master/doc/configs.md) for various language server specific configuration.
 
 To register a LSP server, the following information is needed:
 
