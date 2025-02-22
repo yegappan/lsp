@@ -136,7 +136,7 @@ export def SignatureHelp(lspserver: dict<any>, sighelp: any): void
     # Close the previous signature popup and open a new one
     lspserver.signaturePopup->popup_close()
 
-    var popupID = text->popup_atcursor({padding: [0, 1, 0, 1], moved: [col('.') - 1, 9999999]})
+    var popupID = text->popup_atcursor({padding: [0, 1, 0, 1], moved: [col('.') - 1, 9999999], pos: 'botright'})
     var bnr: number = popupID->winbufnr()
     prop_type_add('signature', {bufnr: bnr, highlight: 'LspSigActiveParameter'})
     if hllen > 0
