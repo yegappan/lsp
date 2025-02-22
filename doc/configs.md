@@ -578,3 +578,30 @@ call LspAddServer([#{name: 'vscode-markdown-server',
                  \ }])
 ```
 
+## YAML Language Server
+**Language**: YAML
+
+**Home Page**: https://github.com/redhat-developer/yaml-language-server
+
+Sample code to add the YAML Language Server to the LSP plugin:
+```
+call LspAddServer([#{
+            \   name: 'yaml-language-server',
+            \   filetype: 'yaml',
+            \   path: '/usr/local/node_modules/.bin/yaml-language-server',
+            \   args: ['--stdio'],
+            \   workspaceConfig: #{
+            \       yaml: #{
+            \           schemas: {
+            \               "https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json" : [
+            \                   "**/*docker-compose*.yaml"
+            \               ],
+            \              "https://json.schemastore.org/chart.json": [
+            \                   "**helm/values*.yaml"
+            \               ]
+            \           }
+            \       }
+            \   }
+            \ }])
+```
+**Note**: The workspaceConfig `yaml.schemas` object is a key-value pair where the key is a link or path to a yaml schema and the value is an array of file path patterns to enforce the schema on. There can be any number of enforced schemas based on a user's need, but I have given examples based on enforcing the compose spec and adding helm chart suggestions for configuration.
