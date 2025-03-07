@@ -457,6 +457,20 @@ call LspAddServer([#{name: 'tsserver'
                  \ }])
 ```
 
+## Verible
+**Language**: Verilog/SystemVerilog
+
+**Home Page**: [https://github.com/chipsalliance/verible](https://github.com/chipsalliance/verible)
+
+Sample code to add the Vimscript language server to the LSP plugin:
+```
+call LspAddServer([#{name: 'verible',
+                 \   filetype: ['verilog', 'systemverilog'],
+                 \   path: 'verible-verilog-ls',
+                 \   args: ['']
+                 \ }])
+```
+
 ## Vimscript
 **Language**: Vimscript
 
