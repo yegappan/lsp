@@ -286,7 +286,7 @@ export def JumpToLspLocation(location: dict<any>, cmdmods: string)
             # if the current buffer has unsaved changes and 'hidden' is not set,
             # or if the current buffer is a special buffer, then open the file
             # in a new window
-            exe $'belowright split {fname}'
+            exe $'pedit {fname}'
           else
             exe $'edit {fname}'
           endif
