@@ -377,7 +377,7 @@ Additionally the following configurations can be made:
 			args: ['--stdio'],
 			processDiagHandler: (diags: list<dict<any>>) => {
 				# Only include errors and warnings
-				return diags->filter((diag, ix) => {
+				return diags->filter((ix, diag) => {
 					return diag.severity <= 2
 				})
 			},
@@ -392,7 +392,7 @@ Additionally the following configurations can be made:
 			path: '/usr/local/bin/typescript-language-server',
 			args: ['--stdio'],
 			processDiagHandler: (diags: list<dict<any>>) => {
-				return diags->map((diag, ix) => {
+				return diags->map((ix, diag) => {
 					diag.message = $'TypeScript: {diag.message}'
 					return diag
 				})
