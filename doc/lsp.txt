@@ -22,10 +22,11 @@ CONTENTS                                                     *lsp-contents*
     12. Highlight Groups ......................... |lsp-highlight-groups|
     13. Debugging ................................ |lsp-debug|
     14. Custom Command Handlers .................. |lsp-custom-commands|
-    15. Custom LSP Completion Kinds .............. |lsp-custom-kinds|
-    16. Multiple Language Servers for a buffer ... |lsp-multiple-servers|
-    17. Language Servers Features ................ |lsp-features|
-    18. License .................................. |lsp-license|
+    15. Custom Locations Request ................. |lsp-custom-locations|
+    16. Custom LSP Completion Kinds .............. |lsp-custom-kinds|
+    17. Multiple Language Servers for a buffer ... |lsp-multiple-servers|
+    18. Language Servers Features ................ |lsp-features|
+    19. License .................................. |lsp-license|
 
 ==============================================================================
 1. Overview					*lsp-overview*
@@ -1796,7 +1797,42 @@ contains the LSP Command interface fields.  Refer to the LSP specification for
 more information about the "Command" interface.
 
 ==============================================================================
-15. Custom LSP Completion Kinds			*lsp-custom-kinds*
+15. Custom Locations Request			*lsp-custom-locations*
+
+Language server may support non-standard locations request. To display the
+locations of the symbol under cursor, you can use the
+g:LspFindLocations(server_name, peek, method, args) function. "server_name" is
+then "name" you pass in LspAddServer(). "peek" is a boolean value. If true, it
+displays the list of locations in a popup menu, otherwise in a new locations
+list. It behaves like |:LspPeekReferences| and |:LspShowReferences| .
+For example: >
+
+    vim9script
+
+    g:LspAddServer([{
+	filetype: ["cpp"],
+	name: 'ccls',
+	path: '/usr/bin/ccls',
+    }])
+
+    autocmd Filetype cpp {
+	# x (xref)
+	# bases of up to 3 levels
+	nmap <buffer> <localleader>b <scriptcmd>g:LspFindLocations('ccls', false, "$ccls/inheritance", {})<cr>
+	nmap <buffer> <localleader>B <scriptcmd>g:LspFindLocations('ccls', false, "$ccls/inheritance", {"levels": 3})<cr>
+	# derived of up to 3 levels
+	nmap <buffer> <localleader>d <scriptcmd>g:LspFindLocations('ccls', false, "$ccls/inheritance", {"derived": v:true})<cr>
+	nmap <buffer> <localleader>D <scriptcmd>g:LspFindLocations('ccls', false, "$ccls/inheritance", {"derived": v:true, "levels": 3})<cr>
+	# caller
+	nmap <buffer> <localleader>c <scriptcmd>g:LspFindLocations('ccls', false, "$ccls/call")<cr>
+	# callee
+	nmap <buffer> <localleader>C <scriptcmd>g:LspFindLocations('ccls', false, "$ccls/call", {"callee": v:true})<cr>
+	# member
+	nmap <buffer> <localleader>m <scriptcmd>g:LspFindLocations('ccls', false, "$ccls/member")<cr>
+    }
+
+==============================================================================
+16. Custom LSP Completion Kinds			*lsp-custom-kinds*
 
 When a completion popup is triggered, the LSP client will use a default kind
 list to show in the completion "kind" section, to customize it, you need to
@@ -1854,7 +1890,7 @@ In the completion popup, will show something like this: >
 		| ...				 |
 <
 ==============================================================================
-16. Multiple Language Servers for a buffer	*lsp-multiple-servers*
+17. Multiple Language Servers for a buffer	*lsp-multiple-servers*
 
 It's possible to run multiple language servers for a given buffer.
 
@@ -1945,7 +1981,7 @@ everything else: >
 	])
 <
 ==============================================================================
-17. Language Server Features			*lsp-features*
+18. Language Server Features			*lsp-features*
 
 When using multiple language servers for a given file type, by providing the
 configuration |lsp-cfg-features| it is possible to specify which language

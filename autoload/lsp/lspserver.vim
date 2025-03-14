@@ -1014,7 +1014,7 @@ def FindLocations(lspserver: dict<any>, peek: bool, method: string, args: dict<a
 
   # Result: Location[] | null
   if reply->empty() || reply.result->empty()
-    util.WarnMsg('No references found')
+    util.WarnMsg('No location found')
     return
   endif
 
@@ -1026,7 +1026,7 @@ def FindLocations(lspserver: dict<any>, peek: bool, method: string, args: dict<a
     })
   endif
 
-  symbol.ShowLocations(lspserver, reply.result, peek, 'Symbol References')
+  symbol.ShowLocations(lspserver, reply.result, peek, 'Symbol Locations')
 enddef
 
 # process the 'textDocument/documentHighlight' reply from the LSP server
