@@ -179,6 +179,13 @@ export def GetLineByteFromPos(bnr: number, pos: dict<number>): number
     return byteIdx
   endif
 
+  # If byteIdx is -1
+  # If col was an invalid val
+  var byteLenMax = ltext->len()
+  if col > byteLenMax
+    return byteLenMax
+  endif
+
   return col
 enddef
 
