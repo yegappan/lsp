@@ -8,9 +8,14 @@ In some cases, it may be simpler to add the language server path to the PATH env
 
 If your preferred LSP is not found, then possibly it is listed at [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md) where its `Default config` section can be transferred by setting
 
-- `filetype:` here to the value of `Filetypes` there,
+- `filetype:` here to the array of values of `Filetypes` there,
 - `path` here to the first entry of `cmd`, and
 - `args` here to the subsequent entries of `cmd`.
+
+Additional entries include 
+
+- `rootSearch` here to the array of values `root_markers` there where each directory path needs to end with a slash, and
+- `settings` *there* to `initializationOptions.settings` here.
 
 ## Angular Language Server
 **Language**: [Angular Templates](https://en.wikipedia.org/wiki/Angular_(web_framework))
