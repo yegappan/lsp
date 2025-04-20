@@ -22,6 +22,8 @@ import './signature.vim'
 import './codeaction.vim'
 import './inlayhints.vim'
 import './semantichighlight.vim'
+import './hover.vim'
+import './typehierarchy.vim'
 
 # LSP server information
 var LSPServers: list<dict<any>> = []
@@ -46,10 +48,12 @@ def LspInitOnce()
   prop_type_add('LspWriteRef', {highlight: 'LspWriteRef', override: override})
 
   diag.InitOnce()
+  hover.InitOnce()
   inlayhints.InitOnce()
   signature.InitOnce()
   symbol.InitOnce()
   semantichighlight.InitOnce()
+  typehierarchy.InitOnce()
 
   lspInitializedOnce = true
 enddef

@@ -5,6 +5,26 @@ vim9script
 import './util.vim'
 import './options.vim' as opt
 
+export def InitOnce()
+  hlset([
+    {name: 'LspHoverPopup', default: true, guibg: 'NONE', ctermbg: 'NONE'},
+    {name: 'LspHoverPopupBorder', default: true, guibg: 'NONE', ctermbg: 'NONE'},
+  ])
+
+  if !exists('g:LspHoverPopupBorderhighlight')
+    g:LspHoverPopupBorderhighlight = ['LspHoverPopupBorder']
+  endif
+
+  if !exists('g:LspHoverPopupBorder')
+    g:LspHoverPopupBorder = []
+  endif
+
+  if !exists('g:LspHoverPopupBorderchars')
+    g:LspHoverPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
+  endif
+enddef
+
+
 # Util used to compute the hoverText from textDocument/hover reply
 def GetHoverText(lspserver: dict<any>, hoverResult: any): list<any>
   if hoverResult->empty()
@@ -127,8 +147,10 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string): 
 					   close: 'click',
 					   fixed: true,
 					   maxwidth: 80,
-					   border: [0, 1, 0, 1],
-					   borderchars: [' '],
+					   border: g:LspHoverPopupBorder,
+					   borderchars: g:LspHoverPopupBorderchars,
+					   borderhighlight: g:LspHoverPopupBorderhighlight,
+					   highlight: 'LspHoverPopup',
 					   filter: HoverWinFilterKey})
     win_execute(winid, $'setlocal ft={hoverKind}')
   endif
