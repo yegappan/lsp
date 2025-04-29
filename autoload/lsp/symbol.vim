@@ -16,7 +16,11 @@ export def InitOnce()
   # Use a high priority value to override other highlights in the line
   hlset([
     {name: 'LspSymbolName', default: true, linksto: 'Search'},
-    {name: 'LspSymbolRange', default: true, linksto: 'Visual'}
+    {name: 'LspSymbolRange', default: true, linksto: 'Visual'},
+    {name: 'LspPeekPopup', default: true, guibg: 'NONE', ctermbg: 'NONE'},
+    {name: 'LspPeekPopupBorder', default: true, guibg: 'NONE', ctermbg: 'NONE'},
+    {name: 'LspSymbolMenuPopup', default: true, guibg: 'NONE', ctermbg: 'NONE'},
+    {name: 'LspSymbolMenuPopupBorder', default: true, guibg: 'NONE', ctermbg: 'NONE'}
   ])
   prop_type_add('LspSymbolNameProp', {highlight: 'LspSymbolName',
 				       combine: false,
@@ -26,6 +30,30 @@ export def InitOnce()
 				       combine: false,
 				       override: true,
 				       priority: 200})
+
+  if !exists('g:LspPeekPopupBorderhighlight')
+    g:LspPeekPopupBorderhighlight = ['LspPeekPopupBorder']
+  endif
+
+  if !exists('g:LspPeekPopupBorder')
+    g:LspPeekPopupBorder = []
+  endif
+
+  if !exists('g:LspPeekPopupBorderchars')
+    g:LspPeekPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
+  endif
+
+  if !exists('g:LspSymbolMenuPopupBorderhighlight')
+    g:LspSymbolMenuPopupBorderhighlight = ['LspSymbolMenuPopupBorder']
+  endif
+
+  if !exists('g:LspSymbolMenuPopupBorder')
+    g:LspSymbolMenuPopupBorder = []
+  endif
+
+  if !exists('g:LspSymbolMenuPopupBorderchars')
+    g:LspSymbolMenuPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
+  endif
 enddef
 
 # Handle keys pressed when the workspace symbol popup menu is displayed
@@ -302,7 +330,10 @@ def UpdatePeekFilePopup(lspserver: dict<any>, locations: list<dict<any>>)
     minwidth: winwidth(0) - 38,
     maxwidth: winwidth(0) - 38,
     cursorline: true,
-    border: [],
+    border: g:LspPeekPopupBorder,
+    borderchars: g:LspPeekPopupBorderchars,
+    borderhighlight: g:LspPeekPopupBorderhighlight,
+    highlight: 'LspPeekPopup',
     mapping: false,
     line: 'cursor+1',
     col: 1
@@ -398,6 +429,10 @@ def PeekLocations(lspserver: dict<any>, locations: list<dict<any>>,
     minwidth: 30,
     maxwidth: 30,
     mapping: false,
+    border: g:LspPeekPopupBorder,
+    borderchars: g:LspPeekPopupBorderchars,
+    borderhighlight: g:LspPeekPopupBorderhighlight,
+    highlight: 'LspPeekPopup',
     fixed: true,
     filter: function(LocPopupFilter, [lspserver, locations]),
     callback: function(LocPopupCallback, [lspserver, locations])
@@ -507,7 +542,10 @@ def PeekSymbolLocation(lspserver: dict<any>, location: dict<any>)
     minwidth: 10,
     maxwidth: 60,
     cursorline: true,
-    border: [],
+    border: g:LspPeekPopupBorder,
+    borderchars: g:LspPeekPopupBorderchars,
+    borderhighlight: g:LspPeekPopupBorderhighlight,
+    highlight: 'LspPeekPopup',
     mapping: false,
     filter: CbFunc
   }
@@ -963,7 +1001,10 @@ def SymbolPopupMenu(symbolTable: list<dict<any>>)
     maxwidth: 60,
     fixed: 1,
     close: 'button',
-    border: []
+    border: g:LspSymbolMenuPopupBorder,
+    borderchars: g:LspSymbolMenuPopupBorderchars,
+    borderhighlight: g:LspSymbolMenuPopupBorderhighlight,
+    highlight: 'LspSymbolMenuPopup',
   }
   var symInputPopup = popup_create('', symInputPopupAttr)
 
@@ -977,7 +1018,10 @@ def SymbolPopupMenu(symbolTable: list<dict<any>>)
     maxheight: 10,
     maxwidth: 60,
     fixed: 1,
-    border: [0, 0, 0, 0],
+    border: g:LspSymbolMenuPopupBorder,
+    borderchars: g:LspSymbolMenuPopupBorderchars,
+    borderhighlight: g:LspSymbolMenuPopupBorderhighlight,
+    highlight: 'LspSymbolMenuPopup',
     callback: SymbolMenuItemSelected,
     filter: SymbolMenuFilterKey,
   }
