@@ -143,7 +143,10 @@ export def SignatureHelp(lspserver: dict<any>, sighelp: any): void
       padding: [0, 1, 0, 1],
       moved: [col('.') - 1, 9999999],
       pos: 'botright',
-      highlight: get(opt.lspOptions, 'popupHighlightSignatureHelp', 'LspPopupSignatureHelp')
+      highlight: get(opt.lspOptions, 'popupHighlightSignatureHelp',
+        opt.lspOptions.popupBorderSignatureHelp
+          ? 'Normal'
+          : 'LspPopupSignatureHelp')
     }
     if opt.lspOptions.popupBorderSignatureHelp
       popupAttrs.border = []

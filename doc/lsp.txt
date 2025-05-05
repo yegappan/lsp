@@ -1765,8 +1765,9 @@ override them.
 *LspPopupBorder*		Used to highlight popup borders.  By default,
 				linked to the "Normal" highlight group.
 *LspPopupSignatureHelp*		Used to highlight Signature Help popup contents.
-				By default, linked to the "Pmenu" highlight
-				group.
+				By default, linked to the "Normal" highlight
+				group when Signature Help popups have borders
+				enabled, and "Pmenu" when borders are disabled.
 *LspSigActiveParameter*		Used to highlight the active signature
 				parameter.  By default, linked to the "LineNr"
 				highlight group.
