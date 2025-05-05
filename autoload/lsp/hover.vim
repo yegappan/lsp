@@ -5,26 +5,6 @@ vim9script
 import './util.vim'
 import './options.vim' as opt
 
-export def InitOnce()
-  hlset([
-    {name: 'LspHoverPopup', default: true, guibg: 'NONE', ctermbg: 'NONE'},
-    {name: 'LspHoverPopupBorder', default: true, guibg: 'NONE', ctermbg: 'NONE'},
-  ])
-
-  if !exists('g:LspHoverPopupBorderhighlight')
-    g:LspHoverPopupBorderhighlight = ['LspHoverPopupBorder']
-  endif
-
-  if !exists('g:LspHoverPopupBorder')
-    g:LspHoverPopupBorder = []
-  endif
-
-  if !exists('g:LspHoverPopupBorderchars')
-    g:LspHoverPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
-  endif
-enddef
-
-
 # Util used to compute the hoverText from textDocument/hover reply
 def GetHoverText(lspserver: dict<any>, hoverResult: any): list<any>
   if hoverResult->empty()
@@ -143,15 +123,20 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string): 
     :wincmd p
   else
     popup_clear()
-    var winid = hoverText->popup_atcursor({moved: 'any',
-					   close: 'click',
-					   fixed: true,
-					   maxwidth: 80,
-					   border: g:LspHoverPopupBorder,
-					   borderchars: g:LspHoverPopupBorderchars,
-					   borderhighlight: g:LspHoverPopupBorderhighlight,
-					   highlight: 'LspHoverPopup',
-					   filter: HoverWinFilterKey})
+    var popupAttrs = {
+      moved: 'any',
+      close: 'click',
+      fixed: true,
+      maxwidth: 80,
+      highlight: get(opt.lspOptions, 'popupHighlightHover', opt.lspOptions.popupHighlight),
+      filter: HoverWinFilterKey
+    }
+    if get(opt.lspOptions, 'popupBorderHover', opt.lspOptions.popupBorder)
+      popupAttrs.border = []
+      popupAttrs.borderchars = opt.lspOptions.popupBorderChars
+      popupAttrs.borderhighlight = [get(opt.lspOptions, 'popupBorderHighlightHover', opt.lspOptions.popupBorderHighlight)]
+    endif
+    var winid = hoverText->popup_atcursor(popupAttrs)
     win_execute(winid, $'setlocal ft={hoverKind}')
   endif
 enddef

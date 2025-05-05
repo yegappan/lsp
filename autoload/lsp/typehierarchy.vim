@@ -5,25 +5,6 @@ vim9script
 import './util.vim'
 import './symbol.vim'
 
-export def InitOnce()
-  hlset([
-    {name: 'LspTypeHierarchyPopup', default: true, guibg: 'NONE', ctermbg: 'NONE'},
-    {name: 'LspTypeHierarchyPopupBorder', default: true, guibg: 'NONE', ctermbg: 'NONE'}
-  ])
-
-  if !exists('g:LspTypeHierarchyPopupBorderhighlight')
-    g:LspTypeHierarchyPopupBorderhighlight = ['LspTypeHierarchyPopupBorder']
-  endif
-
-  if !exists('g:LspTypeHierarchyPopupBorder')
-    g:LspTypeHierarchyPopupBorder = []
-  endif
-  if !exists('g:LspTypeHierarchyPopupBorderchars')
-    g:LspTypeHierarchyPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
-  endif
-enddef
-
-
 # Parse the type hierarchy in "typeHier" and displays a tree of type names
 # in the current buffer.  This function is called recursively to display the
 # super/sub type hierarchy.
@@ -99,13 +80,15 @@ def UpdateTypeHierFileInPopup(lspserver: dict<any>, typeUriMap: list<dict<any>>)
     minwidth: winwidth(0) - 38,
     maxwidth: winwidth(0) - 38,
     cursorline: true,
-    border: g:LspTypeHierarchyPopupBorder,
-    borderchars: g:LspTypeHierarchyPopupBorderchars,
-    borderhighlight: g:LspTypeHierarchyPopupBorderhighlight,
-    highlight: 'LspTypeHierarchyPopup',
+    highlight: get(opt.lspOptions, 'popupHighlightTypeHierarchy', opt.lspOptions.popupHighlight),
     line: 'cursor+1',
     col: 1
   }
+  if get(opt.lspOptions, 'popupBorderTypeHierarchy', opt.lspOptions.popupBorder)
+    popupAttrs.border = []
+    popupAttrs.borderchars = opt.lspOptions.popupBorderChars
+    popupAttrs.borderhighlight = [get(opt.lspOptions, 'popupBorderHighlightTypeHierarchy', opt.lspOptions.popupBorderHighlight)]
+  endif
   lspserver.typeHierFilePopup = popup_create(bnr, popupAttrs)
   var cmds =<< trim eval END
     [{typeUriMap[n].range.start.line + 1}, 1]->cursor()
