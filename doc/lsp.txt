@@ -631,17 +631,17 @@ popupBorderSignatureHelp		|Boolean| option. Default: false
 popupBorderHighlightSignatureHelp	|String| option.
 popupHighlightSignatureHelp		|String| option.
 
+						*lsp-opt-popup-SymbolMenu*
+			Override options for SymbolMenu popups:
+popupBorderSymbolMenu			|Boolean| option.
+popupBorderHighlightSymbolMenu		|String| option.
+popupHighlightSymbolMenu		|String| option.
+
 						*lsp-opt-popup-SymbolMenuInput*
 			Override options for SymbolMenuInput popups:
 popupBorderSymbolMenuInput		|Boolean| option.
 popupBorderHighlightSymbolMenuInput	|String| option.
 popupHighlightSymbolMenuInput		|String| option.
-
-						*lsp-opt-popup-SymbolMenuNames*
-			Override options for SymbolMenuNames popups:
-popupBorderSymbolMenuNames		|Boolean| option.
-popupBorderHighlightSymbolMenuNames	|String| option.
-popupHighlightSymbolMenuNames		|String| option.
 
 						*lsp-opt-popup-TypeHierarchy*
 			Override options for TypeHierarchy popups:
@@ -1959,14 +1959,14 @@ popup-type |lsp-options|: >
     #   - highlight: Pmenu
     # - Symbol menu input
     #   - border highlight: Title
-    # - Symbol menu names
+    # - Symbol menu
     #   - border highlight: Directory
     var lspOpts = {
       popupBorderHighlightHover: 'ModeMsg',
       popupBorderCompletion: false,
       popupHighlightCompletion: 'Pmenu',
       popupBorderHighlightSymbolMenuInput: 'Title',
-      popupBorderHighlightSymbolMenuNames: 'Directory'
+      popupBorderHighlightSymbolMenu: 'Directory'
     }
     autocmd User LspSetup LspOptionsSet(lspOpts)
 <

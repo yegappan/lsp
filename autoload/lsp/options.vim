@@ -111,12 +111,12 @@ export var lspOptions: dict<any> = {
   # popupHighlightPeek
   # popupBorderHighlightSignatureHelp
   # popupHighlightSignatureHelp
+  # popupBorderSymbolMenu
+  # popupBorderHighlightSymbolMenu
+  # popupHighlightSymbolMenu
   # popupBorderSymbolMenuInput
   # popupBorderHighlightSymbolMenuInput
   # popupHighlightSymbolMenuInput
-  # popupBorderSymbolMenuNames
-  # popupBorderHighlightSymbolMenuNames
-  # popupHighlightSymbolMenuNames
   # popupBorderTypeHierarchy
   # popupBorderHighlightTypeHierarchy
   # popupHighlightTypeHierarchy

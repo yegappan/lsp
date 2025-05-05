@@ -154,7 +154,7 @@ enddef
 def ShowSymbolMenu(lspserver: dict<any>, query: string, cmdmods: string)
   # Create the popup menu
   var lnum = &lines - &cmdheight - 2 - 10
-  var popupAttr = {
+  var popupAttrs = {
       title: 'Workspace Symbol Search',
       wrap: false,
       pos: 'topleft',
@@ -167,10 +167,16 @@ def ShowSymbolMenu(lspserver: dict<any>, query: string, cmdmods: string)
       mapping: false,
       fixed: 1,
       close: 'button',
+      highlight: get(opt.lspOptions, 'popupHighlightSymbolMenu', opt.lspOptions.popupHighlight),
       filter: function(FilterSymbols, [lspserver]),
       callback: function('JumpToWorkspaceSymbol', [cmdmods])
   }
-  lspserver.workspaceSymbolPopup = popup_menu([], popupAttr)
+  if get(opt.lspOptions, 'popupBorderSymbolMenu', opt.lspOptions.popupBorder)
+    popupAttrs.border = []
+    popupAttrs.borderchars = opt.lspOptions.popupBorderChars
+    popupAttrs.borderhighlight = [get(opt.lspOptions, 'popupBorderHighlightSymbolMenu', opt.lspOptions.popupBorderHighlight)]
+  endif
+  lspserver.workspaceSymbolPopup = popup_menu([], popupAttrs)
   lspserver.workspaceSymbolQuery = query
   prop_type_add('lspworkspacesymbol',
 			{bufnr: lspserver.workspaceSymbolPopup->winbufnr(),
@@ -998,14 +1004,14 @@ def SymbolPopupMenu(symbolTable: list<dict<any>>)
     maxheight: 10,
     maxwidth: 60,
     fixed: 1,
-    highlight: get(opt.lspOptions, 'popupHighlightSymbolMenuNames', opt.lspOptions.popupHighlight),
+    highlight: get(opt.lspOptions, 'popupHighlightSymbolMenu', opt.lspOptions.popupHighlight),
     callback: SymbolMenuItemSelected,
     filter: SymbolMenuFilterKey
   }
-  if get(opt.lspOptions, 'popupBorderSymbolMenuNames', opt.lspOptions.popupBorder)
+  if get(opt.lspOptions, 'popupBorderSymbolMenu', opt.lspOptions.popupBorder)
     symNamesPopupAttrs.border = []
     symNamesPopupAttrs.borderchars = opt.lspOptions.popupBorderChars
-    symNamesPopupAttrs.borderhighlight = [get(opt.lspOptions, 'popupBorderHighlightSymbolMenuNames', opt.lspOptions.popupBorderHighlight)]
+    symNamesPopupAttrs.borderhighlight = [get(opt.lspOptions, 'popupBorderHighlightSymbolMenu', opt.lspOptions.popupBorderHighlight)]
   endif
   var symPopupMenu = popup_menu(symNames, symNamesPopupAttrs)
 
