@@ -1861,27 +1861,39 @@ The plugin provides the possibility to style popups according to one's liking.
 
 The following default options and highlight groups are provided: >
 
+	highlight LspCompletionPopup guibg=NONE ctermbg=NONE
+	highlight LspCompletionPopupBorder guibg=NONE ctermbg=NONE
+	let g:LspCompletionPopupBorderhighlight = ['LspCompletionPopupBorder']
+	let g:LspCompletionPopupBorder = []
+	let g:LspCompletionPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
+
 	highlight LspHoverPopup guibg=NONE ctermbg=NONE
 	highlight LspHoverPopupBorder guibg=NONE ctermbg=NONE
-	let g:LspHoverPopupBorderhighlight = ['LspHoverPopupBorder]
+	let g:LspHoverPopupBorderhighlight = ['LspHoverPopupBorder']
 	let g:LspHoverPopupBorder = []
 	let g:LspHoverPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
-	
+
 	highlight LspPeekPopup guibg=NONE ctermbg=NONE
 	highlight LspPeekPopupBorder guibg=NONE ctermbg=NONE
-	let g:LspPeekPopupBorderhighlight = ['LspPeekPopupBorder]
+	let g:LspPeekPopupBorderhighlight = ['LspPeekPopupBorder']
 	let g:LspPeekPopupBorder = []
 	let g:LspPeekPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
-	
+
 	highlight LspSymbolMenuPopup guibg=NONE ctermbg=NONE
 	highlight LspSymbolMenuPopupBorder guibg=NONE ctermbg=NONE
-	let g:LspSymbolMenuPopupBorderhighlight = ['LspSymbolMenuPopupBorder]
+	let g:LspSymbolMenuPopupBorderhighlight = ['LspSymbolMenuPopupBorder']
 	let g:LspSymbolMenuPopupBorder = []
 	let g:LspSymbolMenuPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
-	
+
+	highlight link LspSignatureHelpPopup Pmenu
+	highlight LspSignatureHelpPopupBorder guibg=NONE ctermbg=NONE
+	let g:LspSignatureHelpPopupBorderhighlight = ['LspSignatureHelpPopupBorder']
+	let g:LspSignatureHelpPopupBorder = [0, 0, 0, 0]
+	let g:LspSignatureHelpPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
+
 	highlight LspTypeHierarchyPopup guibg=NONE ctermbg=NONE
 	highlight LspTypeHierarchyPopupBorder guibg=NONE ctermbg=NONE
-	let g:LspTyperHierarchyPopupBorderhighlight = ['LspTyperHierarchyPopupBorder]
+	let g:LspTypeHierarchyPopupBorderhighlight = ['LspTyperHierarchyPopupBorder']
 	let g:LspTypeHierarchyPopupBorder = []
 	let g:LspTypeHierarchyPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
 <

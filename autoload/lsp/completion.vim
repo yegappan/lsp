@@ -41,6 +41,23 @@ var defaultKinds: dict<string> = {
   'Buffer':         'B',
 }
 
+export def InitOnce()
+  hlset([
+    {name: 'LspCompletionPopup', default: true, guibg: 'NONE', ctermbg: 'NONE'},
+    {name: 'LspCompletionPopupBorder', default: true, guibg: 'NONE', ctermbg: 'NONE'}
+  ])
+
+  if !exists('g:LspCompletionPopupBorderhighlight')
+    g:LspCompletionPopupBorderhighlight = ['LspCompletionPopupBorder']
+  endif
+  if !exists('g:LspCompletionPopupBorder')
+    g:LspCompletionPopupBorder = []
+  endif
+  if !exists('g:LspCompletionPopupBorderchars')
+    g:LspCompletionPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
+  endif
+enddef
+
 # Returns true if omni-completion is enabled for filetype "ftype".
 # Otherwise, returns false.
 def LspOmniComplEnabled(ftype: string): bool
@@ -441,6 +458,12 @@ def ShowCompletionDocumentation(cItem: any)
     var bufnr = id->winbufnr()
     id->popup_settext(infoText)
     infoKind->setbufvar(bufnr, '&ft')
+    id->popup_setoptions({
+      border: g:LspCompletionPopupBorder,
+      borderchars: g:LspCompletionPopupBorderchars,
+      borderhighlight: g:LspCompletionPopupBorderhighlight,
+      highlight: 'LspCompletionPopup'
+    })
     id->popup_show()
   else
     # &omnifunc with &completeopt =~ 'preview'
