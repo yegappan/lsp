@@ -2,6 +2,7 @@ vim9script
 
 # Functions for dealing with type hierarchy (super types/sub types)
 
+import './options.vim' as opt
 import './util.vim'
 import './symbol.vim'
 
@@ -169,13 +170,15 @@ export def ShowTypeHierarchy(lspserver: dict<any>, isSuper: bool, types: dict<an
       maxwidth: 30,
       mapping: false,
       fixed: true,
-      border: g:LspTypeHierarchyPopupBorder,
-      borderchars: g:LspTypeHierarchyPopupBorderchars,
-      borderhighlight: g:LspTypeHierarchyPopupBorderhighlight,
-      highlight: 'LspTypeHierarchyPopup',
+      highlight: get(opt.lspOptions, 'popupHighlightTypeHierarchy', opt.lspOptions.popupHighlight),
       filter: function(TypeHierPopupFilter, [lspserver, typeUriMap]),
       callback: function(TypeHierPopupCallback, [lspserver, typeUriMap])
-    }
+  }
+  if get(opt.lspOptions, 'popupBorderTypeHierarchy', opt.lspOptions.popupBorder)
+    popupAttrs.border = []
+    popupAttrs.borderchars = opt.lspOptions.popupBorderChars
+    popupAttrs.borderhighlight = [get(opt.lspOptions, 'popupBorderHighlightTypeHierarchy', opt.lspOptions.popupBorderHighlight)]
+  endif
   lspserver.typeHierPopup = popup_menu(typeTree, popupAttrs)
   UpdateTypeHierFileInPopup(lspserver, typeUriMap)
 enddef
