@@ -626,7 +626,6 @@ def ShowDiagInPopup(diag: dict<any>)
     popupAttrs.borderchars = opt.lspOptions.popupBorderChars
     popupAttrs.borderhighlight = [get(opt.lspOptions, 'popupBorderHighlightDiag', opt.lspOptions.popupBorderHighlight)]
   endif
-  echom popupAttrs
 
   if msglen > &columns
     popupAttrs.wrap = true
