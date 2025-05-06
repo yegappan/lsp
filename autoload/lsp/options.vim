@@ -146,6 +146,9 @@ export var lspOptions: dict<any> = {
 
   # Condenses the completion menu items to single (key-)words (plus kind)
   condensedCompletionMenu: false,
+
+  # Ignore >ItemsIsIncomplete< messages from misbehaving servers:
+  ignoreCompleteItemsIsIncomplete: [],
 }
 
 # set the LSP plugin options from the user provided option values
