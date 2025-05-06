@@ -606,6 +606,23 @@ def LspResolve()
   endif
 enddef
 
+# Configure the non-lazy documentation popup
+def LspCompleteConfigurePopup()
+  var id = popup_findinfo()
+  if id == 0
+    return
+  endif
+  var popupAttrs = {
+    highlight: get(opt.lspOptions, 'popupHighlightCompletion', opt.lspOptions.popupHighlight)
+  }
+  if get(opt.lspOptions, 'popupBorderCompletion', opt.lspOptions.popupBorder)
+    popupAttrs.border = []
+    popupAttrs.borderchars = opt.lspOptions.popupBorderChars
+    popupAttrs.borderhighlight = [get(opt.lspOptions, 'popupBorderHighlightCompletion', opt.lspOptions.popupBorderHighlight)]
+  endif
+  id->popup_setoptions(popupAttrs)
+enddef
+
 # If the completion popup documentation window displays "markdown" content,
 # then set the 'filetype' to "lspgfm".
 def LspSetPopupFileType()
@@ -709,6 +726,13 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
                 event: 'CompleteChanged',
                 group: 'LSPBufferAutocmds',
                 cmd: 'LspResolve()'})
+  else
+    # The documentation popup content is provided already but we still need to
+    # style the popup
+    acmds->add({bufnr: bnr,
+                event: 'CompleteChanged',
+                group: 'LSPBufferAutocmds',
+                cmd: 'LspCompleteConfigurePopup()'})
   endif
 
   acmds->add({bufnr: bnr,
