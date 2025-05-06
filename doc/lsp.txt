@@ -1906,6 +1906,12 @@ The following default options and highlight groups are provided: >
 	let g:LspTypeHierarchyPopupBorder = []
 	let g:LspTypeHierarchyPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
 <
+	highlight LspDiagMsgPopup guibg=NONE ctermbg=NONE
+	highlight LspDiagMsgPopupBorder guibg=NONE ctermbg=NONE
+	let g:LspDiagMsgPopupBorderhighlight = ['LspDiagMsgPopupBorder']
+	let g:LspDiagMsgPopupBorder = []
+	let g:LspDiagMsgPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
+
 Please refer to |popup_setoptions()| for more information.
 
 For styling the completion menu please refer to |hl-pmenu|.
