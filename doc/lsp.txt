@@ -613,6 +613,12 @@ popupBorderCompletion			|Boolean| option.
 popupBorderHighlightCompletion		|String| option.
 popupHighlightCompletion		|String| option.
 
+						*lsp-opt-popup-Diag*
+			Override options for Diagnostic popups:
+popupBorderDiag				|Boolean| option.
+popupBorderHighlightDiag		|String| option.
+popupHighlightDiag			|String| option.
+
 						*lsp-opt-popup-Hover*
 			Override options for Hover popups:
 popupBorderHover			|Boolean| option.

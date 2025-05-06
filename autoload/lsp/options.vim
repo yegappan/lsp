@@ -103,6 +103,9 @@ export var lspOptions: dict<any> = {
   # popupBorderCompletion
   # popupBorderHighlightCompletion
   # popupHighlightCompletion
+  # popupBorderDiag
+  # popupBorderHighlightDiag
+  # popupHighlightDiag
   # popupBorderHover
   # popupBorderHighlightHover
   # popupHighlightHover
