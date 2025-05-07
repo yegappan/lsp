@@ -128,7 +128,8 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string): 
       close: 'click',
       fixed: true,
       maxwidth: 80,
-      filter: HoverWinFilterKey
+      filter: HoverWinFilterKey,
+      padding: [0, 1, 0, 1]
     })
     var winid = hoverText->popup_atcursor(popupAttrs)
     win_execute(winid, $'setlocal ft={hoverKind}')
