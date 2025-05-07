@@ -302,6 +302,7 @@ def UpdatePeekFilePopup(lspserver: dict<any>, locations: list<dict<any>>)
     minwidth: winwidth(0) - 38,
     maxwidth: winwidth(0) - 38,
     cursorline: true,
+    border: [],
     mapping: false,
     line: 'cursor+1',
     col: 1
@@ -505,6 +506,7 @@ def PeekSymbolLocation(lspserver: dict<any>, location: dict<any>)
     minwidth: 10,
     maxwidth: 60,
     cursorline: true,
+    border: [],
     mapping: false,
     filter: CbFunc
   })
@@ -959,7 +961,8 @@ def SymbolPopupMenu(symbolTable: list<dict<any>>)
     maxheight: 1,
     maxwidth: 60,
     fixed: 1,
-    close: 'button'
+    close: 'button',
+    border: []
   })
   var symInputPopup = popup_create('', symInputPopupAttrs)
 
@@ -973,6 +976,7 @@ def SymbolPopupMenu(symbolTable: list<dict<any>>)
     maxheight: 10,
     maxwidth: 60,
     fixed: 1,
+    border: [0, 0, 0, 0],
     callback: SymbolMenuItemSelected,
     filter: SymbolMenuFilterKey
   })
