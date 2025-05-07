@@ -441,15 +441,7 @@ def ShowCompletionDocumentation(cItem: any)
     var bufnr = id->winbufnr()
     id->popup_settext(infoText)
     infoKind->setbufvar(bufnr, '&ft')
-    var popupAttrs = {
-      highlight: get(opt.lspOptions, 'popupHighlightCompletion', opt.lspOptions.popupHighlight)
-    }
-    if get(opt.lspOptions, 'popupBorderCompletion', opt.lspOptions.popupBorder)
-      popupAttrs.border = []
-      popupAttrs.borderchars = opt.lspOptions.popupBorderChars
-      popupAttrs.borderhighlight = [get(opt.lspOptions, 'popupBorderHighlightCompletion', opt.lspOptions.popupBorderHighlight)]
-    endif
-    id->popup_setoptions(popupAttrs)
+    id->popup_setoptions(opt.PopupConfigure('Completion', {}))
     id->popup_show()
   else
     # &omnifunc with &completeopt =~ 'preview'
@@ -612,15 +604,7 @@ def LspCompleteConfigurePopup()
   if id == 0
     return
   endif
-  var popupAttrs = {
-    highlight: get(opt.lspOptions, 'popupHighlightCompletion', opt.lspOptions.popupHighlight)
-  }
-  if get(opt.lspOptions, 'popupBorderCompletion', opt.lspOptions.popupBorder)
-    popupAttrs.border = []
-    popupAttrs.borderchars = opt.lspOptions.popupBorderChars
-    popupAttrs.borderhighlight = [get(opt.lspOptions, 'popupBorderHighlightCompletion', opt.lspOptions.popupBorderHighlight)]
-  endif
-  id->popup_setoptions(popupAttrs)
+  id->popup_setoptions(opt.PopupConfigure('Completion', {}))
 enddef
 
 # If the completion popup documentation window displays "markdown" content,

@@ -151,7 +151,10 @@ export def SignatureHelp(lspserver: dict<any>, sighelp: any): void
     if opt.lspOptions.popupBorderSignatureHelp
       popupAttrs.border = []
       popupAttrs.borderchars = opt.lspOptions.popupBorderChars
-      popupAttrs.borderhighlight = [get(opt.lspOptions, 'popupBorderHighlightSignatureHelp', opt.lspOptions.popupBorderHighlight)]
+      popupAttrs.borderhighlight = [
+        get(opt.lspOptions, 'popupBorderHighlightSignatureHelp',
+          opt.lspOptions.popupBorderHighlight)
+      ]
     endif
     var popupID = text->popup_atcursor(popupAttrs)
     var bnr: number = popupID->winbufnr()

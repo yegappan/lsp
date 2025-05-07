@@ -615,17 +615,11 @@ def ShowDiagInPopup(diag: dict<any>)
   var msg = diag.message->split("\n")
   var msglen = msg->reduce((acc, val) => max([acc, val->strcharlen()]), 0)
 
-  var popupAttrs = {
+  var popupAttrs = opt.PopupConfigure('Diag', {
     pos: 'topleft',
     line: d.row + 1,
-    moved: 'any',
-    highlight: get(opt.lspOptions, 'popupHighlightDiag', opt.lspOptions.popupHighlight)
-  }
-  if get(opt.lspOptions, 'popupBorderDiag', opt.lspOptions.popupBorder)
-    popupAttrs.border = []
-    popupAttrs.borderchars = opt.lspOptions.popupBorderChars
-    popupAttrs.borderhighlight = [get(opt.lspOptions, 'popupBorderHighlightDiag', opt.lspOptions.popupBorderHighlight)]
-  endif
+    moved: 'any'
+  })
 
   if msglen > &columns
     popupAttrs.wrap = true

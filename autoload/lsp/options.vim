@@ -216,4 +216,24 @@ export def OptionsGet(): dict<any>
   return lspOptions->deepcopy()
 enddef
 
+def PopupOptionGet(type: string, optionName: string): any
+  return get(lspOptions,
+    optionName .. type,           # e.g. popupHighlightHover
+    get(lspOptions, optionName))  # e.g. popupHighlight
+enddef
+
+# Set generic configurable popup options. These may be overridden by popup type
+# if users have configured those options, e.g. popupHighlightHover will be used
+# as the highlight group for "Hover" type popups if configured, otherwise hover
+# popups will fall back to the standard popupHighlight option.
+export def PopupConfigure(type: string, popupAttrs: dict<any>): dict<any>
+  popupAttrs.highlight = PopupOptionGet(type, 'popupHighlight')
+  if PopupOptionGet(type, 'popupBorder')
+    popupAttrs.border = []
+    popupAttrs.borderchars = lspOptions.popupBorderChars
+    popupAttrs.borderhighlight = [PopupOptionGet(type, 'popupBorderHighlight')]
+  endif
+  return popupAttrs
+enddef
+
 # vim: tabstop=8 shiftwidth=2 softtabstop=2

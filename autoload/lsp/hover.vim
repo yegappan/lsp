@@ -123,19 +123,13 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string): 
     :wincmd p
   else
     popup_clear()
-    var popupAttrs = {
+    var popupAttrs = opt.PopupConfigure('Hover', {
       moved: 'any',
       close: 'click',
       fixed: true,
       maxwidth: 80,
-      highlight: get(opt.lspOptions, 'popupHighlightHover', opt.lspOptions.popupHighlight),
       filter: HoverWinFilterKey
-    }
-    if get(opt.lspOptions, 'popupBorderHover', opt.lspOptions.popupBorder)
-      popupAttrs.border = []
-      popupAttrs.borderchars = opt.lspOptions.popupBorderChars
-      popupAttrs.borderhighlight = [get(opt.lspOptions, 'popupBorderHighlightHover', opt.lspOptions.popupBorderHighlight)]
-    endif
+    })
     var winid = hoverText->popup_atcursor(popupAttrs)
     win_execute(winid, $'setlocal ft={hoverKind}')
   endif
