@@ -964,8 +964,6 @@ def SymbolPopupMenu(symbolTable: list<dict<any>>)
     close: 'button',
     border: []
   })
-  var symInputPopup = popup_create('', symInputPopupAttrs)
-
   var symNamesPopupAttrs = opt.PopupConfigure('SymbolMenu', {
     wrap: false,
     pos: 'topleft',
@@ -982,9 +980,12 @@ def SymbolPopupMenu(symbolTable: list<dict<any>>)
   })
   if symNamesPopupAttrs.border->empty()
     # The border has been added by popup configuration so we need to account for
-    # the extra width
+    # the extra width and height
     symNamesPopupAttrs.padding = [0, 0, 0, 0]
+    symNamesPopupAttrs.line -= 2
+    symInputPopupAttrs.line -= 2
   endif
+  var symInputPopup = popup_create('', symInputPopupAttrs)
   var symPopupMenu = popup_menu(symNames, symNamesPopupAttrs)
 
   # Save the state in the popup menu window variables
