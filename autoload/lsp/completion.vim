@@ -161,7 +161,11 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     items = cItems
   else
     items = cItems.items
-    lspserver.completeItemsIsIncomplete = cItems->get('isIncomplete', false)
+    if opt.lspOptions.ignoreCompleteItemsIsIncomplete->index(lspserver.name) >= 0
+      lspserver.completeItemsIsIncomplete = v:false
+    else
+      lspserver.completeItemsIsIncomplete = cItems->get('isIncomplete', false)
+    endif
   endif
 
   var lspOpts = opt.lspOptions
