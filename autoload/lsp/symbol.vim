@@ -980,6 +980,11 @@ def SymbolPopupMenu(symbolTable: list<dict<any>>)
     callback: SymbolMenuItemSelected,
     filter: SymbolMenuFilterKey
   })
+  if symNamesPopupAttrs.border->empty()
+    # The border has been added by popup configuration so we need to account for
+    # the extra width
+    symNamesPopupAttrs.padding = [0, 0, 0, 0]
+  endif
   var symPopupMenu = popup_menu(symNames, symNamesPopupAttrs)
 
   # Save the state in the popup menu window variables
