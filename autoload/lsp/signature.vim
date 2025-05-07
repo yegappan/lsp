@@ -38,10 +38,7 @@ def g:LspShowSignature(): string
 enddef
 
 export def InitOnce()
-  hlset([
-    {name: 'LspSigActiveParameter', default: true, linksto: 'LineNr'},
-    {name: 'LspPopupSignatureHelp', default: true, linksto: 'Pmenu'}
-  ])
+  hlset([{name: 'LspSigActiveParameter', default: true, linksto: 'LineNr'}])
 enddef
 
 # Initialize the signature triggers for the current buffer
@@ -139,23 +136,11 @@ export def SignatureHelp(lspserver: dict<any>, sighelp: any): void
     # Close the previous signature popup and open a new one
     lspserver.signaturePopup->popup_close()
 
-    var popupAttrs = {
+    var popupAttrs = opt.PopupConfigure('SignatureHelp', {
       padding: [0, 1, 0, 1],
       moved: [col('.') - 1, 9999999],
-      pos: 'botright',
-      highlight: get(opt.lspOptions, 'popupHighlightSignatureHelp',
-        opt.lspOptions.popupBorderSignatureHelp
-          ? 'Normal'
-          : 'LspPopupSignatureHelp')
-    }
-    if opt.lspOptions.popupBorderSignatureHelp
-      popupAttrs.border = []
-      popupAttrs.borderchars = opt.lspOptions.popupBorderChars
-      popupAttrs.borderhighlight = [
-        get(opt.lspOptions, 'popupBorderHighlightSignatureHelp',
-          opt.lspOptions.popupBorderHighlight)
-      ]
-    endif
+      pos: 'botright'
+    })
     var popupID = text->popup_atcursor(popupAttrs)
     var bnr: number = popupID->winbufnr()
     prop_type_add('signature', {bufnr: bnr, highlight: 'LspSigActiveParameter'})

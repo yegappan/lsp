@@ -33,8 +33,8 @@ var lspInitializedOnce = false
 
 def LspInitOnce()
   hlset([
-    {name: 'LspPopup', default: true, linksto: 'Normal'},
-    {name: 'LspPopupBorder', default: true, linksto: 'Normal'},
+    {name: 'LspPopup', default: true, linksto: 'Pmenu'},
+    {name: 'LspPopupBorder', default: true, linksto: 'Pmenu'},
     {name: 'LspTextRef', default: true, linksto: 'Search'},
     {name: 'LspReadRef', default: true, linksto: 'DiffChange'},
     {name: 'LspWriteRef', default: true, linksto: 'DiffDelete'}

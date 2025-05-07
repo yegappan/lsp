@@ -87,17 +87,13 @@ export var lspOptions: dict<any> = {
   # Outline window size
   outlineWinSize: 20,
 
-  popupBorder: true,
+  popupBorder: false,
 
   popupBorderChars: ['─', '│', '─', '│', '╭', '╮', '╯', '╰'],
 
   popupBorderHighlight: 'LspPopupBorder',
 
   popupHighlight: 'LspPopup',
-
-  # Most popup borders are "on" by default, but not the SignatureHelp border, as
-  # this is only a single line popup and takes up much more space when bordered
-  popupBorderSignatureHelp: false,
 
   # Optional overrideable popup options:
   # popupBorderCompletion
@@ -112,6 +108,7 @@ export var lspOptions: dict<any> = {
   # popupBorderPeek
   # popupBorderHighlightPeek
   # popupHighlightPeek
+  # popupBorderSignatureHelp
   # popupBorderHighlightSignatureHelp
   # popupHighlightSignatureHelp
   # popupBorderSymbolMenu

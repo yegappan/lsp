@@ -589,7 +589,7 @@ outlineWinSize		|Number| option.  The size of the symbol Outline
 
 						*lsp-opt-popupBorder*
 popupBorder		|Boolean| option.  Enables popup borders.
-			By default this is set to true.
+			By default this is set to false.
 
 						*lsp-opt-popupBorderChars*
 popupBorderChars	|List| option.  The characters used to draw the popup
@@ -1767,13 +1767,9 @@ override them.
 				By default, linked to the "Conceal" highlight
 				group.
 *LspPopup*			Used to highlight popup contents.  By default,
-				linked to the "Normal" highlight group.
+				linked to the "Pmenu" highlight group.
 *LspPopupBorder*		Used to highlight popup borders.  By default,
-				linked to the "Normal" highlight group.
-*LspPopupSignatureHelp*		Used to highlight Signature Help popup contents.
-				By default, linked to the "Normal" highlight
-				group when Signature Help popups have borders
-				enabled, and "Pmenu" when borders are disabled.
+				linked to the "Pmenu" highlight group.
 *LspSigActiveParameter*		Used to highlight the active signature
 				parameter.  By default, linked to the "LineNr"
 				highlight group.
@@ -1934,25 +1930,22 @@ In the completion popup, will show something like this: >
 16. Custom Popup Styles			*lsp-custom-popup-styles*
 
 The plugin provides the possibility to style popups according to one's liking.
-By default, all popups use a rounded border, with |hl-Normal| highlight and
-border highlight.
-
-The exception is the Signature Help popup, since it is only a single line.
-SignatureHelp popups default to having no border, and the
-LspPopupHighlightSignatureHelp highlight group links to |hl-Pmenu|.
+By default, popups do not have borders configured, and use the |hl-Pmenu|
+highlight group.
 
 To change the global popup styles, use the generic popup |lsp-options|: >
 
-    # Disable popup borders
-    autocmd User LspSetup LspOptionsSet({popupBorder: false})
+    # Enable popup borders
+    autocmd User LspSetup LspOptionsSet({popupBorder: true})
 
-    # Change popup border chars and highlights, and enable SignatureHelp borders
+    # Change popup border chars and highlights, and disable SignatureHelp border
     var lspOpts = {
+      popupBorder: true,
       popupBorderChars: ['-', '|', '-', '|', '┌', '┐', '┘', '└'],
       popupBorderHighlight: 'Identifier',
-      popupHighlight: 'Pmenu',
-      popupBorderSignatureHelp: true,
-      popupHighlightSignatureHelp: 'Normal'
+      popupHighlight: 'Normal',
+      popupBorderSignatureHelp: false
+      popupHighlightSignatureHelp: 'Pmenu'
     }
     autocmd User LspSetup LspOptionsSet(lspOpts)
 >
@@ -1969,6 +1962,7 @@ popup-type |lsp-options|: >
     # - Symbol menu
     #   - border highlight: Directory
     var lspOpts = {
+      popupBorder: true,
       popupBorderHighlightHover: 'ModeMsg',
       popupBorderCompletion: false,
       popupHighlightCompletion: 'Pmenu',
