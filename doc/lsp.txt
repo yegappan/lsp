@@ -587,6 +587,74 @@ outlineOnRight		|Boolean| option.  Open the outline window on the
 outlineWinSize		|Number| option.  The size of the symbol Outline
 			window.  By default this is set to 20.
 
+						*lsp-opt-popupBorder*
+popupBorder		|Boolean| option.  Enables popup borders.
+			By default this is set to false.
+
+						*lsp-opt-popupBorderChars*
+popupBorderChars	|List| option.  The characters used to draw the popup
+			border, see |popup_create-arguments|.
+			By default this is set to
+			['─', '│', '─', '│', '╭', '╮', '╯', '╰']
+
+						*lsp-opt-popupBorderHighlight*
+popupBorderHighlight	|String| option.  The name of the highlight group used
+			for popup borders.  By default this is set to
+			'LspPopupBorder'.
+
+						*lsp-opt-popupHighlight*
+popupHighlight		|String| option.  The name of the highlight group used
+			for popup contents.  By default this is set to
+			'LspPopup'.
+
+						*lsp-opt-popup-Completion*
+			Override options for Completion popups:
+popupBorderCompletion			|Boolean| option.
+popupBorderHighlightCompletion		|String| option.
+popupHighlightCompletion		|String| option.
+
+						*lsp-opt-popup-Diag*
+			Override options for Diagnostic popups:
+popupBorderDiag				|Boolean| option.
+popupBorderHighlightDiag		|String| option.
+popupHighlightDiag			|String| option.
+
+						*lsp-opt-popup-Hover*
+			Override options for Hover popups:
+popupBorderHover			|Boolean| option.
+popupBorderHighlightHover		|String| option.
+popupHighlightHover			|String| option.
+
+						*lsp-opt-popup-Peek*
+			Override options for Peek popups:
+popupBorderPeek				|Boolean| option.
+popupBorderHighlightPeek		|String| option.
+popupHighlightPeek			|String| option.
+
+						*lsp-opt-popup-SignatureHelp*
+			Override options for SignatureHelp popups:
+popupBorderSignatureHelp		|Boolean| option. Default: false
+popupBorderHighlightSignatureHelp	|String| option.
+popupHighlightSignatureHelp		|String| option.
+
+						*lsp-opt-popup-SymbolMenu*
+			Override options for SymbolMenu popups:
+popupBorderSymbolMenu			|Boolean| option.
+popupBorderHighlightSymbolMenu		|String| option.
+popupHighlightSymbolMenu		|String| option.
+
+						*lsp-opt-popup-SymbolMenuInput*
+			Override options for SymbolMenuInput popups:
+popupBorderSymbolMenuInput		|Boolean| option.
+popupBorderHighlightSymbolMenuInput	|String| option.
+popupHighlightSymbolMenuInput		|String| option.
+
+						*lsp-opt-popup-TypeHierarchy*
+			Override options for TypeHierarchy popups:
+popupBorderTypeHierarchy		|Boolean| option.
+popupBorderHighlightTypeHierarchy	|String| option.
+popupHighlightTypeHierarchy		|String| option.
+
 						*lsp-opt-semanticHighlight*
 semanticHighlight	|Boolean| option.  Enables or disables semantic
 			highlighting.
@@ -1707,6 +1775,10 @@ override them.
 *LspInlayHintsType*		Used to highlight inlay hints of kind "type".
 				By default, linked to the "Conceal" highlight
 				group.
+*LspPopup*			Used to highlight popup contents.  By default,
+				linked to the "Pmenu" highlight group.
+*LspPopupBorder*		Used to highlight popup borders.  By default,
+				linked to the "Pmenu" highlight group.
 *LspSigActiveParameter*		Used to highlight the active signature
 				parameter.  By default, linked to the "LineNr"
 				highlight group.
@@ -1867,53 +1939,47 @@ In the completion popup, will show something like this: >
 16. Custom Popup Styles			*lsp-custom-popup-styles*
 
 The plugin provides the possibility to style popups according to one's liking.
+By default, popups do not have borders configured, and use the |hl-Pmenu|
+highlight group.
 
-The following default options and highlight groups are provided: >
+To change the global popup styles, use the generic popup |lsp-options|: >
 
-	highlight LspCompletionPopup guibg=NONE ctermbg=NONE
-	highlight LspCompletionPopupBorder guibg=NONE ctermbg=NONE
-	let g:LspCompletionPopupBorderhighlight = ['LspCompletionPopupBorder']
-	let g:LspCompletionPopupBorder = []
-	let g:LspCompletionPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
+    # Enable popup borders
+    autocmd User LspSetup LspOptionsSet({popupBorder: true})
 
-	highlight LspHoverPopup guibg=NONE ctermbg=NONE
-	highlight LspHoverPopupBorder guibg=NONE ctermbg=NONE
-	let g:LspHoverPopupBorderhighlight = ['LspHoverPopupBorder']
-	let g:LspHoverPopupBorder = []
-	let g:LspHoverPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
+    # Change popup border chars and highlights, and disable SignatureHelp border
+    var lspOpts = {
+      popupBorder: true,
+      popupBorderChars: ['-', '|', '-', '|', '┌', '┐', '┘', '└'],
+      popupBorderHighlight: 'Identifier',
+      popupHighlight: 'Normal',
+      popupBorderSignatureHelp: false
+      popupHighlightSignatureHelp: 'Pmenu'
+    }
+    autocmd User LspSetup LspOptionsSet(lspOpts)
+>
+The different popup types may all be individually customised, using the
+popup-type |lsp-options|: >
 
-	highlight LspPeekPopup guibg=NONE ctermbg=NONE
-	highlight LspPeekPopupBorder guibg=NONE ctermbg=NONE
-	let g:LspPeekPopupBorderhighlight = ['LspPeekPopupBorder']
-	let g:LspPeekPopupBorder = []
-	let g:LspPeekPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
-
-	highlight LspSymbolMenuPopup guibg=NONE ctermbg=NONE
-	highlight LspSymbolMenuPopupBorder guibg=NONE ctermbg=NONE
-	let g:LspSymbolMenuPopupBorderhighlight = ['LspSymbolMenuPopupBorder']
-	let g:LspSymbolMenuPopupBorder = []
-	let g:LspSymbolMenuPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
-
-	highlight link LspSignatureHelpPopup Pmenu
-	highlight LspSignatureHelpPopupBorder guibg=NONE ctermbg=NONE
-	let g:LspSignatureHelpPopupBorderhighlight = ['LspSignatureHelpPopupBorder']
-	let g:LspSignatureHelpPopupBorder = [0, 0, 0, 0]
-	let g:LspSignatureHelpPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
-
-	highlight LspTypeHierarchyPopup guibg=NONE ctermbg=NONE
-	highlight LspTypeHierarchyPopupBorder guibg=NONE ctermbg=NONE
-	let g:LspTypeHierarchyPopupBorderhighlight = ['LspTyperHierarchyPopupBorder']
-	let g:LspTypeHierarchyPopupBorder = []
-	let g:LspTypeHierarchyPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
+    # - Hover
+    #   - border highlight: ModeMsg
+    # - Completion
+    #   - border: off
+    #   - highlight: Pmenu
+    # - Symbol menu input
+    #   - border highlight: Title
+    # - Symbol menu
+    #   - border highlight: Directory
+    var lspOpts = {
+      popupBorder: true,
+      popupBorderHighlightHover: 'ModeMsg',
+      popupBorderCompletion: false,
+      popupHighlightCompletion: 'Pmenu',
+      popupBorderHighlightSymbolMenuInput: 'Title',
+      popupBorderHighlightSymbolMenu: 'Directory'
+    }
+    autocmd User LspSetup LspOptionsSet(lspOpts)
 <
-	highlight LspDiagMsgPopup guibg=NONE ctermbg=NONE
-	highlight LspDiagMsgPopupBorder guibg=NONE ctermbg=NONE
-	let g:LspDiagMsgPopupBorderhighlight = ['LspDiagMsgPopupBorder']
-	let g:LspDiagMsgPopupBorder = []
-	let g:LspDiagMsgPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
-
-Please refer to |popup_setoptions()| for more information.
-
 For styling the completion menu please refer to |hl-pmenu|.
 
 ==============================================================================

@@ -22,8 +22,6 @@ import './signature.vim'
 import './codeaction.vim'
 import './inlayhints.vim'
 import './semantichighlight.vim'
-import './hover.vim'
-import './typehierarchy.vim'
 
 # LSP server information
 var LSPServers: list<dict<any>> = []
@@ -35,6 +33,8 @@ var lspInitializedOnce = false
 
 def LspInitOnce()
   hlset([
+    {name: 'LspPopup', default: true, linksto: 'Pmenu'},
+    {name: 'LspPopupBorder', default: true, linksto: 'Pmenu'},
     {name: 'LspTextRef', default: true, linksto: 'Search'},
     {name: 'LspReadRef', default: true, linksto: 'DiffChange'},
     {name: 'LspWriteRef', default: true, linksto: 'DiffDelete'}
@@ -47,14 +47,11 @@ def LspInitOnce()
   prop_type_add('LspReadRef', {highlight: 'LspReadRef', override: override})
   prop_type_add('LspWriteRef', {highlight: 'LspWriteRef', override: override})
 
-  completion.InitOnce()
   diag.InitOnce()
-  hover.InitOnce()
   inlayhints.InitOnce()
   signature.InitOnce()
   symbol.InitOnce()
   semantichighlight.InitOnce()
-  typehierarchy.InitOnce()
 
   lspInitializedOnce = true
 enddef

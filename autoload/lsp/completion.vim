@@ -41,23 +41,6 @@ var defaultKinds: dict<string> = {
   'Buffer':         'B',
 }
 
-export def InitOnce()
-  hlset([
-    {name: 'LspCompletionPopup', default: true, guibg: 'NONE', ctermbg: 'NONE'},
-    {name: 'LspCompletionPopupBorder', default: true, guibg: 'NONE', ctermbg: 'NONE'}
-  ])
-
-  if !exists('g:LspCompletionPopupBorderhighlight')
-    g:LspCompletionPopupBorderhighlight = ['LspCompletionPopupBorder']
-  endif
-  if !exists('g:LspCompletionPopupBorder')
-    g:LspCompletionPopupBorder = []
-  endif
-  if !exists('g:LspCompletionPopupBorderchars')
-    g:LspCompletionPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
-  endif
-enddef
-
 # Returns true if omni-completion is enabled for filetype "ftype".
 # Otherwise, returns false.
 def LspOmniComplEnabled(ftype: string): bool
@@ -462,12 +445,7 @@ def ShowCompletionDocumentation(cItem: any)
     var bufnr = id->winbufnr()
     id->popup_settext(infoText)
     infoKind->setbufvar(bufnr, '&ft')
-    id->popup_setoptions({
-      border: g:LspCompletionPopupBorder,
-      borderchars: g:LspCompletionPopupBorderchars,
-      borderhighlight: g:LspCompletionPopupBorderhighlight,
-      highlight: 'LspCompletionPopup'
-    })
+    id->popup_setoptions(opt.PopupConfigure('Completion', {}))
     id->popup_show()
   else
     # &omnifunc with &completeopt =~ 'preview'
@@ -624,6 +602,15 @@ def LspResolve()
   endif
 enddef
 
+# Configure the non-lazy documentation popup
+def LspCompleteConfigurePopup()
+  var id = popup_findinfo()
+  if id == 0
+    return
+  endif
+  id->popup_setoptions(opt.PopupConfigure('Completion', {}))
+enddef
+
 # If the completion popup documentation window displays "markdown" content,
 # then set the 'filetype' to "lspgfm".
 def LspSetPopupFileType()
@@ -727,6 +714,13 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
                 event: 'CompleteChanged',
                 group: 'LSPBufferAutocmds',
                 cmd: 'LspResolve()'})
+  else
+    # The documentation popup content is provided already but we still need to
+    # style the popup
+    acmds->add({bufnr: bnr,
+                event: 'CompleteChanged',
+                group: 'LSPBufferAutocmds',
+                cmd: 'LspCompleteConfigurePopup()'})
   endif
 
   acmds->add({bufnr: bnr,

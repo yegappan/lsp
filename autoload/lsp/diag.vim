@@ -117,24 +117,6 @@ export def InitOnce()
       }
     ])
   endif
-
-  hlset([
-    {name: 'LspDiagMsgPopup', default: true, guibg: 'NONE', ctermbg: 'NONE'},
-    {name: 'LspDiagMsgPopupBorder', default: true, guibg: 'NONE', ctermbg: 'NONE'},
-  ])
-
-  if !exists('g:LspDiagMsgPopupBorderhighlight')
-    g:LspDiagMsgPopupBorderhighlight = ['LspDiagMsgPopupBorder']
-  endif
-
-  if !exists('g:LspDiagMsgPopupBorder')
-    g:LspDiagMsgPopupBorder = []
-  endif
-
-  if !exists('g:LspDiagMsgPopupBorderchars')
-    g:LspDiagMsgPopupBorderchars = ['─', '│', '─', '│', '╭', '╮', '╯', '╰']
-  endif
-
 enddef
 
 # Initialize the diagnostics features for the buffer 'bnr'
@@ -633,25 +615,21 @@ def ShowDiagInPopup(diag: dict<any>)
   var msg = diag.message->split("\n")
   var msglen = msg->reduce((acc, val) => max([acc, val->strcharlen()]), 0)
 
-  var ppopts = {
-      pos: 'topleft',
-      line: d.row + 1,
-      moved: 'any',
-      border: g:LspDiagMsgPopupBorder,
-      borderchars: g:LspDiagMsgPopupBorderchars,
-      borderhighlight: g:LspDiagMsgPopupBorderhighlight,
-      highlight: 'LspDiagMsgPopup',
-  }
+  var popupAttrs = opt.PopupConfigure('Diag', {
+    pos: 'topleft',
+    line: d.row + 1,
+    moved: 'any'
+  })
 
   if msglen > &columns
-    ppopts.wrap = true
-    ppopts.col = 1
+    popupAttrs.wrap = true
+    popupAttrs.col = 1
   else
-    ppopts.wrap = false
-    ppopts.col = d.col
+    popupAttrs.wrap = false
+    popupAttrs.col = d.col
   endif
 
-  popup_create(msg, ppopts)
+  popup_create(msg, popupAttrs)
 enddef
 
 # Display the "diag" message in a popup or in the status message area
