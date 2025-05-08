@@ -19,11 +19,11 @@ export def InitOnce()
     {name: 'LspSymbolRange', default: true, linksto: 'Visual'}
   ])
   prop_type_add('LspSymbolNameProp', {highlight: 'LspSymbolName',
-				       combine: false,
+				       combine: true,
 				       override: true,
 				       priority: 201})
   prop_type_add('LspSymbolRangeProp', {highlight: 'LspSymbolRange',
-				       combine: false,
+				       combine: true,
 				       override: true,
 				       priority: 200})
 enddef
