@@ -607,6 +607,12 @@ popupHighlight		|String| option.  The name of the highlight group used
 			for popup contents.  By default this is set to
 			'LspPopup'.
 
+						*lsp-opt-popup-CodeAction*
+			Override options for CodeAction popups:
+popupBorderCodeAction			|Boolean| option.
+popupBorderHighlightCodeAction		|String| option.
+popupHighlightCodeAction		|String| option.
+
 						*lsp-opt-popup-Completion*
 			Override options for Completion popups:
 popupBorderCompletion			|Boolean| option.
@@ -760,7 +766,7 @@ condensedCompletionMenu |Boolean| option. If enabled, minimizes completion
 			Caveat: LazyDoc will override moved details!
 
 					*lsp-opt-ignoreCompleteItemsIsIncomplete*
-ignoreCompleteItemsIsIncomplete |List of strings| option.
+ignoreCompleteItemsIsIncomplete |List| of strings option.
 			Optional list of LSP server names for which
 			'IsIncomplete' messages should be ignored and
 			filtering of received completion item lists
