@@ -91,7 +91,7 @@ export def ApplyCodeAction(lspserver: dict<any>, actionlist: list<dict<any>>, qu
     choice = 1 + util.Indexof(actions, (i, a) => a.title[0 : query_->len() - 1] == query_)
   elseif opt.lspOptions.usePopupInCodeAction
     # Use a popup menu to show the code action
-    popup_create(text, {
+    var popupAttrs = opt.PopupConfigure('CodeAction', {
       pos: 'botleft',
       line: 'cursor-1',
       col: 'cursor',
@@ -121,6 +121,7 @@ export def ApplyCodeAction(lspserver: dict<any>, actionlist: list<dict<any>>, qu
 	return 1
       },
     })
+    popup_create(text, popupAttrs)
   else
     choice = inputlist(['Code action:'] + text)
   endif

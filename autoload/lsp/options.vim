@@ -96,6 +96,9 @@ export var lspOptions: dict<any> = {
   popupHighlight: 'LspPopup',
 
   # Optional overrideable popup options:
+  # popupBorderCodeAction
+  # popupBorderHighlightCodeAction
+  # popupHighlightCodeAction
   # popupBorderCompletion
   # popupBorderHighlightCompletion
   # popupHighlightCompletion
