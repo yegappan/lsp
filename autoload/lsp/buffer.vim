@@ -47,6 +47,7 @@ var SupportedCheckFns = {
   documentSymbol: (lspserver) => lspserver.isDocumentSymbolProvider,
   foldingRange: (lspserver) => lspserver.isFoldingRangeProvider,
   hover: (lspserver) => lspserver.isHoverProvider,
+  diagnostic: (lspserver) => lspserver.isDiagnosticProvider,
   implementation: (lspserver) => lspserver.isImplementationProvider,
   inlayHint: (lspserver) => lspserver.isInlayHintProvider ||
 					lspserver.isClangdInlayHintsProvider,

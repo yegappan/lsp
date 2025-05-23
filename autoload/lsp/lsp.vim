@@ -772,6 +772,17 @@ export def ShowDiagnostics(): void
   diag.ShowAllDiags()
 enddef
 
+# Pull diagnostics from LSP server if diagnostics are not notified by server
+export def PullDiagnostics(): void
+  var lspservers = buf.CurbufGetServers()
+  for lspserver in lspservers
+    if lspserver.featureEnabled('diagnostic')
+      lspserver.pullDiagnostic()
+    endif
+  endfor
+enddef
+
+
 # Show the diagnostic message for the current line
 export def LspShowCurrentDiag(atPos: bool)
   diag.ShowCurrentDiag(atPos)

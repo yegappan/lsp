@@ -973,6 +973,28 @@ def ShowHoverInfo(lspserver: dict<any>, cmdmods: string): void
   })
 enddef
 
+# pull diagnostics from server
+# Request: "textDocument/diagnostic"
+# Param: TextDocumentIdentifier
+def PullDiagnostic(lspserver: dict<any>): void
+  # Check whether LSP server supports pulling diagnostics
+  if !lspserver.isDiagnosticProvider
+    return
+  endif
+
+  # interface DocumentDiagnosticParams
+  #   interface TextDocumentIdentifier
+  var params = {
+    textDocument: {
+      uri: util.LspFileToUri(@%)
+    }
+  }
+  lspserver.rpc_a('textDocument/diagnostic', params, (_, reply) => {
+    var uri = util.LspFileToUri(@%)
+    diag.DiagNotification(lspserver, uri, reply.items)
+  })
+enddef
+
 # Request: "textDocument/references"
 # Param: ReferenceParams
 def ShowReferences(lspserver: dict<any>, peek: bool): void
@@ -1970,6 +1992,7 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     showSignature: function(ShowSignature, [lspserver]),
     didSaveFile: function(DidSaveFile, [lspserver]),
     hover: function(ShowHoverInfo, [lspserver]),
+    pullDiagnostic: function(PullDiagnostic, [lspserver]),
     showReferences: function(ShowReferences, [lspserver]),
     findLocations: function(FindLocations, [lspserver]),
     docHighlight: function(DocHighlight, [lspserver]),

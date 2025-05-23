@@ -319,6 +319,14 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
       endif
     endif
   endif
+
+  # diagnosticProvider
+  if lspserver.caps->has_key('diagnosticProvider')
+    lspserver.isDiagnosticProvider = true
+  else
+    lspserver.isDiagnosticProvider = false
+  endif
+
 enddef
 
 # Return all the LSP client capabilities
