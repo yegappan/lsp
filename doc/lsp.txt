@@ -188,7 +188,14 @@ LSP plugin, the steps are described later in this section: >
 			 args: ['--check-parent-process', '-v']
 		      }
 		   ]
-   LspAddServer(lspServers)
+    augroup LspSetup
+      autocmd!
+    augroup END
+    for i in range(len(g:lspServers))
+      for ft in g:lspServers[i].filetype
+        exe 'autocmd LspSetup FileType' ft 'autocmd BufWinEnter <buffer> call LspAddServer([g:lspServers[' .. i .. ']]) | autocmd! LspSetup FileType' ft
+      endfor
+    endfor
 <
 Depending on the location of the typescript and python pyls language servers
 installed in your system, update the "path" in the above snippet
@@ -242,7 +249,15 @@ Shell script, Vim script and PHP file types: >
 		        }
 		      }
 		   ]
-   LspAddServer(lspServers)
+  augroup LspSetup
+    autocmd!
+  augroup END
+  for i in range(len(g:lspServers))
+    for ft in g:lspServers[i].filetype
+      exe 'autocmd LspSetup FileType' ft '++once'
+          \ 'autocmd LspSetup BufWinEnter <buffer> ++once call LspAddServer([g:lspServers[' .. i .. ']])'
+    endfor
+  endfor
 <
 To add a language server, the following information is needed:
 
@@ -442,7 +457,14 @@ language server and to set the language server options.  For example: >
 		        args: ['--background-index']
 		      }
 		   ]
-    autocmd User LspSetup LspAddServer(lspServers)
+    augroup LspSetup
+      autocmd!
+    augroup END
+    for i in range(len(g:lspServers))
+      for ft in g:lspServers[i].filetype
+        exe 'autocmd LspSetup FileType' ft 'autocmd BufWinEnter <buffer> call LspAddServer([g:lspServers[' .. i .. ']]) | autocmd! LspSetup FileType' ft
+      endfor
+    endfor
 <
 						*lsp-options* *LspOptionsSet()*
 						*g:LspOptionsSet()*

@@ -14,7 +14,7 @@ vim -u NONE -c "helptags $HOME/.vim/pack/downloads/opt/lsp/doc" -c q
 ```
 
 After installing the plugin using the above steps, add the following line to
-your $HOME/.vimrc file:
+your `$HOME/.vimrc` file:
 
 ```viml
 packadd lsp
@@ -55,41 +55,56 @@ To use the plugin features with a particular file type(s), you need to first reg
 The LSP servers are registered using the `LspAddServer()` function. This function accepts a list of LSP servers.
 
 To register a LSP server, add the following lines to your .vimrc file (use only the LSP servers that you need from the below list).  If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, the steps are described later in this section.
+
 ```viml
+vim9script
 
-" Clangd language server
-call LspAddServer([#{
-	\    name: 'clangd',
-	\    filetype: ['c', 'cpp'],
-	\    path: '/usr/local/bin/clangd',
-	\    args: ['--background-index']
-	\  }])
+g:lspServers = []
 
-" Javascript/Typescript language server
-call LspAddServer([#{
-	\    name: 'typescriptlang',
-	\    filetype: ['javascript', 'typescript'],
-	\    path: '/usr/local/bin/typescript-language-server',
-	\    args: ['--stdio'],
-	\  }])
+# Clangd language server
+g:lspServers->add({
+	name: 'clangd',
+	filetype: ['c', 'cpp'],
+	path: '/usr/local/bin/clangd',
+	args: ['--background-index']
+})
 
-" Go language server
-call LspAddServer([#{
-	\    name: 'golang',
-	\    filetype: ['go', 'gomod'],
-	\    path: '/usr/local/bin/gopls',
-	\    args: ['serve'],
-	\    syncInit: v:true
-	\  }])
+# Javascript/Typescript language server
+g:lspServers->add({
+	name: 'typescriptlang',
+	filetype: ['javascript', 'typescript'],
+	path: '/usr/local/bin/typescript-language-server',
+	args: ['--stdio'],
+})
 
-" Rust language server
-call LspAddServer([#{
-	\    name: 'rustlang',
-	\    filetype: ['rust'],
-	\    path: '/usr/local/bin/rust-analyzer',
-	\    args: [],
-	\    syncInit: v:true
-	\  }])
+# Go language server
+g:lspServers->add({
+	name: 'golang',
+	filetype: ['go', 'gomod'],
+	path: '/usr/local/bin/gopls',
+	args: ['serve'],
+	syncInit: true
+})
+
+# Rust language server
+g:lspServers->add({
+	name: 'rustlang',
+	filetype: ['rust'],
+	path: '/usr/local/bin/rust-analyzer',
+	args: [],
+	syncInit: true
+})
+
+# Only set Workspace Root once the first file of that file type is openend
+# otherwise often defaults to $HOME and scans too many files
+augroup LspSetup
+  autocmd!
+augroup END
+for i in range(len(g:lspServers))
+  for ft in g:lspServers[i].filetype
+    exe 'autocmd LspSetup FileType' ft 'autocmd BufWinEnter <buffer> call LspAddServer([g:lspServers[' .. i .. ']]) | autocmd! LspSetup FileType' ft
+  endfor
+endfor
 ```
 
 The above lines register the language servers for C/C++, Javascript/Typescript, Go and Rust file types. 
@@ -111,6 +126,7 @@ The `LspAddServer()` function accepts a list of LSP servers with the above infor
 
 Some of the LSP plugin features can be enabled or disabled by using the `LspOptionsSet()` function, detailed in `:help lsp-options`.
 Here is an example of configuration with default values:
+
 ```viml
 call LspOptionsSet(#{
         \   aleSupport: v:false,
@@ -167,17 +183,26 @@ call LspOptionsSet(#{
 ```
 
 If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the LSP plugin, then you need to use the LspSetup User autocmd to initialize the LSP server and to set the LSP server options.  For example:
+
 ```viml
 let lspOpts = #{autoHighlightDiags: v:true}
 autocmd User LspSetup call LspOptionsSet(lspOpts)
 
-let lspServers = [#{
+let g:lspServers = [#{
 	\	  name: 'clang',
 	\	  filetype: ['c', 'cpp'],
 	\	  path: '/usr/local/bin/clangd',
 	\	  args: ['--background-index']
 	\ }]
-autocmd User LspSetup call LspAddServer(lspServers)
+augroup LspSetup
+  autocmd!
+augroup END
+for i in range(len(g:lspServers))
+  for ft in g:lspServers[i].filetype
+    exe 'autocmd LspSetup FileType' ft '++once'
+          \    'autocmd LspSetup BufWinEnter <buffer> ++once call LspAddServer([g:lspServers[' .. i .. ']])'
+  endfor
+endfor
 ```
 
 ## Supported Commands
