@@ -973,10 +973,25 @@ def ShowHoverInfo(lspserver: dict<any>, cmdmods: string): void
   })
 enddef
 
-# pull diagnostics from server
+# Pull either document or workspace diagnostics from server
+# if parameter 'workspace' is true pull workspace diagnostics
+def PullDiagnostic(lspserver: dict<any>, workspace: bool = false): void
+  # Check whether LSP server supports pulling diagnostics
+  if !lspserver.isDiagnosticProvider
+    return
+  endif
+
+  if workspace && lspserver.isWorkspaceDiagnosticProvider
+    lspserver->PullWorkspaceDiagnostic()
+  elseif !workspace
+    lspserver->PullDocumentDiagnostic()
+  endif
+enddef
+
+# Pull document diagnostics from server
 # Request: "textDocument/diagnostic"
 # Param: TextDocumentIdentifier
-def PullDiagnostic(lspserver: dict<any>): void
+def PullDocumentDiagnostic(lspserver: dict<any>): void
   # Check whether LSP server supports pulling diagnostics
   if !lspserver.isDiagnosticProvider
     return
@@ -989,10 +1004,52 @@ def PullDiagnostic(lspserver: dict<any>): void
       uri: util.LspFileToUri(@%)
     }
   }
+
   lspserver.rpc_a('textDocument/diagnostic', params, (_, reply) => {
     var uri = util.LspFileToUri(@%)
-    diag.DiagNotification(lspserver, uri, reply.items)
+    ForwardDiagNotification(lspserver, uri, reply)
   })
+enddef
+
+# pull workspace diagnostics from server
+# Request: "workspace/diagnostic"
+# Param: PreviousResultIds
+def PullWorkspaceDiagnostic(lspserver: dict<any>): void
+  # Check whether LSP server supports pulling diagnostics
+  if !lspserver.isDiagnosticProvider
+    || !lspserver.isWorkspaceDiagnosticProvider
+    return
+  endif
+
+  # interface WorkspaceDiagnosticParams
+  #   interface PreviousResultIds
+  #   TODO: fill in list of previous result IDs
+  var params = {
+    previousResultIds: []
+  }
+
+  lspserver.rpc_a('workspace/diagnostic', params, (_, reply) => {
+    if reply->has_key('items') && reply.items->type() == v:t_list
+      for item in reply.items
+        ForwardDiagNotification(lspserver, item.uri, item)
+      endfor
+    endif
+  })
+enddef
+
+def ForwardDiagNotification(lspserver: dict<any>, uri: string, report: dict<any>)
+  # Ignore report itself in absence of changes
+  if report->has_key('kind') && report.kind != 'unchanged' 
+    diag.DiagNotification(lspserver, uri, report.items)
+  endif
+
+  # Process related documents, if included in reply
+  if report->has_key('relatedDocuments')
+      && report.relatedDocuments->type() == v:t_dict
+    report.relatedDocuments->foreach( (rel_uri, rel_items) => {
+      diag.DiagNotification(lspserver, rel_uri, rel_items)
+    })
+  endif
 enddef
 
 # Request: "textDocument/references"

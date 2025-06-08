@@ -322,9 +322,17 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
 
   # diagnosticProvider
   if lspserver.caps->has_key('diagnosticProvider')
+    var diagnosticProvider = lspserver.caps.diagnosticProvider
+    if diagnosticProvider->type() == v:t_dict
+	 && diagnosticProvider->has_key('workspaceDiagnostics')
+      lspserver.isWorkspaceDiagnosticProvider = diagnosticProvider.workspaceDiagnostics
+    else
+      lspserver.isWorkspaceDiagnosticProvider = false
+    endif
     lspserver.isDiagnosticProvider = true
   else
     lspserver.isDiagnosticProvider = false
+    lspserver.isWorkspaceDiagnosticProvider = false
   endif
 
 enddef
@@ -380,6 +388,10 @@ export def GetClientCaps(): dict<any>
       definition: {
 	dynamicRegistration: false,
 	linkSupport: true
+      },
+      diagnostic: {
+	dynamicRegistration: false,
+	relatedDocumentSupport: false
       },
       documentHighlight: {
 	dynamicRegistration: false
@@ -492,6 +504,9 @@ export def GetClientCaps(): dict<any>
       configuration: true,
       symbol: {
 	dynamicRegistration: false
+      },
+      diagnostics: {
+        refreshSupport: true
       }
     },
     # This is the way clangd expects to be informated about supported encodings:

@@ -773,11 +773,14 @@ export def ShowDiagnostics(): void
 enddef
 
 # Pull diagnostics from LSP server if diagnostics are not notified by server
-export def PullDiagnostics(): void
+export def PullDiagnostics(workspace: bool = false): void
+
   var lspservers = buf.CurbufGetServers()
   for lspserver in lspservers
-    if lspserver.featureEnabled('diagnostic')
-      lspserver.pullDiagnostic()
+    if lspserver.ready
+	&& lspserver.isDiagnosticProvider
+	&& lspserver.featureEnabled('diagnostic')
+      lspserver.pullDiagnostic(workspace)
     endif
   endfor
 enddef
