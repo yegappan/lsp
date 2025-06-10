@@ -994,6 +994,7 @@ enddef
 def PullDocumentDiagnostic(lspserver: dict<any>): void
   # Check whether LSP server supports pulling diagnostics
   if !lspserver.isDiagnosticProvider
+    util.ErrMsg('LSP server does not support pulling document diagnostics')
     return
   endif
 
@@ -1007,7 +1008,10 @@ def PullDocumentDiagnostic(lspserver: dict<any>): void
 
   lspserver.rpc_a('textDocument/diagnostic', params, (_, reply) => {
     var uri = util.LspFileToUri(@%)
-    ForwardDiagNotification(lspserver, uri, reply)
+    # Test for invalid reply from server:
+    if reply->type() == v:t_dict
+      DisplayDiagnosticReport(lspserver, uri, reply)
+    endif
   })
 enddef
 
@@ -1018,6 +1022,7 @@ def PullWorkspaceDiagnostic(lspserver: dict<any>): void
   # Check whether LSP server supports pulling diagnostics
   if !lspserver.isDiagnosticProvider
     || !lspserver.isWorkspaceDiagnosticProvider
+    util.ErrMsg('LSP server does not support pulling workspace diagnostics')
     return
   endif
 
@@ -1031,15 +1036,19 @@ def PullWorkspaceDiagnostic(lspserver: dict<any>): void
   lspserver.rpc_a('workspace/diagnostic', params, (_, reply) => {
     if reply->has_key('items') && reply.items->type() == v:t_list
       for item in reply.items
-        ForwardDiagNotification(lspserver, item.uri, item)
+        # Test for invalid reply from server:
+        if item->type() == v:t_dict
+          DisplayDiagnosticReport(lspserver, item.uri, item)
+        endif
       endfor
     endif
   })
 enddef
 
-def ForwardDiagNotification(lspserver: dict<any>, uri: string, report: dict<any>)
+def DisplayDiagnosticReport(lspserver: dict<any>, uri: string, report: dict<any>)
   # Ignore report itself in absence of changes
-  if report->has_key('kind') && report.kind != 'unchanged' 
+  if report->has_key('kind')
+    && report.kind != 'unchanged'
     diag.DiagNotification(lspserver, uri, report.items)
   endif
 

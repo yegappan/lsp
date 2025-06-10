@@ -391,7 +391,7 @@ export def GetClientCaps(): dict<any>
       },
       diagnostic: {
 	dynamicRegistration: false,
-	relatedDocumentSupport: false
+	relatedDocumentSupport: true
       },
       documentHighlight: {
 	dynamicRegistration: false
