@@ -188,7 +188,7 @@ LSP plugin, the steps are described later in this section: >
 			 args: ['--check-parent-process', '-v']
 		      }
 		   ]
-   LspAddServer(lspServers)
+   g:LspAddServer(lspServers)
 <
 Depending on the location of the typescript and python pyls language servers
 installed in your system, update the "path" in the above snippet
@@ -242,7 +242,7 @@ Shell script, Vim script and PHP file types: >
 		        }
 		      }
 		   ]
-   LspAddServer(lspServers)
+   g:LspAddServer(lspServers)
 <
 To add a language server, the following information is needed:
 
