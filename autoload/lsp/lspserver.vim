@@ -219,7 +219,7 @@ enddef
 # Request: shutdown
 # Param: void
 def ShutdownServer(lspserver: dict<any>): void
-  lspserver.rpc('shutdown', {})
+  lspserver.rpc('shutdown', v:null)
 enddef
 
 # Send a 'exit' notification to the language server
