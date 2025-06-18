@@ -446,7 +446,7 @@ def BufferInit(lspserverId: number, bnr: number): void
     endfor
 
     if exists('#User#LspAttached')
-      doautocmd <nomodeline> User LspAttached
+      win_execute(bufwinnr(bnr), 'doautocmd <nomodeline> User LspAttached', silent)
     endif
   endif
 enddef
