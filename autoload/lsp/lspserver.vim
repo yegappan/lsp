@@ -612,55 +612,50 @@ def TextdocDidChange(lspserver: dict<any>, bnr: number, start: number,
   # Notification: 'textDocument/didChange'
   # Params: DidChangeTextDocumentParams
 
-  # var changeset: list<dict<any>>
-
-  ##### FIXME: Sending specific buffer changes to the LSP server doesn't
-  ##### work properly as the computed line range numbers is not correct.
-  ##### For now, send the entire buffer content to LSP server.
-  # #     Range
-  # for change in changes
-  #   var lines: string
-  #   var start_lnum: number
-  #   var end_lnum: number
-  #   var start_col: number
-  #   var end_col: number
-  #   if change.added == 0
-  #     # lines changed
-  #     start_lnum =  change.lnum - 1
-  #     end_lnum = change.end - 1
-  #     lines = getbufline(bnr, change.lnum, change.end - 1)->join("\n") .. "\n"
-  #     start_col = 0
-  #     end_col = 0
-  #   elseif change.added > 0
-  #     # lines added
-  #     start_lnum = change.lnum - 1
-  #     end_lnum = change.lnum - 1
-  #     start_col = 0
-  #     end_col = 0
-  #     lines = getbufline(bnr, change.lnum, change.lnum + change.added - 1)->join("\n") .. "\n"
-  #   else
-  #     # lines removed
-  #     start_lnum = change.lnum - 1
-  #     end_lnum = change.lnum + (-change.added) - 1
-  #     start_col = 0
-  #     end_col = 0
-  #     lines = ''
-  #   endif
-  #   var range: dict<dict<number>> = {'start': {'line': start_lnum, 'character': start_col}, 'end': {'line': end_lnum, 'character': end_col}}
-  #   changeset->add({'range': range, 'text': lines})
-  # endfor
-
-  var params = {
-    textDocument: {
+  if lspserver.textDocumentSync->type() == v:t_number
+    var changeset: list<dict<any>>
+    var params = {
+      textDocument: {
       uri: util.LspBufnrToUri(bnr),
       # Use Vim 'changedtick' as the LSP document version number
       version: bnr->getbufvar('changedtick')
     },
-    contentChanges: [
-      {text: bnr->getbufline(1, '$')->join("\n") .. "\n"}
-    ]
-  }
-  lspserver.sendNotification('textDocument/didChange', params)
+      contentChanges: changeset
+    }
+
+    if lspserver.textDocumentSync == 1 || 
+        ( start == 0 && end == 0 && added == 0 )
+      changeset = [{
+       text: bnr->getbufline(1, '$')->join("\n") .. "\n"
+      }]
+    endif
+    
+    if lspserver.textDocumentSync == 2 &&
+        !(start == 0 && end == 0 && added == 0)
+      if changes->len() > 1
+        # As of now, only single line changes are incrementaly synced. 
+        # This is because multi line changes seems to have edge cases in
+        # in how they should be interpeted. At least we'll see some
+        # performance gains
+        changeset = [{
+         text: bnr->getbufline(1, '$')->join("\n") .. "\n"
+        }]
+      else
+        for c in changes 
+          var lines = getbufline(bnr, c.lnum, c.end - 1 + c.added)
+          var text = lines->len() > 0 ? lines->join("\n") .. "\n" : ''
+          changeset->add({range: { start: { line: c.lnum - 1, character: 0 },
+                                   end: { line: c.end - 1, character: 0 }},
+                          text: text })
+        endfor
+      endif
+    endif
+
+    params.contentChanges = changeset
+    if lspserver.textDocumentSync != 0
+      lspserver.sendNotification('textDocument/didChange', params)
+    endif
+  endif
 enddef
 
 # Return the current cursor position as a LSP position.
