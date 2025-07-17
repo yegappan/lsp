@@ -26,6 +26,7 @@ import './callhierarchy.vim' as callhier
 import './typehierarchy.vim' as typehier
 import './inlayhints.vim'
 import './semantichighlight.vim'
+import './buffer.vim' as buf
 
 # LSP server standard output handler
 def Output_cb(lspserver: dict<any>, chan: channel, msg: any): void
@@ -1027,6 +1028,20 @@ def FindLocations(lspserver: dict<any>, peek: bool, method: string, args: dict<a
   endif
 
   symbol.ShowLocations(lspserver, reply.result, peek, 'Symbol Locations')
+enddef
+
+# send a custom request to the server
+# Name: name of the server
+# Request: any
+# Params: any
+def g:LspRequestCustom(name: string, msg: string, params: any): string
+  var lspserver: dict<any> = buf.CurbufGetServerByName(name)
+  if lspserver->empty()
+    return ''
+  endif
+
+  lspserver.rpc_a(msg, params, WorkspaceExecuteReply)
+  return ''
 enddef
 
 # process the 'textDocument/documentHighlight' reply from the LSP server
