@@ -1009,6 +1009,7 @@ def PullDocumentDiagnostic(lspserver: dict<any>): void
   lspserver.rpc_a('textDocument/diagnostic', params, (_, reply) => {
     var uri = util.LspFileToUri(@%)
     # Test for invalid reply from server:
+    # TODO: would an empty reply mean to clear all available diags?
     if reply->type() == v:t_dict
       DisplayDiagnosticReport(lspserver, uri, reply)
     endif
@@ -1037,6 +1038,8 @@ def PullWorkspaceDiagnostic(lspserver: dict<any>): void
     if reply->has_key('items') && reply.items->type() == v:t_list
       for item in reply.items
         # Test for invalid reply from server:
+        # TODO: would an empty reply mean to clear all available diags?
+        # TODO: what about not contained URI's? How to clean them?
         if item->type() == v:t_dict
           DisplayDiagnosticReport(lspserver, item.uri, item)
         endif
@@ -1058,6 +1061,9 @@ def DisplayDiagnosticReport(lspserver: dict<any>, uri: string, report: dict<any>
     report.relatedDocuments->foreach( (rel_uri, rel_items) => {
       diag.DiagNotification(lspserver, rel_uri, rel_items)
     })
+    for [rel_uri, rel_items] in report.relatedDocuments->items()
+      diag.DiagNotification(lspserver, rel_uri, rel_items)
+    endfor
   endif
 enddef
 

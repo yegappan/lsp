@@ -773,6 +773,8 @@ export def ShowDiagnostics(): void
 enddef
 
 # Pull diagnostics from LSP server if diagnostics are not notified by server
+# TODO: separate function for workspace where ALL (not only for the current
+# buffer) lsp servers are pulled!
 export def PullDiagnostics(workspace: bool = false): void
 
   var lspservers = buf.CurbufGetServers()
