@@ -1058,9 +1058,6 @@ def DisplayDiagnosticReport(lspserver: dict<any>, uri: string, report: dict<any>
   # Process related documents, if included in reply
   if report->has_key('relatedDocuments')
       && report.relatedDocuments->type() == v:t_dict
-    report.relatedDocuments->foreach( (rel_uri, rel_items) => {
-      diag.DiagNotification(lspserver, rel_uri, rel_items)
-    })
     for [rel_uri, rel_items] in report.relatedDocuments->items()
       diag.DiagNotification(lspserver, rel_uri, rel_items)
     endfor
