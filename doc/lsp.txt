@@ -476,6 +476,13 @@ autoHighlightDiags	|Boolean| option. Automatically place signs on the
 autoPopulateDiags	|Boolean| option. Automatically populate the location
 			list with diagnostics from the language server.
 			By default this is set to false.
+			The complete information of diagnostic messages,
+			as received from the lsp server, can be accessed at
+			each location list item via its attribute 'user_data'.
+			For this purpose a dictionary
+			{ diagnostic: <complete diag message> }
+			is added to each location list items attribute
+			'user_data'.
 
 						*lsp-opt-completionMatcher*
 completionMatcher	|String| option.  Enable fuzzy or case insensitive
