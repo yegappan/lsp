@@ -31,7 +31,7 @@ import './buffer.vim' as buf
 # LSP server standard output handler
 def Output_cb(lspserver: dict<any>, chan: channel, msg: any): void
   if lspserver.debug
-    lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Received {msg->string()}')
+    lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Received {msg->json_encode()}')
   endif
   lspserver.data = msg
   lspserver.processMessages()
@@ -352,7 +352,7 @@ def SendMessage(lspserver: dict<any>, content: dict<any>): void
   job->ch_sendexpr(content)
   if content->has_key('id')
     if lspserver.debug
-      lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Sent {content->string()}')
+      lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Sent {content->json_encode()}')
     endif
   endif
 enddef
@@ -409,14 +409,14 @@ def Rpc(lspserver: dict<any>, method: string, params: any, handleError: bool = t
   endif
 
   if lspserver.debug
-    lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Sent {req->string()}')
+    lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Sent {req->json_encode()}')
   endif
 
   # Do the synchronous RPC call
   var reply = job->ch_evalexpr(req)
 
   if lspserver.debug
-    lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Received {reply->string()}')
+    lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Received {reply->json_encode()}')
   endif
 
   if reply->has_key('result')
@@ -435,7 +435,7 @@ enddef
 # LSP server asynchronous RPC callback
 def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel, reply: dict<any>)
   if lspserver.debug
-    lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Received {reply->string()}')
+    lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Received {reply->json_encode()}')
   endif
 
   if reply->empty()
@@ -472,7 +472,7 @@ def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func): n
   endif
 
   if lspserver.debug
-    lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Sent {req->string()}')
+    lspserver.traceLog($'{strftime("%m/%d/%y %T")}: Sent {req->json_encode()}')
   endif
 
   # Do the asynchronous RPC call
