@@ -142,7 +142,7 @@ call LspOptionsSet(#{
         \   popupBorderHighlight: 'Title',
         \   popupBorderHighlightPeek: 'Special',
         \   popupBorderSignatureHelp: v:false,
-        \   popupHighlightSignatureHelp: 'Pmenu;,
+        \   popupHighlightSignatureHelp: 'Pmenu',
         \   popupHighlight: 'Normal',
         \   semanticHighlight: v:true,
         \   showDiagInBalloon: v:true,
