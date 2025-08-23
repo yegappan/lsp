@@ -550,7 +550,8 @@ def DiagsUpdateLocList(bnr: number, calledByCmd: bool = false): bool
 		    end_lnum: d_end.line + 1,
                     end_col: util.GetLineByteFromPos(bnr, d_end) + 1,
 		    text: text,
-		    type: DiagSevToQfType(diag->get('severity', 1))})
+		    type: DiagSevToQfType(diag->get('severity', 1)),
+		    user_data: { diagnostic: diag }})
   endfor
 
   var op: string = ' '
