@@ -1786,7 +1786,7 @@ enddef
 # stage).
 def GetCapabilities(lspserver: dict<any>): list<string>
   var l = []
-  var heading = $"'{lspserver.path}' Language Server Capabilities"
+  var heading = $"'{lspserver.name}' Language Server Capabilities"
   var underlines = repeat('=', heading->len())
   l->extend([heading, underlines])
   for k in lspserver.caps->keys()->sort()
