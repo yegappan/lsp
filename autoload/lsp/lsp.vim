@@ -446,7 +446,13 @@ def BufferInit(lspserverId: number, bnr: number): void
     endfor
 
     if exists('#User#LspAttached')
-      doautocmd <nomodeline> User LspAttached
+      if bnr == bufnr()
+        doautocmd <nomodeline> User LspAttached
+      else
+        # Delay doautocmd until entering the buffer
+        execute 'autocmd LSPAutoCmds BufEnter <buffer=' .. bnr .. '>'
+              \ .. ' ++once doautocmd <nomodeline> User LspAttached'
+      endif
     endif
   endif
 enddef
