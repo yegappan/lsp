@@ -71,6 +71,8 @@ command! -nargs=0 -bar -count=1 LspDiagNextWrap lsp.JumpToDiag('nextWrap', <coun
 command! -nargs=0 -bar -count=1 LspDiagPrev lsp.JumpToDiag('prev', <count>)
 command! -nargs=0 -bar -count=1 LspDiagPrevWrap lsp.JumpToDiag('prevWrap', <count>)
 command! -nargs=0 -bar LspDiagShow lsp.ShowDiagnostics()
+command! -nargs=0 -bar LspDiagPull lsp.PullDiagnostics()
+command! -nargs=0 -bar LspDiagPullWorkspace lsp.PullDiagnostics(true)
 command! -nargs=0 -bar LspDiagHere lsp.JumpToDiag('here')
 command! -nargs=0 -bar LspDocumentSymbol lsp.ShowDocSymbols()
 command! -nargs=0 -bar LspFold lsp.FoldDocument()
