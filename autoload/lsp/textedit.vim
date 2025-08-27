@@ -202,6 +202,10 @@ export def ApplyTextEdits(bnr: number, text_edits: list<dict<any>>): void
   # We just need to be careful with all indices.
   appendbufline(bnr, finish_line + 1, lines[finish_line - start_line + 1 : -1])
   setbufline(bnr, start_line + 1, lines)
+
+  # Workaround for Vim issues #12568 & #18136
+  prop_clear(start_line + 1 + lines->len(), finish_line + 1, {'bufnr': bnr})
+
   deletebufline(bnr, start_line + 1 + lines->len(), finish_line + 1)
 
   if dellastline
