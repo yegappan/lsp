@@ -127,6 +127,9 @@ export var lspOptions: dict<any> = {
   # Enable semantic highlighting
   semanticHighlight: false,
 
+  # Delay in milliseconds for semantic highlighting requests
+  semanticHighlightDelay: 1000,
+
   # Show diagnostic text in a balloon when the mouse is over the diagnostic
   showDiagInBalloon: true,
 
