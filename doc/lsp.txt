@@ -674,6 +674,12 @@ semanticHighlight	|Boolean| option.  Enables or disables semantic
 			highlighting.
 			By default this is set to false.
 
+					*lsp-opt-semanticHighlightDelay*
+semanticHighlightDelay	|Number| option.  Delay in milliseconds for semantic
+			highlighting requests. This prevents excessive
+			requests during rapid text changes.
+			By default this is set to 1000.
+
 						*lsp-opt-showDiagInBalloon*
 showDiagInBalloon	|Boolean| option.  When the mouse is over a range of
 			text referenced by a diagnostic, display the
