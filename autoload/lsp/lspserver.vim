@@ -1901,6 +1901,7 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     args: serverParams.args->deepcopy(),
     running: false,
     ready: false,
+    stoppedByUser: false,
     job: v:none,
     data: '',
     nextID: 1,
