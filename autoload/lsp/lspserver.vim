@@ -542,6 +542,9 @@ def SemanticHighlightUpdate(lspserver: dict<any>, bnr: number)
   # Send the pending buffer changes to the language server
   bnr->listener_flush()
 
+  # Capture the current changedtick
+  var requestTick = getbufvar(bnr, 'changedtick')
+
   var method = 'textDocument/semanticTokens/full'
   var params: dict<any> = {
     textDocument: {
@@ -560,13 +563,9 @@ def SemanticHighlightUpdate(lspserver: dict<any>, bnr: number)
     endif
   endif
 
-  var reply = lspserver.rpc(method, params)
-
-  if reply->empty() || reply.result->empty()
-    return
-  endif
-
-  semantichighlight.UpdateTokens(lspserver, bnr, reply.result)
+  lspserver.rpc_a(method, params, (_, reply) => {
+    semantichighlight.UpdateTokens(lspserver, bnr, reply, requestTick)
+  })
 enddef
 
 # Send a "workspace/didChangeConfiguration" notification to the language
@@ -1993,6 +1992,7 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     args: serverParams.args->deepcopy(),
     running: false,
     ready: false,
+    stoppedByUser: false,
     job: v:none,
     data: '',
     nextID: 1,

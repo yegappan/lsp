@@ -3,7 +3,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: Sep 30, 2024
+Last change: Sep 8, 2025
 
 ==============================================================================
 CONTENTS                                                     *lsp-contents*
@@ -674,6 +674,12 @@ semanticHighlight	|Boolean| option.  Enables or disables semantic
 			highlighting.
 			By default this is set to false.
 
+					*lsp-opt-semanticHighlightDelay*
+semanticHighlightDelay	|Number| option.  Delay in milliseconds for semantic
+			highlighting requests. This prevents excessive
+			requests during rapid text changes.
+			By default this is set to 1000.
+
 						*lsp-opt-showDiagInBalloon*
 showDiagInBalloon	|Boolean| option.  When the mouse is over a range of
 			text referenced by a diagnostic, display the
@@ -1194,7 +1200,7 @@ can map these commands to keys and make it easier to invoke them.
 			region.
 
 						*:LspServer*
-:LspServer { debug | restart | show | trace }
+:LspServer { debug | restart | show | start | stop | trace }
 			Command to display and control the language server for
 			the current buffer.  Each argument has additional
 			sub-commands which are described below.
@@ -1254,6 +1260,21 @@ can map these commands to keys and make it easier to invoke them.
 					the current buffer.  The output shows
 					the path to the language server
 					executable and the server status.
+
+			start
+			    Command to start the language servers registered
+			    for the filetype of the current buffer.  All the
+			    buffers with this filetype are added to the
+			    server.
+
+			stop
+			    Command to stop all the language servers
+			    registered for the filetype of the current buffer.
+			    Note that this stops the language servers for all
+			    the buffers with this filetype.  Opening a new
+			    file with this filetype will not start the
+			    language server till the server is explicitly
+			    started using the start command.
 
 			trace { off | messages | verbose }
 			    Set the language server debug trace value using

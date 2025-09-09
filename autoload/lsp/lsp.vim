@@ -264,6 +264,52 @@ def ShowServer(arg: string)
   endif
 enddef
 
+# Server start requested by the user for the file type in the current buffer
+def StartServerByUser()
+  var ftype: string = &filetype
+
+  var lspservers = ftypeServerMap->get(ftype, [])
+
+  if lspservers->empty()
+    util.WarnMsg($'No Lsp servers found for "{@%}"')
+    return
+  endif
+
+  # Update the list of servers attached to the current file type
+  for lspserver in lspservers
+    lspserver.stoppedByUser = false
+  endfor
+
+  # Add all the buffers with the current file type to the server
+  AddBuffersToLsp(ftype)
+enddef
+
+# Server stop requested by the user for the file type in the current buffer
+def StopServerByUser()
+  var lspservers: list<dict<any>> = buf.CurbufGetServers()->copy()
+  if lspservers->empty()
+    util.WarnMsg($'No Lsp servers found for "{@%}"')
+    return
+  endif
+
+  # Remove all the buffers with the same file type as the current buffer
+  var ftype: string = &filetype
+  for binfo in getbufinfo()
+    if binfo.bufnr->getbufvar('&filetype') == ftype
+      RemoveFile(binfo.bufnr)
+    endif
+  endfor
+
+  # Stop all the servers for this file type
+  for lspserver in lspservers
+    # Stop the server (if running)
+    if lspserver.running
+      lspserver.stopServer()
+      lspserver.stoppedByUser = true
+    endif
+  endfor
+enddef
+
 # Get LSP server running status for filetype "ftype"
 # Return true if running, or false if not found or not running
 export def ServerRunning(ftype: string): bool
@@ -478,6 +524,10 @@ export def AddFile(bnr: number): void
     return
   endif
   for lspserver in lspservers
+    if lspserver.stoppedByUser
+      continue
+    endif
+
     if !lspserver.running
       if !lspInitializedOnce
         LspInitOnce()
@@ -565,14 +615,16 @@ enddef
 
 # Restart the LSP server for the current buffer
 def RestartServer()
-  var lspservers: list<dict<any>> = buf.CurbufGetServers()->copy()
+  var ftype: string = &filetype
+
+  var lspservers = ftypeServerMap->get(ftype, [])
+
   if lspservers->empty()
     util.WarnMsg($'No Lsp servers found for "{@%}"')
     return
   endif
 
   # Remove all the buffers with the same file type as the current buffer
-  var ftype: string = &filetype
   for binfo in getbufinfo()
     if binfo.bufnr->getbufvar('&filetype') == ftype
       RemoveFile(binfo.bufnr)
@@ -584,6 +636,7 @@ def RestartServer()
     if lspserver.running
       lspserver.stopServer()
     endif
+    lspserver.stoppedByUser = false
 
     # Start the server again
     lspserver.startServer(bufnr())
@@ -1310,7 +1363,7 @@ enddef
 export def LspServerComplete(arglead: string, cmdline: string, cursorPos: number): list<string>
   var wordBegin = -1
   var wordEnd = -1
-  var l = ['debug', 'restart', 'show', 'trace']
+  var l = ['debug', 'restart', 'show', 'trace', 'stop', 'start']
 
   # Skip the command name
   var i = cmdline->stridx(' ', 0)
@@ -1327,7 +1380,6 @@ export def LspServerComplete(arglead: string, cmdline: string, cursorPos: number
   var cmd = cmdline->strpart(wordBegin, wordEnd - wordBegin)
   if cmd == 'debug'
     return LspServerDebugComplete(arglead, cmdline, wordEnd)
-  elseif cmd == 'restart'
   elseif cmd == 'show'
     return LspServerShowComplete(arglead, cmdline, wordEnd)
   elseif cmd == 'trace'
@@ -1355,6 +1407,10 @@ export def LspServerCmd(args: string)
     else
       util.ErrMsg('Argument required for ":LspServer show"')
     endif
+  elseif args->stridx('start') == 0
+    StartServerByUser()
+  elseif args->stridx('stop') == 0
+    StopServerByUser()
   elseif args->stridx('trace') == 0
     if args[5] == ' '
       var subcmd = args[6 : ]->trim()

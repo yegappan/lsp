@@ -182,7 +182,14 @@ enddef
 
 # Parse the semantic highlight reply from the language server and update the
 # text properties
-export def UpdateTokens(lspserver: dict<any>, bnr: number, semTokens: dict<any>)
+export def UpdateTokens(lspserver: dict<any>, bnr: number, semTokens: dict<any>, requestTick: number)
+  # Validate buffer hasn't changed since request
+  if getbufvar(bnr, 'changedtick') != requestTick
+    # Clear the data as our local copy will be out of sync
+    setbufvar(bnr, 'LspSemanticTokensData', [])
+    setbufvar(bnr, 'LspSemanticResultId', '')
+    return
+  endif
 
   if semTokens->has_key('edits')
     # Delta semantic update.  Need to sort the edits and apply the last edit
@@ -229,7 +236,18 @@ def LspUpdateSemanticHighlight(bnr: number)
     return
   endif
 
-  lspserver.semanticHighlightUpdate(bnr)
+  # Cancel existing timer if any
+  var timerId = getbufvar(bnr, 'LspSemanticTimer', 0)
+  if timerId > 0
+    timer_stop(timerId)
+  endif
+
+  # Start new debounced timer
+  timerId = timer_start(opt.lspOptions.semanticHighlightDelay, (_) => {
+    setbufvar(bnr, 'LspSemanticTimer', 0)
+    lspserver.semanticHighlightUpdate(bnr)
+  })
+  setbufvar(bnr, 'LspSemanticTimer', timerId)
 enddef
 
 # Initialize the semantic highlighting for the buffer 'bnr'
