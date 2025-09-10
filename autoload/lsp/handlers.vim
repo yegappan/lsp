@@ -132,7 +132,9 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       'o#/projectconfiguration',
       'o#/projectdiagnosticstatus',
       'o#/unresolveddependencies',
-      '@/tailwindCSS/projectInitialized'
+      '@/tailwindCSS/projectInitialized',
+      # lua-language-server sends a "hello world" message on start-up.
+      '$/hello'
     ]
 
   if lsp_notif_handlers->has_key(reply.method)
