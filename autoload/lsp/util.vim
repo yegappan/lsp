@@ -281,6 +281,8 @@ export def JumpToLspLocation(location: dict<any>, cmdmods: string)
           else
             exe $'buf {bnr}'
           endif
+	  # In case 'buflisted' is not yet set for this buffer, set it now
+	  setlocal buflisted
         else
           if (&modified && !&hidden) || &buftype != ''
             # if the current buffer has unsaved changes and 'hidden' is not set,
