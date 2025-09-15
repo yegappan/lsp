@@ -146,11 +146,11 @@ Sample code to add the Eclipse Java Development Tools (JDT) language server to t
 call LspAddServer([#{name: 'jdtls',
                  \   filetype: 'java',
                  \   path: '/usr/local/jdtls/bin/jdtls',
-                 \   args: []
-                 \   initializationOptions: {
-                 \       settings: {
-                 \           java: {
-                 \               completion: {
+                 \   args: [],
+                 \   initializationOptions: #{
+                 \       settings: #{
+                 \           java: #{
+                 \               completion: #{
                  \                   filteredTypes: ["com.sun.*", "java.awt.*", "jdk.*", "org.graalvm.*", "sun.*", "javax.awt.*", "javax.swing.*"],
                  \               },
                  \           },
@@ -427,7 +427,7 @@ To enable the inlay hint support, include the following in the above code to add
 
 Sample code to add the Solargraph language server to the LSP plugin:
 ```
-call LspAddServer([#{name: 'solargraph'
+call LspAddServer([#{name: 'solargraph',
                  \   filetype: ['ruby'],
                  \   path: 'solargraph',
                  \   args: ['stdio']
@@ -441,7 +441,7 @@ call LspAddServer([#{name: 'solargraph'
 
 Sample code to add the swift language server to the LSP plugin:
 ```
-call LspAddServer([#{name: 'swiftls'
+call LspAddServer([#{name: 'swiftls',
                  \   filetype: ['swift'],
                  \   path: '/usr/bin/xcrun',
                  \   args: ['sourcekit-lsp']
@@ -455,7 +455,7 @@ call LspAddServer([#{name: 'swiftls'
 
 Sample code to add the typescript/javascript language server to the LSP plugin:
 ```
-call LspAddServer([#{name: 'tsserver'
+call LspAddServer([#{name: 'tsserver',
                  \   filetype: ['javascript', 'typescript'],
                  \   path: '/usr/local/bin/typescript-language-server',
                  \   args: ['--stdio']
@@ -518,7 +518,7 @@ call LspAddServer([#{name: 'vue-ls',
                  \   initializationOptions: #{
                  \       typescript: #{
                  \           tsdk: '/usr/local/node_modules/typescript/lib'
-                 \       }
+                 \       },
                  \       vue: #{
                  \           hybridMode: v:false
                  \       }
