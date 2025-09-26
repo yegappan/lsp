@@ -501,7 +501,7 @@ def g:LspOmniFunc(findstart: number, base: string): any
   if findstart
 
     var [triggerKind, triggerChar] = GetTriggerAttributes(lspserver)
-    if triggerKind < 0
+    if triggerKind < 0 && !opt.lspOptions.omniCompleteAllowBare
       # previous character is not a keyword character or a trigger character,
       # so cancel omni completion.
       return -2
@@ -567,14 +567,14 @@ enddef
 
 # Insert mode completion handler. Used when 24x7 completion is enabled
 # (default).
-def LspComplete()
+export def LspComplete(force: bool = false)
   var lspserver: dict<any> = buf.CurbufGetServer('completion')
   if lspserver->empty() || !lspserver.running || !lspserver.ready
     return
   endif
 
   var [triggerKind, triggerChar] = GetTriggerAttributes(lspserver)
-  if triggerKind < 0
+  if triggerKind < 0 && !force
     return
   endif
 

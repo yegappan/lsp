@@ -81,6 +81,10 @@ export var lspOptions: dict<any> = {
   # set to null by default instead of false.
   omniComplete: null,
 
+  # Whether or not the omni-completion function can run even if there aren't
+  # any characters that would normally trigger the completion.
+  omniCompleteAllowBare: false,
+
   # Open outline window on right side
   outlineOnRight: false,
 

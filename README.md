@@ -136,6 +136,7 @@ call LspOptionsSet(#{
         \   diagVirtualTextWrap: 'default',
         \   noNewlineInCompletion: v:false,
         \   omniComplete: v:null,
+        \   omniCompleteAllowBare: v:false,
         \   outlineOnRight: v:false,
         \   outlineWinSize: 20,
         \   popupBorder: v:true,

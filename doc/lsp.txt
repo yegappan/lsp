@@ -587,6 +587,13 @@ omniComplete		|Boolean| option. Enables or disables omni-completion.
 			default.  By setting "omniComplete" option to v:false,
 			omni-completion can also be disabled.
 
+						*lsp-opt-omniCompleteAllowBare*
+omniCompleteAllowBare   |Boolean| option. Defines whether or not the
+			omniComplete function can trigger even if there are no
+			characters in front of the cursor. Only takes effect if
+			|lsp-opt-omniComplete| is true. By default, this is set
+			to v:false.
+
 						*lsp-opt-outlineOnRight*
 outlineOnRight		|Boolean| option.  Open the outline window on the
 			right side, by default this is false.
