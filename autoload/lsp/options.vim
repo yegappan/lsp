@@ -83,6 +83,8 @@ export var lspOptions: dict<any> = {
 
   # Whether or not the omni-completion function can run even if there aren't
   # any characters that would normally trigger the completion.
+  # For backwards compatibility, and because this enables quirks like spaces
+  # being enough to trigger the completion popup, this is default-disabled. 
   omniCompleteAllowBare: false,
 
   # Open outline window on right side
