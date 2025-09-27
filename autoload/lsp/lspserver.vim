@@ -364,6 +364,8 @@ def SendNotification(lspserver: dict<any>, method: string, params: any = {})
   lspserver.sendMessage(notif)
 enddef
 
+const LSP_ERROR_REQUEST_CANCELLED = -32800
+
 # Translate an LSP error code into a readable string
 def LspGetErrorMessage(errcode: number): string
   var errmap = {
@@ -386,6 +388,12 @@ enddef
 # Process a LSP server response error and display an error message.
 def ProcessLspServerError(method: string, responseError: dict<any>)
   # request failed
+
+  if responseError.code == LSP_ERROR_REQUEST_CANCELLED
+    # if the request is canceled, silently return.
+    return
+  endif
+
   var emsg: string = responseError.message
   emsg ..= $', error = {LspGetErrorMessage(responseError.code)}'
   if responseError->has_key('data')
