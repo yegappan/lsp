@@ -140,7 +140,7 @@ def JumpToWorkspaceSymbol(cmdmods: string, popupID: number, result: number): voi
     endif
     # Set the previous cursor location mark. Instead of using setpos(), m' is
     # used so that the current location is added to the jump list.
-    :normal m'
+    :normal! m'
     setcursorcharpos(symTbl[result - 1].pos.line + 1,
 		     util.GetCharIdxWithoutCompChar(bufnr(),
 						    symTbl[result - 1].pos) + 1)
@@ -797,7 +797,7 @@ def SymbolMenuItemSelected(symPopupMenu: number,
 
     # Set the previous cursor location mark. Instead of using setpos(), m' is
     # used so that the current location is added to the jump list.
-    :normal m'
+    :normal! m'
 
     # Jump to the selected symbol location
     var r = symTblFiltered[result - 1].selectionRange
