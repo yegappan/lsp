@@ -987,6 +987,7 @@ def SymbolPopupMenu(symbolTable: list<dict<any>>)
   endif
   var symInputPopup = popup_create('', symInputPopupAttrs)
   var symPopupMenu = popup_menu(symNames, symNamesPopupAttrs)
+  feedkeys("\<CursorHold>", 'n') # fix issue with user mappings, see #667
 
   # Save the state in the popup menu window variables
   setwinvar(symPopupMenu, 'symbolTable', symbolTable)
