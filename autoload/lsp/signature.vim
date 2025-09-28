@@ -61,7 +61,7 @@ export def BufferInit(lspserver: dict<any>)
     if ch =~ ' '
       mapChar = '<Space>'
     endif
-    exe $"inoremap <buffer> <silent> {mapChar} {mapChar}<C-R>=g:LspShowSignature()<CR>"
+    exe $"inoremap <expr> <buffer> <silent> {mapChar} complete_info()['selected'] != -1 ? '{mapChar}' : '{mapChar}\<C-O>:call g:LspShowSignature()\<CR>'"
   endfor
 
   # close the signature popup when leaving insert mode
