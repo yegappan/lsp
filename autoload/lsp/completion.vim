@@ -539,14 +539,9 @@ def g:LspOmniFunc(findstart: number, base: string): any
     var res: list<dict<any>> = lspserver.completeItems
     var prefix = lspserver.omniCompleteKeyword
 
-    if prefix->empty()
+    # Don't attempt to filter on the items, when "isIncomplete" is set
+    if prefix->empty() || lspserver.completeItemsIsIncomplete
       return res
-    endif
-
-    # When "isIncomplete" is set, do not filter the items, and signal that Vim
-    # should request more items when user continues typing.
-    if lspserver.completeItemsIsIncomplete
-      return { words: res, refresh: 'always' }
     endif
 
     var lspOpts = opt.lspOptions
