@@ -59,21 +59,35 @@ export def BufferInit(lspserver: dict<any>)
     return
   endif
 
+  # Add and clear the augroup for the signature help
   augroup lspShowSignatureHelp
     au!
+  augroup END
+
+  # Use a mapping for versions that don't support KeyInputPre yet'
+  if v:version < 901 || (v:version == 901 && !has('patch0563'))
+    # map characters that trigger signature help
+    for ch in lspserver.caps.signatureHelpProvider.triggerCharacters
+      var mapChar = ch
+      if ch =~ ' '
+	mapChar = '<Space>'
+      endif
+      exe $"inoremap <buffer> <silent> {mapChar} {mapChar}<C-R>=g:LspShowSignature()<CR>"
+    endfor
+  else
     # detect the trigger chars and show the signature
     autocmd_add([{bufnr: bufnr(),
 		  event: 'KeyInputPre',
 		  group: 'lspShowSignatureHelp',
 		  cmd: $'if index({lspserver.caps.signatureHelpProvider.triggerCharacters}, v:char) != -1
 			\ | call timer_start(1, function("LspShowSignatureCb")) | endif'}])
+  endif
 
-    # close the signature popup when leaving insert mode
-    autocmd_add([{bufnr: bufnr(),
-		  event: 'InsertLeave',
-		  group: 'lspShowSignatureHelp',
-		  cmd: 'CloseCurBufSignaturePopup()'}])
-  augroup END
+  # close the signature popup when leaving insert mode
+  autocmd_add([{bufnr: bufnr(),
+		event: 'InsertLeave',
+		group: 'lspShowSignatureHelp',
+		cmd: 'CloseCurBufSignaturePopup()'}])
 enddef
 
 # process the 'textDocument/signatureHelp' reply from the LSP server and
