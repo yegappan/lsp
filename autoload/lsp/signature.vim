@@ -42,7 +42,10 @@ export def InitOnce()
 enddef
 
 def LspShowSignatureCb(timer: number)
-  call g:LspShowSignature()
+  # Show signature only in insert mode
+  if mode() == 'i'
+    call g:LspShowSignature()
+  endif
 enddef
 
 # Initialize the signature triggers for the current buffer
