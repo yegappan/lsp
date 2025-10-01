@@ -981,6 +981,97 @@ def ShowHoverInfo(lspserver: dict<any>, cmdmods: string): void
   })
 enddef
 
+# Pull either document or workspace diagnostics from server
+# if parameter 'workspace' is true pull workspace diagnostics
+def PullDiagnostic(lspserver: dict<any>, workspace: bool = false): void
+  # Check whether LSP server supports pulling diagnostics
+  if !lspserver.isDiagnosticProvider
+    return
+  endif
+
+  if workspace && lspserver.isWorkspaceDiagnosticProvider
+    lspserver->PullWorkspaceDiagnostic()
+  elseif !workspace
+    lspserver->PullDocumentDiagnostic()
+  endif
+enddef
+
+# Pull document diagnostics from server
+# Request: "textDocument/diagnostic"
+# Param: TextDocumentIdentifier
+def PullDocumentDiagnostic(lspserver: dict<any>): void
+  # Check whether LSP server supports pulling diagnostics
+  if !lspserver.isDiagnosticProvider
+    util.ErrMsg('LSP server does not support pulling document diagnostics')
+    return
+  endif
+
+  # interface DocumentDiagnosticParams
+  #   interface TextDocumentIdentifier
+  var params = {
+    textDocument: {
+      uri: util.LspFileToUri(@%)
+    }
+  }
+
+  lspserver.rpc_a('textDocument/diagnostic', params, (_, reply) => {
+    var uri = util.LspFileToUri(@%)
+    # Test for invalid reply from server:
+    # TODO: would an empty reply mean to clear all available diags?
+    if reply->type() == v:t_dict
+      DisplayDiagnosticReport(lspserver, uri, reply)
+    endif
+  })
+enddef
+
+# pull workspace diagnostics from server
+# Request: "workspace/diagnostic"
+# Param: PreviousResultIds
+def PullWorkspaceDiagnostic(lspserver: dict<any>): void
+  # Check whether LSP server supports pulling diagnostics
+  if !lspserver.isDiagnosticProvider
+    || !lspserver.isWorkspaceDiagnosticProvider
+    util.ErrMsg('LSP server does not support pulling workspace diagnostics')
+    return
+  endif
+
+  # interface WorkspaceDiagnosticParams
+  #   interface PreviousResultIds
+  #   TODO: fill in list of previous result IDs
+  var params = {
+    previousResultIds: []
+  }
+
+  lspserver.rpc_a('workspace/diagnostic', params, (_, reply) => {
+    if reply->has_key('items') && reply.items->type() == v:t_list
+      for item in reply.items
+        # Test for invalid reply from server:
+        # TODO: would an empty reply mean to clear all available diags?
+        # TODO: what about not contained URI's? How to clean them?
+        if item->type() == v:t_dict
+          DisplayDiagnosticReport(lspserver, item.uri, item)
+        endif
+      endfor
+    endif
+  })
+enddef
+
+def DisplayDiagnosticReport(lspserver: dict<any>, uri: string, report: dict<any>)
+  # Ignore report itself in absence of changes
+  if report->has_key('kind')
+    && report.kind != 'unchanged'
+    diag.DiagNotification(lspserver, uri, report.items)
+  endif
+
+  # Process related documents, if included in reply
+  if report->has_key('relatedDocuments')
+      && report.relatedDocuments->type() == v:t_dict
+    for [rel_uri, rel_items] in report.relatedDocuments->items()
+      diag.DiagNotification(lspserver, rel_uri, rel_items)
+    endfor
+  endif
+enddef
+
 # Request: "textDocument/references"
 # Param: ReferenceParams
 def ShowReferences(lspserver: dict<any>, peek: bool): void
@@ -1993,6 +2084,7 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     showSignature: function(ShowSignature, [lspserver]),
     didSaveFile: function(DidSaveFile, [lspserver]),
     hover: function(ShowHoverInfo, [lspserver]),
+    pullDiagnostic: function(PullDiagnostic, [lspserver]),
     showReferences: function(ShowReferences, [lspserver]),
     findLocations: function(FindLocations, [lspserver]),
     docHighlight: function(DocHighlight, [lspserver]),

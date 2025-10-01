@@ -204,6 +204,18 @@ def ProcessWorkDoneProgressCreate(lspserver: dict<any>, request: dict<any>)
   lspserver.sendResponse(request, null, {})
 enddef
 
+# process the workspace/diagnostic/refresh notification from the server
+# Request: "workspace/diagnostic/refresh"
+# Param: none
+def ProcessWorkspaceDiagnosticRefresh(lspserver: dict<any>, request: dict<any>)
+  # Notify user scripts that workspace diagnostics have been refreshed by server
+  if exists('#User#LspWorkspaceDiagnosticRefresh')
+    :doautocmd <nomodeline> User LspWorkspaceDiagnosticRefresh
+  endif
+  # TODO: Clarify whether diagnostic pull should be performed for all buffers
+  lspserver.sendResponse(request, null, {})
+enddef
+
 # process the window/showMessageRequest LSP server request
 # Request: "window/showMessageRequest"
 # Param: ShowMessageRequestParams
@@ -265,10 +277,10 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
       'window/showMessageRequest': ProcessShowMessageRequest,
       'workspace/applyEdit': ProcessApplyEditReq,
       'workspace/configuration': ProcessWorkspaceConfiguration,
-      'workspace/workspaceFolders': ProcessWorkspaceFoldersReq
+      'workspace/workspaceFolders': ProcessWorkspaceFoldersReq,
+      'workspace/diagnostic/refresh':  ProcessWorkspaceDiagnosticRefresh
       # TODO: Handle the following requests from the server:
       #     workspace/codeLens/refresh
-      #     workspace/diagnostic/refresh
       #     workspace/inlayHint/refresh
       #     workspace/inlineValue/refresh
       #     workspace/semanticTokens/refresh
