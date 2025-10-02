@@ -146,7 +146,7 @@ enddef
 
 # process the 'textDocument/completion' reply from the LSP server
 # Result: CompletionItem[] | CompletionList | null
-export def CompletionReply(lspserver: dict<any>, cItems: any)
+export def CompletionReply(lspserver: dict<any>, cItems: any, trigger_type: number)
   lspserver.completeItemsIsIncomplete = false
   if cItems->empty()
     if lspserver.omniCompletePending
@@ -186,7 +186,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     snippet.CompletionVsnip(items)
   endif
 
-  if lspOpts.useBufferCompletion
+  if lspOpts.useBufferCompletion && count(lspOpts.bufferCompletionTriggers, trigger_type) > 0
     CompletionFromBuffer(items)
   endif
 
@@ -574,7 +574,7 @@ def LspComplete()
   endif
 
   var [triggerKind, triggerChar] = GetTriggerAttributes(lspserver)
-  if triggerKind < 0
+  if count(opt.lspOptions.autoCompleteTriggers, triggerKind) == 0
     return
   endif
 

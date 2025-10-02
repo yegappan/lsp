@@ -733,8 +733,11 @@ def GetCompletion(lspserver: dict<any>, triggerKind_arg: number, triggerChar: st
   #   interface CompletionContext
   params.context = {triggerKind: triggerKind_arg, triggerCharacter: triggerChar}
 
-  lspserver.rpc_a('textDocument/completion', params,
-			completion.CompletionReply)
+  # Wrap CompletionReply, so it gets the trigger kind
+  var CompletionReplyWithTriggerKind = (lspserverarg: dict<any>, cItems: any) =>
+    completion.CompletionReply(lspserverarg, cItems, triggerKind_arg)
+  echom lspserver.completionTriggerChars
+  lspserver.rpc_a('textDocument/completion', params, CompletionReplyWithTriggerKind)
 enddef
 
 # Get lazy properties for a completion item.
