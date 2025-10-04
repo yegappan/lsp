@@ -1558,6 +1558,25 @@ def CodeLens(lspserver: dict<any>, fname: string)
   codelens.ProcessCodeLens(lspserver, bnr, reply.result)
 enddef
 
+#
+# Request: "codeAction/resolve"
+# Param: CodeAction
+def ResolveCodeAction(lspserver: dict<any>,
+		      codeAction: dict<any>): dict<any>
+  if !lspserver.isCodeActionResolveProvider
+    return {}
+  endif
+
+  var reply = lspserver.rpc('codeAction/resolve', codeAction)
+  if reply->empty()
+    return {}
+  endif
+
+  var codeActionItem: dict<any> = reply.result
+
+  return codeActionItem
+enddef
+
 # Request: "codeLens/resolve"
 # Param: CodeLens
 def ResolveCodeLens(lspserver: dict<any>, bnr: number,
@@ -2008,6 +2027,7 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     renameSymbol: function(RenameSymbol, [lspserver]),
     codeAction: function(CodeAction, [lspserver]),
     codeLens: function(CodeLens, [lspserver]),
+    resolveCodeAction: function(ResolveCodeAction, [lspserver]),
     resolveCodeLens: function(ResolveCodeLens, [lspserver]),
     workspaceQuery: function(WorkspaceQuerySymbols, [lspserver]),
     addWorkspaceFolder: function(AddWorkspaceFolder, [lspserver]),
