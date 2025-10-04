@@ -8,26 +8,27 @@ Last change: Sep 8, 2025
 ==============================================================================
 CONTENTS                                                     *lsp-contents*
 
-     1. Overview ................................. |lsp-overview|
-     2. Requirements ............................. |lsp-installation|
-     3. Usage .................................... |lsp-usage|
-     4. Configuration............................. |lsp-configuration|
-     5. Commands ................................. |lsp-commands|
-     6. Insert Mode Completion ................... |lsp-ins-mode-completion|
-     7. Diagnostics .............................. |lsp-diagnostics|
-     8. Tag Function ............................. |lsp-tagfunc|
-     9. LSP Formatting ........................... |lsp-format|
-    10. Call Hierarchy ........................... |lsp-call-hierarchy|
-    11. Autocommands ............................. |lsp-autocmds|
-    12. Highlight Groups ......................... |lsp-highlight-groups|
-    13. Debugging ................................ |lsp-debug|
-    14. Custom Command Handlers .................. |lsp-custom-commands|
-    15. Custom LSP Completion Kinds .............. |lsp-custom-kinds|
-    16. Custom Popup Styles ...................... |lsp-custom-popup-styles|
-    17. Custom Locations Request ................. |lsp-custom-locations|
-    18. Multiple Language Servers for a buffer ... |lsp-multiple-servers|
-    19. Language Servers Features ................ |lsp-features|
-    20. License .................................. |lsp-license|
+     1. Overview ................................... |lsp-overview|
+     2. Requirements ............................... |lsp-installation|
+     3. Usage ...................................... |lsp-usage|
+     4. Configuration............................... |lsp-configuration|
+     5. Commands ................................... |lsp-commands|
+     6. Insert Mode Completion ..................... |lsp-ins-mode-completion|
+       6.1. Forcing completion without characters .. |lsp-ins-force|
+     7. Diagnostics ................................ |lsp-diagnostics|
+     8. Tag Function ............................... |lsp-tagfunc|
+     9. LSP Formatting ............................. |lsp-format|
+    10. Call Hierarchy ............................. |lsp-call-hierarchy|
+    11. Autocommands ............................... |lsp-autocmds|
+    12. Highlight Groups ........................... |lsp-highlight-groups|
+    13. Debugging .................................. |lsp-debug|
+    14. Custom Command Handlers .................... |lsp-custom-commands|
+    15. Custom LSP Completion Kinds ................ |lsp-custom-kinds|
+    16. Custom Popup Styles ........................ |lsp-custom-popup-styles|
+    17. Custom Locations Request ................... |lsp-custom-locations|
+    18. Multiple Language Servers for a buffer ..... |lsp-multiple-servers|
+    19. Language Servers Features .................. |lsp-features|
+    20. License .................................... |lsp-license|
 
 ==============================================================================
 1. Overview					*lsp-overview*
@@ -586,6 +587,19 @@ omniComplete		|Boolean| option. Enables or disables omni-completion.
 			is set to v:false, then omni-completion is enabled by
 			default.  By setting "omniComplete" option to v:false,
 			omni-completion can also be disabled.
+
+						*lsp-opt-omniCompleteAllowBare*
+omniCompleteAllowBare   |Boolean| option. Defines whether or not the
+			omniComplete function can trigger even if there are no
+			trigger characters in front of the cursor. Only takes
+			effect if |lsp-opt-omniComplete| is true. By default,
+			this is set to v:false.
+			Note that for implementation reasons, this can be a
+			very noisy option, as it'll cause omnicomplete to
+			trigger on spaces, as well as many other places where
+			it does not make sense.  For an equivalent and much
+			less noisy |lsp-opt-autoComplete| solution, see
+			|lsp-ins-force|
 
 						*lsp-opt-outlineOnRight*
 outlineOnRight		|Boolean| option.  Open the outline window on the
@@ -1504,6 +1518,25 @@ The process works as follows:
 7. To proceed with the second invocation of g:LspOmniFunc, it is crucial to
    ensure that |g:LspOmniCompletePending| returns false, indicating that the
    language server is now ready to provide the completion matches.
+
+------------------------------------------------------------------------------
+6.1. Forcing completion without characters		*lsp-ins-force*
+
+Using a custom mapping that calls the 24x7 completion function, you can force
+the completion dialog to appear even without any trigger characters. This can
+be especially useful in languages where there are well-defined things that
+could be inserted, but there's no special trigger characters that can be used
+first. For example when filling in TypeScript objects, and you want
+completions for the names without typing anything first.
+
+This is not enabled by default, as it can be relatively noisy under certain
+circumstances.
+
+Example mapping: >
+    inoremap <C-space> <C-\><C-o>:call lsp#completion#LspComplete(v:true)<cr>
+<
+(Note that <C-space> in particular is limited to gVim due to input limitations
+of terminal Vim)
 
 ==============================================================================
 7. Diagnostics						*lsp-diagnostics*
