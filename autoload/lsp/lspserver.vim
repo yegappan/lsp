@@ -1037,18 +1037,26 @@ def FindLocations(lspserver: dict<any>, peek: bool, method: string, args: dict<a
   symbol.ShowLocations(lspserver, reply.result, peek, 'Symbol Locations')
 enddef
 
-# send a custom request to the server
+# send a custom async request to the server
 # Name: name of the server
 # Request: any
 # Params: any
-def g:LspRequestCustom(name: string, msg: string, params: any): string
+def g:LspRequestCustom(name: string, msg: string, params: any): void
+  g:LspRequestCustomCb(name, msg, params, WorkspaceExecuteReply)
+enddef
+
+# send a custom async request to the server with custom callback
+# Name: name of the server
+# Request: any
+# Params: any
+# Cbfunc: callback function
+def g:LspRequestCustomCb(name: string, msg: string, params: any, Cbfunc: func): void
   var lspserver: dict<any> = buf.CurbufGetServerByName(name)
   if lspserver->empty()
-    return ''
+    return
   endif
 
-  lspserver.rpc_a(msg, params, WorkspaceExecuteReply)
-  return ''
+  lspserver.rpc_a(msg, params, Cbfunc)
 enddef
 
 # process the 'textDocument/documentHighlight' reply from the LSP server
