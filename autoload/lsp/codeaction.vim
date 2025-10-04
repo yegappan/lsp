@@ -32,19 +32,34 @@ export def HandleCodeAction(lspserver: dict<any>, selAction: dict<any>)
   # Edits should be executed first.
   # Both Command and CodeAction interfaces has "command" member
   # so we should check "command" type - for Command it will be "string"
-  if selAction->has_key('edit')
-     || (selAction->has_key('command') && selAction.command->type() == v:t_dict)
-    # selAction is a CodeAction instance, apply edit and command
-    if selAction->has_key('edit')
-      # apply edit first
-      textedit.ApplyWorkspaceEdit(selAction.edit)
+
+  var codeAction = selAction
+
+  # If we don't have a complete CodeAction then use the servers's CodeAction
+  # property resolution to complete the definition.
+  if !selAction->has_key('edit') && !selAction->has_key('command')
+    util.InfoMsg("Resolving incomplete CodeAction")
+    var resolved = lspserver.resolveCodeAction(selAction)
+    if resolved->empty()
+      util.WarnMsg("Code action could not be resolved by LSP server.")
+      return
     endif
-    if selAction->has_key('command')
-      DoCommand(lspserver, selAction.command)
+    codeAction = resolved
+  endif
+
+  if codeAction->has_key('edit')
+     || (codeAction->has_key('command') && codeAction.command->type() == v:t_dict)
+    # codeAction is a CodeAction instance, apply edit and command
+    if codeAction->has_key('edit')
+      # apply edit first
+      textedit.ApplyWorkspaceEdit(codeAction.edit)
+    endif
+    if codeAction->has_key('command')
+      DoCommand(lspserver, codeAction.command)
     endif
   else
-    # selAction is a Command instance, apply it directly
-    DoCommand(lspserver, selAction)
+    # codeAction is a Command instance, apply it directly
+    DoCommand(lspserver, codeAction)
   endif
 enddef
 

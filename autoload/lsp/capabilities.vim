@@ -219,11 +219,16 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
   if lspserver.caps->has_key('codeActionProvider')
     if lspserver.caps.codeActionProvider->type() == v:t_bool
       lspserver.isCodeActionProvider = lspserver.caps.codeActionProvider
+      lspserver.isCodeActionResolveProvider = v:false
     else
       lspserver.isCodeActionProvider = true
+      if lspserver.caps.codeActionProvider->type() == v:t_dict
+        lspserver.isCodeActionResolveProvider = lspserver.caps.codeActionProvider.resolveProvider
+      endif
     endif
   else
     lspserver.isCodeActionProvider = false
+    lspserver.isCodeActionResolveProvider = v:false
   endif
 
   # codeLensProvider
@@ -346,7 +351,11 @@ export def GetClientCaps(): dict<any>
 	  }
 	},
 	isPreferredSupport: true,
-	disabledSupport: true
+	disabledSupport: true,
+        dataSupport: true,
+        resolveSupport: {
+          properties: ['edit', 'command']
+        }
       },
       codeLens: {
 	dynamicRegistration: false
