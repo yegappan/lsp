@@ -17,7 +17,48 @@ Additional entries include
 - `rootSearch` here to the array of values `root_markers` there where each directory path needs to end with a slash, and
 - `settings` *there* to `initializationOptions.settings` here.
 
-## Angular Language Server
+## Overview
+[Angular Language Server](#angular-language-server)<br>
+[AWK Language Server](#awk-language-server)<br>
+[Bash Language Server](#bash-language-server)<br>
+[Bitbake Language Server](#bitbake-language-server)<br>
+[CSpell LSP](#cspell-lsp)<br>
+[Clangd](#clangd)<br>
+[CSS Language Server](#css-language-server)<br>
+[Dart](#dart)<br>
+[Deno](#deno)<br>
+[Eclipse Java Language Server](#eclipse-java-language-server)<br>
+[EFM Language Server](#efm-language-server)<br>
+[Emmet Language Server](#emmet-language-server)<br>
+[Fortran Language Server](#fortran-language-server)<br>
+[Gopls](#gopls)<br>
+[HTML Language Server](#html-language-server)<br>
+[JETLS.jl](#jetls)<br>
+[Language Server Bitbake](#language-server-bitbake)<br>
+[Lua Language Server](#lua-language-server)<br>
+[Omnisharp Language Server](#omnisharp-language-server)<br>
+[Perl Navigator](#perl-navigator)<br>
+[PHP Intelephense](#php-intelephense)<br>
+[PKL Language Server](#pkl-language-server)<br>
+[Pylsp](#pylsp)<br>
+[Pyright](#pyright)<br>
+[Rust-analyzer](#rust-analyzer)<br>
+[Solargraph](#solargraph)<br>
+[Swift Language Server](#swift-language-server)<br>
+[Typescript/Javascript Language Server](#typescript-language-server)<br>
+[Verible](#verible)<br>
+[VHDL Language Server](#vhdl-language-server)<br>
+[Vimscript](#vim-language-server)<br>
+[Volar Server](#volar-server)<br>
+[VSCode CSS Language Server](#vscode-css-lsp)<br>
+[VSCode ESLint Language Server](#vscode-eslint-lsp)<br>
+[VSCode HTML Language Server](#vscode-html-lsp)<br>
+[VSCode JSON Language Server](#vscode-json-lsp)<br>
+[VSCode Markdown Language Server](#vscode-markdown-lsp)<br>
+[YAML Language Server](#yaml-language-server)<br>
+
+<a name="angular-language-server"/></a>
+## Angular Language Server 
 **Language**: [Angular Templates](https://en.wikipedia.org/wiki/Angular_(web_framework))
 
 **Home Page**: [https://github.com/angular/vscode-ng-language-service](https://github.com/angular/vscode-ng-language-service)
@@ -36,6 +77,7 @@ Command to install the angular language server on Linux:
 npm install -g @angular/language-server @angular/language-service typescript
 ```
 
+<a name="awk-language-server"/></a>
 ## AWK Language Server
 **Language**: [AWK scripts](https://en.wikipedia.org/wiki/AWK)
 
@@ -56,6 +98,7 @@ Command to install the awk language server on Linux:
 npm install -g awk-language-server
 ```
 
+<a name="bash-language-server"/></a>
 ## Bash Language Server
 **Language**: [Bash shell scripts](https://en.wikipedia.org/wiki/Bash_(Unix_shell))
 
@@ -71,6 +114,7 @@ call LspAddServer([#{name: 'bashls',
                  \ }])
 ```
 
+<a name="bitbake-language-server"/></a>
 ## Bitbake Language Server
 **Language**: [Bitbake scripts](https://en.wikipedia.org/wiki/BitBake)
 
@@ -89,6 +133,7 @@ The language server provides linting for Bitbake files.
 
 _Note_: This is an unofficial language server.
 
+<a name="cspell-lsp"/></a>
 ## CSpell LSP
 **Home Page**: [https://github.com/vlabo/cspell-lsp](https://github.com/vlabo/cspell-lsp)
 
@@ -117,26 +162,7 @@ _Installation_:
 npm install -g @vlabo/cspell-lsp
 ```
 
-## Dart
-
-**Language**: Dart
-
-**Home Page**: [https://github.com/dart-lang/sdk/blob/main/pkg/analysis_server/tool/lsp_spec/README.md](https://github.com/dart-lang/sdk/blob/main/pkg/analysis_server/tool/lsp_spec/README.md)
-
-Sample code to add the dart language server to the LSP plugin:
-
-```
-call LspAddServer([#{name: 'dart',
-                 \   filetype: ['dart'],
-                 \   path: '/usr/lib/dart/bin/dart',
-                 \   args: ['language-server', '--client-id', 'vim']
-                 \ }])
-```
-
-## Deno
-**Language**: Typescript/Javascript
-
-**Home Page**: [https://deno.land](https://deno.land)
+<a name="clangd"/></a>
 ## Clangd
 **Language**: C/C++
 
@@ -151,6 +177,7 @@ call LspAddServer([#{name: 'clangd',
                  \ }])
 ```
 
+<a name="css-language-server"/></a>
 ## CSS Language Server
 **Language**: CSS
 
@@ -167,6 +194,7 @@ call LspAddServer([#{name: 'cssls',
 
 _Note_: The CSS language server supports code completion only if the _snippetSupport_ option is enabled.
 
+<a name="dart"/></a>
 ## Dart
 
 **Language**: Dart
@@ -183,6 +211,7 @@ call LspAddServer([#{name: 'dart',
                  \ }])
 ```
 
+<a name="deno"/></a>
 ## Deno
 **Language**: Typescript/Javascript
 
@@ -202,6 +231,7 @@ call LspAddServer([#{name: 'deno',
                  \ }])
 ```
 
+<a name="eclipse-java-language-server"/></a>
 ## Eclipse Java Language Server
 **Language**: Java
 
@@ -227,6 +257,7 @@ call LspAddServer([#{name: 'jdtls',
 
 The [Eclipse Java language server wiki page](https://github.com/eclipse/eclipse.jdt.ls/wiki/Running-the-JAVA-LS-server-from-the-command-line#initialize-request) has more information about the jdtls language server initialization options.  In the above example, the `filteredTypes` item is not mandatory to use the JDT language server with the LSP plugin.  It is included here only as an example.
 
+<a name="efm-language-server"/></a>
 ## EFM Language Server
 **Language**: General Purpose Language Server
 
@@ -266,6 +297,7 @@ call LspAddServer([#{name: 'efm-langserver',
                  \ }])
 ```
 
+<a name="emmet-language-server"/></a>
 ## Emmet Language Server
 **Language**: HTML
 
@@ -285,6 +317,7 @@ Command to install the emmet language server on Linux:
 npm install -g @olrtg/emmet-language-server
 ```
 
+<a name="fortran-language-server"/></a>
 ## Fortran Language Server
 **Language**: Fortran
 
@@ -299,6 +332,7 @@ call LspAddServer([#{name: 'fortls',
                  \ }])
 ```
 
+<a name="gopls"/></a>
 ## Gopls
 **Language**: Go
 
@@ -332,6 +366,7 @@ To enable the inlay hint support, include the following in the above code to add
     \   }
 ```
 
+<a name="html-language-server"/></a>
 ## HTML Language Server
 **Language**: html
 
@@ -375,6 +410,7 @@ and run `julia --project=. -e 'using Pkg; Pkg.instantiate()'` inside it.
 _Note_: The language server is in an early state and currently needs ~30
 seconds to start.
 
+<a name="language-server-bitbake"/></a>
 ## Language Server Bitbake 
 **Language**: [Bitbake scripts](https://en.wikipedia.org/wiki/BitBake)
 
@@ -422,6 +458,7 @@ To enable the inlay hint support, include the following in the above code to add
     \   }
 ```
 
+<a name="omnisharp-language-server"/></a>
 ## Omnisharp Language Server
 **Language**: C#
 
@@ -436,6 +473,7 @@ call LspAddServer([#{name: 'omnisharp',
                  \ }])
 ```
 
+<a name="perl-navigator"/></a>
 ## Perl Navigator
 **Language**: Perl
 
@@ -450,6 +488,7 @@ call LspAddServer([#{name: 'perlnavigator',
                  \ }])
 ```
 
+<a name="php-intelephense"/></a>
 ## PHP Intelephense
 **Language**: PHP
 
@@ -464,6 +503,7 @@ call LspAddServer([#{name: 'intelephense',
                  \ }])
 ```
 
+<a name="pkl-language-server"/></a>
 ## PKL Language Server
 **Language**: PKL [https://pkl-lang.org/](https://pkl-lang.org/)
 
@@ -493,6 +533,7 @@ need to be provided.
 
 Requires a recent Java JVM to be installed. Future pkl-lsp version are planned to ship as native binaries.
 
+<a name="pylsp"/></a>
 ## Pylsp
 **Language**: Python
 
@@ -507,6 +548,7 @@ call LspAddServer([#{name: 'pylsp',
                  \ }])
 ```
 
+<a name="pyright"/></a>
 ## Pyright
 **Language**: Python
 
@@ -532,6 +574,7 @@ Command to install the pyright language server on Linux:
 
 **Server Configuration**: [https://microsoft.github.io/pyright/#/configuration](https://microsoft.github.io/pyright/#/configuration)
 
+<a name="rust-analyzer"/></a>
 ## Rust-analyzer
 **Language**: Rust
 
@@ -563,6 +606,7 @@ To enable the inlay hint support, include the following in the above code to add
     \  }
 ```
 
+<a name="solargraph"/></a>
 ## Solargraph
 **Language**: Ruby
 
@@ -577,6 +621,7 @@ call LspAddServer([#{name: 'solargraph',
                  \ }])
 ```
 
+<a name="swift-language-server"/></a>
 ## Swift Language Server
 **Language**: [Swift](https://www.swift.org/)
 
@@ -591,6 +636,7 @@ call LspAddServer([#{name: 'swiftls',
                  \ }])
 ```
 
+<a name="typescript-language-server"/></a>
 ## Typescript/Javascript Language Server
 **Language**: Typescript/JavaScript
 
@@ -605,6 +651,7 @@ call LspAddServer([#{name: 'tsserver',
                  \ }])
 ```
 
+<a name="verible"/></a>
 ## Verible
 **Language**: Verilog/SystemVerilog
 
@@ -619,6 +666,7 @@ call LspAddServer([#{name: 'verible',
                  \ }])
 ```
 
+<a name="vhdl-language-server"/></a>
 ## VHDL Language Server
 **Language**: VHDL
 
@@ -632,6 +680,7 @@ call LspAddServer([#{name: 'vhdl_ls',
                  \ }])
 ```
 
+<a name="vim-language-server"/></a>
 ## Vimscript
 **Language**: Vimscript
 
@@ -646,6 +695,7 @@ call LspAddServer([#{name: 'vimls',
                  \ }])
 ```
 
+<a name="volar-server"/></a>
 ## Volar Server
 **Language**: Vue
 
@@ -683,6 +733,7 @@ call LspAddServer([#{name: 'vue-ls',
 ```
 _Note_: The `hybridMode` item in `initializationOptions` is needed if you are using version >= 2.0.7.
 
+<a name="vscode-css-lsp"/></a>
 ## VS Code CSS Language Server
 **Language**: CSS
 
@@ -697,6 +748,7 @@ call LspAddServer([#{name: 'vscode-css-server',
                  \ }])
 ```
 
+<a name="vscode-eslint-lsp"/></a>
 ## VS Code ESLint Language Server
 **Language**: Javascript
 
@@ -711,6 +763,7 @@ call LspAddServer([#{name: 'vscode-eslint-server',
                  \ }])
 ```
 
+<a name="vscode-html-lsp"/></a>
 ## VS Code HTML Language Server
 **Language**: HTML
 
@@ -725,6 +778,7 @@ call LspAddServer([#{name: 'vscode-html-server',
                  \ }])
 ```
 
+<a name="vscode-json-lsp"/></a>
 ## VS Code JSON Language Server
 **Language**: JSON
 
@@ -739,6 +793,7 @@ call LspAddServer([#{name: 'vscode-json-server',
                  \ }])
 ```
 
+<a name="vscode-markdown-lsp"/></a>
 ## VS Code Markdown Language Server
 **Language**: markdown
 
@@ -753,6 +808,7 @@ call LspAddServer([#{name: 'vscode-markdown-server',
                  \ }])
 ```
 
+<a name="yaml-language-server"/></a>
 ## YAML Language Server
 **Language**: YAML
 
