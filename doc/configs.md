@@ -89,6 +89,34 @@ The language server provides linting for Bitbake files.
 
 _Note_: This is an unofficial language server.
 
+## CSpell LSP
+**Home Page**: [https://github.com/vlabo/cspell-lsp](https://github.com/vlabo/cspell-lsp)
+
+Sample code to add the language server to the LSP plugin:
+```
+" cspell-lsp
+call LspAddServer([#{name: 'cspell-lsp',
+                 \   filetype: [
+                 \     'c',
+                 \     'cpp',
+                 \     'json',
+                 \     'vim',
+                 \     'gitcommit',
+                 \     'markdown',
+                 \   ],
+                 \   path: 'cspell-lsp',
+                 \   args: ['--stdio',
+                 \          '--sortWords',
+                 \          '--config', '/path/to/cSpell.json',
+                 \   ]
+                 \ }])
+```
+
+_Installation_: 
+```
+npm install -g @vlabo/cspell-lsp
+```
+
 ## Dart
 
 **Language**: Dart
