@@ -619,6 +619,19 @@ call LspAddServer([#{name: 'verible',
                  \ }])
 ```
 
+## VHDL Language Server
+**Language**: VHDL
+
+**Home Page**: [https://github.com/VHDL-LS/rust_hdl](https://github.com/VHDL-LS/rust_hdl)
+
+Sample code to add the language server to the LSP plugin:
+```
+call LspAddServer([#{name: 'vhdl_ls',
+                 \   filetype: 'vhdl',
+                 \   path: 'vhdl_ls',
+                 \ }])
+```
+
 ## Vimscript
 **Language**: Vimscript
 
