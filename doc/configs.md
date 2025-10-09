@@ -348,6 +348,33 @@ call LspAddServer([#{name: 'htmlls',
 
 _Note_: The HTML language server supports code completion only if the _snippetSupport_ option is enabled.
 
+<a name="jetls"/></a>
+## JETLS.jl
+**Language**: [Julia](https://julialang.org/)
+
+**Home Page**: [https://github.com/aviatesk/JETLS.jl](https://github.com/aviatesk/JETLS.jl)
+
+Sample code to add the language server to the LSP plugin:
+```
+call LspAddServer([#{name: 'JETLS.jl',
+                 \   filetype: 'julia',
+                 \   path: 'julia',
+                 \   args: [
+                 \       '--startup-file=no',
+                 \       '--history-file=no',
+                 \       '--project=/path/to/JETLS.jl',
+                 \       '--threads=auto',
+                 \       '/path/to/JETLS.jl/runserver.jl'
+                 \   ]
+                 \ }])
+```
+
+_Installation_: Clone the [repository](https://github.com/aviatesk/JETLS.jl)
+and run `julia --project=. -e 'using Pkg; Pkg.instantiate()'` inside it.
+
+_Note_: The language server is in an early state and currently needs ~30
+seconds to start.
+
 ## Language Server Bitbake 
 **Language**: [Bitbake scripts](https://en.wikipedia.org/wiki/BitBake)
 
