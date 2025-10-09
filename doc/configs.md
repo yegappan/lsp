@@ -437,6 +437,35 @@ call LspAddServer([#{name: 'intelephense',
                  \ }])
 ```
 
+## PKL Language Server
+**Language**: PKL [https://pkl-lang.org/](https://pkl-lang.org/)
+
+**Home Page**: [https://github.com/apple/pkl-lsp](https://github.com/apple/pkl-lsp)
+
+Sample code to add the language server to the LSP plugin:
+```
+call LspAddServer([#{
+                 \   name: 'pkl-lsp',
+                 \   filetype: ['pkl'],
+                 \   path: 'java',
+                 \   args: [
+                 \     '-jar',
+                 \     '/path/to/pkl-lsp.jar',
+                 \   ],
+                 \   initializationOptions: #{
+                 \     pkl_cli_path: '/usr/bin/pkl'
+                 \   },
+                 \   syncInit: v:true,
+                 \   debug: v:false
+                 \ }])
+```
+
+_Note_: The path to the `pkl-lsp.jar` and the 
+[PKL command-line client](https://pkl-lang.org/main/current/pkl-cli/index.html#installation)
+need to be provided.
+
+Requires a recent Java JVM to be installed. Future pkl-lsp version are planned to ship as native binaries.
+
 ## Pylsp
 **Language**: Python
 
