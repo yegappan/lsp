@@ -320,6 +320,27 @@ call LspAddServer([#{name: 'htmlls',
 
 _Note_: The HTML language server supports code completion only if the _snippetSupport_ option is enabled.
 
+## Language Server Bitbake 
+**Language**: [Bitbake scripts](https://en.wikipedia.org/wiki/BitBake)
+
+**Home Page**: [https://www.npmjs.com/package/language-server-bitbake](https://www.npmjs.com/package/language-server-bitbake)
+
+Sample code to add the language server to the LSP plugin:
+```
+" Language Server Bitbake
+call LspAddServer([#{name: 'language-server-bitbake',
+                 \   filetype: 'bitbake',
+                 \   path: 'language-server-bitbake',
+                 \   args: ['--stdio']
+                 \ }])
+```
+
+The official Bitbake language server.
+
+_Note_: The server starts up and works, but seems to send some unsupported
+messages to the client.
+
+<a name="lua-language-server"/></a>
 ## Lua Language Server
 **Language**: Lua
 
