@@ -71,6 +71,44 @@ call LspAddServer([#{name: 'bashls',
                  \ }])
 ```
 
+## Bitbake Language Server
+**Language**: [Bitbake scripts](https://en.wikipedia.org/wiki/BitBake)
+
+**Home Page**: [https://github.com/Freed-Wu/bitbake-language-server](https://github.com/Freed-Wu/bitbake-language-server)
+
+Sample code to add the language server to the LSP plugin:
+```
+" Bitbake Language Server
+call LspAddServer([#{name: 'bitbake-language-server',
+                 \   filetype: 'bitbake',
+                 \   path: 'bitbake-language-server'
+                 \ }])
+```
+
+The language server provides linting for Bitbake files.
+
+_Note_: This is an unofficial language server.
+
+## Dart
+
+**Language**: Dart
+
+**Home Page**: [https://github.com/dart-lang/sdk/blob/main/pkg/analysis_server/tool/lsp_spec/README.md](https://github.com/dart-lang/sdk/blob/main/pkg/analysis_server/tool/lsp_spec/README.md)
+
+Sample code to add the dart language server to the LSP plugin:
+
+```
+call LspAddServer([#{name: 'dart',
+                 \   filetype: ['dart'],
+                 \   path: '/usr/lib/dart/bin/dart',
+                 \   args: ['language-server', '--client-id', 'vim']
+                 \ }])
+```
+
+## Deno
+**Language**: Typescript/Javascript
+
+**Home Page**: [https://deno.land](https://deno.land)
 ## Clangd
 **Language**: C/C++
 
