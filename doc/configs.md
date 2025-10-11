@@ -564,7 +564,7 @@ call LspAddServer([#{name: 'pyright',
 
 Command to install the pyright language server on Linux:
 ```sh
-   $ npm install -g pyright
+npm install -g pyright
 ```
 
 **Server Configuration**: [https://microsoft.github.io/pyright/#/configuration](https://microsoft.github.io/pyright/#/configuration)
