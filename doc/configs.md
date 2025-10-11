@@ -17,13 +17,54 @@ Additional entries include
 - `rootSearch` here to the array of values `root_markers` there where each directory path needs to end with a slash, and
 - `settings` *there* to `initializationOptions.settings` here.
 
-## Angular Language Server
+## Overview
+[Angular Language Server](#angular-language-server)<br>
+[AWK Language Server](#awk-language-server)<br>
+[Bash Language Server](#bash-language-server)<br>
+[Bitbake Language Server](#bitbake-language-server)<br>
+[CSpell LSP](#cspell-lsp)<br>
+[Clangd](#clangd)<br>
+[CSS Language Server](#css-language-server)<br>
+[Dart](#dart)<br>
+[Deno](#deno)<br>
+[Eclipse Java Language Server](#eclipse-java-language-server)<br>
+[EFM Language Server](#efm-language-server)<br>
+[Emmet Language Server](#emmet-language-server)<br>
+[Fortran Language Server](#fortran-language-server)<br>
+[Gopls](#gopls)<br>
+[HTML Language Server](#html-language-server)<br>
+[JETLS.jl](#jetls)<br>
+[Language Server Bitbake](#language-server-bitbake)<br>
+[Lua Language Server](#lua-language-server)<br>
+[Omnisharp Language Server](#omnisharp-language-server)<br>
+[Perl Navigator](#perl-navigator)<br>
+[PHP Intelephense](#php-intelephense)<br>
+[PKL Language Server](#pkl-language-server)<br>
+[Pylsp](#pylsp)<br>
+[Pyright](#pyright)<br>
+[Rust-analyzer](#rust-analyzer)<br>
+[Solargraph](#solargraph)<br>
+[Swift Language Server](#swift-language-server)<br>
+[Typescript/Javascript Language Server](#typescript-language-server)<br>
+[Verible](#verible)<br>
+[VHDL Language Server](#vhdl-language-server)<br>
+[Vimscript](#vim-language-server)<br>
+[Volar Server](#volar-server)<br>
+[VSCode CSS Language Server](#vscode-css-lsp)<br>
+[VSCode ESLint Language Server](#vscode-eslint-lsp)<br>
+[VSCode HTML Language Server](#vscode-html-lsp)<br>
+[VSCode JSON Language Server](#vscode-json-lsp)<br>
+[VSCode Markdown Language Server](#vscode-markdown-lsp)<br>
+[YAML Language Server](#yaml-language-server)<br>
+
+<a name="angular-language-server"/></a>
+## Angular Language Server 
 **Language**: [Angular Templates](https://en.wikipedia.org/wiki/Angular_(web_framework))
 
 **Home Page**: [https://github.com/angular/vscode-ng-language-service](https://github.com/angular/vscode-ng-language-service)
 
 Sample code to add the angular language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'angular',
                  \   filetype: 'html',
                  \   path: '/usr/local/bin/ngserver.cmd',
@@ -32,18 +73,18 @@ call LspAddServer([#{name: 'angular',
 ```
 
 Command to install the angular language server on Linux:
-```
+```sh
 npm install -g @angular/language-server @angular/language-service typescript
 ```
 
+<a name="awk-language-server"/></a>
 ## AWK Language Server
 **Language**: [AWK scripts](https://en.wikipedia.org/wiki/AWK)
 
 **Home Page**: [https://github.com/Beaglefoot/awk-language-server](https://github.com/Beaglefoot/awk-language-server)
 
 Sample code to add the awk language server to the LSP plugin:
-```
-" Awk
+```vim
 call LspAddServer([#{name: 'awkls',
                  \   filetype: 'awk',
                  \   path: '/usr/local/bin/awk-language-server',
@@ -52,18 +93,18 @@ call LspAddServer([#{name: 'awkls',
 ```
 
 Command to install the awk language server on Linux:
-```
+```sh
 npm install -g awk-language-server
 ```
 
+<a name="bash-language-server"/></a>
 ## Bash Language Server
 **Language**: [Bash shell scripts](https://en.wikipedia.org/wiki/Bash_(Unix_shell))
 
 **Home Page**: [https://github.com/bash-lsp/bash-language-server](https://github.com/bash-lsp/bash-language-server)
 
 Sample code to add the bash language server to the LSP plugin:
-```
-" Bash
+```vim
 call LspAddServer([#{name: 'bashls',
                  \   filetype: 'sh',
                  \   path: '/usr/local/bin/bash-language-server',
@@ -71,13 +112,60 @@ call LspAddServer([#{name: 'bashls',
                  \ }])
 ```
 
+<a name="bitbake-language-server"/></a>
+## Bitbake Language Server
+**Language**: [Bitbake scripts](https://en.wikipedia.org/wiki/BitBake)
+
+**Home Page**: [https://github.com/Freed-Wu/bitbake-language-server](https://github.com/Freed-Wu/bitbake-language-server)
+
+Sample code to add the language server to the LSP plugin:
+```vim
+call LspAddServer([#{name: 'bitbake-language-server',
+                 \   filetype: 'bitbake',
+                 \   path: 'bitbake-language-server'
+                 \ }])
+```
+
+The language server provides linting for Bitbake files.
+
+_Note_: This is an unofficial language server.
+
+<a name="cspell-lsp"/></a>
+## CSpell LSP
+**Home Page**: [https://github.com/vlabo/cspell-lsp](https://github.com/vlabo/cspell-lsp)
+
+Sample code to add the language server to the LSP plugin:
+```vim
+call LspAddServer([#{name: 'cspell-lsp',
+                 \   filetype: [
+                 \     'c',
+                 \     'cpp',
+                 \     'json',
+                 \     'vim',
+                 \     'gitcommit',
+                 \     'markdown',
+                 \   ],
+                 \   path: 'cspell-lsp',
+                 \   args: ['--stdio',
+                 \          '--sortWords',
+                 \          '--config', '/path/to/cSpell.json',
+                 \   ]
+                 \ }])
+```
+
+_Installation_: 
+```sh
+npm install -g @vlabo/cspell-lsp
+```
+
+<a name="clangd"/></a>
 ## Clangd
 **Language**: C/C++
 
 **Home Page**: [https://clangd.llvm.org/](https://clangd.llvm.org/)
 
 Sample code to add the clangd language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'clangd',
                  \   filetype: ['c', 'cpp'],
                  \   path: '/usr/local/bin/clangd',
@@ -85,13 +173,14 @@ call LspAddServer([#{name: 'clangd',
                  \ }])
 ```
 
+<a name="css-language-server"/></a>
 ## CSS Language Server
 **Language**: CSS
 
 **Home Page**: [https://github.com/vscode-langservers/vscode-css-languageserver-bin](https://github.com/vscode-langservers/vscode-css-languageserver-bin)
 
 Sample code to add the CSS language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'cssls',
                  \   filetype: 'css',
                  \   path: '/usr/local/node_modules/.bin/css-languageserver',
@@ -101,6 +190,7 @@ call LspAddServer([#{name: 'cssls',
 
 _Note_: The CSS language server supports code completion only if the _snippetSupport_ option is enabled.
 
+<a name="dart"/></a>
 ## Dart
 
 **Language**: Dart
@@ -109,7 +199,7 @@ _Note_: The CSS language server supports code completion only if the _snippetSup
 
 Sample code to add the dart language server to the LSP plugin:
 
-```
+```vim
 call LspAddServer([#{name: 'dart',
                  \   filetype: ['dart'],
                  \   path: '/usr/lib/dart/bin/dart',
@@ -117,13 +207,14 @@ call LspAddServer([#{name: 'dart',
                  \ }])
 ```
 
+<a name="deno"/></a>
 ## Deno
 **Language**: Typescript/Javascript
 
 **Home Page**: [https://deno.land](https://deno.land)
 
 Sample code to add the deno language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'deno',
                  \   filetype: ['javascript', 'typescript'],
                  \   path: '/usr/local/bin/deno',
@@ -136,13 +227,14 @@ call LspAddServer([#{name: 'deno',
                  \ }])
 ```
 
+<a name="eclipse-java-language-server"/></a>
 ## Eclipse Java Language Server
 **Language**: Java
 
 **Home Page**: [https://github.com/eclipse/eclipse.jdt.ls](https://github.com/eclipse/eclipse.jdt.ls)
 
 Sample code to add the Eclipse Java Development Tools (JDT) language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'jdtls',
                  \   filetype: 'java',
                  \   path: '/usr/local/jdtls/bin/jdtls',
@@ -161,13 +253,14 @@ call LspAddServer([#{name: 'jdtls',
 
 The [Eclipse Java language server wiki page](https://github.com/eclipse/eclipse.jdt.ls/wiki/Running-the-JAVA-LS-server-from-the-command-line#initialize-request) has more information about the jdtls language server initialization options.  In the above example, the `filteredTypes` item is not mandatory to use the JDT language server with the LSP plugin.  It is included here only as an example.
 
+<a name="efm-language-server"/></a>
 ## EFM Language Server
 **Language**: General Purpose Language Server
 
 **Home Page**: [https://github.com/mattn/efm-langserver](https://github.com/mattn/efm-langserver)
 
 Sample code to add the efm language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'efm-langserver',
 		 \   filetype: ['javascript', 'typescript'],
                  \   path: '/usr/local/bin/efm-langserver',
@@ -200,13 +293,14 @@ call LspAddServer([#{name: 'efm-langserver',
                  \ }])
 ```
 
+<a name="emmet-language-server"/></a>
 ## Emmet Language Server
 **Language**: HTML
 
 **Home Page**: [https://github.com/olrtg/emmet-language-server](https://github.com/olrtg/emmet-language-server)
 
 Sample code to add the emmet language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'emmet',
                  \   filetype: 'html',
                  \   path: '/usr/local/node_modules/.bin/emmet-language-server',
@@ -215,17 +309,18 @@ call LspAddServer([#{name: 'emmet',
 ```
 
 Command to install the emmet language server on Linux:
-```
+```sh
 npm install -g @olrtg/emmet-language-server
 ```
 
+<a name="fortran-language-server"/></a>
 ## Fortran Language Server
 **Language**: Fortran
 
 **Home Page**: [https://github.com/hansec/fortran-language-server](https://github.com/hansec/fortran-language-server)
 
 Sample code to add the fortran language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'fortls',
                  \   filetype: 'fortran',
                  \   path: '/usr/local/bin/fortls',
@@ -233,13 +328,14 @@ call LspAddServer([#{name: 'fortls',
                  \ }])
 ```
 
+<a name="gopls"/></a>
 ## Gopls
 **Language**: Go
 
 **Home Page**: [https://github.com/golang/tools/tree/master/gopls](https://github.com/golang/tools/tree/master/gopls)
 
 Sample code to add the gopls language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'gopls',
                  \   filetype: 'go',
                  \   path: '/usr/local/bin/gopls',
@@ -250,7 +346,7 @@ call LspAddServer([#{name: 'gopls',
 **Server Configuration**: [https://github.com/golang/tools/blob/master/gopls/doc/settings.md](https://github.com/golang/tools/blob/master/gopls/doc/settings.md)
 
 To enable the inlay hint support, include the following in the above code to add the gopls language server:
-```
+```vim
     \   workspaceConfig: #{
     \     gopls: #{
     \       hints: #{
@@ -266,13 +362,14 @@ To enable the inlay hint support, include the following in the above code to add
     \   }
 ```
 
+<a name="html-language-server"/></a>
 ## HTML Language Server
 **Language**: html
 
 **Home Page**: [https://github.com/vscode-langservers/vscode-html-languageserver-bin](https://github.com/vscode-langservers/vscode-html-languageserver-bin)
 
 Sample code to add the HTML language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'htmlls',
                  \   filetype: 'html',
                  \   path: '/usr/local/node_modules/.bin/html-languageserver',
@@ -282,13 +379,61 @@ call LspAddServer([#{name: 'htmlls',
 
 _Note_: The HTML language server supports code completion only if the _snippetSupport_ option is enabled.
 
+<a name="jetls"/></a>
+## JETLS.jl
+**Language**: [Julia](https://julialang.org/)
+
+**Home Page**: [https://github.com/aviatesk/JETLS.jl](https://github.com/aviatesk/JETLS.jl)
+
+Sample code to add the language server to the LSP plugin:
+```vim
+call LspAddServer([#{name: 'JETLS.jl',
+                 \   filetype: 'julia',
+                 \   path: 'julia',
+                 \   args: [
+                 \       '--startup-file=no',
+                 \       '--history-file=no',
+                 \       '--project=/path/to/JETLS.jl',
+                 \       '--threads=auto',
+                 \       '/path/to/JETLS.jl/runserver.jl'
+                 \   ]
+                 \ }])
+```
+
+_Installation_: Clone the [repository](https://github.com/aviatesk/JETLS.jl)
+and run `julia --project=. -e 'using Pkg; Pkg.instantiate()'` inside it.
+
+_Note_: The language server is in an early state and currently needs ~30
+seconds to start.
+
+<a name="language-server-bitbake"/></a>
+## Language Server Bitbake 
+**Language**: [Bitbake scripts](https://en.wikipedia.org/wiki/BitBake)
+
+**Home Page**: [https://www.npmjs.com/package/language-server-bitbake](https://www.npmjs.com/package/language-server-bitbake)
+
+Sample code to add the language server to the LSP plugin:
+```vim
+call LspAddServer([#{name: 'language-server-bitbake',
+                 \   filetype: 'bitbake',
+                 \   path: 'language-server-bitbake',
+                 \   args: ['--stdio']
+                 \ }])
+```
+
+The official Bitbake language server.
+
+_Note_: The server starts up and works, but seems to send some unsupported
+messages to the client.
+
+<a name="lua-language-server"/></a>
 ## Lua Language Server
 **Language**: Lua
 
 **Home Page**: [https://github.com/LuaLS/lua-language-server](https://github.com/LuaLS/lua-language-server)
 
 Sample code to add the luals language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'luals',
                  \   filetype: 'lua',
                  \   path: '/usr/local/luals/bin/lua-language-server',
@@ -298,7 +443,7 @@ call LspAddServer([#{name: 'luals',
 **Server Configuration**: [https://github.com/LuaLS/lua-language-server/wiki/Settings](https://github.com/LuaLS/lua-language-server/wiki/Settings)
 
 To enable the inlay hint support, include the following in the above code to add the Lua language server:
-```
+```vim
     \   workspaceConfig: #{
     \     Lua: #{
     \       hint: #{
@@ -308,13 +453,14 @@ To enable the inlay hint support, include the following in the above code to add
     \   }
 ```
 
+<a name="omnisharp-language-server"/></a>
 ## Omnisharp Language Server
 **Language**: C#
 
 **Home Page**: [https://github.com/OmniSharp/omnisharp-roslyn](https://github.com/OmniSharp/omnisharp-roslyn)
 
 Sample code to add the omnisharp language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'omnisharp',
                  \   filetype: 'cs',
                  \   path: expand('$HOME/omnisharp/omnisharp.exe'),
@@ -322,13 +468,14 @@ call LspAddServer([#{name: 'omnisharp',
                  \ }])
 ```
 
+<a name="perl-navigator"/></a>
 ## Perl Navigator
 **Language**: Perl
 
 **Home Page**: [https://github.com/bscan/PerlNavigator](https://github.com/bscan/PerlNavigator)
 
 Sample code to add the Perl Navigator language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'perlnavigator',
                  \   filetype: ['perl'],
                  \   path: '/usr/bin/node',
@@ -336,13 +483,14 @@ call LspAddServer([#{name: 'perlnavigator',
                  \ }])
 ```
 
+<a name="php-intelephense"/></a>
 ## PHP Intelephense
 **Language**: PHP
 
 **Home Page**: [https://github.com/bmewburn/vscode-intelephense](https://github.com/bmewburn/vscode-intelephense)
 
 Sample code to add the intelephense language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'intelephense',
                  \   filetype: ['php'],
                  \   path: '/usr/local/bin/intelephense',
@@ -350,13 +498,44 @@ call LspAddServer([#{name: 'intelephense',
                  \ }])
 ```
 
+<a name="pkl-language-server"/></a>
+## PKL Language Server
+**Language**: PKL [https://pkl-lang.org/](https://pkl-lang.org/)
+
+**Home Page**: [https://github.com/apple/pkl-lsp](https://github.com/apple/pkl-lsp)
+
+Sample code to add the language server to the LSP plugin:
+```vim
+call LspAddServer([#{
+                 \   name: 'pkl-lsp',
+                 \   filetype: ['pkl'],
+                 \   path: 'java',
+                 \   args: [
+                 \     '-jar',
+                 \     '/path/to/pkl-lsp.jar',
+                 \   ],
+                 \   initializationOptions: #{
+                 \     pkl_cli_path: '/usr/bin/pkl'
+                 \   },
+                 \   syncInit: v:true,
+                 \   debug: v:false
+                 \ }])
+```
+
+_Note_: The path to the `pkl-lsp.jar` and the 
+[PKL command-line client](https://pkl-lang.org/main/current/pkl-cli/index.html#installation)
+need to be provided.
+
+Requires a recent Java JVM to be installed. Future pkl-lsp version are planned to ship as native binaries.
+
+<a name="pylsp"/></a>
 ## Pylsp
 **Language**: Python
 
 **Home Page**: [https://github.com/python-lsp/python-lsp-server](https://github.com/python-lsp/python-lsp-server)
 
 Sample code to add the pylsp language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'pylsp',
                  \   filetype: 'python',
                  \   path: '/usr/local/bin/pylsp',
@@ -364,13 +543,14 @@ call LspAddServer([#{name: 'pylsp',
                  \ }])
 ```
 
+<a name="pyright"/></a>
 ## Pyright
 **Language**: Python
 
 **Home Page**: [https://github.com/microsoft/pyright](https://github.com/microsoft/pyright)
 
 Sample code to add the pyright language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'pyright',
                  \   filetype: 'python',
                  \   path: '/usr/local/node_modules/.bin/pyright-langserver',
@@ -383,19 +563,20 @@ call LspAddServer([#{name: 'pyright',
 ```
 
 Command to install the pyright language server on Linux:
-```
-   $ npm install -g pyright
+```sh
+npm install -g pyright
 ```
 
 **Server Configuration**: [https://microsoft.github.io/pyright/#/configuration](https://microsoft.github.io/pyright/#/configuration)
 
+<a name="rust-analyzer"/></a>
 ## Rust-analyzer
 **Language**: Rust
 
 **Home Page**: [https://rust-analyzer.github.io/](https://rust-analyzer.github.io/)
 
 Sample code to add the rust-analyzer language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'rustanalyzer',
                  \   filetype: ['rust'],
                  \   path: '/usr/local/bin/rust-analyzer-x86_64-unknown-linux-gnu',
@@ -407,7 +588,7 @@ call LspAddServer([#{name: 'rustanalyzer',
 **Server Configuration**: [https://rust-analyzer.github.io/manual.html#configuration](https://rust-analyzer.github.io/manual.html#configuration)
 
 To enable the inlay hint support, include the following in the above code to add the rust-analyzer language server:
-```
+```vim
     \  initializationOptions: #{
     \    inlayHints: #{
     \      typeHints: #{
@@ -420,13 +601,14 @@ To enable the inlay hint support, include the following in the above code to add
     \  }
 ```
 
+<a name="solargraph"/></a>
 ## Solargraph
 **Language**: Ruby
 
 **Home Page**: [https://solargraph.org/](https://solargraph.org/)
 
 Sample code to add the Solargraph language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'solargraph',
                  \   filetype: ['ruby'],
                  \   path: 'solargraph',
@@ -434,13 +616,14 @@ call LspAddServer([#{name: 'solargraph',
                  \ }])
 ```
 
+<a name="swift-language-server"/></a>
 ## Swift Language Server
 **Language**: [Swift](https://www.swift.org/)
 
 **Home Page**: [https://github.com/apple/sourcekit-lsp](https://github.com/apple/sourcekit-lsp)
 
 Sample code to add the swift language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'swiftls',
                  \   filetype: ['swift'],
                  \   path: '/usr/bin/xcrun',
@@ -448,13 +631,14 @@ call LspAddServer([#{name: 'swiftls',
                  \ }])
 ```
 
+<a name="typescript-language-server"/></a>
 ## Typescript/Javascript Language Server
 **Language**: Typescript/JavaScript
 
 **Home Page**: [https://github.com/typescript-language-server/typescript-language-server](https://github.com/typescript-language-server/typescript-language-server)
 
 Sample code to add the typescript/javascript language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'tsserver',
                  \   filetype: ['javascript', 'typescript'],
                  \   path: '/usr/local/bin/typescript-language-server',
@@ -462,13 +646,14 @@ call LspAddServer([#{name: 'tsserver',
                  \ }])
 ```
 
+<a name="verible"/></a>
 ## Verible
 **Language**: Verilog/SystemVerilog
 
 **Home Page**: [https://github.com/chipsalliance/verible](https://github.com/chipsalliance/verible)
 
 Sample code to add the Vimscript language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'verible',
                  \   filetype: ['verilog', 'systemverilog'],
                  \   path: 'verible-verilog-ls',
@@ -476,13 +661,28 @@ call LspAddServer([#{name: 'verible',
                  \ }])
 ```
 
+<a name="vhdl-language-server"/></a>
+## VHDL Language Server
+**Language**: VHDL
+
+**Home Page**: [https://github.com/VHDL-LS/rust_hdl](https://github.com/VHDL-LS/rust_hdl)
+
+Sample code to add the language server to the LSP plugin:
+```vim
+call LspAddServer([#{name: 'vhdl_ls',
+                 \   filetype: 'vhdl',
+                 \   path: 'vhdl_ls',
+                 \ }])
+```
+
+<a name="vim-language-server"/></a>
 ## Vimscript
 **Language**: Vimscript
 
 **Home Page**: [https://github.com/iamcco/vim-language-server](https://github.com/iamcco/vim-language-server)
 
 Sample code to add the Vimscript language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'vimls',
                  \   filetype: 'vim',
                  \   path: '/usr/local/bin/vim-language-server',
@@ -490,13 +690,14 @@ call LspAddServer([#{name: 'vimls',
                  \ }])
 ```
 
+<a name="volar-server"/></a>
 ## Volar Server
 **Language**: Vue
 
 **Home Page**: [https://github.com/vuejs/language-tools](https://github.com/vuejs/language-tools)
 
 Sample code to add the Volar language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'volar-server',
                  \   filetype: ['vue', 'typescript'],
                  \   path: '/usr/local/node_modules/.bin/volar-server',
@@ -510,7 +711,7 @@ call LspAddServer([#{name: 'volar-server',
 ```
 
 For Volar 2:
-```
+```vim
 call LspAddServer([#{name: 'vue-ls',
                  \   filetype: ['vue'],
                  \   path: 'vue-language-server',
@@ -527,13 +728,14 @@ call LspAddServer([#{name: 'vue-ls',
 ```
 _Note_: The `hybridMode` item in `initializationOptions` is needed if you are using version >= 2.0.7.
 
+<a name="vscode-css-lsp"/></a>
 ## VS Code CSS Language Server
 **Language**: CSS
 
 **Home Page**: [https://github.com/hrsh7th/vscode-langservers-extracted](https://github.com/hrsh7th/vscode-langservers-extracted)
 
 Sample code to add the VS Code CSS language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'vscode-css-server',
                  \   filetype: ['css'],
                  \   path: '/usr/local/node_modules/.bin/vscode-css-language-server',
@@ -541,13 +743,14 @@ call LspAddServer([#{name: 'vscode-css-server',
                  \ }])
 ```
 
+<a name="vscode-eslint-lsp"/></a>
 ## VS Code ESLint Language Server
 **Language**: Javascript
 
 **Home Page**: [https://github.com/hrsh7th/vscode-langservers-extracted](https://github.com/hrsh7th/vscode-langservers-extracted)
 
 Sample code to add the VS Code ESLint language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'vscode-eslint-server',
                  \   filetype: ['javascript'],
                  \   path: '/usr/local/node_modules/.bin/vscode-eslint-language-server',
@@ -555,13 +758,14 @@ call LspAddServer([#{name: 'vscode-eslint-server',
                  \ }])
 ```
 
+<a name="vscode-html-lsp"/></a>
 ## VS Code HTML Language Server
 **Language**: HTML
 
 **Home Page**: [https://github.com/hrsh7th/vscode-langservers-extracted](https://github.com/hrsh7th/vscode-langservers-extracted)
 
 Sample code to add the VS Code HTML language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'vscode-html-server',
                  \   filetype: ['html'],
                  \   path: '/usr/local/node_modules/.bin/vscode-html-language-server',
@@ -569,13 +773,14 @@ call LspAddServer([#{name: 'vscode-html-server',
                  \ }])
 ```
 
+<a name="vscode-json-lsp"/></a>
 ## VS Code JSON Language Server
 **Language**: JSON
 
 **Home Page**: [https://github.com/hrsh7th/vscode-langservers-extracted](https://github.com/hrsh7th/vscode-langservers-extracted)
 
 Sample code to add the VS Code JSON language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'vscode-json-server',
                  \   filetype: ['json'],
                  \   path: '/usr/local/node_modules/.bin/vscode-json-language-server',
@@ -583,13 +788,14 @@ call LspAddServer([#{name: 'vscode-json-server',
                  \ }])
 ```
 
+<a name="vscode-markdown-lsp"/></a>
 ## VS Code Markdown Language Server
 **Language**: markdown
 
 **Home Page**: [https://github.com/hrsh7th/vscode-langservers-extracted](https://github.com/hrsh7th/vscode-langservers-extracted)
 
 Sample code to add the VS Code Markdown language server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{name: 'vscode-markdown-server',
                  \   filetype: ['markdown'],
                  \   path: '/usr/local/node_modules/.bin/vscode-markdown-language-server',
@@ -597,13 +803,14 @@ call LspAddServer([#{name: 'vscode-markdown-server',
                  \ }])
 ```
 
+<a name="yaml-language-server"/></a>
 ## YAML Language Server
 **Language**: YAML
 
 **Home Page**: https://github.com/redhat-developer/yaml-language-server
 
 Sample code to add the YAML Language Server to the LSP plugin:
-```
+```vim
 call LspAddServer([#{
             \   name: 'yaml-language-server',
             \   filetype: 'yaml',
