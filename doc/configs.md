@@ -85,7 +85,6 @@ npm install -g @angular/language-server @angular/language-service typescript
 
 Sample code to add the awk language server to the LSP plugin:
 ```vim
-" Awk
 call LspAddServer([#{name: 'awkls',
                  \   filetype: 'awk',
                  \   path: '/usr/local/bin/awk-language-server',
@@ -106,7 +105,6 @@ npm install -g awk-language-server
 
 Sample code to add the bash language server to the LSP plugin:
 ```vim
-" Bash
 call LspAddServer([#{name: 'bashls',
                  \   filetype: 'sh',
                  \   path: '/usr/local/bin/bash-language-server',
@@ -122,7 +120,6 @@ call LspAddServer([#{name: 'bashls',
 
 Sample code to add the language server to the LSP plugin:
 ```vim
-" Bitbake Language Server
 call LspAddServer([#{name: 'bitbake-language-server',
                  \   filetype: 'bitbake',
                  \   path: 'bitbake-language-server'
@@ -139,7 +136,6 @@ _Note_: This is an unofficial language server.
 
 Sample code to add the language server to the LSP plugin:
 ```vim
-" cspell-lsp
 call LspAddServer([#{name: 'cspell-lsp',
                  \   filetype: [
                  \     'c',
@@ -418,7 +414,6 @@ seconds to start.
 
 Sample code to add the language server to the LSP plugin:
 ```vim
-" Language Server Bitbake
 call LspAddServer([#{name: 'language-server-bitbake',
                  \   filetype: 'bitbake',
                  \   path: 'language-server-bitbake',
