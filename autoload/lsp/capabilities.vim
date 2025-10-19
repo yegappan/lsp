@@ -492,7 +492,9 @@ export def GetClientCaps(): dict<any>
 	dynamicRegistration: false,
       }
     },
-    window: {},
+    window: {
+      workDoneProgress: false,
+    },
     workspace: {
       workspaceFolders: true,
       applyEdit: true,
