@@ -134,7 +134,9 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       'o#/unresolveddependencies',
       '@/tailwindCSS/projectInitialized',
       # lua-language-server sends a "hello world" message on start-up.
-      '$/hello'
+      '$/hello',
+      # bitbake language server notifications
+      'bitbake/EmbeddedLanguageDocs'
     ]
 
   if lsp_notif_handlers->has_key(reply.method)
@@ -281,6 +283,8 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
       # 'workspace/executeClientCommand' request (to reload bundles) which is
       # not in the LSP specification.
       'workspace/executeClientCommand',
+      # bitbake language server messages
+      'bitbake/getRecipeLocalFiles'
     ]
 
   if lspRequestHandlers->has_key(request.method)
