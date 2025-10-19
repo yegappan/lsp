@@ -138,7 +138,12 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       # bitbake language server notifications
       'bitbake/EmbeddedLanguageDocs',
       # devicetree language server notifications
-      'devicetree/settingsChanged'
+      'devicetree/activeContextStableNotification',
+      'devicetree/contextCreated',
+      'devicetree/contextDeleted',
+      'devicetree/contextStableNotification',
+      'devicetree/newActiveContext',
+      'devicetree/settingsChanged',
     ]
 
   if lsp_notif_handlers->has_key(reply.method)
