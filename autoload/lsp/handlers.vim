@@ -136,7 +136,9 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       # lua-language-server sends a "hello world" message on start-up.
       '$/hello',
       # bitbake language server notifications
-      'bitbake/EmbeddedLanguageDocs'
+      'bitbake/EmbeddedLanguageDocs',
+      # devicetree language server notifications
+      'devicetree/settingsChanged'
     ]
 
   if lsp_notif_handlers->has_key(reply.method)
