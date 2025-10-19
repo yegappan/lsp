@@ -1876,51 +1876,52 @@ or >
 ==============================================================================
 13. Debugging					*lsp-debug*
 
-To debug this plugin, you can log the language server protocol messages sent
-and received by the plugin from the language server.  The following command
-enables the logging of the messages from the language server for the current
-buffer: >
+To debug this plugin, you can log the Language Server Protocol (LSP) messages
+sent and received by the plugin from the language server.  The following
+command enables the logging of the messages from the language server for the
+current buffer: >
 
     :LspServer debug on
 <
-This command also clears the log files.  The following command disables the
-logging of the messages from the language server for the current buffer: >
+This command also clears the existing log files.  The following command
+disables the logging of the messages from the language server for the current
+buffer: >
 
     :LspServer debug off
 <
-By default, the messages are not logged.  Another method to enable the debug
-is to set the "debug" field to true when adding a language server
-using |LspAddServer()|.
+By default, the messages are not logged.  Alternatively, you can enable
+debugging by setting the "debug" field to true when adding a language server
+using the |LspAddServer()| function.
 
-The messages printed by the language server in the stdout are logged to the
-lsp-<server-name>.log file and the messages printed in the stderr are logged
-to the lsp-<server-name>.err file.  On a Unix-like system, these files are
-created in the /tmp directory.  On MS-Windows, these files are created in the
-%TEMP% directory.
+The messages printed by the language server to stdout are logged to the
+lsp-<server-name>.log file and the messages printed to stderr are logged to
+the lsp-<server-name>.err file.  On Unix-like systems, these files are created
+in the /tmp directory.  On MS-Windows, these files are created in the %TEMP%
+directory.
 
 The following command opens the file containing the messages printed by the
-language server in the stdout: >
+language server to stdout: >
 
     :LspServer debug messages
 <
 The following command opens the file containing the messages printed by the
-language server in the stderr: >
+language server to stderr: >
 
     :LspServer debug errors
 <
-To debug language server initialization problems, after enabling the above
-server debug, you can restart the server for the file type in the current
-buffer using the following command: >
+To debug language server initialization problems, after enabling server
+debugging, you can restart the server for the file type in the current buffer
+using the following command: >
 
     :LspServer restart
 <
 The language servers typically support command line options to enable debug
-messages and to increase the verbosity of the messages.  You can refer to the
-language server documentation for information about this.  You can include
-these options when registering the language server with this plugin.
+messages and to increase their verbosity.  You can refer to the language
+server documentation for this information.  You can include these options when
+registering the language server with this plugin.
 
 If a language server supports the "$/logTrace" LSP notification, then you can
-use the :LspServerTrace command to set the server trace value: >
+use the ":LspServer trace" command to set the server trace value: >
 
     :LspServer trace { off | messages | verbose }
 <
