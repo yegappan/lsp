@@ -33,16 +33,17 @@ CONTENTS                                                     *lsp-contents*
 ==============================================================================
 1. Overview					*lsp-overview*
 
-The Language Server Protocol (LSP) plugin implements a LSP client for Vim9.
-Refer to the following pages for more information about LSP:
+The Language Server Protocol (LSP) plugin provides an LSP client for Vim9.
+
+For background on the language server protocol, see
 
     https://microsoft.github.io/language-server-protocol/
     https://langserver.org/
 
-This plugin needs Vim version 9.0 and after. You will need a programming
-language specific server in your system to use this plugin. Refer to the above
-pages for a list of available language servers for the various programming
-languages.
+Requirements:
+    - Vim version 9.0 and later
+    - A language server installed for the programming language(s) you use.
+      See the above pages for the list of available servers.
 
 The Github repository for this plugin is available at:
 
@@ -58,12 +59,16 @@ You can install this plugin directly from github using the following steps:
     $ git clone https://github.com/yegappan/lsp
     $ vim -u NONE -c "helptags $HOME/.vim/pack/downloads/opt/lsp/doc" -c q
 
-or you can use any one of the Vim plugin managers (dein.vim, pathogen, vam,
-vim-plug, volt, Vundle, etc.) to install and manage this plugin.
+ALternatively, you can use any one of the Vim plugin managers such as
+dein.vim, pathogen, vam, vim-plug, volt, Vundle, etc. to install and manage
+this plugin.
 
-To uninstall the LSP plugin, either use the uninstall command provided by the
-plugin manager or manually remove the $HOME/.vim/pack/downloads/lsp directory.
+Uninstallation:
+    - If installed with a plugin manager: use its uninstall command.
+    - If installed manually: remove the $HOME/.vim/pack/downloads/lsp
+      directory.
 
+Activation:
 To use this plugin, add the following line to your .vimrc file:
 
     packadd lsp
