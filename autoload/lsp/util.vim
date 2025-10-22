@@ -35,7 +35,7 @@ export def TraceLog(fname: string, stderr: bool, msg: string)
   if stderr
     writefile(msg->split("\n"), $'{lsp_log_dir}{fname}', 'a')
   else
-    writefile([msg], $'{lsp_log_dir}{fname}', 'a')
+    writefile([$'{strftime("%m/%d/%y %T")}: {msg}'], $'{lsp_log_dir}{fname}', 'a')
   endif
 enddef
 
