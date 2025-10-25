@@ -43,9 +43,24 @@ enddef
 
 def LspShowSignatureCb(timer: number)
   # Show signature only in insert mode
-  if mode() == 'i'
+  if mode() ==# 'i'
     call g:LspShowSignature()
   endif
+enddef
+
+# Use a script-local timer instance that can be reused
+var signature_timer = -1
+
+def LspShowSignatureDelayed()
+  # Cancel old timer if still running
+  if signature_timer != -1
+    call timer_stop(signature_timer)
+  endif
+
+  # A timeout of 50ms ensures the char was inserted and insert mode is reached.
+  # We could consider making this configurable, but for now I don't want to
+  # add more complexity
+  signature_timer = timer_start(50, function('LspShowSignatureCb'))
 enddef
 
 # Initialize the signature triggers for the current buffer
@@ -62,11 +77,6 @@ export def BufferInit(lspserver: dict<any>)
     return
   endif
 
-  # Add and clear the augroup for the signature help
-  augroup lspShowSignatureHelp
-    au!
-  augroup END
-
   # Use a mapping for versions that don't support KeyInputPre yet'
   if v:version < 901 || (v:version == 901 && !has('patch0563'))
     # map characters that trigger signature help
@@ -81,15 +91,13 @@ export def BufferInit(lspserver: dict<any>)
     # detect the trigger chars and show the signature
     autocmd_add([{bufnr: bufnr(),
 		  event: 'KeyInputPre',
-		  group: 'lspShowSignatureHelp',
 		  cmd: $'if index({lspserver.caps.signatureHelpProvider.triggerCharacters}, v:char) != -1
-			\ | call timer_start(1, function("LspShowSignatureCb")) | endif'}])
+			\ | call LspShowSignatureDelayed() | endif'}])
   endif
 
   # close the signature popup when leaving insert mode
   autocmd_add([{bufnr: bufnr(),
 		event: 'InsertLeave',
-		group: 'lspShowSignatureHelp',
 		cmd: 'CloseCurBufSignaturePopup()'}])
 enddef
 
