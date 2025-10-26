@@ -791,7 +791,7 @@ def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
       if lspserver->empty() && &tagfunc !=# 'lsp#lsp#TagFunc'
       	emsg = 'symbol definition is not found; fallback to ctags'
       	try
-    	  if peek
+    	  if peekSymbol
             execute $'ptjump {expand("<cword>")}'
     	  else
             execute $'tjump {expand("<cword>")}'
