@@ -329,12 +329,17 @@ enddef
 export def GotoDefinition(peek: bool, cmdmods: string, count: number)
   var lspserver: dict<any> = buf.CurbufGetServerChecked('definition')
   if lspserver->empty() && &tagfunc !=# 'lsp#lsp#TagFunc'
-    if !peek
-      try
-        execute $'tag {expand("<cword>")}'
-      catch /.*/
-      endtry
+    if cmdmods !~ 'silent'
+      util.WarnMsg($'Definition lookup unsupported; falling back to ctags.')
     endif
+    try
+      if peek
+        execute $'ptjump {expand("<cword>")}'
+      else
+        execute $'tjump {expand("<cword>")}'
+      endif
+    catch /.*/
+    endtry
   endif
 
   lspserver.gotoDefinition(peek, cmdmods, count)

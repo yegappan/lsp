@@ -788,7 +788,19 @@ def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
     elseif msg == 'textDocument/implementation'
       emsg = 'symbol implementation is not found'
     else
-      emsg = 'symbol definition is not found'
+      if lspserver->empty() && &tagfunc !=# 'lsp#lsp#TagFunc'
+      	emsg = 'symbol definition is not found; fallback to ctags'
+      	try
+    	  if peek
+            execute $'ptjump {expand("<cword>")}'
+    	  else
+            execute $'tjump {expand("<cword>")}'
+    	  endif
+      	catch /.*/
+      	endtry
+      else
+      	emsg = 'symbol definition is not found'
+      endif
     endif
 
     util.WarnMsg(emsg)
