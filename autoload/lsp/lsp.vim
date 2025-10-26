@@ -328,8 +328,13 @@ enddef
 # Go to a definition using "textDocument/definition" LSP request
 export def GotoDefinition(peek: bool, cmdmods: string, count: number)
   var lspserver: dict<any> = buf.CurbufGetServerChecked('definition')
-  if lspserver->empty()
-    return
+  if lspserver->empty() && &tagfunc !=# 'lsp#lsp#TagFunc'
+    if !peek
+      try
+        execute $'tag {expand("<cword>")}'
+      catch /.*/
+      endtry
+    endif
   endif
 
   lspserver.gotoDefinition(peek, cmdmods, count)
@@ -856,7 +861,12 @@ enddef
 # location
 export def Hover(cmdmods: string)
   var lspserver: dict<any> = buf.CurbufGetServerChecked('hover')
-  if lspserver->empty()
+  if lspserver->empty() && &keywordprg !=# ':LspHover'
+    try
+      execute 'normal! K'
+    catch /.*/
+      # Ignore any errors from built-in fallback
+    endtry
     return
   endif
 
