@@ -331,7 +331,7 @@ export def GotoDefinition(peek: bool, cmdmods: string, count: number)
   if lspserver->empty()
     if &tagfunc !=# 'lsp#lsp#TagFunc' && opt.lspOptions.definitionFallback
       if cmdmods !~ 'silent'
-      	util.WarnMsg($'Definition lookup unsupported; falling back to ctags.')
+      	util.WarnMsg($'definition lookup unsupported; falling back to tags file')
       endif
       try
       	if peek

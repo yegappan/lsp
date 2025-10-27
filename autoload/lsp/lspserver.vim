@@ -789,7 +789,7 @@ def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
       emsg = 'symbol implementation is not found'
     else
       if &tagfunc !=# 'lsp#lsp#TagFunc' && opt.lspOptions.definitionFallback
-      	emsg = 'symbol definition is not found; falling back to ctags'
+      	emsg = 'symbol definition is not found; falling back to tags file'
       	try
     	  if peekSymbol
     	    execute "normal! \<C-w>g}"
