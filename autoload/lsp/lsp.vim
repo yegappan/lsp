@@ -328,18 +328,21 @@ enddef
 # Go to a definition using "textDocument/definition" LSP request
 export def GotoDefinition(peek: bool, cmdmods: string, count: number)
   var lspserver: dict<any> = buf.CurbufGetServerChecked('definition')
-  if lspserver->empty() && &tagfunc !=# 'lsp#lsp#TagFunc' && opt.lspOptions.definitionFallback
-    if cmdmods !~ 'silent'
-      util.WarnMsg($'Definition lookup unsupported; falling back to ctags.')
-    endif
-    try
-      if peek
-        execute $'ptjump {expand("<cword>")}'
-      else
-        execute $'tjump {expand("<cword>")}'
+  if lspserver->empty()
+    if &tagfunc !=# 'lsp#lsp#TagFunc' && opt.lspOptions.definitionFallback
+      if cmdmods !~ 'silent'
+      	util.WarnMsg($'Definition lookup unsupported; falling back to ctags.')
       endif
-    catch /.*/
-    endtry
+      try
+      	if peek
+          execute $'ptjump {expand("<cword>")}'
+      	else
+          execute $'tjump {expand("<cword>")}'
+      	endif
+      catch /.*/
+      endtry
+    endif
+    return
   endif
 
   lspserver.gotoDefinition(peek, cmdmods, count)
