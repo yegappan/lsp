@@ -335,12 +335,16 @@ export def GotoDefinition(peek: bool, cmdmods: string, count: number)
       endif
       try
       	if peek
-          execute $'ptjump {expand("<cword>")}'
+    	  # Using the built-in map more robust than ptjump
+    	  execute "normal! \<C-w>g}"
       	else
+    	  # Use :tjump instead of 'CTRL-]' using :tag because
+    	  # 'tjump' works better with multiple tags.
+    	  # execute "normal! \<C-]>"
           execute $'tjump {expand("<cword>")}'
       	endif
-      catch /.*/
-      endtry
+      	catch /.*/
+      	endtry
     endif
     return
   endif
