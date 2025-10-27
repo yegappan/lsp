@@ -334,14 +334,13 @@ export def GotoDefinition(peek: bool, cmdmods: string, count: number)
       	util.WarnMsg($'definition lookup unsupported; falling back to tags file')
       endif
       try
+    	# Use :tjump instead of 'CTRL-]' using :tag because
+    	# 'tjump' works better with multiple tags.
+    	# Using built-in maps more robust than (p)tjump.
       	if peek
-    	  # Using the built-in map more robust than ptjump
     	  execute "normal! \<C-w>g}"
       	else
-    	  # Use :tjump instead of 'CTRL-]' using :tag because
-    	  # 'tjump' works better with multiple tags.
-    	  # execute "normal! \<C-]>"
-          execute $'tjump {expand("<cword>")}'
+    	  execute "normal! g\<C-]>"
       	endif
       	catch /.*/
       	endtry
