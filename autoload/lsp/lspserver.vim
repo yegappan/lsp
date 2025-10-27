@@ -788,7 +788,7 @@ def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
     elseif msg == 'textDocument/implementation'
       emsg = 'symbol implementation is not found'
     else
-      if lspserver->empty() && &tagfunc !=# 'lsp#lsp#TagFunc' && opt.lspOptions.definitionFallback
+      if &tagfunc !=# 'lsp#lsp#TagFunc' && opt.lspOptions.definitionFallback
       	emsg = 'symbol definition is not found; fallback to ctags'
       	try
     	  if peekSymbol
