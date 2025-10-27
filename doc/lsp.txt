@@ -1019,6 +1019,10 @@ can map these commands to keys and make it easier to invoke them.
 	    nnoremap <buffer> gd <Cmd>execute v:count .. 'LspGotoDefinition'<CR>
 	    nnoremap <buffer> <C-W>gd <Cmd>execute 'topleft ' .. v:count .. 'LspGotoDefinition'<CR>
 <
+
+                        With definitionFallback enabled (disabled by default),
+                        falls back to |:tjump|. See |lsp-opt-definitionFallback|.
+
 						*:LspGotoImpl*
 :[count]LspGotoImpl	Jumps to the implementation of the symbol under the
 			cursor. The behavior of this command is similar to the
@@ -1083,6 +1087,10 @@ can map these commands to keys and make it easier to invoke them.
 
 			    :set keywordprg=:LspHover
 <
+                        With hoverFallback enabled (disabled by default),
+                        falls back to the file type specific 'keywordprg'.
+                        See |lsp-opt-hoverFallback|.
+
 						*:LspIncomingCalls*
 :LspIncomingCalls	Display a hierarchy of symbols calling the symbol
 			under the cursor in a window.  See
@@ -1181,6 +1189,9 @@ can map these commands to keys and make it easier to invoke them.
 				CTRL-D     - Scroll half page forward
 				CTRL-Y     - Scroll one line backward
 				CTRL-U     - Scroll half page backward
+
+                        With definitionFallback enabled (disabled by default),
+                        falls back to |:ptjump|. See |lsp-opt-definitionFallback|.
 
 						*:LspPeekImpl*
 :[count]LspPeekImpl	Displays the implementation of the symbol under the
