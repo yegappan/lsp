@@ -569,7 +569,9 @@ hoverInPreview		|Boolean| option. Show |:LspHover| in a preview window
 
 						*lsp-opt-hoverFallback*
 hoverFallback		|Boolean| option. Fall back to file type 'keywordprg' 
-                        in case no hover information available. Use with
+                        in case no hover information available. Do not set
+                        'keywordprg' to |:LspHover| but use with suitable
+                        mapping like
 
                           nnoremap K <cmd>LspHover<cr>
 
@@ -577,12 +579,14 @@ hoverFallback		|Boolean| option. Fall back to file type 'keywordprg'
 
 						*lsp-opt-definitionFallback*
 definitionFallback	|Boolean| option. Fall back to |:tjump| in case no
-                        definition information available. Use with suitable
-                        mappings such as
+                        definition information available. Do not set 'tagfunc'
+                        to 'lsp#lsp#TagFunc' but use with suitable mappings
 
                           nnoremap <c-]> <cmd>LspGotoDefinition<cr>
                           nnoremap g]    <cmd>LspPeekDefinition<cr>
 
+			See 'previewpopup' if you prefer using a popup window
+			to the default |preview-window| for the peek fallback.
 			By default this is set to false.
 
 						*lsp-opt-ignoreMissingServer*
