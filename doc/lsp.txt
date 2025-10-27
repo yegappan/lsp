@@ -567,6 +567,24 @@ hoverInPreview		|Boolean| option. Show |:LspHover| in a preview window
 			instead of a popup.
 			By default this is set to false.
 
+						*lsp-opt-hoverFallback*
+hoverFallback		|Boolean| option. Fall back to file type 'keywordprg' 
+                        in case no hover information available. Use with
+
+                          nnoremap K <cmd>LspHover<cr>
+
+			By default this is set to false.
+
+						*lsp-opt-definitionFallback*
+definitionFallback	|Boolean| option. Fall back to |:tjump| in case no
+                        definition information available. Use with suitable
+                        mappings such as
+
+                          nnoremap <c-]> <cmd>LspGotoDefinition<cr>
+                          nnoremap g]    <cmd>LspPeekDefinition<cr>
+
+			By default this is set to false.
+
 						*lsp-opt-ignoreMissingServer*
 ignoreMissingServer	|Boolean| option.  Do not print a missing language
 			server executable.  By default this is set to false.

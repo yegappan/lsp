@@ -328,7 +328,7 @@ enddef
 # Go to a definition using "textDocument/definition" LSP request
 export def GotoDefinition(peek: bool, cmdmods: string, count: number)
   var lspserver: dict<any> = buf.CurbufGetServerChecked('definition')
-  if lspserver->empty() && &tagfunc !=# 'lsp#lsp#TagFunc'
+  if lspserver->empty() && &tagfunc !=# 'lsp#lsp#TagFunc' && opt.lspOptions.definitionFallback
     if cmdmods !~ 'silent'
       util.WarnMsg($'Definition lookup unsupported; falling back to ctags.')
     endif
@@ -866,7 +866,7 @@ enddef
 # location
 export def Hover(cmdmods: string)
   var lspserver: dict<any> = buf.CurbufGetServerChecked('hover')
-  if lspserver->empty() && &keywordprg !=# ':LspHover' && &l:keywordprg !=# &g:keywordprg
+  if lspserver->empty() && &keywordprg !=# ':LspHover' && &l:keywordprg !=# &g:keywordprg && opt.lspOptions.hoverFallback && opt.lspOptions.hoverFallback
     if cmdmods !~ 'silent'
       util.WarnMsg($'Hovering unsupported; falling back to built-in.')
     endif
