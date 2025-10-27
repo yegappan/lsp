@@ -792,8 +792,11 @@ def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
       	emsg = 'symbol definition is not found; fallback to ctags'
       	try
     	  if peekSymbol
-            execute $'ptjump {expand("<cword>")}'
+    	    execute "normal! \<C-w>g}"
     	  else
+    	    # Use :tjump instead of 'CTRL-]' using :tag because
+    	    # 'tjump' works better with multiple tags.
+    	    # execute "normal! \<C-]>"
             execute $'tjump {expand("<cword>")}'
     	  endif
       	catch /.*/
