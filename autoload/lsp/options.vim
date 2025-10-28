@@ -52,6 +52,12 @@ export var lspOptions: dict<any> = {
   # Show the symbol documentation in the preview window instead of in a popup
   hoverInPreview: false,
 
+  # fall back to built-in keyword help when no hover information is available
+  hoverFallback: false,
+
+  # fall back to built-in tjump when no definition information is available
+  definitionFallback: false,
+
   # Don't print message when a configured language server is missing.
   ignoreMissingServer: false,
 

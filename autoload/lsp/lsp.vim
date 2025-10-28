@@ -329,6 +329,22 @@ enddef
 export def GotoDefinition(peek: bool, cmdmods: string, count: number)
   var lspserver: dict<any> = buf.CurbufGetServerChecked('definition')
   if lspserver->empty()
+    if &tagfunc !=# 'lsp#lsp#TagFunc' && opt.lspOptions.definitionFallback
+      if cmdmods !~ 'silent'
+      	util.WarnMsg($'definition lookup unsupported; falling back to tags file')
+      endif
+      try
+    	# Use :tjump instead of 'CTRL-]' using :tag because
+    	# 'tjump' works better with multiple tags.
+    	# Using built-in maps more robust than (p)tjump.
+      	if peek
+    	  execute "normal! \<C-w>g}"
+      	else
+    	  execute "normal! g\<C-]>"
+      	endif
+      	catch /.*/
+      	endtry
+    endif
     return
   endif
 
@@ -857,6 +873,16 @@ enddef
 export def Hover(cmdmods: string)
   var lspserver: dict<any> = buf.CurbufGetServerChecked('hover')
   if lspserver->empty()
+    if &keywordprg !=# ':LspHover' && &l:keywordprg !=# &g:keywordprg && opt.lspOptions.hoverFallback
+      if cmdmods !~ 'silent'
+      	util.WarnMsg($'Hovering unsupported; falling back to built-in.')
+      endif
+      try
+      	execute 'normal! K'
+      catch /.*/
+      	# Ignore any errors from built-in fallback
+      endtry
+    endif
     return
   endif
 

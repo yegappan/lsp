@@ -788,7 +788,22 @@ def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
     elseif msg == 'textDocument/implementation'
       emsg = 'symbol implementation is not found'
     else
-      emsg = 'symbol definition is not found'
+      if &tagfunc !=# 'lsp#lsp#TagFunc' && opt.lspOptions.definitionFallback
+      	emsg = 'symbol definition is not found; falling back to tags file'
+      	try
+    	  # Use :tjump instead of 'CTRL-]' using :tag because
+    	  # 'tjump' works better with multiple tags.
+    	  # Using built-in maps more robust than (p)tjump.
+    	  if peekSymbol
+    	    execute "normal! \<C-w>g}"
+    	  else
+    	    execute "normal! g\<C-]>"
+    	  endif
+      	catch /.*/
+      	endtry
+      else
+      	emsg = 'symbol definition is not found'
+      endif
     endif
 
     util.WarnMsg(emsg)
