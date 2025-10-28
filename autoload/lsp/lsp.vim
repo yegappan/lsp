@@ -873,7 +873,7 @@ enddef
 export def Hover(cmdmods: string)
   var lspserver: dict<any> = buf.CurbufGetServerChecked('hover')
   if lspserver->empty()
-    if &keywordprg !=# ':LspHover' && &l:keywordprg !=# &g:keywordprg && opt.lspOptions.hoverFallback
+    if &keywordprg !=# ':LspHover' && !empty(&l:keywordprg) && opt.lspOptions.hoverFallback
       if cmdmods !~ 'silent'
       	util.WarnMsg($'Hovering unsupported; falling back to built-in.')
       endif
