@@ -57,7 +57,8 @@ def RenderGitHubMarkdownText()
     endif
     # parse the github markdown content and convert it into a list of text and
     # list of associated text properties.
-    document = md.ParseMarkdown(bnr->getbufline(1, '$'), winId->winwidth())
+    const [ winInfo ] = winId->getwininfo()
+    document = md.ParseMarkdown(bnr->getbufline(1, '$'), winInfo.width - winInfo.textoff)
   catch /.*/
     b:markdown_fallback = v:true
     return
