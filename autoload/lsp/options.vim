@@ -62,6 +62,9 @@ export var lspOptions: dict<any> = {
   # fall back to built-in keyword help when no hover information is available
   hoverFallback: false,
 
+  # fall back to built-in gq formatting when LS incapable of formatting
+  formatFallback: false,
+
   # fall back to built-in tjump when no definition information is available
   definitionFallback: false,
 
