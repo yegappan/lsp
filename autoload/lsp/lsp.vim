@@ -331,7 +331,7 @@ export def GotoDefinition(peek: bool, cmdmods: string, count: number)
   if lspserver->empty()
     if &tagfunc !=# 'lsp#lsp#TagFunc' && opt.lspOptions.definitionFallback
       if cmdmods !~ 'silent'
-      	util.WarnMsg($'definition lookup unsupported; falling back to tags file')
+      	util.WarnMsg('definition lookup unsupported; falling back to tags file')
       endif
       try
     	# Use :tjump instead of 'CTRL-]' using :tag because
@@ -875,7 +875,7 @@ export def Hover(cmdmods: string)
   if lspserver->empty()
     if &keywordprg !=# ':LspHover' && !empty(&l:keywordprg) && opt.lspOptions.hoverFallback
       if cmdmods !~ 'silent'
-      	util.WarnMsg($'Hovering unsupported; falling back to built-in.')
+      	util.WarnMsg('Hovering unsupported; falling back to built-in.')
       endif
       try
       	execute 'normal! K'
@@ -1019,16 +1019,18 @@ export def TextDocFormat(range_args: number, line1: number, line2: number)
     return
   endif
 
-  var lspserver: dict<any> = buf.CurbufGetServerChecked('documentFormatting')
+  silent var lspserver: dict<any> = buf.CurbufGetServerChecked('documentFormatting')
   if lspserver->empty()
-    return
-  endif
-
-  var fname: string = @%
-  if range_args > 0
-    lspserver.textDocFormat(fname, true, line1, line2)
+    if !util.TextDocFormatFallback(range_args == 0, line1, line2)
+      util.ErrMsg($'Language server for "{&filetype}" file type supporting documentFormatting feature is not found')
+    endif
   else
-    lspserver.textDocFormat(fname, false, 0, 0)
+    var fname: string = @%
+    if range_args > 0
+      lspserver.textDocFormat(fname, true, line1, line2)
+    else
+      lspserver.textDocFormat(fname, false, 0, 0)
+    endif
   endif
 enddef
 
