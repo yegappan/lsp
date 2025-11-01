@@ -589,7 +589,7 @@ definitionFallback	|Boolean| option. Fall back to |:tjump| in case no
 			to the default |preview-window| for the peek fallback.
 			By default this is set to false.
 
-						*lsp-opt-definitionFallback*
+						*lsp-opt-formatFallback*
 formatFallback  	|Boolean| option. Fall back to |gq| in case no
                         formatting available. Do not set 'formatexpr'
                         to 'lsp#lsp#FormatExpr()' but use with suitable mappings
