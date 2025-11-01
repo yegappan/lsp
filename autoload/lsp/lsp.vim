@@ -1021,16 +1021,7 @@ export def TextDocFormat(range_args: number, line1: number, line2: number)
 
   var lspserver: dict<any> = buf.CurbufGetServerChecked('documentFormatting')
   if lspserver->empty()
-    if &formatexpr !=# 'lsp#lsp#FormatExpr()' && opt.lspOptions.formatFallback
-      util.WarnMsg('Formatting unsupported; falling back to built-in.')
-      const line_start = range_args == 0 ? 1 : line1
-      const line_end = range_args == 0 ? line('$') : line2
-      try
-      	execute 'normal!' line_start .. 'Ggq' .. line_end .. 'G'
-      catch /.*/
-      	# Ignore any errors from built-in fallback
-      endtry
-    endif
+    util.TextDocFormatFallback(range_args == 0, line1, line2)
     return
   endif
 
