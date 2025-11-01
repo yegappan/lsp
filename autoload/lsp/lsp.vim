@@ -331,7 +331,7 @@ export def GotoDefinition(peek: bool, cmdmods: string, count: number)
   if lspserver->empty()
     if &tagfunc !=# 'lsp#lsp#TagFunc' && opt.lspOptions.definitionFallback
       if cmdmods !~ 'silent'
-      	util.WarnMsg($'definition lookup unsupported; falling back to tags file')
+      	util.WarnMsg('definition lookup unsupported; falling back to tags file')
       endif
       try
     	# Use :tjump instead of 'CTRL-]' using :tag because
@@ -875,7 +875,7 @@ export def Hover(cmdmods: string)
   if lspserver->empty()
     if &keywordprg !=# ':LspHover' && !empty(&l:keywordprg) && opt.lspOptions.hoverFallback
       if cmdmods !~ 'silent'
-      	util.WarnMsg($'Hovering unsupported; falling back to built-in.')
+      	util.WarnMsg('Hovering unsupported; falling back to built-in.')
       endif
       try
       	execute 'normal! K'
