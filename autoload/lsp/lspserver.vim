@@ -1159,7 +1159,18 @@ def TextDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
 				start_lnum: number, end_lnum: number)
   # Check whether LSP server supports formatting documents
   if !lspserver.isDocumentFormattingProvider
-    util.ErrMsg('LSP server does not support formatting documents')
+    if &formatexpr !=# 'lsp#lsp#FormatExpr()' && opt.lspOptions.formatFallback
+      util.WarnMsg('Formatting unsupported; falling back to built-in.')
+      const line_start = rangeFormat ? 1 : start_lnum
+      const line_end = rangeFormat ? line('$') : end_lnum
+      try
+      	execute 'normal!' line_start .. 'Ggq' .. line_end .. 'G'
+      catch /.*/
+      	# Ignore any errors from built-in fallback
+      endtry
+    else
+      util.ErrMsg('LSP server does not support formatting documents')
+    endif
     return
   endif
 
