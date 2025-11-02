@@ -128,6 +128,7 @@ call LspOptionsSet(#{
         \   hideDisabledCodeActions: v:false,
         \   highlightDiagInline: v:true,
         \   hoverInPreview: v:false,
+        \   completionInPreview: v:false,
         \   ignoreMissingServer: v:false,
         \   keepFocusInDiags: v:true,
         \   keepFocusInReferences: v:true,

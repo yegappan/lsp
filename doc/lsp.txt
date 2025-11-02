@@ -567,6 +567,13 @@ hoverInPreview		|Boolean| option. Show |:LspHover| in a preview window
 			instead of a popup.
 			By default this is set to false.
 
+						*lsp-opt-completionInPreview*
+completionInPreview	|Boolean| option. Show completion documentation
+			in the |preview-window| instead of a popup. When
+			enabled, the buffer 'completeopt' is set to include
+			'preview' (and not 'popup'). By default this is set
+			to false.
+
 						*lsp-opt-hoverFallback*
 hoverFallback		|Boolean| option. Fall back to file type 'keywordprg' 
                         in case no hover information available. Do not set

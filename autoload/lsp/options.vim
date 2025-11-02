@@ -52,6 +52,9 @@ export var lspOptions: dict<any> = {
   # Show the symbol documentation in the preview window instead of in a popup
   hoverInPreview: false,
 
+  # Show completion documentation in the preview window instead of in a popup
+  completionInPreview: false,
+
   # fall back to built-in keyword help when no hover information is available
   hoverFallback: false,
 

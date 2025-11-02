@@ -626,10 +626,19 @@ def LspSetPopupFileType()
     return
   endif
 
-  var id = popup_findinfo()
-  if id > 0
-    var bnum = id->winbufnr()
-    setbufvar(bnum, '&ft', 'lspgfm')
+  if opt.lspOptions.completionInPreview
+    try
+      :wincmd P
+      setlocal ft=lspgfm
+      :wincmd p
+    catch /E441/
+    endtry
+  else
+    var id = popup_findinfo()
+    if id > 0
+      var bnum = id->winbufnr()
+      setbufvar(bnum, '&ft', 'lspgfm')
+    endif
   endif
 enddef
 
@@ -685,7 +694,9 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
 
   # set options for insert mode completion
   if opt.lspOptions.autoComplete
-    if lspserver.completionLazyDoc
+    if opt.lspOptions.completionInPreview
+      setbufvar(bnr, '&completeopt', 'menuone,preview,noinsert,noselect')
+    elseif lspserver.completionLazyDoc
       setbufvar(bnr, '&completeopt', 'menuone,popuphidden,noinsert,noselect')
     else
       setbufvar(bnr, '&completeopt', 'menuone,popup,noinsert,noselect')
