@@ -675,6 +675,13 @@ def LspCompleteDone(bnr: number)
     codeaction.DoCommand(lspserver, completionData.command)
   endif
 
+  # Close the preview window automatically after completion
+  if opt.lspOptions.completionInPreview
+    try
+      :pclose
+    catch /E441/ # No preview window
+    endtry
+  endif
 enddef
 
 # Initialize buffer-local completion options and autocmds
@@ -696,6 +703,9 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
   if opt.lspOptions.autoComplete
     if opt.lspOptions.completionInPreview
       setbufvar(bnr, '&completeopt', 'menuone,preview,noinsert,noselect')
+      if &previewheight < 20
+        &previewheight = 20
+      endif
     elseif lspserver.completionLazyDoc
       setbufvar(bnr, '&completeopt', 'menuone,popuphidden,noinsert,noselect')
     else
