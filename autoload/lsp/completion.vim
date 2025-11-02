@@ -646,16 +646,34 @@ enddef
 def LspCompleteDone(bnr: number)
   var lspserver: dict<any> = buf.BufLspServerGet(bnr, 'completion')
   if lspserver->empty()
+    if opt.lspOptions.completionInPreview
+      try
+      	:pclose
+      catch /E441/ # No preview window
+      endtry
+    endif
     return
   endif
 
   if v:completed_item->type() != v:t_dict
+    if opt.lspOptions.completionInPreview
+      try
+      	:pclose
+      catch /E441/ # No preview window
+      endtry
+    endif
     return
   endif
 
   var completionData: any = v:completed_item->get('user_data', '')
   if completionData->type() != v:t_dict
       || !opt.lspOptions.completionTextEdit
+    if opt.lspOptions.completionInPreview
+      try
+      	:pclose
+      catch /E441/ # No preview window
+      endtry
+    endif
     return
   endif
 
@@ -702,10 +720,10 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
   # set options for insert mode completion
   if opt.lspOptions.autoComplete
     if opt.lspOptions.completionInPreview
-      setbufvar(bnr, '&completeopt', 'menuone,preview,noinsert,noselect')
       if &previewheight < 20
         &previewheight = 20
       endif
+      setbufvar(bnr, '&completeopt', 'menuone,preview,noinsert,noselect')
     elseif lspserver.completionLazyDoc
       setbufvar(bnr, '&completeopt', 'menuone,popuphidden,noinsert,noselect')
     else
