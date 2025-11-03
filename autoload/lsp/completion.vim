@@ -646,7 +646,7 @@ enddef
 def LspCompleteDone(bnr: number)
   var lspserver: dict<any> = buf.BufLspServerGet(bnr, 'completion')
   if lspserver->empty()
-    if opt.lspOptions.completionInPreview
+    if opt.lspOptions.completionInPreview && opt.lspOptions.closePreviewOnComplete
       try
       	:pclose
       catch /E441/ # No preview window
@@ -656,7 +656,7 @@ def LspCompleteDone(bnr: number)
   endif
 
   if v:completed_item->type() != v:t_dict
-    if opt.lspOptions.completionInPreview
+    if opt.lspOptions.completionInPreview && opt.lspOptions.closePreviewOnComplete
       try
       	:pclose
       catch /E441/ # No preview window
@@ -668,7 +668,7 @@ def LspCompleteDone(bnr: number)
   var completionData: any = v:completed_item->get('user_data', '')
   if completionData->type() != v:t_dict
       || !opt.lspOptions.completionTextEdit
-    if opt.lspOptions.completionInPreview
+    if opt.lspOptions.completionInPreview && opt.lspOptions.closePreviewOnComplete
       try
       	:pclose
       catch /E441/ # No preview window
@@ -694,7 +694,7 @@ def LspCompleteDone(bnr: number)
   endif
 
   # Close the preview window automatically after completion
-  if opt.lspOptions.completionInPreview
+  if opt.lspOptions.completionInPreview && opt.lspOptions.closePreviewOnComplete
     try
       :pclose
     catch /E441/ # No preview window

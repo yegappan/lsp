@@ -574,6 +574,12 @@ completionInPreview	|Boolean| option. Show completion documentation
 			'preview' (and not 'popup'). By default this is set
 			to false.
 
+						*lsp-opt-closePreviewOnComplete*
+closePreviewOnComplete	|Boolean| option. When using the |preview-window| for
+			completion documentation (see |lsp-opt-completionInPreview|),
+			automatically close the preview window when the
+			completion menu is closed. By default this is set to true.
+
 						*lsp-opt-hoverFallback*
 hoverFallback		|Boolean| option. Fall back to file type 'keywordprg' 
                         in case no hover information available. Do not set

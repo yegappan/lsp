@@ -55,6 +55,10 @@ export var lspOptions: dict<any> = {
   # Show completion documentation in the preview window instead of in a popup
   completionInPreview: false,
 
+  # Automatically close the preview window after exiting the completion menu
+  # when using completionInPreview
+  closePreviewOnComplete: true,
+
   # fall back to built-in keyword help when no hover information is available
   hoverFallback: false,
 
