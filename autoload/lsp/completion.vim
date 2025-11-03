@@ -720,9 +720,6 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
   # set options for insert mode completion
   if opt.lspOptions.autoComplete
     if opt.lspOptions.completionInPreview
-      if &previewheight < 20
-        &previewheight = 20
-      endif
       setbufvar(bnr, '&completeopt', 'menuone,preview,noinsert,noselect')
     elseif lspserver.completionLazyDoc
       setbufvar(bnr, '&completeopt', 'menuone,popuphidden,noinsert,noselect')
