@@ -456,6 +456,7 @@ def ShowCompletionDocumentation(cItem: any)
       infoText->append(0)
       [1, 1]->cursor()
       exe $'setlocal ft={infoKind}'
+      exe 'resize' &previewheight
       :wincmd p
     catch /E441/ # No preview window
     endtry
