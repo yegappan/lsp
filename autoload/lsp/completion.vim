@@ -670,6 +670,10 @@ enddef
 
 # Initialize buffer-local completion options and autocmds
 export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
+  if bnr->getbufvar('LspCompletionAutocmdRegistered', false)
+    return
+  endif
+
   if !lspserver.isCompletionProvider
     # no support for completion
     return
@@ -735,6 +739,7 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
 	      cmd: $'LspCompleteDone({bnr})'})
 
   autocmd_add(acmds)
+  setbufvar(bnr, 'LspCompletionAutocmdRegistered', true)
 enddef
 
 # Buffer "bnr" is loaded in a window.  If omni-completion is enabled for this
