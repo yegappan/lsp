@@ -670,10 +670,6 @@ enddef
 
 # Initialize buffer-local completion options and autocmds
 export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
-  if bnr->getbufvar('LspCompletionAutocmdRegistered', false)
-    return
-  endif
-
   if !lspserver.isCompletionProvider
     # no support for completion
     return
@@ -703,6 +699,7 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
 
     # Trigger 24x7 insert mode completion when text is changed
     acmds->add({bufnr: bnr,
+		replace: true,
 		event: 'TextChangedI',
 		group: 'LSPBufferAutocmds',
 		cmd: 'LspComplete()'})
@@ -715,6 +712,7 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
   if lspserver.completionLazyDoc
     # resolve additional documentation for a selected item
     acmds->add({bufnr: bnr,
+                replace: true,
                 event: 'CompleteChanged',
                 group: 'LSPBufferAutocmds',
                 cmd: 'LspResolve()'})
@@ -722,24 +720,26 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
     # The documentation popup content is provided already but we still need to
     # style the popup
     acmds->add({bufnr: bnr,
+                replace: true,
                 event: 'CompleteChanged',
                 group: 'LSPBufferAutocmds',
                 cmd: 'LspCompleteConfigurePopup()'})
   endif
 
   acmds->add({bufnr: bnr,
+	      replace: true,
 	      event: 'CompleteChanged',
 	      group: 'LSPBufferAutocmds',
 	      cmd: 'LspSetPopupFileType()'})
 
   # Execute LSP server initiated text edits after completion
   acmds->add({bufnr: bnr,
+	      replace: true,
 	      event: 'CompleteDone',
 	      group: 'LSPBufferAutocmds',
 	      cmd: $'LspCompleteDone({bnr})'})
 
   autocmd_add(acmds)
-  setbufvar(bnr, 'LspCompletionAutocmdRegistered', true)
 enddef
 
 # Buffer "bnr" is loaded in a window.  If omni-completion is enabled for this
