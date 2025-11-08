@@ -727,7 +727,8 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
   endif
 
   acmds->add({bufnr: bnr,
-	      replace: true,
+	      # Don't replace CompleteChanged that was assigned above
+	      replace: false,
 	      event: 'CompleteChanged',
 	      group: 'LSPBufferAutocmds',
 	      cmd: 'LspSetPopupFileType()'})
