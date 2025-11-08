@@ -600,6 +600,8 @@ def LspResolve()
 	ShowCompletionDocumentation(item.user_data)
       endif
   endif
+
+  LspSetPopupFileType()
 enddef
 
 # Configure the non-lazy documentation popup
@@ -609,6 +611,8 @@ def LspCompleteConfigurePopup()
     return
   endif
   id->popup_setoptions(opt.PopupConfigure('Completion', {}))
+
+  LspSetPopupFileType()
 enddef
 
 # If the completion popup documentation window displays "markdown" content,
@@ -725,12 +729,6 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
                 group: 'LSPBufferAutocmds',
                 cmd: 'LspCompleteConfigurePopup()'})
   endif
-
-  acmds->add({bufnr: bnr,
-	      replace: true,
-	      event: 'CompleteChanged',
-	      group: 'LSPBufferAutocmds',
-	      cmd: 'LspSetPopupFileType()'})
 
   # Execute LSP server initiated text edits after completion
   acmds->add({bufnr: bnr,
