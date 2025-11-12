@@ -456,7 +456,7 @@ def ShowCompletionDocumentation(cItem: any)
       infoText->append(0)
       [1, 1]->cursor()
       exe $'setlocal ft={infoKind}'
-      exe 'resize' &previewheight
+      exe 'resize ' .. min([line('$') + 1, &previewheight])
       :wincmd p
     catch /E441/ # No preview window
     endtry
@@ -612,6 +612,16 @@ def LspCompleteConfigurePopup()
   id->popup_setoptions(opt.PopupConfigure('Completion', {}))
 enddef
 
+def LspSetPreviewFileType(timer_id: number)
+  try
+    :wincmd P
+    setlocal modifiable
+    setlocal ft=lspgfm
+    :wincmd p
+  catch /E441/
+  endtry
+enddef
+
 # If the completion popup documentation window displays "markdown" content,
 # then set the 'filetype' to "lspgfm".
 def LspSetPopupFileType()
@@ -628,12 +638,7 @@ def LspSetPopupFileType()
   endif
 
   if opt.lspOptions.completionInPreview
-    try
-      :wincmd P
-      setlocal ft=lspgfm
-      :wincmd p
-    catch /E441/
-    endtry
+    timer_start(0, 'LspSetPreviewFileType')
   else
     var id = popup_findinfo()
     if id > 0
