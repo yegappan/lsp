@@ -531,6 +531,12 @@ export def AddFile(bnr: number): void
     return
   endif
 
+  # Skip popup buffers (maybe just skip all special buffers?)
+  var buftype: string = bnr->getbufvar('&buftype')
+  if buftype ==# 'popup'
+    return
+  endif
+
   var ftype: string = bnr->getbufvar('&filetype')
   if ftype->empty()
     return
