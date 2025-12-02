@@ -650,17 +650,18 @@ def LspCompleteDone(bnr: number)
 
   var completionData: any = v:completed_item->get('user_data', '')
   if completionData->type() != v:t_dict
-      || !opt.lspOptions.completionTextEdit
     return
   endif
 
   if !completionData->has_key('additionalTextEdits')
+	\ && opt.lspOptions.completionTextEdit
     # Some language servers (e.g. typescript) delay the computation of the
     # additional text edits.  So try to resolve the completion item now to get
     # the text edits.
     completionData = lspserver.resolveCompletion(completionData, true)
   endif
   if !completionData->get('additionalTextEdits', {})->empty()
+	\ && opt.lspOptions.completionTextEdit
     textedit.ApplyTextEdits(bnr, completionData.additionalTextEdits)
   endif
 
