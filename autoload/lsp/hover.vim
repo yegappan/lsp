@@ -107,7 +107,7 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string): 
   if hoverText->empty()
     if &keywordprg !=# ':LspHover' && !empty(&l:keywordprg) && opt.lspOptions.hoverFallback
       if cmdmods !~ 'silent'
-        util.WarnMsg($'No documentation found for current keyword; falling back to built-in.')
+        util.WarnMsg('No documentation found for current keyword; falling back to built-in.')
       endif
       try
         execute 'normal! K'
@@ -116,7 +116,7 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string): 
       endtry
     else
       if cmdmods !~ 'silent'
-        util.WarnMsg($'No documentation found for current keyword')
+        util.WarnMsg('No documentation found for current keyword')
       endif
     endif
     return
