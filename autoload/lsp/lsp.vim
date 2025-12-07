@@ -336,13 +336,13 @@ export def GotoDefinition(peek: bool, cmdmods: string, count: number)
       try
     	# Use :tjump instead of 'CTRL-]' using :tag because
     	# 'tjump' works better with multiple tags.
-    	# Using built-in maps more robust than (p)tjump.
+    	# Use commands as mappings close selection dialog immediately!
       	if peek
-    	  execute "normal! \<C-w>g}"
+      	  execute (v:count > 0 ? ':' .. v:count .. 'ptag' : 'ptjump') expand('<cword>')
       	else
-    	  execute "normal! g\<C-]>"
+      	  execute (v:count > 0 ? ':' .. v:count .. 'tag' : 'tjump') expand('<cword>')
       	endif
-      	catch /.*/
+        catch /^Vim\%((\a\+)\)\=:E42[36]/
       	endtry
     endif
     return
