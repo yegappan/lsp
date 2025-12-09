@@ -389,19 +389,21 @@ Sample code to add the language server to the LSP plugin:
 ```vim
 call LspAddServer([#{name: 'JETLS.jl',
                  \   filetype: 'julia',
-                 \   path: 'julia',
+                 \   path: 'jetls',
                  \   args: [
-                 \       '--startup-file=no',
-                 \       '--history-file=no',
-                 \       '--project=/path/to/JETLS.jl',
                  \       '--threads=auto',
-                 \       '/path/to/JETLS.jl/runserver.jl'
+                 \       '--'
                  \   ]
                  \ }])
 ```
 
 _Installation_: Clone the [repository](https://github.com/aviatesk/JETLS.jl)
-and run `julia --project=. -e 'using Pkg; Pkg.instantiate()'` inside it.
+and run 
+
+```sh
+julia -e 'using Pkg; Pkg.Apps.add(; url="https://github.com/aviatesk/JETLS.jl", rev="release")'
+```
+inside it. Add `~/.julia/bin` to `PATH` or set `/home/user/.julia/bin/jetls` as path in the config.
 
 _Note_: The language server is in an early state and currently needs ~30
 seconds to start.
