@@ -130,29 +130,29 @@ export def SignatureHelp(lspserver: dict<any>, sighelp: any): void
     if params_len > 0
       var activeParam: number = sighelp.activeParameter
       if activeParam < params_len
-        var paramInfo: dict<any> = params[activeParam]
-        var label: any = paramInfo.label
-        if label->type() == v:t_string
-          # label string
-          var label_str: string = label
-          hllen = label_str->len()
-          startcol = text->stridx(label_str)
-        else
-          # [inclusive start offset, exclusive end offset]
-          var label_offset: list<number> = params[activeParam].label
-          var start_offset: number = label_offset[0]
-          var end_offset: number = label_offset[1]
+	var paramInfo: dict<any> = params[activeParam]
+	var label: any = paramInfo.label
+	if label->type() == v:t_string
+	  # label string
+	  var label_str: string = label
+	  hllen = label_str->len()
+	  startcol = text->stridx(label_str)
+	else
+	  # [inclusive start offset, exclusive end offset]
+	  var label_offset: list<number> = params[activeParam].label
+	  var start_offset: number = label_offset[0]
+	  var end_offset: number = label_offset[1]
 
-          if has('patch-9.0.1629')
-            # Convert UTF-16 offsets
-            startcol = text->byteidx(start_offset, true)
-            var endcol: number = text->byteidx(end_offset, true)
-            hllen = endcol - startcol
-          else
-            startcol = start_offset
-            hllen = end_offset - start_offset
-          endif
-        endif
+	  if has('patch-9.0.1629')
+	    # Convert UTF-16 offsets
+	    startcol = text->byteidx(start_offset, true)
+	    var endcol: number = text->byteidx(end_offset, true)
+	    hllen = endcol - startcol
+	  else
+	    startcol = start_offset
+	    hllen = end_offset - start_offset
+	  endif
+	endif
       endif
     endif
   endif
