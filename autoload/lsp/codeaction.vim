@@ -148,4 +148,4 @@ export def ApplyCodeAction(lspserver: dict<any>, actionlist: list<dict<any>>, qu
   HandleCodeAction(lspserver, actions[choice - 1])
 enddef
 
-# vim: tabstop=8 shiftwidth=2 softtabstop=2
+# vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab
