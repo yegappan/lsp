@@ -1033,4 +1033,4 @@ export def DocSymbolPopup(lspserver: dict<any>, docSymbol: any, fname: string)
   SymbolPopupMenu(symList)
 enddef
 
-# vim: tabstop=8 shiftwidth=2 softtabstop=2
+# vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab

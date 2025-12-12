@@ -29,4 +29,4 @@ export def ProcessCodeLens(lspserver: dict<any>, bnr: number, codeLensItems: lis
   codeaction.DoCommand(lspserver, codeLensItems[choice - 1].command)
 enddef
 
-# vim: tabstop=8 shiftwidth=2 softtabstop=2
+# vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab

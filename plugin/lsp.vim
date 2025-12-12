@@ -173,4 +173,4 @@ if exists('#User#LspSetup')
   :doautocmd <nomodeline> User LspSetup
 endif
 
-# vim: shiftwidth=2 softtabstop=2
+# vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab

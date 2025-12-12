@@ -79,4 +79,4 @@ export def CompletionVsnip(items: list<dict<any>>)
   endfor
 enddef
 
-# vim: tabstop=8 shiftwidth=2 softtabstop=2
+# vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab

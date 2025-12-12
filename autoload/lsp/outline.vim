@@ -301,4 +301,4 @@ export def OpenOutlineWindow(cmdmods: string, winsize: number)
   prevWinID->win_gotoid()
 enddef
 
-# vim: tabstop=8 shiftwidth=2 softtabstop=2
+# vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab

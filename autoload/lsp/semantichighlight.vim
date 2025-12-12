@@ -275,4 +275,4 @@ export def BufferInit(lspserver: dict<any>, bnr: number)
   autocmd_add(acmds)
 enddef
 
-# vim: tabstop=8 shiftwidth=2 softtabstop=2
+# vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab

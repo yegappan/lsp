@@ -48,4 +48,4 @@ done
 echo "SUCCESS: All the tests passed."
 exit 0
 
-# vim: shiftwidth=2 softtabstop=2 noexpandtab
+# vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab

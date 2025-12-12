@@ -122,4 +122,4 @@ func StopVimInTerminal(buf, kill = 1)
   endif
 endfunc
 
-" vim: shiftwidth=2 sts=2 expandtab
+" vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab
