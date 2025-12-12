@@ -790,7 +790,6 @@ call LspAddServer([#{name: 'vscode-json-server',
                  \ }])
 ```
 _Note_: The JSON language server supports code completion only if the _snippetSupport_ option is enabled.
-```
 
 <a name="vscode-markdown-lsp"/></a>
 ## VS Code Markdown Language Server
