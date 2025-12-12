@@ -33,6 +33,7 @@ Additional entries include
 [Fortran Language Server](#fortran-language-server)<br>
 [Gopls](#gopls)<br>
 [HTML Language Server](#html-language-server)<br>
+[Jedi Language Server](#jedi-language-server)<br>
 [JETLS.jl](#jetls)<br>
 [Language Server Bitbake](#language-server-bitbake)<br>
 [Lua Language Server](#lua-language-server)<br>
@@ -43,6 +44,7 @@ Additional entries include
 [Pylsp](#pylsp)<br>
 [Pyright](#pyright)<br>
 [Rust-analyzer](#rust-analyzer)<br>
+[Ruff Server](#ruff-server)<br>
 [Solargraph](#solargraph)<br>
 [Swift Language Server](#swift-language-server)<br>
 [Typescript/Javascript Language Server](#typescript-language-server)<br>
@@ -379,6 +381,21 @@ call LspAddServer([#{name: 'htmlls',
 
 _Note_: The HTML language server supports code completion only if the _snippetSupport_ option is enabled.
 
+<a name="jedi-language-server"/></a>
+## Jedi Language Server
+**Language**: Python
+
+**Home Page**: [https://github.com/pappasam/jedi-language-server](https://github.com/pappasam/jedi-language-server)
+
+Sample code to add the Jedi language server to the LSP plugin:
+```vim
+call LspAddServer([#{name: 'jedi',
+                 \   filetype: 'python',
+                 \   path: '/usr/local/bin/jedi-language-server',
+                 \   args: []
+                 \ }])
+```
+
 <a name="jetls"/></a>
 ## JETLS.jl
 **Language**: [Julia](https://julialang.org/)
@@ -570,6 +587,22 @@ npm install -g pyright
 ```
 
 **Server Configuration**: [https://microsoft.github.io/pyright/#/configuration](https://microsoft.github.io/pyright/#/configuration)
+
+<a name="ruff-server"/></a>
+## Ruff Server
+**Language**: Python
+
+**Home Page**: [https://github.com/astral-sh/ruff](https://github.com/astral-sh/ruff)
+
+Sample code to add the Ruff language server to the LSP plugin:
+```vim
+call LspAddServer([#{name: 'ruff',
+                 \   filetype: 'python',
+                 \   path: '/usr/local/bin/ruff',
+                 \   args: ['server'],
+                 \ }])
+```
+_Note_: A stable language server has been included with Ruff since v0.5.3, `ruff-lsp` is deprecated.
 
 <a name="rust-analyzer"/></a>
 ## Rust-analyzer
