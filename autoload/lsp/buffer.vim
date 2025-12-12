@@ -43,6 +43,7 @@ var SupportedCheckFns = {
   declaration: (lspserver) => lspserver.isDeclarationProvider,
   definition: (lspserver) => lspserver.isDefinitionProvider,
   documentFormatting: (lspserver) => lspserver.isDocumentFormattingProvider,
+  documentRangeFormatting: (lspserver) => lspserver.isDocumentRangeFormattingProvider,
   documentHighlight: (lspserver) => lspserver.isDocumentHighlightProvider,
   documentSymbol: (lspserver) => lspserver.isDocumentSymbolProvider,
   foldingRange: (lspserver) => lspserver.isFoldingRangeProvider,

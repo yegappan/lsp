@@ -144,6 +144,18 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
     lspserver.isDocumentSymbolProvider = false
   endif
 
+  # documentRangeFormattingProvider
+  if lspserver.caps->has_key('documentRangeFormattingProvider')
+    if lspserver.caps.documentRangeFormattingProvider->type() == v:t_bool
+      lspserver.isDocumentRangeFormattingProvider =
+				lspserver.caps.documentRangeFormattingProvider
+    else
+      lspserver.isDocumentRangeFormattingProvider = true
+    endif
+  else
+    lspserver.isDocumentRangeFormattingProvider = false
+  endif
+
   # documentFormattingProvider
   if lspserver.caps->has_key('documentFormattingProvider')
     if lspserver.caps.documentFormattingProvider->type() == v:t_bool

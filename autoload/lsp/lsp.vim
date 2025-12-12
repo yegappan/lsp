@@ -1249,7 +1249,7 @@ enddef
 
 # Function to use with the 'formatexpr' option.
 export def FormatExpr(): number
-  var lspserver: dict<any> = buf.CurbufGetServerChecked('documentFormatting')
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('documentRangeFormatting')
   if lspserver->empty()
     return 1
   endif
