@@ -1249,6 +1249,9 @@ enddef
 
 # Function to use with the 'formatexpr' option.
 export def FormatExpr(): number
+  # Backwards compatibilty - check documentFormatting, not documentRangeFormatting
+  # Using documentRangeFormatting will change behaviour, falling back to Vim's
+  # internal format mechanism rather than showing an error and making no changes
   var lspserver: dict<any> = buf.CurbufGetServerChecked('documentFormatting')
   if lspserver->empty()
     return 1
