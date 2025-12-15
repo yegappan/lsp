@@ -134,4 +134,4 @@ def g:StartLangServer(): bool
   return status
 enddef
 
-# vim: shiftwidth=2 softtabstop=2 noexpandtab
+# vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab

@@ -171,4 +171,4 @@ export def ShowTypeHierarchy(lspserver: dict<any>, isSuper: bool, types: dict<an
   UpdateTypeHierFileInPopup(lspserver, typeUriMap)
 enddef
 
-# vim: tabstop=8 shiftwidth=2 softtabstop=2
+# vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab

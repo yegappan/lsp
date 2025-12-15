@@ -475,4 +475,4 @@ def g:Test_LspTypeHier_multibyte()
   :%bw!
 enddef
 
-# vim: shiftwidth=2 softtabstop=2 noexpandtab
+# vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab

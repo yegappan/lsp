@@ -363,4 +363,4 @@ export def FindNearestRootDir(startDir: string, files: list<any>): string
   return sortedList[0]
 enddef
 
-# vim: tabstop=8 shiftwidth=2 softtabstop=2
+# vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab
