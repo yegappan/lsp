@@ -648,25 +648,26 @@ def LspSetPopupFileType()
   endif
 enddef
 
+def ClosePreviewWindow()
+  try
+    :pclose
+  catch /E441/ # No preview window
+  endtry
+enddef
+
 # complete done handler (LSP server-initiated actions after completion)
 def LspCompleteDone(bnr: number)
   var lspserver: dict<any> = buf.BufLspServerGet(bnr, 'completion')
   if lspserver->empty()
     if opt.lspOptions.completionInPreview && opt.lspOptions.closePreviewOnComplete
-      try
-      	:pclose
-      catch /E441/ # No preview window
-      endtry
+      ClosePreviewWindow()
     endif
     return
   endif
 
   if v:completed_item->type() != v:t_dict
     if opt.lspOptions.completionInPreview && opt.lspOptions.closePreviewOnComplete
-      try
-      	:pclose
-      catch /E441/ # No preview window
-      endtry
+      ClosePreviewWindow()
     endif
     return
   endif
@@ -675,10 +676,7 @@ def LspCompleteDone(bnr: number)
   if completionData->type() != v:t_dict
       || !opt.lspOptions.completionTextEdit
     if opt.lspOptions.completionInPreview && opt.lspOptions.closePreviewOnComplete
-      try
-      	:pclose
-      catch /E441/ # No preview window
-      endtry
+      ClosePreviewWindow()
     endif
     return
   endif
@@ -701,10 +699,7 @@ def LspCompleteDone(bnr: number)
 
   # Close the preview window automatically after completion
   if opt.lspOptions.completionInPreview && opt.lspOptions.closePreviewOnComplete
-    try
-      :pclose
-    catch /E441/ # No preview window
-    endtry
+    ClosePreviewWindow()
   endif
 enddef
 
