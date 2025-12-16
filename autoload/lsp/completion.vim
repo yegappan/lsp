@@ -456,6 +456,7 @@ def ShowCompletionDocumentation(cItem: any)
       infoText->append(0)
       [1, 1]->cursor()
       exe $'setlocal ft={infoKind}'
+      exe 'resize ' .. min([line('$') + 1, &previewheight])
       :wincmd p
     catch /E441/ # No preview window
     endtry
@@ -615,6 +616,16 @@ def LspCompleteConfigurePopup()
   LspSetPopupFileType()
 enddef
 
+def LspSetPreviewFileType(timer_id: number)
+  try
+    :wincmd P
+    setlocal modifiable
+    setlocal ft=lspgfm
+    :wincmd p
+  catch /E441/
+  endtry
+enddef
+
 # If the completion popup documentation window displays "markdown" content,
 # then set the 'filetype' to "lspgfm".
 def LspSetPopupFileType()
@@ -630,27 +641,47 @@ def LspSetPopupFileType()
     return
   endif
 
-  var id = popup_findinfo()
-  if id > 0
-    var bnum = id->winbufnr()
-    setbufvar(bnum, '&ft', 'lspgfm')
+  if opt.lspOptions.completionInPreview
+    timer_start(0, 'LspSetPreviewFileType')
+  else
+    var id = popup_findinfo()
+    if id > 0
+      var bnum = id->winbufnr()
+      setbufvar(bnum, '&ft', 'lspgfm')
+    endif
   endif
+enddef
+
+def ClosePreviewWindow()
+  try
+    :pclose
+  catch /E441/ # No preview window
+  endtry
 enddef
 
 # complete done handler (LSP server-initiated actions after completion)
 def LspCompleteDone(bnr: number)
   var lspserver: dict<any> = buf.BufLspServerGet(bnr, 'completion')
   if lspserver->empty()
+    if opt.lspOptions.completionInPreview && opt.lspOptions.closePreviewOnComplete
+      ClosePreviewWindow()
+    endif
     return
   endif
 
   if v:completed_item->type() != v:t_dict
+    if opt.lspOptions.completionInPreview && opt.lspOptions.closePreviewOnComplete
+      ClosePreviewWindow()
+    endif
     return
   endif
 
   var completionData: any = v:completed_item->get('user_data', '')
   if completionData->type() != v:t_dict
       || !opt.lspOptions.completionTextEdit
+    if opt.lspOptions.completionInPreview && opt.lspOptions.closePreviewOnComplete
+      ClosePreviewWindow()
+    endif
     return
   endif
 
@@ -670,6 +701,10 @@ def LspCompleteDone(bnr: number)
     codeaction.DoCommand(lspserver, completionData.command)
   endif
 
+  # Close the preview window automatically after completion
+  if opt.lspOptions.completionInPreview && opt.lspOptions.closePreviewOnComplete
+    ClosePreviewWindow()
+  endif
 enddef
 
 # Initialize buffer-local completion options and autocmds
@@ -689,7 +724,9 @@ export def BufferInit(lspserver: dict<any>, bnr: number, ftype: string)
 
   # set options for insert mode completion
   if opt.lspOptions.autoComplete
-    if lspserver.completionLazyDoc
+    if opt.lspOptions.completionInPreview
+      setbufvar(bnr, '&completeopt', 'menuone,preview,noinsert,noselect')
+    elseif lspserver.completionLazyDoc
       setbufvar(bnr, '&completeopt', 'menuone,popuphidden,noinsert,noselect')
     else
       setbufvar(bnr, '&completeopt', 'menuone,popup,noinsert,noselect')
