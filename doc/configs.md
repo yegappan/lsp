@@ -647,9 +647,12 @@ Sample code to add the Solargraph language server to the LSP plugin:
 call LspAddServer([#{name: 'solargraph',
                  \   filetype: ['ruby'],
                  \   path: 'solargraph',
-                 \   args: ['stdio']
+                 \   args: ['stdio'],
+                 \   initializationOptions: #{ formatting: v:true }
                  \ }])
 ```
+
+_Note_: Solargraph does not support range formatting, but the current file can be formatted using `:LspFormat`
 
 <a name="swift-language-server"/></a>
 ## Swift Language Server
@@ -820,6 +823,7 @@ call LspAddServer([#{name: 'vscode-json-server',
                  \   filetype: ['json'],
                  \   path: '/usr/local/node_modules/.bin/vscode-json-language-server',
                  \   args: ['--stdio'],
+                 \   initializationOptions: #{ provideFormatter: v:true }
                  \ }])
 ```
 _Note_: The JSON language server supports code completion only if the _snippetSupport_ option is enabled.
