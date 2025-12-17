@@ -402,11 +402,10 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<d
   endif
 
   var fname: string = util.LspUriToFile(uri)
-  var bnr: number = fname->bufnr()
-  if bnr == -1
-    # Is this condition possible?
+  if !fname->bufexists() # exact match on fname, not file-pattern
     return
   endif
+  var bnr: number = fname->bufnr()
 
   var newDiags: list<dict<any>> = diags_arg
 
