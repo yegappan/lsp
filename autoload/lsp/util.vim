@@ -368,8 +368,8 @@ import './options.vim' as opt
 export def TextDocFormatFallback(range: bool, line1: number, line2: number): bool
   if &formatexpr !=# 'lsp#lsp#FormatExpr()' && opt.lspOptions.formatFallback
     WarnMsg('Formatting unsupported; falling back to built-in.')
-    const line_start = range ? 1 : line1
-    const line_end = range ? line('$') : line2
+    const line_start = range ? line1 : 1
+    const line_end = range ? line2 : line('$')
     try
       execute 'normal!' line_start .. 'Ggq' .. line_end .. 'G'
     catch /.*/
