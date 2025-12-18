@@ -1031,10 +1031,10 @@ export def TextDocFormat(range_args: number, line1: number, line2: number)
     var lspserver: dict<any> = buf.BufLspServerGet(bufnr(), 'documentRangeFormatting')
     if lspserver->empty()
       if canFallback
-        util.WarnMsg('Formatting unsupported; falling back to built-in.')
-  	execute 'keepjumps normal!' line1 .. 'Ggq' .. line2 .. 'G'
+	util.WarnMsg('Formatting unsupported; falling back to built-in.')
+	execute 'keepjumps normal!' line1 .. 'Ggq' .. line2 .. 'G'
       else
-        util.ErrMsg($'Language server for "{&filetype}" file type supporting documentRangeFormatting feature is not found')
+	util.ErrMsg($'Language server for "{&filetype}" file type supporting documentRangeFormatting feature is not found')
       endif
     else
       lspserver.textDocFormat(fname, true, line1, line2)
@@ -1043,10 +1043,10 @@ export def TextDocFormat(range_args: number, line1: number, line2: number)
     var lspserver: dict<any> = buf.BufLspServerGet(bufnr(), 'documentFormatting')
     if lspserver->empty()
       if canFallback
-        util.WarnMsg('Formatting unsupported; falling back to built-in.')
-  	execute 'keepjumps normal! 1GgqG'
+	util.WarnMsg('Formatting unsupported; falling back to built-in.')
+	execute 'keepjumps normal! 1GgqG'
       else
-        util.ErrMsg($'Language server for "{&filetype}" file type supporting documentFormatting feature is not found')
+	util.ErrMsg($'Language server for "{&filetype}" file type supporting documentFormatting feature is not found')
       endif
     else
       lspserver.textDocFormat(fname, false, 0, 0)
