@@ -1032,7 +1032,7 @@ export def TextDocFormat(range_args: number, line1: number, line2: number)
     if lspserver->empty()
       if canFallback
 	util.WarnMsg('Formatting unsupported; falling back to built-in.')
-	execute 'keepjumps normal!' line1 .. 'Ggq' .. line2 .. 'G'
+	execute $'keepjumps normal! {line1}Ggq{line2}G'
       else
 	util.ErrMsg($'Language server for "{&filetype}" file type supporting documentRangeFormatting feature is not found')
       endif
