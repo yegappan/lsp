@@ -48,6 +48,7 @@ Additional entries include
 [Solargraph](#solargraph)<br>
 [Swift Language Server](#swift-language-server)<br>
 [Typescript/Javascript Language Server](#typescript-language-server)<br>
+[Vala Language Server](#vala-language-server)<br>
 [Verible](#verible)<br>
 [VHDL Language Server](#vhdl-language-server)<br>
 [Vimscript](#vim-language-server)<br>
@@ -681,6 +682,21 @@ call LspAddServer([#{name: 'tsserver',
                  \   filetype: ['javascript', 'typescript'],
                  \   path: '/usr/local/bin/typescript-language-server',
                  \   args: ['--stdio']
+                 \ }])
+```
+
+<a name="vala-language-server"/></a>
+## Vala Language Server
+**Language**: Vala
+
+**Home Page**: [https://github.com/vala-lang/vala-language-server](https://github.com/vala-lang/vala-language-server)
+
+Sample code to add the Vala language server to the LSP plugin:
+```vim
+call LspAddServer([#{name: 'valals',
+                 \   filetype: 'vala',
+                 \   path: 'vala-language-server',
+                 \   args: []
                  \ }])
 ```
 
