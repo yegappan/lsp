@@ -1026,12 +1026,13 @@ export def TextDocFormat(range_args: number, line1: number, line2: number)
   endif
 
   var fname: string = @%
+  const canFallback = opt.lspOptions.formatFallback && &formatexpr !=# 'lsp#lsp#FormatExpr()'
   if range_args > 0
     var lspserver: dict<any> = buf.BufLspServerGet(bufnr(), 'documentRangeFormatting')
     if lspserver->empty()
-      if util.TextDocFormatFallbackSupported()
+      if canFallback
         util.WarnMsg('Formatting unsupported; falling back to built-in.')
-        util.TextDocFormatFallbackFormat(true, line1, line2)
+  	execute 'keepjumps normal!' line1 .. 'Ggq' .. line2 .. 'G'
       else
         util.ErrMsg($'Language server for "{&filetype}" file type supporting documentRangeFormatting feature is not found')
       endif
@@ -1041,9 +1042,9 @@ export def TextDocFormat(range_args: number, line1: number, line2: number)
   else
     var lspserver: dict<any> = buf.BufLspServerGet(bufnr(), 'documentFormatting')
     if lspserver->empty()
-      if util.TextDocFormatFallbackSupported()
+      if canFallback
         util.WarnMsg('Formatting unsupported; falling back to built-in.')
-        util.TextDocFormatFallbackFormat(false, line1, line2)
+  	execute 'keepjumps normal! 1GgqG'
       else
         util.ErrMsg($'Language server for "{&filetype}" file type supporting documentFormatting feature is not found')
       endif

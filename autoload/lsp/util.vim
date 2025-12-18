@@ -363,16 +363,4 @@ export def FindNearestRootDir(startDir: string, files: list<any>): string
   return sortedList[0]
 enddef
 
-import './options.vim' as opt
-
-export def TextDocFormatFallbackSupported(): bool
-  return &formatexpr !=# 'lsp#lsp#FormatExpr()' && opt.lspOptions.formatFallback
-enddef
-
-export def TextDocFormatFallbackFormat(range: bool, line1: number, line2: number): void
-  const line_start = range ? line1 : 1
-  const line_end = range ? line2 : line('$')
-  execute 'normal!' line_start .. 'Ggq' .. line_end .. 'G'
-enddef
-
 # vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab
