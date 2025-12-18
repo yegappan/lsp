@@ -7,6 +7,7 @@ import './options.vim' as opt
 # Process the server capabilities
 #   interface ServerCapabilities
 export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
+  # positionEncoding
   var serverEncoding = 'utf-16'
   if lspserver.caps->has_key('positionEncoding')
     serverEncoding = lspserver.caps.positionEncoding
@@ -33,6 +34,32 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
     lspserver.needOffsetEncoding = false
   endif
 
+  # textDocumentSync capabilities
+  lspserver.supportsDidSave = false
+  # Default to TextDocumentSyncKind.None
+  lspserver.textDocumentSync = 0
+  if lspserver.caps->has_key('textDocumentSync')
+    if lspserver.caps.textDocumentSync->type() == v:t_bool
+	|| lspserver.caps.textDocumentSync->type() == v:t_number
+      lspserver.supportsDidSave = lspserver.caps.textDocumentSync
+      lspserver.textDocumentSync = lspserver.caps.textDocumentSync
+    elseif lspserver.caps.textDocumentSync->type() == v:t_dict
+      # "save"
+      if lspserver.caps.textDocumentSync->has_key('save')
+	if lspserver.caps.textDocumentSync.save->type() == v:t_bool
+	    || lspserver.caps.textDocumentSync.save->type() == v:t_number
+	  lspserver.supportsDidSave = lspserver.caps.textDocumentSync.save
+	elseif lspserver.caps.textDocumentSync.save->type() == v:t_dict
+	  lspserver.supportsDidSave = true
+	endif
+      endif
+      # "change"
+      if lspserver.caps.textDocumentSync->has_key('change')
+	lspserver.textDocumentSync = lspserver.caps.textDocumentSync.change
+      endif
+    endif
+  endif
+
   # completionProvider
   if lspserver.caps->has_key('completionProvider')
     lspserver.isCompletionProvider = true
@@ -47,15 +74,22 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
     lspserver.isCompletionResolveProvider = false
   endif
 
-  # definitionProvider
-  if lspserver.caps->has_key('definitionProvider')
-    if lspserver.caps.definitionProvider->type() == v:t_bool
-      lspserver.isDefinitionProvider = lspserver.caps.definitionProvider
+  # hoverProvider
+  if lspserver.caps->has_key('hoverProvider')
+    if lspserver.caps.hoverProvider->type() == v:t_bool
+      lspserver.isHoverProvider = lspserver.caps.hoverProvider
     else
-      lspserver.isDefinitionProvider = true
+      lspserver.isHoverProvider = true
     endif
   else
-    lspserver.isDefinitionProvider = false
+    lspserver.isHoverProvider = false
+  endif
+
+  # signatureHelpProvider
+  if lspserver.caps->has_key('signatureHelpProvider')
+    lspserver.isSignatureHelpProvider = true
+  else
+    lspserver.isSignatureHelpProvider = false
   endif
 
   # declarationProvider
@@ -67,6 +101,17 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
     endif
   else
     lspserver.isDeclarationProvider = false
+  endif
+
+  # definitionProvider
+  if lspserver.caps->has_key('definitionProvider')
+    if lspserver.caps.definitionProvider->type() == v:t_bool
+      lspserver.isDefinitionProvider = lspserver.caps.definitionProvider
+    else
+      lspserver.isDefinitionProvider = true
+    endif
+  else
+    lspserver.isDefinitionProvider = false
   endif
 
   # typeDefinitionProvider
@@ -89,24 +134,6 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
     endif
   else
     lspserver.isImplementationProvider = false
-  endif
-
-  # signatureHelpProvider
-  if lspserver.caps->has_key('signatureHelpProvider')
-    lspserver.isSignatureHelpProvider = true
-  else
-    lspserver.isSignatureHelpProvider = false
-  endif
-
-  # hoverProvider
-  if lspserver.caps->has_key('hoverProvider')
-    if lspserver.caps.hoverProvider->type() == v:t_bool
-      lspserver.isHoverProvider = lspserver.caps.hoverProvider
-    else
-      lspserver.isHoverProvider = true
-    endif
-  else
-    lspserver.isHoverProvider = false
   endif
 
   # referencesProvider
@@ -144,16 +171,61 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
     lspserver.isDocumentSymbolProvider = false
   endif
 
-  # documentRangeFormattingProvider
-  if lspserver.caps->has_key('documentRangeFormattingProvider')
-    if lspserver.caps.documentRangeFormattingProvider->type() == v:t_bool
-      lspserver.isDocumentRangeFormattingProvider =
-				lspserver.caps.documentRangeFormattingProvider
+  # codeActionProvider
+  if lspserver.caps->has_key('codeActionProvider')
+    if lspserver.caps.codeActionProvider->type() == v:t_bool
+      lspserver.isCodeActionProvider = lspserver.caps.codeActionProvider
+      lspserver.isCodeActionResolveProvider = v:false
     else
-      lspserver.isDocumentRangeFormattingProvider = true
+      lspserver.isCodeActionProvider = true
+      if lspserver.caps.codeActionProvider->type() == v:t_dict &&
+	  lspserver.caps.codeActionProvider->has_key('resolveProvider')
+        lspserver.isCodeActionResolveProvider =
+	  lspserver.caps.codeActionProvider.resolveProvider
+      endif
     endif
   else
-    lspserver.isDocumentRangeFormattingProvider = false
+    lspserver.isCodeActionProvider = false
+    lspserver.isCodeActionResolveProvider = v:false
+  endif
+
+  # codeLensProvider
+  if lspserver.caps->has_key('codeLensProvider')
+    lspserver.isCodeLensProvider = true
+    var codeLensProvider = lspserver.caps.codeLensProvider
+    if codeLensProvider->type() == v:t_dict
+	 && codeLensProvider->has_key('resolveProvider')
+      lspserver.isCodeLensResolveProvider = codeLensProvider.resolveProvider
+    else
+      lspserver.isCodeLensResolveProvider = false
+    endif
+  else
+    lspserver.isCodeLensProvider = false
+  endif
+
+  # documentLinkProvider
+  if lspserver.caps->has_key('documentLinkProvider')
+    lspserver.isDocumentLinkProvider = true
+    var docLinkProvider = lspserver.caps.documentLinkProvider
+    if docLinkProvider->type() == v:t_dict
+	 && docLinkProvider->has_key('resolveProvider')
+      lspserver.isDocumentLinkResolveProvider = docLinkProvider.resolveProvider
+    else
+      lspserver.isDocumentLinkResolveProvider = false
+    endif
+  else
+    lspserver.isDocumentLinkResolveProvider = false
+  endif
+
+  # colorProvider
+  if lspserver.caps->has_key('colorProvider')
+    if lspserver.caps.colorProvider->type() == v:t_bool
+      lspserver.isColorProvider = lspserver.caps.colorProvider
+    else
+      lspserver.isColorProvider = true
+    endif
+  else
+    lspserver.isColorProvider = false
   endif
 
   # documentFormattingProvider
@@ -166,6 +238,78 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
     endif
   else
     lspserver.isDocumentFormattingProvider = false
+  endif
+
+  # documentRangeFormattingProvider
+  if lspserver.caps->has_key('documentRangeFormattingProvider')
+    if lspserver.caps.documentRangeFormattingProvider->type() == v:t_bool
+      lspserver.isDocumentRangeFormattingProvider =
+				lspserver.caps.documentRangeFormattingProvider
+    else
+      lspserver.isDocumentRangeFormattingProvider = true
+    endif
+  else
+    lspserver.isDocumentRangeFormattingProvider = false
+  endif
+
+  # documentOnTypeFormattingProvider
+  if lspserver.caps->has_key('documentOnTypeFormattingProvider')
+      lspserver.isDocumentOnTypeFormattingProvider = true
+  else
+      lspserver.isDocumentOnTypeFormattingProvider = false
+  endif
+
+  # renameProvider
+  if lspserver.caps->has_key('renameProvider')
+    if lspserver.caps.renameProvider->type() == v:t_bool
+      lspserver.isRenameProvider = lspserver.caps.renameProvider
+    else
+      lspserver.isRenameProvider = true
+    endif
+  else
+    lspserver.isRenameProvider = false
+  endif
+
+  # foldingRangeProvider
+  if lspserver.caps->has_key('foldingRangeProvider')
+    if lspserver.caps.foldingRangeProvider->type() == v:t_bool
+      lspserver.isFoldingRangeProvider = lspserver.caps.foldingRangeProvider
+    else
+      lspserver.isFoldingRangeProvider = true
+    endif
+  else
+    lspserver.isFoldingRangeProvider = false
+  endif
+
+  # executeCommandProvider
+  if lspserver.caps->has_key('executeCommandProvider')
+    lspserver.isExecuteCommandProvider = true
+  else
+    lspserver.isExecuteCommandProvider = false
+  endif
+
+  # selectionRangeProvider
+  if lspserver.caps->has_key('selectionRangeProvider')
+    if lspserver.caps.selectionRangeProvider->type() == v:t_bool
+      lspserver.isSelectionRangeProvider =
+				lspserver.caps.selectionRangeProvider
+    else
+      lspserver.isSelectionRangeProvider = true
+    endif
+  else
+    lspserver.isSelectionRangeProvider = false
+  endif
+
+  # linkedEditingRangeProvider
+  if lspserver.caps->has_key('linkedEditingRangeProvider')
+    if lspserver.caps.linkedEditingRangeProvider->type() == v:t_bool
+      lspserver.isLinkedEditingRangeProvider =
+				lspserver.caps.linkedEditingRangeProvider
+    else
+      lspserver.isLinkedEditingRangeProvider = true
+    endif
+  else
+    lspserver.isLinkedEditingRangeProvider = false
   endif
 
   # callHierarchyProvider
@@ -209,54 +353,59 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
     lspserver.isSemanticTokensProvider = false
   endif
 
+  # monikerProvider
+  if lspserver.caps->has_key('monikerProvider')
+    if lspserver.caps.monikerProvider->type() == v:t_bool
+      lspserver.isMonikerProvider = lspserver.caps.monikerProvider
+    else
+      lspserver.isMonikerProvider = true
+    endif
+  else
+    lspserver.isMonikerProvider = false
+  endif
+
   # typeHierarchyProvider
   if lspserver.caps->has_key('typeHierarchyProvider')
-    lspserver.isTypeHierarchyProvider = true
+    if lspserver.caps.typeHierarchyProvider->type() == v:t_bool
+      lspserver.isTypeHierarchyProvider = lspserver.caps.typeHierarchyProvider
+    else
+      lspserver.isTypeHierarchyProvider = true
+    endif
   else
     lspserver.isTypeHierarchyProvider = false
   endif
 
-  # renameProvider
-  if lspserver.caps->has_key('renameProvider')
-    if lspserver.caps.renameProvider->type() == v:t_bool
-      lspserver.isRenameProvider = lspserver.caps.renameProvider
+  # inlineValueProvider
+  if lspserver.caps->has_key('inlineValueProvider')
+    if lspserver.caps.inlineValueProvider->type() == v:t_bool
+      lspserver.isInlineValueProvider = lspserver.caps.inlineValueProvider
     else
-      lspserver.isRenameProvider = true
+      lspserver.isInlineValueProvider = true
     endif
   else
-    lspserver.isRenameProvider = false
+    lspserver.isInlineValueProvider = false
   endif
 
-  # codeActionProvider
-  if lspserver.caps->has_key('codeActionProvider')
-    if lspserver.caps.codeActionProvider->type() == v:t_bool
-      lspserver.isCodeActionProvider = lspserver.caps.codeActionProvider
-      lspserver.isCodeActionResolveProvider = v:false
+  # inlayHintProvider
+  if lspserver.caps->has_key('inlayHintProvider')
+    if lspserver.caps.inlayHintProvider->type() == v:t_bool
+      lspserver.isInlayHintProvider = lspserver.caps.inlayHintProvider
     else
-      lspserver.isCodeActionProvider = true
-      if lspserver.caps.codeActionProvider->type() == v:t_dict &&
-	  lspserver.caps.codeActionProvider->has_key('resolveProvider')
-        lspserver.isCodeActionResolveProvider =
-	  lspserver.caps.codeActionProvider.resolveProvider
-      endif
+      lspserver.isInlayHintProvider = true
     endif
   else
-    lspserver.isCodeActionProvider = false
-    lspserver.isCodeActionResolveProvider = v:false
+    lspserver.isInlayHintProvider = false
   endif
 
-  # codeLensProvider
-  if lspserver.caps->has_key('codeLensProvider')
-    lspserver.isCodeLensProvider = true
-    var codeLensProvider = lspserver.caps.codeLensProvider
-    if codeLensProvider->type() == v:t_dict
-	 && codeLensProvider->has_key('resolveProvider')
-      lspserver.isCodeLensResolveProvider = codeLensProvider.resolveProvider
+  # diagnosticProvider
+  if lspserver.caps->has_key('diagnosticProvider')
+    if lspserver.caps.diagnosticProvider->type() == v:t_bool
+      lspserver.isDiagnosticsProvider = lspserver.caps.diagnosticProvider
     else
-      lspserver.isCodeLensResolveProvider = false
+      lspserver.isDiagnosticsProvider = true
     endif
   else
-    lspserver.isCodeLensProvider = false
+    lspserver.isDiagnosticsProvider = false
   endif
 
   # workspaceSymbolProvider
@@ -271,79 +420,12 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
     lspserver.isWorkspaceSymbolProvider = false
   endif
 
-  # selectionRangeProvider
-  if lspserver.caps->has_key('selectionRangeProvider')
-    if lspserver.caps.selectionRangeProvider->type() == v:t_bool
-      lspserver.isSelectionRangeProvider =
-				lspserver.caps.selectionRangeProvider
-    else
-      lspserver.isSelectionRangeProvider = true
-    endif
-  else
-    lspserver.isSelectionRangeProvider = false
-  endif
-
-  # foldingRangeProvider
-  if lspserver.caps->has_key('foldingRangeProvider')
-    if lspserver.caps.foldingRangeProvider->type() == v:t_bool
-      lspserver.isFoldingRangeProvider = lspserver.caps.foldingRangeProvider
-    else
-      lspserver.isFoldingRangeProvider = true
-    endif
-  else
-    lspserver.isFoldingRangeProvider = false
-  endif
-
-  # inlayHintProvider
-  if lspserver.caps->has_key('inlayHintProvider')
-    if lspserver.caps.inlayHintProvider->type() == v:t_bool
-      lspserver.isInlayHintProvider = lspserver.caps.inlayHintProvider
-    else
-      lspserver.isInlayHintProvider = true
-    endif
-  else
-    lspserver.isInlayHintProvider = false
-  endif
-
   # clangdInlayHintsProvider
   if lspserver.caps->has_key('clangdInlayHintsProvider')
     lspserver.isClangdInlayHintsProvider =
 					lspserver.caps.clangdInlayHintsProvider
   else
     lspserver.isClangdInlayHintsProvider = false
-  endif
-
-  # textDocumentSync capabilities
-  lspserver.supportsDidSave = false
-  # Default to TextDocumentSyncKind.None
-  lspserver.textDocumentSync = 0
-  if lspserver.caps->has_key('textDocumentSync')
-    if lspserver.caps.textDocumentSync->type() == v:t_bool
-	|| lspserver.caps.textDocumentSync->type() == v:t_number
-      lspserver.supportsDidSave = lspserver.caps.textDocumentSync
-      lspserver.textDocumentSync = lspserver.caps.textDocumentSync
-    elseif lspserver.caps.textDocumentSync->type() == v:t_dict
-      # "save"
-      if lspserver.caps.textDocumentSync->has_key('save')
-	if lspserver.caps.textDocumentSync.save->type() == v:t_bool
-	    || lspserver.caps.textDocumentSync.save->type() == v:t_number
-	  lspserver.supportsDidSave = lspserver.caps.textDocumentSync.save
-	elseif lspserver.caps.textDocumentSync.save->type() == v:t_dict
-	  lspserver.supportsDidSave = true
-	endif
-      endif
-      # "change"
-      if lspserver.caps.textDocumentSync->has_key('change')
-	lspserver.textDocumentSync = lspserver.caps.textDocumentSync.change
-      endif
-    endif
-  endif
-
-  # executeCommandProvider
-  if lspserver.caps->has_key('executeCommandProvider')
-    lspserver.isExecuteCommandProvider = true
-  else
-    lspserver.isExecuteCommandProvider = false
   endif
 enddef
 
@@ -532,4 +614,5 @@ export def GetClientCaps(): dict<any>
   return clientCaps
 enddef
 
+defcompile
 # vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab
