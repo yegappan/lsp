@@ -1025,18 +1025,28 @@ export def TextDocFormat(range_args: number, line1: number, line2: number)
     return
   endif
 
-  var lspserver: dict<any> = buf.BufLspServerGet(bufnr(), 'documentFormatting')
-  if lspserver->empty()
-    if util.TextDocFormatFallbackSupported()
-      util.WarnMsg('Formatting unsupported; falling back to built-in.')
-      util.TextDocFormatFallbackFormat(range_args == 0, line1, line2)
+  var fname: string = @%
+  if range_args > 0
+    var lspserver: dict<any> = buf.BufLspServerGet(bufnr(), 'documentRangeFormatting')
+    if lspserver->empty()
+      if util.TextDocFormatFallbackSupported()
+        util.WarnMsg('Formatting unsupported; falling back to built-in.')
+        util.TextDocFormatFallbackFormat(true, line1, line2)
+      else
+        util.ErrMsg($'Language server for "{&filetype}" file type supporting documentRangeFormatting feature is not found')
+      endif
     else
-      util.ErrMsg($'Language server for "{&filetype}" file type supporting documentFormatting feature is not found')
+      lspserver.textDocFormat(fname, true, line1, line2)
     endif
   else
-    var fname: string = @%
-    if range_args > 0
-      lspserver.textDocFormat(fname, true, line1, line2)
+    var lspserver: dict<any> = buf.BufLspServerGet(bufnr(), 'documentFormatting')
+    if lspserver->empty()
+      if util.TextDocFormatFallbackSupported()
+        util.WarnMsg('Formatting unsupported; falling back to built-in.')
+        util.TextDocFormatFallbackFormat(false, line1, line2)
+      else
+        util.ErrMsg($'Language server for "{&filetype}" file type supporting documentFormatting feature is not found')
+      endif
     else
       lspserver.textDocFormat(fname, false, 0, 0)
     endif
