@@ -1027,7 +1027,10 @@ export def TextDocFormat(range_args: number, line1: number, line2: number)
 
   var lspserver: dict<any> = buf.BufLspServerGet(bufnr(), 'documentFormatting')
   if lspserver->empty()
-    if !util.TextDocFormatFallback(range_args == 0, line1, line2)
+    if util.TextDocFormatFallbackSupported()
+      util.WarnMsg('Formatting unsupported; falling back to built-in.')
+      util.TextDocFormatFallbackFormat(range_args == 0, line1, line2)
+    else
       util.ErrMsg($'Language server for "{&filetype}" file type supporting documentFormatting feature is not found')
     endif
   else
