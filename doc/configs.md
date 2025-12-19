@@ -175,6 +175,7 @@ call LspAddServer([#{name: 'clangd',
                  \   args: ['--background-index', '--clang-tidy']
                  \ }])
 ```
+Optionally add an [autocommand](https://gist.github.com/Konfekt/2d951b9e07831878b1476133c5f37b52) to automatically trigger generation of a compile commands database for navigating the code base.
 
 <a name="css-language-server"/></a>
 ## CSS Language Server
