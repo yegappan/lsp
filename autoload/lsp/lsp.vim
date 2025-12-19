@@ -1033,8 +1033,10 @@ export def TextDocFormat(range_args: number, line1: number, line2: number)
       if canFallback
 	util.WarnMsg('Formatting unsupported; falling back to built-in.')
 	execute $'keepjumps normal! {line1}Ggq{line2}G'
+      elseif !&filetype->empty()
+	util.ErrMsg($'Language server for "{&filetype}" file type supporting "documentRangeFormatting" feature is not found')
       else
-	util.ErrMsg($'Language server for "{&filetype}" file type supporting documentRangeFormatting feature is not found')
+	util.ErrMsg('No language server supporting "documentRangeFormatting" feature is found')
       endif
     else
       lspserver.textDocFormat(fname, true, line1, line2)
@@ -1045,8 +1047,10 @@ export def TextDocFormat(range_args: number, line1: number, line2: number)
       if canFallback
 	util.WarnMsg('Formatting unsupported; falling back to built-in.')
 	execute 'keepjumps normal! 1GgqG'
-      else
-	util.ErrMsg($'Language server for "{&filetype}" file type supporting documentFormatting feature is not found')
+      elseif !&filetype->empty()
+	util.ErrMsg($'Language server for "{&filetype}" file type supporting "documentFormatting" feature is not found')
+      # else
+	# util.ErrMsg('No language server supporting "documentRangeFormatting" feature is found')
       endif
     else
       lspserver.textDocFormat(fname, false, 0, 0)
