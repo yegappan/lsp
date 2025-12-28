@@ -8,9 +8,31 @@ g:LspOptionsSet(lspOpts)
 
 g:LSPTest_modifyDiags = false
 
+var clangdPath: string
+if has('mac') && executable('brew')
+  var brewPrefix = trim(system('brew --prefix'))
+  var brewExePath = $'{brewPrefix}/opt/llvm@15/bin/clangd'
+  clangdPath = filereadable(brewExePath) ? brewExePath : exepath('clangd')
+else
+  clangdPath = exepath($'clangd-15') ?? exepath('clangd')
+endif
+
+var clangdVerDetail = systemlist($'{shellescape(clangdPath)} --version')
+var clangdVerMajor = clangdVerDetail->matchstr('.*version \d\+\..*')->substitute('.* \(\d\+\)\..*', '\1', 'g')->str2nr()
+if clangdVerMajor != 15
+  if has('mac')
+    echoerr $'Clangd version 15 required. Please `brew install llvm@15`'
+  elseif executable('apt')
+    echoerr $'Clangd version 15 required. Please `apt install clangd-15`'
+  else
+    echoerr $'Clangd version 15 required. Please install clangd-15'
+  endif
+endif
+echomsg clangdVerDetail
+
 var lspServers = [{
       filetype: ['c', 'cpp'],
-      path: (exepath('clangd-15') ?? exepath('clangd')),
+      path: clangdPath,
       args: ['--background-index', '--clang-tidy'],
       initializationOptions: { clangdFileStatus: true },
       customNotificationHandlers: {
@@ -30,10 +52,6 @@ var lspServers = [{
       }
   }]
 call LspAddServer(lspServers)
-
-var clangdVerDetail = systemlist($'{shellescape(lspServers[0].path)} --version')
-var clangdVerMajor = clangdVerDetail->matchstr('.*version \d\+\..*')->substitute('.* \(\d\+\)\..*', '\1', 'g')->str2nr()
-echomsg clangdVerDetail
 
 
 # Test for formatting a file using LspFormat
