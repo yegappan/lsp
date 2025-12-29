@@ -1018,7 +1018,48 @@ export def ShowDocSymbols()
   lspserver.getDocSymbols(fname, false)
 enddef
 
-# Format the entire file
+# Format a range of lines in a file
+# If a language server supporting range formatting is not found and
+# 'canFallback' is true then use builtin formatting.
+def DocRangeFormat(fname: string, line1: number, line2: number, canFallback: bool)
+  var lspserver: dict<any> = buf.BufLspServerGet(bufnr(), 'documentRangeFormatting')
+  if !lspserver->empty()
+    lspserver.textDocFormat(fname, true, line1, line2)
+    return
+  endif
+
+  if canFallback
+    util.WarnMsg('Formatting unsupported; falling back to built-in.')
+    execute $'keepjumps normal! {line1}Ggq{line2}G'
+  elseif !&filetype->empty()
+    util.ErrMsg($'Language server for "{&filetype}" file type supporting "documentRangeFormatting" feature is not found')
+  else
+    util.ErrMsg('No language server supporting "documentRangeFormatting" feature is found')
+  endif
+enddef
+
+# Format the entire file.
+# If a language server supporting range formatting is not found and
+# 'canFallback' is true then use builtin formatting.
+def DocFormat(fname: string, canFallback: bool)
+  var lspserver: dict<any> = buf.BufLspServerGet(bufnr(), 'documentFormatting')
+  if !lspserver->empty()
+    lspserver.textDocFormat(fname, false, 0, 0)
+    return
+  endif
+
+  if canFallback
+    util.WarnMsg('Formatting unsupported; falling back to built-in.')
+    execute 'keepjumps normal! 1GgqG'
+  elseif !&filetype->empty()
+    util.ErrMsg($'Language server for "{&filetype}" file type supporting "documentFormatting" feature is not found')
+  # else
+    # util.ErrMsg('No language server supporting "documentFormatting" feature is found')
+  endif
+enddef
+
+# If 'range_args' is false, then format the entire file.  Otherwise format a
+# range of lines.
 export def TextDocFormat(range_args: number, line1: number, line2: number)
   if !&modifiable
     util.ErrMsg('Current file is not a modifiable file')
@@ -1026,35 +1067,12 @@ export def TextDocFormat(range_args: number, line1: number, line2: number)
   endif
 
   var fname: string = @%
-  const canFallback = opt.lspOptions.formatFallback && &formatexpr !=# 'lsp#lsp#FormatExpr()'
+  const canFallback = opt.lspOptions.formatFallback &&
+					&formatexpr !=# 'lsp#lsp#FormatExpr()'
   if range_args > 0
-    var lspserver: dict<any> = buf.BufLspServerGet(bufnr(), 'documentRangeFormatting')
-    if lspserver->empty()
-      if canFallback
-	util.WarnMsg('Formatting unsupported; falling back to built-in.')
-	execute $'keepjumps normal! {line1}Ggq{line2}G'
-      elseif !&filetype->empty()
-	util.ErrMsg($'Language server for "{&filetype}" file type supporting "documentRangeFormatting" feature is not found')
-      else
-	util.ErrMsg('No language server supporting "documentRangeFormatting" feature is found')
-      endif
-    else
-      lspserver.textDocFormat(fname, true, line1, line2)
-    endif
+    DocRangeFormat(fname, line1, line2, canFallback)
   else
-    var lspserver: dict<any> = buf.BufLspServerGet(bufnr(), 'documentFormatting')
-    if lspserver->empty()
-      if canFallback
-	util.WarnMsg('Formatting unsupported; falling back to built-in.')
-	execute 'keepjumps normal! 1GgqG'
-      elseif !&filetype->empty()
-	util.ErrMsg($'Language server for "{&filetype}" file type supporting "documentFormatting" feature is not found')
-      # else
-	# util.ErrMsg('No language server supporting "documentRangeFormatting" feature is found')
-      endif
-    else
-      lspserver.textDocFormat(fname, false, 0, 0)
-    endif
+    DocFormat(fname, canFallback)
   endif
 enddef
 
