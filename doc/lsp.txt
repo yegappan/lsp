@@ -602,6 +602,14 @@ definitionFallback	|Boolean| option. Fall back to |:tjump| in case no
 			to the default |preview-window| for the peek fallback.
 			By default this is set to false.
 
+						*lsp-opt-formatFallback*
+formatFallback  	|Boolean| option. Fall back to |gq| in case no
+			formatting available. Do not set 'formatexpr'
+			to 'lsp#lsp#FormatExpr()' but use with suitable mappings
+
+			  nnoremap gq <plug>(LspFormat)
+			  xnoremap gq <plug>(LspFormat)
+
 						*lsp-opt-ignoreMissingServer*
 ignoreMissingServer	|Boolean| option.  Do not print a missing language
 			server executable.  By default this is set to false.
@@ -979,10 +987,14 @@ can map these commands to keys and make it easier to invoke them.
 :LspFormat		Format the current file using the language server. The
 			'shiftwidth' and 'expandtab' values set for the
 			current buffer are used when format is applied.
+			With |formatFallback| enabled (disabled by default),
+			falls back to |gq|. See |lsp-opt-formatFallback|.
 
 :{range}LspFormat	Format the specified range of lines in the current
 			file using the language server. Map <plug>(LspFormat)
 			in normal mode to operate on text objects.
+			With |formatFallback| enabled (disabled by default),
+			falls back to |gq|. See |lsp-opt-formatFallback|.
 
 						*:LspGotoDeclaration*
 :[count]LspGotoDeclaration

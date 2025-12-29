@@ -177,6 +177,59 @@ def g:Test_LspFormatExpr()
   :%bw!
 enddef
 
+# Test for formatting a file using 'formatprg'
+def g:Test_LspFormat_Fallback()
+  # Enable fallback to Vim built-in formatting.
+  g:LspOptionsSet({formatFallback: true})
+
+  # Case 1: No range provided, expect whole-buffer fallback via "1GgqG".
+  silent! edit XformatFallback.raku
+  setlocal formatexpr=
+  setlocal formatprg=
+  setlocal textwidth=20
+  setlocal formatoptions=t
+
+  setline(1, ['one two three four five six seven eight nine ten'])
+  redraw!
+
+  var out = execute('LspFormat')->split("\n")
+  assert_equal('Warn: Formatting unsupported; falling back to built-in.', out[0])
+  assert_equal([
+        'one two three four',
+        'five six seven eight',
+        'nine ten',
+      ], getline(1, '$'))
+
+  # Case 2: Range provided, expect range fallback via "{line1}Ggq{line2}G".
+  setlocal textwidth=12
+  deletebufline('', 1, '$')
+  setline(1, [
+        'KEEP1',
+        'one two three four five',
+        'six seven eight nine ten',
+        '',
+        'KEEP5',
+      ])
+  redraw!
+
+  out = execute(':2,3LspFormat')->split("\n")
+  assert_equal('Warn: Formatting unsupported; falling back to built-in.', out[0])
+  assert_equal([
+        'KEEP1',
+        'one two',
+        'three four',
+        'five six',
+        'seven eight',
+        'nine ten',
+        '',
+        'KEEP5',
+      ], getline(1, '$'))
+
+  # Restore default to avoid impacting other tests.
+  g:LspOptionsSet({formatFallback: false})
+  :%bw!
+enddef
+
 # Test for :LspShowReferences - showing all the references to a symbol in a
 # file using LSP
 def g:Test_LspShowReferences()
