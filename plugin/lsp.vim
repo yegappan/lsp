@@ -76,7 +76,7 @@ command! -nargs=0 -bar LspDocumentSymbol lsp.ShowDocSymbols()
 command! -nargs=0 -bar LspFold lsp.FoldDocument()
 
 command! -nargs=0 -bar -range=% LspFormat lsp.TextDocFormat(<range>, <line1>, <line2>)
-def g:LspFormatFunc(type: string)
+def LspFormatFunc(type: string)
   if type ==# 'block'
     exe "normal! gv:LspFormat\<cr>"
   elseif type ==# 'line'
@@ -85,8 +85,8 @@ def g:LspFormatFunc(type: string)
     exe "normal! `[v`]:LspFormat\<cr>"
   endif
 enddef
-nnoremap <silent> <plug>(LspFormat)  <Cmd>set operatorfunc=LspFormatFunc<cr>g@
-vnoremap <silent> <plug>(LspFormat)  <Cmd>set operatorfunc=LspFormatFunc<cr>g@
+nnoremap <silent> <plug>(LspFormat) <scriptcmd>set operatorfunc=LspFormatFunc<cr>g@
+vnoremap <silent> <plug>(LspFormat) <scriptcmd>set operatorfunc=LspFormatFunc<cr>g@
 
 command! -nargs=0 -bar -count LspGotoDeclaration lsp.GotoDeclaration(v:false, <q-mods>, <count>)
 command! -nargs=0 -bar -count LspGotoDefinition lsp.GotoDefinition(v:false, <q-mods>, <count>)

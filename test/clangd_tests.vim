@@ -177,6 +177,31 @@ def g:Test_LspFormatExpr()
   :%bw!
 enddef
 
+# Tests for formatting using plug mappings
+# Note: I could not get clangd to apply formatting only to ranges, even using
+# clangd version 21, so these tests apply to the entire file. The mappings do
+# work with ranges though, using other language servers, e.g. typescript
+def g:Test_LspFormat_PlugMappings()
+  edit! XLspFormat.c
+  sleep 200m
+  nmap gq <plug>(LspFormat)
+  setline(1, ['  int i;', '  int j;'])
+  redraw!
+  feedkeys('gqap', 'x')
+  assert_equal(['int i;', 'int j;'], getline(1, '$'))
+  nunmap gq
+
+  deletebufline('', 1, '$')
+  xmap gq <plug>(LspFormat)
+  setline(1, ['  int i;', '  int j;'])
+  redraw!
+  feedkeys('vapgq', 'x')
+  assert_equal(['int i;', 'int j;'], getline(1, '$'))
+  xunmap gq
+
+  :%bw!
+enddef
+
 # Test for formatting a file using 'formatprg'
 def g:Test_LspFormat_Fallback()
   # Enable fallback to Vim built-in formatting.
