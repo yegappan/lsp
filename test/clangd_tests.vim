@@ -178,25 +178,30 @@ def g:Test_LspFormatExpr()
 enddef
 
 # Tests for formatting using plug mappings
-# Note: I could not get clangd to apply formatting only to ranges, even using
-# clangd version 21, so these tests apply to the entire file. The mappings do
-# work with ranges though, using other language servers, e.g. typescript
 def g:Test_LspFormat_PlugMappings()
+  # Note: clangd range formatting sometimes appies beyond the specified range,
+  # which is why there is a dummy function between the indented sets of ints
   edit! XLspFormat.c
   sleep 200m
   nmap gq <plug>(LspFormat)
   setline(1, ['  int i;', '  int j;'])
+  setline(3, ['', 'void foo() {}', ''])
+  setline(6, ['  int x;', '  int y;'])
   redraw!
   feedkeys('gqap', 'x')
-  assert_equal(['int i;', 'int j;'], getline(1, '$'))
+  assert_equal(['int i;', 'int j;'], getline(1, 2))
+  assert_equal(['  int x;', '  int y;'], getline(6, 7))
   nunmap gq
 
   deletebufline('', 1, '$')
   xmap gq <plug>(LspFormat)
   setline(1, ['  int i;', '  int j;'])
+  setline(3, ['', 'void foo() {}', ''])
+  setline(6, ['  int x;', '  int y;'])
   redraw!
   feedkeys('vapgq', 'x')
-  assert_equal(['int i;', 'int j;'], getline(1, '$'))
+  assert_equal(['int i;', 'int j;'], getline(1, 2))
+  assert_equal(['  int x;', '  int y;'], getline(6, 7))
   xunmap gq
 
   :%bw!
