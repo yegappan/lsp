@@ -1290,9 +1290,7 @@ export def FormatExpr(): number
   var lspserver: dict<any> = buf.CurbufGetServerChecked('documentRangeFormatting')
   if lspserver->empty()
     if &formatexpr == 'lsp#lsp#FormatExpr()'
-      defer () => {
-	  setl formatexpr='lsp#lsp#FormatExpr()'
-	}()
+      defer execute("setl formatexpr='lsp#lsp#FormatExpr()'")
       setl formatexpr=''
       execute $'keepjumps normal! {v:lnum}Ggq{v:lnum + v:count - 1}G'
       return 0
