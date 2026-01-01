@@ -146,11 +146,12 @@ def g:Test_LspFormat()
   bw!
 
   # empty file
-  assert_equal('', execute('LspFormat'))
+  assert_equal('Error: No language server supporting "documentFormatting" feature is found',
+	       execute('LspFormat')->split("\n")[0])
 
   # file without an LSP server
   edit a.raku
-  assert_equal('Error: Language server for "raku" file type supporting "documentFormatting" feature is not found',
+  assert_equal('Error: No language server supporting "documentFormatting" feature is found',
 	       execute('LspFormat')->split("\n")[0])
 
   :%bw!
