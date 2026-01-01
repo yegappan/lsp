@@ -331,19 +331,19 @@ export def GotoDefinition(peek: bool, cmdmods: string, count: number)
   if lspserver->empty()
     if &tagfunc !=# 'lsp#lsp#TagFunc' && opt.lspOptions.definitionFallback
       if cmdmods !~ 'silent'
-      	util.WarnMsg($'definition lookup unsupported; falling back to tags file')
+	util.WarnMsg($'definition lookup unsupported; falling back to tags file')
       endif
       try
-    	# Use :tjump instead of 'CTRL-]' using :tag because
-    	# 'tjump' works better with multiple tags.
-    	# Use commands as mappings close selection dialog immediately!
-      	if peek
-      	  execute (v:count > 0 ? ':' .. v:count .. 'ptag' : 'ptjump') expand('<cword>')
-      	else
-      	  execute (v:count > 0 ? ':' .. v:count .. 'tag' : 'tjump') expand('<cword>')
-      	endif
-        catch /^Vim\%((\a\+)\)\=:E42[36]/
-      	endtry
+	# Use :tjump instead of 'CTRL-]' using :tag because
+	# 'tjump' works better with multiple tags.
+	# Use commands as mappings close selection dialog immediately!
+	if peek
+	  execute (v:count > 0 ? ':' .. v:count .. 'ptag' : 'ptjump') expand('<cword>')
+	else
+	  execute (v:count > 0 ? ':' .. v:count .. 'tag' : 'tjump') expand('<cword>')
+	endif
+      catch /^Vim\%((\a\+)\)\=:E42[36]/
+      endtry
     endif
     return
   endif

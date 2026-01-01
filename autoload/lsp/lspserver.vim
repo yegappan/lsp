@@ -789,20 +789,20 @@ def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
       emsg = 'symbol implementation is not found'
     else
       if &tagfunc !=# 'lsp#lsp#TagFunc' && opt.lspOptions.definitionFallback
-      	emsg = 'symbol definition is not found; falling back to tags file'
-      	try
-    	  # Use :tjump instead of 'CTRL-]' using :tag because
-    	  # 'tjump' works better with multiple tags.
-    	  # Use commands as mappings close selection dialog immediately!
-    	  if peekSymbol
-      	    execute (v:count > 0 ? ':' .. v:count .. 'ptag' : 'ptjump') expand('<cword>')
-    	  else
-      	    execute (v:count > 0 ? ':' .. v:count .. 'tag' : 'tjump') expand('<cword>')
-    	  endif
-        catch /^Vim\%((\a\+)\)\=:E42[36]/
-      	endtry
+	emsg = 'symbol definition is not found; falling back to tags file'
+	try
+	  # Use :tjump instead of 'CTRL-]' using :tag because
+	  # 'tjump' works better with multiple tags.
+	  # Use commands as mappings close selection dialog immediately!
+	  if peekSymbol
+	    execute (v:count > 0 ? ':' .. v:count .. 'ptag' : 'ptjump') expand('<cword>')
+	  else
+	    execute (v:count > 0 ? ':' .. v:count .. 'tag' : 'tjump') expand('<cword>')
+	  endif
+	catch /^Vim\%((\a\+)\)\=:E42[36]/
+	endtry
       else
-      	emsg = 'symbol definition is not found'
+	emsg = 'symbol definition is not found'
       endif
     endif
 
@@ -817,27 +817,27 @@ def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
       # When there are multiple symbol locations, and a specific one isn't
       # requested with 'count', display the locations in a location list.
       if result->len() > 1
-        var title: string = ''
-        if msg == 'textDocument/declaration'
-          title = 'Declarations'
-        elseif msg == 'textDocument/typeDefinition'
-          title = 'Type Definitions'
-        elseif msg == 'textDocument/implementation'
-          title = 'Implementations'
-        else
-          title = 'Definitions'
-        endif
+	var title: string = ''
+	if msg == 'textDocument/declaration'
+	  title = 'Declarations'
+	elseif msg == 'textDocument/typeDefinition'
+	  title = 'Type Definitions'
+	elseif msg == 'textDocument/implementation'
+	  title = 'Implementations'
+	else
+	  title = 'Definitions'
+	endif
 
 	if lspserver.needOffsetEncoding
 	  # Decode the position encoding in all the symbol locations
 	  result->map((_, loc) => {
-	      lspserver.decodeLocation(loc)
-	      return loc
-	    })
+	    lspserver.decodeLocation(loc)
+	    return loc
+	  })
 	endif
 
-        symbol.ShowLocations(lspserver, result, peekSymbol, title)
-        return
+	symbol.ShowLocations(lspserver, result, peekSymbol, title)
+	return
       endif
     endif
 
