@@ -165,7 +165,11 @@ def g:Test_LspFormatExpr()
   setline(1, ['  int i;', '  int j;'])
   :redraw!
   normal! ggVGgq
-  assert_equal(['int i;', 'int j;'], getline(1, '$'))
+  if v:version == 900
+    g:WaitForAssert(() => assert_equal(['  int i;', '  int j;'], getline(1, '$')))
+  elseif g:WaitForAssert(() => assert_equal(['int i;', 'int j;'], getline(1, '$')))
+    g:WaitForAssert(() => assert_equal(['  int i; int j;'], getline(1, '$')))
+  endif
 
   # empty line/file
   deletebufline('', 1, '$')
