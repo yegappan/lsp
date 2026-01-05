@@ -888,7 +888,7 @@ can map these commands to keys and make it easier to invoke them.
 			current buffer and apply the selected code lens
 			command.
 
-						*:LspDiag-current*
+						*:LspDiag-current* *:LspDiagCurrent*
 :LspDiag current	Displays the diagnostic message (if any) for the
 			current line.  If the option 'showDiagInPopup' is set
 			to true (default), then the message is displayed in
@@ -907,11 +907,11 @@ can map these commands to keys and make it easier to invoke them.
 			      au CursorMoved * silent! LspDiag! current
 			    augroup END
 <
-						*:LspDiag-first*
+						*:LspDiag-first* *:LspDiagFirst*
 :LspDiag first		Jumps to the location of the first diagnostic message
 			for the current file.
 
-						*:LspDiag-here*
+						*:LspDiag-here* *:LspDiagHere*
 :LspDiag here		Jumps to the location of the diagnostic message in
 			the current line (start from current column).
 
@@ -931,25 +931,25 @@ can map these commands to keys and make it easier to invoke them.
 			diagnostic message for the current Vim session in all
 			the buffers.
 
-						*:LspDiag-last*
+						*:LspDiag-last* *:LspDiagLast*
 :LspDiag last		Jumps to the location of the first diagnostic message
 			for the current file.
 
-						*:LspDiag-next*
+						*:LspDiag-next* *:LspDiagNext*
 :[count]LspDiag next	Go to the [count] diagnostic message after the current
 			cursor position.  If [count] is omitted, then 1 is
 			used.  If [count] exceeds the number of diagnostics
 			after the current position, then the last diagnostic
 			is selected.
 
-						*:LspDiag-prev*
+						*:LspDiag-prev* *:LspDiagPrev*
 :[count]LspDiag prev	Go to the [count] diagnostic message before the
 			current cursor position.  If [count] is omitted, then
 			1 is used.  If [count] exceeds the number of
 			diagnostics before the current position, then first
 			last diagnostic is selected.
 
-						*:LspDiag-show*
+						*:LspDiag-show* *:LspDiagShow*
 :LspDiag show		Creates a new location list with the diagnostics
 			messages (if any) from the language server for the
 			current file and opens the location list window. You
