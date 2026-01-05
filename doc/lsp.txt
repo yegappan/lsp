@@ -1131,7 +1131,7 @@ can map these commands to keys and make it easier to invoke them.
 			When "toggle" is specified, either enables or disables
 			the inlay hints.
 
-						*:LspOutoingCalls*
+						*:LspOutgoingCalls*
 :LspOutgoingCalls	Display a hierarchy of symbols called by the symbol
 			under the cursor in a window.  See
 			|lsp-call-hierarchy| for more information.  Note that
