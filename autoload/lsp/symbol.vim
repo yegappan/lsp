@@ -9,6 +9,7 @@ vim9script
 import './options.vim' as opt
 import './util.vim'
 import './outline.vim'
+import './offset.vim'
 
 # Initialize the highlight group and the text property type used for
 # document symbol search
@@ -90,7 +91,7 @@ def FilterSymbols(lspserver: dict<any>, popupID: number, key: string): bool
 enddef
 
 # Jump to the location of a symbol selected in the popup menu
-def JumpToWorkspaceSymbol(cmdmods: string, popupID: number, result: number): void
+def JumpToWorkspaceSymbol(lspserver: dict<any>, cmdmods: string, popupID: number, result: number): void
   # clear the message displayed at the command-line
   :echo ''
 
@@ -141,6 +142,9 @@ def JumpToWorkspaceSymbol(cmdmods: string, popupID: number, result: number): voi
     # Set the previous cursor location mark. Instead of using setpos(), m' is
     # used so that the current location is added to the jump list.
     :normal! m'
+    if lspserver.needOffsetEncoding
+      offset.DecodePosition(lspserver, bufnr(), symTbl[result - 1].pos)
+    endif
     setcursorcharpos(symTbl[result - 1].pos.line + 1,
 		     util.GetCharIdxWithoutCompChar(bufnr(),
 						    symTbl[result - 1].pos) + 1)
@@ -168,7 +172,7 @@ def ShowSymbolMenu(lspserver: dict<any>, query: string, cmdmods: string)
       fixed: 1,
       close: 'button',
       filter: function(FilterSymbols, [lspserver]),
-      callback: function('JumpToWorkspaceSymbol', [cmdmods])
+      callback: function('JumpToWorkspaceSymbol', [lspserver, cmdmods])
   })
   lspserver.workspaceSymbolPopup = popup_menu([], popupAttrs)
   lspserver.workspaceSymbolQuery = query
