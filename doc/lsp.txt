@@ -943,10 +943,8 @@ can map these commands to keys and make it easier to invoke them.
 			is selected.
 
 						*:LspDiag-nextWrap* *:LspDiagNextWrap*
-:LspDiag nextWrap	Jump to the next diagnostic message for the current
-			buffer after the current cursor position.
-			Wrap back to the first message when no more messages
-			are found.
+:[count]LspDiag nextWrap	Same as |:LspDiag-next|, but wrap back to the
+			first message when no more messages are found.
 
 						*:LspDiag-prev* *:LspDiagPrev*
 :[count]LspDiag prev	Go to the [count] diagnostic message before the
@@ -956,10 +954,8 @@ can map these commands to keys and make it easier to invoke them.
 			last diagnostic is selected.
 
 						*:LspDiag-prevWrap* *:LspDiagPrevWrap*
-:LspDiag prevWrap	Jump to the previous diagnostic message for the
-			current buffer before the current cursor position.
-			Wrap back to the last message when no previous
-			messages are found.
+:[count]LspDiag prevWrap	Same as |:LspDiag-prev|, but wrap back to the
+			last message when no previous messages are found.
 
 						*:LspDiag-show* *:LspDiagShow*
 :LspDiag show		Creates a new location list with the diagnostics
