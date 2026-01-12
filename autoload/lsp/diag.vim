@@ -670,7 +670,7 @@ def ShowCurrentDiagInStatusLine()
       code = $'[{diag.code}] '
     endif
     var msgNoLineBreak = code ..
-	diag.message->substitute("\n", ' ', '')->substitute("\\n", ' ', '')
+	diag.message->substitute("[[:cntrl:]]", ' ', 'g')
     :echo msgNoLineBreak[ : max_width]
   else
     # clear the previous message
