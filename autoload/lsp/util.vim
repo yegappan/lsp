@@ -78,8 +78,7 @@ enddef
 # Convert a LSP file URI (file://<absolute_path>) to a Vim file name
 export def LspUriToFile(uri: string): string
   # Replace all the %xx numbers (e.g. %20 for space) in the URI to character
-  var uri_decoded: string = substitute(uri, '%\(\x\x\)',
-				'\=nr2char(str2nr(submatch(1), 16))', 'g')
+  var uri_decoded: string = uri_decode(uri)
 
   # File URIs on MS-Windows start with file:///[a-zA-Z]:'
   if uri_decoded =~? '^file:///\a:'
@@ -137,7 +136,7 @@ export def LspFileToUri(fname: string): string
   endif
 
   uri = uri->substitute('\([^A-Za-z0-9-._~:/]\)',
-			'\=printf("%%%02x", char2nr(submatch(1)))', 'g')
+			'\=uri_encode(submatch(1))', 'g')
 
   if on_windows
     uri = $'file:///{uri}'
