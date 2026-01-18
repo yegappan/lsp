@@ -93,9 +93,8 @@ export var lspOptions: dict<any> = {
   # Suppress adding a new line on completion selection with <CR>
   noNewlineInCompletion: false,
 
-  # Omni-completion support.  To keep backward compatibility, this option is
-  # set to null by default instead of false.
-  omniComplete: null,
+  # Omni-completion support.
+  omniComplete: true,
 
   # Whether or not the omni-completion function can run even if there aren't
   # any characters that would normally trigger the completion.
