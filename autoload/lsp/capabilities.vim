@@ -587,7 +587,7 @@ export def GetClientCaps(): dict<any>
       }
     },
     window: {
-      workDoneProgress: false,
+      workDoneProgress: true,
     },
     workspace: {
       workspaceFolders: true,

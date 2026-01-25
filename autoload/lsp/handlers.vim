@@ -83,6 +83,47 @@ def ProcessUnsupportedNotifOnce(lspserver: dict<any>, reply: dict<any>)
   endif
 enddef
 
+# Global progress state: { token: { title, message, percentage, serverName } }
+if !exists('g:LspProgress')
+  g:LspProgress = {}
+endif
+
+# process the $/progress notification
+# Notification: $/progress
+# Param: ProgressParams { token, value: WorkDoneProgressBegin | Report | End }
+def ProcessProgressNotif(lspserver: dict<any>, reply: dict<any>)
+  var params = reply.params
+  var token = params.token
+  var value = params.value
+
+  if value.kind == 'begin'
+    g:LspProgress[token] = {
+      title: value->get('title', ''),
+      message: value->get('message', ''),
+      percentage: value->get('percentage', -1),
+      serverName: lspserver.name
+    }
+  elseif value.kind == 'report'
+    if g:LspProgress->has_key(token)
+      if value->has_key('message')
+        g:LspProgress[token].message = value.message
+      endif
+      if value->has_key('percentage')
+        g:LspProgress[token].percentage = value.percentage
+      endif
+    endif
+  elseif value.kind == 'end'
+    if g:LspProgress->has_key(token)
+      g:LspProgress->remove(token)
+    endif
+  endif
+
+  # Trigger statusline refresh
+  if exists('#User#LspProgressUpdate')
+    doautocmd <nomodeline> User LspProgressUpdate
+  endif
+enddef
+
 # process notification messages from the LSP server
 export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
   var lsp_notif_handlers: dict<func> =
@@ -92,13 +133,13 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       'textDocument/publishDiagnostics': ProcessDiagNotif,
       '$/logTrace': ProcessLogTraceNotif,
       'telemetry/event': ProcessUnsupportedNotifOnce,
+      '$/progress': ProcessProgressNotif,
     }
 
   # Explicitly ignored notification messages (many of them are specific to a
   # particular language server)
   var lsp_ignored_notif_handlers: list<string> =
     [
-      '$/progress',
       '$/status/report',
       '$/status/show',
       # PHP intelephense server sends the "indexingStarted" and

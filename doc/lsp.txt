@@ -1862,6 +1862,44 @@ LspDiagsUpdated			A |User| autocommand invoked when new
 				lsp#diag#GetDiagsForBuf() can be used to get
 				all the diagnostics for a buffer.
 
+						*LspProgressUpdate*
+LspProgressUpdate		A |User| autocommand invoked when a progress
+				notification ($/progress) is received from
+				the language server.  This can be used to
+				update a statusline component.  The current
+				progress state is stored in |g:LspProgress|.
+
+						*g:LspProgress*
+g:LspProgress			A |Dictionary| containing the current progress
+				state from all language servers.  The keys are
+				progress tokens and the values are dictionaries
+				with the following fields:
+
+				  title		The title of the operation
+				  message	The current progress message
+				  percentage	Progress percentage (0-100),
+						or -1 if not available
+				  serverName	Name of the LSP server
+
+				Example statusline function: >
+
+				  def LspProgressStatus(): string
+				    if empty(g:LspProgress)
+				      return ''
+				    endif
+				    for info in values(g:LspProgress)
+				      var parts = []
+				      if !empty(info.title)
+					parts->add(info.title)
+				      endif
+				      if info.percentage >= 0
+					parts->add(info.percentage .. '%')
+				      endif
+				      return parts->join(' ')
+				    endfor
+				    return ''
+				  enddef
+<
 ==============================================================================
 12. Highlight Groups				*lsp-highlight-groups*
 
