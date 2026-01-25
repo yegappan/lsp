@@ -595,7 +595,7 @@ def TextdocDidOpen(lspserver: dict<any>, bnr: number, ftype: string): void
   var params = {
     textDocument: {
       uri: util.LspBufnrToUri(bnr),
-      languageId: ftype,
+      languageId: util.Basetype(ftype),
       # Use Vim 'changedtick' as the LSP document version number
       version: bnr->getbufvar('changedtick'),
       text: bnr->getbufline(1, '$')->join("\n") .. "\n"

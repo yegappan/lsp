@@ -363,4 +363,13 @@ export def FindNearestRootDir(startDir: string, files: list<any>): string
   return sortedList[0]
 enddef
 
+# Needed for some cases where a file has multiple filetypes
+export def Basetype(ftype: string): string
+  if stridx(ftype, '.') >= 0
+    return ftype->split('\.')[0]
+  else
+    return ftype
+  endif
+enddef
+
 # vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab
