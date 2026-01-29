@@ -592,10 +592,17 @@ enddef
 def TextdocDidOpen(lspserver: dict<any>, bnr: number, ftype: string): void
   # Notification: 'textDocument/didOpen'
   # Params: DidOpenTextDocumentParams
+
+  var languageId = ftype
+
+  if type(lspserver.languageId) == v:t_func
+    languageId = lspserver.languageId()
+  endif
+
   var params = {
     textDocument: {
       uri: util.LspBufnrToUri(bnr),
-      languageId: ftype,
+      languageId: languageId,
       # Use Vim 'changedtick' as the LSP document version number
       version: bnr->getbufvar('changedtick'),
       text: bnr->getbufline(1, '$')->join("\n") .. "\n"
@@ -1959,6 +1966,7 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     features: serverParams.features->deepcopy(),
     forceOffsetEncoding: serverParams.forceOffsetEncoding,
     initializationOptions: serverParams.initializationOptions->deepcopy(),
+    languageId: serverParams.languageId,
     messages: [],
     needOffsetEncoding: false,
     omniCompletePending: false,

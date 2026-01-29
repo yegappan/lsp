@@ -790,6 +790,11 @@ export def AddServer(serverList: list<dict<any>>)
       server.runUnlessSearch = []
     endif
 
+    if !server->has_key('languageId') ||
+	server.languageId->type() != v:t_func
+      server.languageId = v:none
+    endif
+
     var lspserver: dict<any> = lserver.NewLspServer(server)
 
     var ftypes = server.filetype
