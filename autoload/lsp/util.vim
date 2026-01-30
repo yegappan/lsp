@@ -24,7 +24,7 @@ enddef
 # Lsp server trace log directory
 var lsp_log_dir: string
 if has('unix')
-  lsp_log_dir = '/tmp/'
+  lsp_log_dir = (exists('$TMPDIR') && !empty($TMPDIR) ? $TMPDIR : '/tmp')->fnamemodify(':p')
 else
   lsp_log_dir = $TEMP .. '\\'
 endif
