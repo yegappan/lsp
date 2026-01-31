@@ -39,6 +39,9 @@ export var lspOptions: dict<any> = {
   diagSignInfoText: 'I>',
   diagSignWarningText: 'W>',
 
+  # Diagnostics highlighting options
+  diagNoOverrideSyntaxHighlighting: false,
+
   # In insert mode, echo the current symbol signature in the status line
   # instead of showing it in a popup
   echoSignature: false,
