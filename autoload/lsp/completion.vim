@@ -500,7 +500,6 @@ def g:LspOmniFunc(findstart: number, base: string): any
   endif
 
   if findstart
-
     var [triggerKind, triggerChar] = GetTriggerAttributes(lspserver)
     if triggerKind < 0 && !opt.lspOptions.omniCompleteAllowBare
       # previous character is not a keyword character or a trigger character,
@@ -533,7 +532,7 @@ def g:LspOmniFunc(findstart: number, base: string): any
       count += 1
     endwhile
 
-    if lspserver.omniCompletePending
+    if lspserver.omniCompletePending || !lspserver->has_key('completeItems')
       return v:none
     endif
 
