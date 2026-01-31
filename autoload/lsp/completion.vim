@@ -214,9 +214,9 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
 	textEditRange = textEdit.insert
       endif
       var textEditStartCol =
-		util.GetCharIdxWithoutCompChar(bufnr(), textEditRange.start)
-      if textEditStartCol != start_charcol
-	var offset = start_charcol - textEditStartCol - 1
+		util.GetCharIdxWithoutCompChar(bufnr(), textEditRange.start) + 1
+      if textEditStartCol < start_charcol
+	var offset = start_charcol - textEditStartCol
 	d.word = textEdit.newText[offset : ]
       else
 	d.word = textEdit.newText
