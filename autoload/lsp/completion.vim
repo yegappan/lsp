@@ -198,8 +198,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     # TODO: Add proper support for item.textEdit.newText and
     # item.textEdit.range.  Keep in mind that item.textEdit.range can start
     # way before the typed keyword.
-    if item->has_key('textEdit') &&
-	lspOpts.completionMatcherValue != opt.COMPLETIONMATCHER_FUZZY
+    if item->has_key('textEdit')
       var start_charcol: number
       if !prefix->empty()
 	start_charcol = charidx(starttext, start_idx) + 1
