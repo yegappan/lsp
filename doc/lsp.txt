@@ -54,9 +54,7 @@ The Github repository for this plugin is available at:
 
 You can install this plugin directly from github using the following steps:
 
-    $ mkdir -p $HOME/.vim/pack/downloads/opt
-    $ cd $HOME/.vim/pack/downloads/opt
-    $ git clone https://github.com/yegappan/lsp
+    $ git clone https://github.com/yegappan/lsp $HOME/.vim/pack/downloads/opt/lsp
     $ vim -u NONE -c "helptags $HOME/.vim/pack/downloads/opt/lsp/doc" -c q
 
 ALternatively, you can use any one of the Vim plugin managers such as
@@ -65,7 +63,7 @@ this plugin.
 
 Uninstallation:
     - If installed with a plugin manager: use its uninstall command.
-    - If installed manually: remove the $HOME/.vim/pack/downloads/lsp
+    - If installed manually: remove the $HOME/.vim/pack/downloads/opt/lsp
       directory.
 
 Activation:

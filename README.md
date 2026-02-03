@@ -7,9 +7,7 @@ Language Server Protocol (LSP) plugin for Vim. You need Vim version 9.0 or above
 You can install this plugin directly from github using the following steps:
 
 ```bash
-mkdir -p $HOME/.vim/pack/downloads/opt
-cd $HOME/.vim/pack/downloads/opt
-git clone https://github.com/yegappan/lsp
+git clone https://github.com/yegappan/lsp $HOME/.vim/pack/downloads/opt/lsp
 vim -u NONE -c "helptags $HOME/.vim/pack/downloads/opt/lsp/doc" -c q
 ```
 
