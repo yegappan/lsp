@@ -58,47 +58,98 @@ call LspAddServer(lspServers)
 def g:Test_LspFormat()
   :silent! edit XLspFormat.c
   sleep 200m
-  setline(1, ['  int i;', '  int j;'])
+  var lines: list<string> =<< trim END
+    int i;
+    int j;
+  END
+  setline(1, lines)
   :redraw!
   :LspFormat
-  assert_equal(['int i;', 'int j;'], getline(1, '$'))
+  var expected: list<string> =<< trim DATA
+  int i;
+  int j;
+  DATA
+  g:WaitForAssert(() => assert_equal(expected, getline(1, '$')))
 
   deletebufline('', 1, '$')
-  setline(1, ['int f1(int i)', '{', 'int j = 10; return j;', '}'])
+  lines =<< trim END
+  int f1(int i)
+  {
+  int j = 10; return j;
+  }
+  END
+  setline(1, lines)
   :redraw!
   :LspFormat
-  assert_equal(['int f1(int i) {', '  int j = 10;', '  return j;', '}'],
-							getline(1, '$'))
+  expected =<< trim DATA
+  int f1(int i) {
+    int j = 10;
+    return j;
+  }
+  DATA
+  g:WaitForAssert(() => assert_equal(expected, getline(1, '$')))
 
   deletebufline('', 1, '$')
-  setline(1, ['', 'int     i;'])
+  lines =<< trim END
+
+  int     i;
+  END
+  setline(1, lines)
   :redraw!
   :LspFormat
-  assert_equal(['', 'int i;'], getline(1, '$'))
+  expected =<< trim DATA
+
+  int i;
+  DATA
+  g:WaitForAssert(() => assert_equal(expected, getline(1, '$')))
 
   deletebufline('', 1, '$')
-  setline(1, [' int i;'])
+  lines =<< trim END
+   int i;
+  END
+  setline(1, lines)
   :redraw!
   :LspFormat
-  assert_equal(['int i;'], getline(1, '$'))
+  expected =<< trim DATA
+  int i;
+  DATA
+  g:WaitForAssert(() => assert_equal(expected, getline(1, '$')))
 
   deletebufline('', 1, '$')
-  setline(1, ['  int  i; '])
+  lines =<< trim END
+    int  i; 
+  END
+  setline(1, lines)
   :redraw!
   :LspFormat
-  assert_equal(['int i;'], getline(1, '$'))
+  expected =<< trim DATA
+  int i;
+  DATA
+  g:WaitForAssert(() => assert_equal(expected, getline(1, '$')))
 
   deletebufline('', 1, '$')
-  setline(1, ['int  i;', '', '', ''])
+  lines =<< trim END
+  int  i;
+
+
+
+  END
+  setline(1, lines)
   :redraw!
   :LspFormat
-  assert_equal(['int i;'], getline(1, '$'))
+  expected =<< trim DATA
+  int i;
+  DATA
+  g:WaitForAssert(() => assert_equal(expected, getline(1, '$')))
 
   deletebufline('', 1, '$')
-  setline(1, ['int f1(){int x;int y;x=1;y=2;return x+y;}'])
+  lines =<< trim END
+  int f1(){int x;int y;x=1;y=2;return x+y;}
+  END
+  setline(1, lines)
   :redraw!
   :LspFormat
-  var expected: list<string> =<< trim END
+  expected =<< trim END
     int f1() {
       int x;
       int y;
@@ -107,16 +158,16 @@ def g:Test_LspFormat()
       return x + y;
     }
   END
-  assert_equal(expected, getline(1, '$'))
+  g:WaitForAssert(() => assert_equal(expected, getline(1, '$')))
 
   deletebufline('', 1, '$')
   setline(1, ['', '', '', ''])
   :redraw!
   :LspFormat
-  assert_equal([''], getline(1, '$'))
+  g:WaitForAssert(() => assert_equal([''], getline(1, '$')))
 
   deletebufline('', 1, '$')
-  var lines: list<string> =<< trim END
+  lines =<< trim END
     int f1() {
       int i, j;
         for (i = 1; i < 10; i++) { j++; }
@@ -135,18 +186,18 @@ def g:Test_LspFormat()
         }
     }
   END
-  assert_equal(expected, getline(1, '$'))
+  g:WaitForAssert(() => assert_equal(expected, getline(1, '$')))
 
   deletebufline('', 1, '$')
   # shrinking multiple lines into a single one works
   setline(1, ['int \', 'i \', '= \', '42;'])
   :redraw!
   :4LspFormat
-  assert_equal(['int i = 42;'], getline(1, '$'))
+  g:WaitForAssert(() => assert_equal(['int i = 42;'], getline(1, '$')))
   bw!
 
   # empty file
-  assert_equal('', execute('LspFormat'))
+  g:WaitForAssert(() => assert_equal('', execute('LspFormat')))
 
   # file without an LSP server
   edit a.raku
