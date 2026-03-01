@@ -211,6 +211,9 @@ export var lspOptions: dict<any> = {
 
   # Ignore >ItemsIsIncomplete< messages from misbehaving servers:
   ignoreCompleteItemsIsIncomplete: [],
+
+  # Text format for documentation and hovers.
+  documentationFormat: ['markdown', 'plaintext'],
 }
 
 # set the LSP plugin options from the user provided option values

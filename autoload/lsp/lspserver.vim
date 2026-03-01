@@ -306,7 +306,7 @@ def CreateRequest(lspserver: dict<any>, method: string): dict<any>
 enddef
 
 # create a LSP server response message
-def CreateResponse(lspserver: dict<any>, req_id: number): dict<any>
+def CreateResponse(lspserver: dict<any>, req_id: any): dict<any>
   var resp = {
     jsonrpc: '2.0',
     id: req_id
@@ -327,13 +327,11 @@ enddef
 
 # send a response message to the server
 def SendResponse(lspserver: dict<any>, request: dict<any>, result: any, error: dict<any>)
-  if (request.id->type() == v:t_string && request.id->trim()->empty())
-    || (request.id->type() != v:t_string && request.id->type() != v:t_number)
+  if request.id->type() != v:t_string && request.id->type() != v:t_number
     util.ErrMsg('request.id of response to LSP server must be a number or a string')
     return
   endif
-  var resp: dict<any> = lspserver.createResponse(
-	    request.id->type() == v:t_string ? request.id->str2nr() : request.id)
+  var resp: dict<any> = lspserver.createResponse(request.id)
   if error->empty()
     resp->extend({result: result})
   else
@@ -349,12 +347,22 @@ def SendMessage(lspserver: dict<any>, content: dict<any>): void
     # LSP server has exited
     return
   endif
-  job->ch_sendexpr(content)
+  if content->has_key('id') && content.id->type() == v:t_string
+    SendRawMessage(job, content)
+  else
+    job->ch_sendexpr(content)
+  endif
   if content->has_key('id')
     if lspserver.debug
       lspserver.traceLog($'Sent {content->json_encode()}')
     endif
   endif
+enddef
+
+def SendRawMessage(job: job, content: dict<any>): void
+  var body = content->json_encode()
+  var rawmsg = $"Content-Length: {body->len()}\r\n\r\n{body}"
+  job->job_getchannel()->ch_sendraw(rawmsg)
 enddef
 
 # Send a notification message to the language server
