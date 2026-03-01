@@ -135,6 +135,7 @@ call LspOptionsSet(#{
         \   diagVirtualTextAlign: 'above',
         \   diagVirtualTextWrap: 'default',
         \   noNewlineInCompletion: v:false,
+        \   maxDiagnostics: 200,
         \   omniComplete: v:null,
         \   omniCompleteAllowBare: v:false,
         \   outlineOnRight: v:false,
