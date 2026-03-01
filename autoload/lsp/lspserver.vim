@@ -327,13 +327,17 @@ enddef
 
 # send a response message to the server
 def SendResponse(lspserver: dict<any>, request: dict<any>, result: any, error: dict<any>)
-  if (request.id->type() == v:t_string && request.id->trim()->empty())
-    || (request.id->type() != v:t_string && request.id->type() != v:t_number)
+  if request.id->type() == v:t_string
+    # give up on response due to https://github.com/vim/vim/issues/14091
+    if lspserver.debug
+      lspserver.traceLog($'Response for request with string id "{request.id}" not supported')
+    endif
+    return
+  elseif request.id->type() != v:t_number
     util.ErrMsg('request.id of response to LSP server must be a number or a string')
     return
   endif
-  var resp: dict<any> = lspserver.createResponse(
-	    request.id->type() == v:t_string ? request.id->str2nr() : request.id)
+  var resp: dict<any> = lspserver.createResponse(request.id)
   if error->empty()
     resp->extend({result: result})
   else
