@@ -848,6 +848,11 @@ ignoreCompleteItemsIsIncomplete |List| of strings option.
 			that are misbehaving and always send this
 			kind of 'IsIncomplete' messages.
 
+						*lsp-opt-documentationFormat*
+documentationFormat |List| of strings option.
+			DocumentationFormat to tell the LSP we want, in order
+			of preference.
+
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file: >
 
