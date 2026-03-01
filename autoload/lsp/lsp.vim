@@ -990,7 +990,7 @@ def g:LspRequestDocSymbols()
 enddef
 
 # open a window and display all the symbols in a file (outline)
-export def Outline(cmdmods: string, winsize: number)
+export def Outline(ctl: string, cmdmods: string, winsize: number)
   var fname: string = @%
   if fname->empty()
     return
@@ -1001,8 +1001,22 @@ export def Outline(cmdmods: string, winsize: number)
     return
   endif
 
-  outline.OpenOutlineWindow(cmdmods, winsize)
-  g:LspRequestDocSymbols()
+  if ctl == 'open' || ctl == ''
+    outline.OpenOutlineWindow(cmdmods, winsize)
+    g:LspRequestDocSymbols()
+  elseif ctl == 'close'
+    outline.CloseOutlineWindow()
+  elseif ctl == 'toggle'
+    if outline.ToggleOutlineWindow(cmdmods, winsize)
+      g:LspRequestDocSymbols()
+    endif
+  endif
+enddef
+
+# Command-line completion for the ":LspOutline" command
+export def LspOutlineComplete(arglead: string, cmdline: string, cursorPos: number): list<string>
+  var l = ['open', 'close', 'toggle']
+  return filter(l, (_, val) => val =~ $'^{arglead}')
 enddef
 
 # show all the symbols in a file in a popup menu

@@ -1129,7 +1129,8 @@ can map these commands to keys and make it easier to invoke them.
 			not all the language servers support this feature.
 
 						*:LspInlayHints*
-:LspInlayHints		Enable or disable inlay hints.  Supports the "enable",
+:LspInlayHints {enable | disable | toggle}
+			Enable or disable inlay hints.  Supports the "enable",
 			"disable" and "toggle" arguments.  When "enable" is
 			specified, enables the inlay hints for all the buffers
 			with a language server that supports inlay hints.
@@ -1144,16 +1145,21 @@ can map these commands to keys and make it easier to invoke them.
 			not all the language servers support this feature.
 
 						*:LspOutline*
-:[count]LspOutline	Opens a vertically split window with the list of
-			symbols defined in the current file. The current
-			symbol is highlighted. The symbols are grouped by
-			their type. You can select a symbol and press <Enter>
-			to jump to the position of the symbol. As you move the
-			cursor in a file, the current symbol is automatically
-			highlighted in the outline window. If you open a new
-			file, the outline window is automatically updated with
-			the symbols in the new file.  Folds are created in the
-			outline window for the various group of symbols.
+:[count]LspOutline [ {open | close | toggle} ]
+			Opens a vertically split window with the list of
+			symbols defined in the current file. Supports the
+			"open", "close", and "toggle" arguments. It assumes
+			"open" if no argument is given.
+
+			The current symbol is highlighted. The symbols are
+			grouped by their type. You can select a symbol and
+			press <Enter> to jump to the position of the symbol.
+			As you move the cursor in a file, the current symbol
+			is automatically highlighted in the outline window. If
+			you open a new file, the outline window is updated
+			with the symbols in the new file.  Folds are created
+			in the outline window for the various group of
+			symbols.
 
 			You can use |lsp-opt-outlineOnRight| and
 			|lsp-opt-outlineWinSize| to customize the placement

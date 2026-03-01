@@ -218,13 +218,34 @@ def OutlineCleanup()
   :silent! syntax clear LSPTitle
 enddef
 
+# Toggle the outline window. Returns true if it opened the window, and false if it closed it.
+export def ToggleOutlineWindow(cmdmods: string, winsize: number): bool
+  var wid: number = bufwinid('LSP-Outline')
+  if wid != -1
+    win_execute(wid, ':q')
+    return false
+  endif
+  Open(cmdmods, winsize)
+  return true
+enddef
+
 # open the symbol outline window
 export def OpenOutlineWindow(cmdmods: string, winsize: number)
   var wid: number = bufwinid('LSP-Outline')
-  if wid != -1
-    return
+  if wid == -1
+    Open(cmdmods, winsize)
   endif
+enddef
 
+# close the symbol outline window
+export def CloseOutlineWindow()
+  var wid: number = bufwinid('LSP-Outline')
+  if wid != -1
+    win_execute(wid, ':q')
+  endif
+enddef
+
+def Open(cmdmods: string, winsize: number)
   var prevWinID: number = win_getid()
 
   var mods = cmdmods
