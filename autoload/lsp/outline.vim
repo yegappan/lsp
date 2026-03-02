@@ -135,6 +135,10 @@ export def UpdateOutlineWindow(fname: string,
     saveCursor->setpos('.')
   endif
 
+  if exists('#User#LspOutlineUpdated')
+    :doautocmd <nomodeline> User LspOutlineUpdated
+  endif
+
   prevWinID->win_gotoid()
 
   # Highlight the current symbol
@@ -318,6 +322,10 @@ def Open(cmdmods: string, winsize: number)
 	      cmd: 'OutlineHighlightCurrentSymbol()'})
 
   autocmd_add(acmds)
+
+  if exists('#User#LspOutlineSetup')
+    :doautocmd <nomodeline> User LspOutlineSetup
+  endif
 
   prevWinID->win_gotoid()
 enddef
