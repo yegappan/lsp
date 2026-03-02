@@ -29,9 +29,14 @@ import './semantichighlight.vim'
 import './buffer.vim' as buf
 
 # LSP server standard output handler
+# LSP responses from server handled by channel job in LSP mode
 def Output_cb(lspserver: dict<any>, chan: channel, msg: any): void
   if lspserver.debug
-    lspserver.traceLog($'Received {msg->json_encode()}')
+    if msg->has_key('id')
+      lspserver.traceLog($'Got request {msg->json_encode()}')
+    else
+      lspserver.traceLog($'Got notification {msg->json_encode()}')
+    endif
   endif
   lspserver.data = msg
   lspserver.processMessages()
@@ -47,7 +52,6 @@ def Exit_cb(lspserver: dict<any>, job: job, status: number): void
   util.WarnMsg($'{strftime("%m/%d/%y %T")}: LSP server ({lspserver.name}) exited with status {status}')
   lspserver.running = false
   lspserver.ready = false
-  lspserver.requests = {}
 enddef
 
 # Start a LSP server
@@ -72,7 +76,6 @@ def StartServer(lspserver: dict<any>, bnr: number): number
   lspserver.data = ''
   lspserver.caps = {}
   lspserver.nextID = 1
-  lspserver.requests = {}
   lspserver.omniCompletePending = false
   lspserver.completionLazyDoc = false
   lspserver.completionTriggerChars = []
@@ -256,7 +259,6 @@ def StopServer(lspserver: dict<any>): number
   endif
   lspserver.running = false
   lspserver.ready = false
-  lspserver.requests = {}
   return 0
 enddef
 
@@ -281,28 +283,6 @@ def ErrorLog(lspserver: dict<any>, errmsg: string)
   if lspserver.debug
     util.TraceLog(lspserver.errfile, true, errmsg)
   endif
-enddef
-
-# Return the next id for a LSP server request message
-def NextReqID(lspserver: dict<any>): number
-  var id = lspserver.nextID
-  lspserver.nextID = id + 1
-  return id
-enddef
-
-# create a LSP server request message
-def CreateRequest(lspserver: dict<any>, method: string): dict<any>
-  var req = {
-    jsonrpc: '2.0',
-    id: lspserver.nextReqID(),
-    method: method,
-    params: {}
-  }
-
-  # Save the request, so that the corresponding response can be processed
-  lspserver.requests->extend({[req.id->string()]: req})
-
-  return req
 enddef
 
 # create a LSP server response message
@@ -340,7 +320,7 @@ def SendResponse(lspserver: dict<any>, request: dict<any>, result: any, error: d
   lspserver.sendMessage(resp)
 enddef
 
-# Send a request message to LSP server
+# Send a message to LSP server without callback support
 def SendMessage(lspserver: dict<any>, content: dict<any>): void
   var job = lspserver.job
   if job->job_status() != 'run'
@@ -352,9 +332,11 @@ def SendMessage(lspserver: dict<any>, content: dict<any>): void
   else
     job->ch_sendexpr(content)
   endif
-  if content->has_key('id')
-    if lspserver.debug
-      lspserver.traceLog($'Sent {content->json_encode()}')
+  if lspserver.debug
+    if content->has_key('id')
+      lspserver.traceLog($'Sent response {content->json_encode()}')
+    else
+      lspserver.traceLog($'Sent notification {content->json_encode()}')
     endif
   endif
 enddef
@@ -424,15 +406,13 @@ def Rpc(lspserver: dict<any>, method: string, params: any, handleError: bool = t
     return {}
   endif
 
-  if lspserver.debug
-    lspserver.traceLog($'Sent {req->json_encode()}')
-  endif
-
   # Do the synchronous RPC call
   var reply = job->ch_evalexpr(req)
 
   if lspserver.debug
-    lspserver.traceLog($'Received {reply->json_encode()}')
+    var logreq = {id: reply.id}->extend(req)
+    lspserver.traceLog($'Sent request {logreq->json_encode()}')
+    lspserver.traceLog($'Got response {reply->json_encode()}')
   endif
 
   if reply->has_key('result')
@@ -451,7 +431,7 @@ enddef
 # LSP server asynchronous RPC callback
 def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel, reply: dict<any>)
   if lspserver.debug
-    lspserver.traceLog($'Received {reply->json_encode()}')
+    lspserver.traceLog($'Got response {reply->json_encode()}')
   endif
 
   if reply->empty()
@@ -491,10 +471,6 @@ def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func): n
     return -1
   endif
 
-  if lspserver.debug
-    lspserver.traceLog($'Sent {req->json_encode()}')
-  endif
-
   # Do the asynchronous RPC call
   var Fn = function('AsyncRpcCb', [lspserver, method, Cbfunc])
 
@@ -511,19 +487,12 @@ def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func): n
     return -1
   endif
 
+  if lspserver.debug
+    var logreq = {id: reply.id}->extend(req)
+    lspserver.traceLog($'Sent request {logreq->json_encode()}')
+  endif
+
   return reply.id
-enddef
-
-# Wait for a response message from the LSP server for the request "req"
-# Waits for a maximum of 5 seconds
-def WaitForResponse(lspserver: dict<any>, req: dict<any>)
-  var maxCount: number = 2500
-  var key: string = req.id->string()
-
-  while lspserver.requests->has_key(key) && maxCount > 0
-    sleep 2m
-    maxCount -= 1
-  endwhile
 enddef
 
 # Returns true when the "lspserver" has "feature" enabled.
@@ -1958,7 +1927,6 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     data: '',
     nextID: 1,
     caps: {},
-    requests: {},
     callHierarchyType: '',
     completionTriggerChars: [],
     customNotificationHandlers: serverParams.customNotificationHandlers->deepcopy(),
@@ -1999,16 +1967,12 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     setTrace: function(SetTrace, [lspserver]),
     traceLog: function(TraceLog, [lspserver]),
     errorLog: function(ErrorLog, [lspserver]),
-    nextReqID: function(NextReqID, [lspserver]),
-    createRequest: function(CreateRequest, [lspserver]),
     createResponse: function(CreateResponse, [lspserver]),
     sendResponse: function(SendResponse, [lspserver]),
     sendMessage: function(SendMessage, [lspserver]),
     sendNotification: function(SendNotification, [lspserver]),
     rpc: function(Rpc, [lspserver]),
     rpc_a: function(AsyncRpc, [lspserver]),
-    waitForResponse: function(WaitForResponse, [lspserver]),
-    processReply: function(handlers.ProcessReply, [lspserver]),
     processNotif: function(handlers.ProcessNotif, [lspserver]),
     processRequest: function(handlers.ProcessRequest, [lspserver]),
     processMessages: function(handlers.ProcessMessages, [lspserver]),
