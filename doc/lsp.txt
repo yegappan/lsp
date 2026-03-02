@@ -622,6 +622,13 @@ keepFocusInReferences	|Boolean| option.  Focus on the location list window
 			after LspShowReferences.
 			By default this is set to true.
 
+						*lsp-opt-maxDiagnostics*
+maxDiagnostics		|Number| option. Maximum nmber of diagnostics to
+			process when receiving diagnostic notifications
+			from the server. Processing hundreds of diagnostic
+			messages is slow, especially when offset positions
+			need to be decoded. By default this is set to 200.
+
 					*lsp-opt-noNewlineInCompletion*
 noNewlineInCompletion	|Boolean| option.  Suppress adding a new line on
 			completion selection with <CR>.

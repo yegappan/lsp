@@ -407,7 +407,7 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<d
   endif
   var bnr: number = fname->bufnr()
 
-  var newDiags: list<dict<any>> = diags_arg
+  var newDiags: list<dict<any>> = diags_arg->slice(0, opt.lspOptions.maxDiagnostics)
 
   if lspserver.needOffsetEncoding
     # Decode the position encoding in all the diags
