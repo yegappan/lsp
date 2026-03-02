@@ -207,7 +207,7 @@ Shell script, Vim script and PHP file types: >
 		     {
 			name: 'clangd',
 		        filetype: ['c', 'cpp'],
-		        path: '/usr/local/bin/clangd',
+		        path: 'clangd',
 		        args: ['--background-index']
 		     },
                      {
@@ -227,7 +227,7 @@ Shell script, Vim script and PHP file types: >
 		     {
 			name: 'bashls',
 			filetype: 'sh',
-			path: '/usr/local/bin/bash-language-server',
+			path: '~/src/bash-language-server/bash-language-server',
 			args: ['start']
 		     },
 		     {
@@ -255,8 +255,9 @@ To add a language server, the following information is needed:
 	name		(Optional) name of the language server.  Can by any
 			string.  Used in LSP messages and log files.
 						*lsp-cfg-path*
-	path		complete path to the language server executable
-			(without any arguments).
+	path		path to the language server executable (without any
+			arguments). The value is expanded with |expandcmd()|
+			and looked up in $PATH. A full path can also be used.
 						*lsp-cfg-args*
 	args		a |List| of command-line arguments passed to the
 			language server.  Each space separated language server
