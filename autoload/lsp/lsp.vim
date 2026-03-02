@@ -325,6 +325,11 @@ export def ServerRunning(ftype: string): bool
   return false
 enddef
 
+# Return server for the current buffer. Returns empty dict if there is none.
+export def Server(): dict<any>
+  return buf.CurbufGetServer()
+enddef
+
 # Go to a definition using "textDocument/definition" LSP request
 export def GotoDefinition(peek: bool, cmdmods: string, count: number)
   var lspserver: dict<any> = buf.CurbufGetServerChecked('definition')
