@@ -1002,7 +1002,7 @@ export def Outline(ctl: string, cmdmods: string, winsize: number)
   endif
 
   var lspserver: dict<any> = buf.CurbufGetServerChecked('documentSymbol')
-  if lspserver->empty() || !lspserver.running || !lspserver.ready
+  if (lspserver->empty() || !lspserver.running || !lspserver.ready) && fname != 'LSP-Outline'
     return
   endif
 
