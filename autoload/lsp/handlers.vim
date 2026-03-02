@@ -8,11 +8,6 @@ import './util.vim'
 import './diag.vim'
 import './textedit.vim'
 
-# Process various reply messages from the LSP server
-export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
-  util.ErrMsg($'Unsupported reply received from LSP server: {reply->string()} for request: {req->string()}')
-enddef
-
 # process a diagnostic notification message from the LSP server
 # Notification: textDocument/publishDiagnostics
 # Param: PublishDiagnosticsParams
@@ -354,24 +349,8 @@ export def ProcessMessages(lspserver: dict<any>): void
 
   msg = lspserver.data
   if msg->has_key('result') || msg->has_key('error')
-    # response message from the server
-    req = lspserver.requests->get(msg.id->string(), {})
-    if !req->empty()
-      # Remove the corresponding stored request message
-      lspserver.requests->remove(msg.id->string())
-
-      if msg->has_key('result')
-	lspserver.processReply(req, msg)
-      else
-	# request failed
-	var emsg: string = msg.error.message
-	emsg ..= $', code = {msg.error.code}'
-	if msg.error->has_key('data')
-	  emsg ..= $', data = {msg.error.data->string()}'
-	endif
-	util.ErrMsg($'request {req.method} failed ({emsg})')
-      endif
-    endif
+    # response message from the server not handled by vim channel job in LSP mode
+    util.ErrMsg($'Unrecognized id in reponse received from LSP server: {msg.id}')
   elseif msg->has_key('id') && msg->has_key('method')
     # request message from the server
     lspserver.processRequest(msg)
