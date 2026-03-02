@@ -75,7 +75,6 @@ def StartServer(lspserver: dict<any>, bnr: number): number
 
   lspserver.data = ''
   lspserver.caps = {}
-  lspserver.nextID = 1
   lspserver.omniCompletePending = false
   lspserver.completionLazyDoc = false
   lspserver.completionTriggerChars = []
@@ -1925,7 +1924,6 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     stoppedByUser: false,
     job: v:none,
     data: '',
-    nextID: 1,
     caps: {},
     callHierarchyType: '',
     completionTriggerChars: [],
