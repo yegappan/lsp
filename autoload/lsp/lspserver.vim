@@ -476,7 +476,7 @@ def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel,
   RpcCb(lspserver, reply.result)
 enddef
 
-# Send a async RPC request message to the LSP server with a callback function.
+# Send an async RPC request message to the LSP server with a callback function.
 # Returns the LSP message id.  This id can be used to cancel the RPC request
 # (if needed).  Returns -1 on error.
 def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func): number

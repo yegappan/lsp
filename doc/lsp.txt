@@ -23,12 +23,13 @@ CONTENTS                                                     *lsp-contents*
     12. Highlight Groups ........................... |lsp-highlight-groups|
     13. Debugging .................................. |lsp-debug|
     14. Custom Command Handlers .................... |lsp-custom-commands|
-    15. Custom LSP Completion Kinds ................ |lsp-custom-kinds|
-    16. Custom Popup Styles ........................ |lsp-custom-popup-styles|
-    17. Custom Locations Request ................... |lsp-custom-locations|
-    18. Multiple Language Servers for a buffer ..... |lsp-multiple-servers|
-    19. Language Servers Features .................. |lsp-features|
-    20. License .................................... |lsp-license|
+    15. Custom LSP Requests ........................ |lsp-custom-requests|
+    16. Custom LSP Completion Kinds ................ |lsp-custom-kinds|
+    17. Custom Popup Styles ........................ |lsp-custom-popup-styles|
+    18. Custom Locations Request ................... |lsp-custom-locations|
+    19. Multiple Language Servers for a buffer ..... |lsp-multiple-servers|
+    20. Language Servers Features .................. |lsp-features|
+    21. License .................................... |lsp-license|
 
 ==============================================================================
 1. Overview					*lsp-overview*
@@ -579,7 +580,7 @@ closePreviewOnComplete	|Boolean| option. When using the |preview-window| for
 			completion menu is closed. By default this is set to true.
 
 						*lsp-opt-hoverFallback*
-hoverFallback		|Boolean| option. Fall back to file type 'keywordprg' 
+hoverFallback		|Boolean| option. Fall back to file type 'keywordprg'
                         in case no hover information available. Do not set
                         'keywordprg' to |:LspHover| but use with suitable
                         mapping like
@@ -826,8 +827,8 @@ useBufferCompletion     |Boolean| option. If enabled, the words from the
 			By default this is set to false.
 
 						*lsp-opt-bufferCompletionTimeout*
-bufferCompletionTimeout |Number| option. Specifies how long (in milliseconds) 
-			to wait while processing current buffer for 
+bufferCompletionTimeout |Number| option. Specifies how long (in milliseconds)
+			to wait while processing current buffer for
 			autocompletion words.  If set too high Vim performance
 			may degrade as the current buffer contents are
 			processed every time the completion menu is displayed.
@@ -836,12 +837,12 @@ bufferCompletionTimeout |Number| option. Specifies how long (in milliseconds)
 			By default this is set to 100 ms.
 
 						*lsp-opt-filterCompletionDuplicates*
-filterCompletionDuplicates |Boolean| option. If enabled, duplicate completion 
+filterCompletionDuplicates |Boolean| option. If enabled, duplicate completion
 			items sent from the server will be filtered to only
-			include one instance of the duplicates. 
+			include one instance of the duplicates.
 
 						*lsp-opt-condensedCompletionMenu*
-condensedCompletionMenu |Boolean| option. If enabled, minimizes completion 
+condensedCompletionMenu |Boolean| option. If enabled, minimizes completion
 			menu items to single (key-) words (plus kind).
 			Moves all additional details to info popup.
 			Caveat: LazyDoc will override moved details!
@@ -2072,7 +2073,98 @@ contains the LSP Command interface fields.  Refer to the LSP specification for
 more information about the "Command" interface.
 
 ==============================================================================
-15. Custom LSP Completion Kinds			*lsp-custom-kinds*
+15. Custom LSP Requests				*lsp-custom-requests*
+
+The lsp.Server() function can be used to get the LSP server for the current
+buffer. It returns an empty dict if there is no LSP server.
+
+The returned dict has the following methods:
+
+	getPosition(find_ident: bool): dict<number>
+		Return the current cursor position as a LSP position.
+		find_ident will search for a identifier in front of the
+		cursor, just like CTRL-] and c_CTRL-R_CTRL-W does.
+
+		LSP line and column numbers start from zero, whereas Vim line
+		and column numbers start from one. The LSP column number is
+		the character index in the line and not the byte index in the
+		line.
+
+	getTextDocPosition(find_ident: bool): dict<dict<any>>
+		Return the current file name and current cursor position as a
+		LSP TextDocumentPositionParams structure
+
+	featureEnabled(feature: string): bool
+		Returns true when the lspserver has feature enabled. By
+		default, all the features of a lsp server are enabled.
+
+	rpc(method: string, params: any, handleError: bool = true): dict<any>
+		Send a sync RPC request message to the LSP server and return
+		the received reply. In case of an error, an empty Dict is
+		returned.
+
+	rpc_a(method: string, params: any, Cbfunc: func): number
+		Send an async RPC request message to the LSP server with a
+		callback function. Returns the LSP message id.  This id can be
+		used to cancel the RPC request (if needed).  Returns -1 on
+		error.
+
+Some examples:
+
+	A version of |:LspShowSignature| that also works inside parenthesis,
+	using synchronous rpc() calls:
+>
+            import autoload 'lsp/lsp.vim'
+
+            def g:FindSig()
+                var s = lsp.Server()
+                if s->empty()
+                    return
+                endif
+
+                var sig = s.rpc('textDocument/signatureHelp', s.getTextDocPosition(false))
+                if sig.result->empty()
+                    var save = winsaveview()
+                    normal! F(
+                    if getline('.')[charcol('.') - 1] == '('
+                        sig = s.rpc('textDocument/signatureHelp', s.getTextDocPosition(false))
+                    endif
+                    winrestview(save)
+                endif
+
+                echon "\r\r"
+                if sig.result->empty()
+                    echon 'No signature found'
+                else
+                    echon sig.result.signatures[0].label
+                endif
+            enddef
+            nnoremap <C-k> :call g:FindSig()<CR>
+<
+	Using async a_rpc() calls to find and echo the signature:
+>
+            import autoload 'lsp/lsp.vim'
+
+            def FindSigReply(s: dict<any>, sig: any)
+                echon "\r\r"
+                if sig->empty()
+                    echon 'No signature found'
+                else
+                    echon sig.signatures[0].label
+                endif
+            enddef
+
+            def g:FindSigAsync()
+                var s = lsp.Server()
+                if s->empty()
+                    return
+                endif
+                s.rpc_a('textDocument/signatureHelp', s.getTextDocPosition(false), FindSigReply)
+            enddef
+            nnoremap <C-k> :call g:FindSigAsync()<CR>
+
+==============================================================================
+16. Custom LSP Completion Kinds			*lsp-custom-kinds*
 
 When a completion popup is triggered, the LSP client will use a default kind
 list to show in the completion "kind" section, to customize it, you need to
@@ -2130,7 +2222,7 @@ In the completion popup, will show something like this: >
 		| ...				 |
 <
 ==============================================================================
-16. Custom Popup Styles			*lsp-custom-popup-styles*
+17. Custom Popup Styles			*lsp-custom-popup-styles*
 
 The plugin provides the possibility to style popups according to one's liking.
 By default, popups do not have borders configured, and use the |hl-Pmenu|
@@ -2177,7 +2269,7 @@ popup-type |lsp-options|: >
 For styling the completion menu please refer to |hl-pmenu|.
 
 ==============================================================================
-17. Custom Locations Request			*lsp-custom-locations*
+18. Custom Locations Request			*lsp-custom-locations*
 
 Language server may support non-standard locations request. To display the
 locations of the symbol under cursor, you can use the
@@ -2212,7 +2304,7 @@ For example: >
     }
 
 ==============================================================================
-18. Multiple Language Servers for a buffer	*lsp-multiple-servers*
+19. Multiple Language Servers for a buffer	*lsp-multiple-servers*
 
 It's possible to run multiple language servers for a given buffer.
 
@@ -2303,7 +2395,7 @@ everything else: >
 	])
 <
 ==============================================================================
-19. Language Server Features			*lsp-features*
+20. Language Server Features			*lsp-features*
 
 When using multiple language servers for a given file type, by providing the
 configuration |lsp-cfg-features| it is possible to specify which language
