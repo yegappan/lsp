@@ -75,139 +75,64 @@ export def LspLocationParse(lsploc: dict<any>): list<any>
   endif
 enddef
 
-# A 2-character string match the hex format
-def IsHex(str: string): bool
-  if strlen(str) != 2
-    return false
-  endif
-  return str =~ '^[A-Fa-f0-9]\{2}$'
+# convert a normal string to a url encoded string
+def UriEncode(str: string): string
+  var parts: list<string> = []
+  for ch in str
+    if ch =~# '[A-Za-z0-9-._~:/]'
+      parts->add(ch)
+    else
+      # Get UTF-8 bytes for the character and encode each byte
+      var byte_len = strlen(ch)
+      for i in range(byte_len)
+        var byte = char2nr(strpart(ch, i, 1))
+        parts->add(printf('%%%02X', byte))
+      endfor
+    endif
+  endfor
+  return parts->join('')
 enddef
 
-# convert hex string to unicode code point
-# return unicode code point or -1
-def HexStrToUnicodeCodePoint(str: string): number
-  var byte_values: list<number> = []
-  for hex in str->split('%')
-    if !IsHex(hex)
-      return -1
-    endif
-    byte_values->add(str2nr(hex, 16))
-  endfor
+# convert an url encoded string to a normal string
+def UriDecode(str: string): string
+  var parts: list<string> = []
+  var i: number = 0
+  var byte_array: list<number> = []
+  var str_len = strlen(str)
 
-  if len(byte_values) > 1
-    for value in byte_values[1 :]
-      if value < 128 || value >= 192
-	return -1
+  while i < str_len
+    # Use byte-level operations since we're dealing with percent-encoded bytes
+    var ch = strpart(str, i, 1)
+    if ch == '%' && i + 2 < str_len
+      var hex = strpart(str, i + 1, 2)
+      # Check if the next two characters are valid hex digits
+      if hex =~# '^[0-9A-Fa-f]\{2}$'
+        byte_array->add(str2nr(hex, 16))
+        i += 3
+        continue
       endif
+    endif
+
+    # If we have accumulated bytes, convert them to a UTF-8 string
+    if !byte_array->empty()
+      for byte in byte_array
+        parts->add(printf('%c', byte))
+      endfor
+      byte_array = []
+    endif
+
+    parts->add(ch)
+    i += 1
+  endwhile
+
+  # Handle any remaining bytes at the end
+  if !byte_array->empty()
+    for byte in byte_array
+      parts->add(printf('%c', byte))
     endfor
   endif
 
-  # 1-byte utf8 character
-  if (byte_values[0] >= 0 && byte_values[0] < 128) && len(byte_values) == 1
-    return byte_values[0]
-  endif
-  # 2-bytes utf8 character
-  if (byte_values[0] >= 192 && byte_values[0] < 224) && len(byte_values) == 2
-    return (and(31, byte_values[0]) << 6) + (and(63, byte_values[1]))
-  endif
-  # 3-bytes utf8 character
-  if (byte_values[0] >= 224 && byte_values[0] < 240) && len(byte_values) == 3
-    return (and(15, byte_values[0]) << 12) + (and(63, byte_values[1]) << 6) + and(63, byte_values[2])
-  endif
-  # 4-bytes utf8 character
-  if (byte_values[0] >= 240 && byte_values[0] < 248) && len(byte_values) == 4
-    return (and(7, byte_values[0]) << 18) + (and(63, byte_values[1]) << 12) + (and(63, byte_values[2]) << 6) + and(63, byte_values[3])
-  endif
-  return -1
-enddef
-
-# convert string to url encoding string
-def UriEncode(str: string): string
-  var encoded_str: string = ''
-  for ch in str
-    if ch !~# '[A-Za-z0-9-._~:/]'
-      encoded_str ..= printf('%%%02X', char2nr(ch))
-    else
-      encoded_str ..= ch
-    endif
-  endfor
-  return encoded_str
-enddef
-
-# convert url encoding string to nroaml string
-def UriDecode(str: string): string
-  var decode_str: string = ''
-  var idx: number = 0
-  var slen: number = strlen(str)
-  while idx < slen
-    var char: string = strpart(str, idx, 1)
-    if char == '%'
-      if idx + 2 >= slen
-	# no more characters
-	decode_str ..= strpart(str, idx, slen - idx)
-	break
-      else
-	var hexpart_1st: string = strpart(str, idx + 1, 2)
-	if !IsHex(hexpart_1st)
-	  decode_str ..= char
-	  idx += 1
-	  continue
-	endif
-	var utf8_value_1st: number = str2nr(hexpart_1st, 16)
-
-	var idx_offset: number = 0
-	var unicode_cp: number = -1
-
-	if utf8_value_1st >= 0 && utf8_value_1st < 128
-	  unicode_cp = HexStrToUnicodeCodePoint(strpart(str, idx, 3))
-	  idx_offset = 3
-	endif
-
-	if utf8_value_1st >= 192 && utf8_value_1st < 224
-	  if idx + 5 >= slen
-	    decode_str ..= char
-	    idx += 1
-	    continue
-	  endif
-	  unicode_cp = HexStrToUnicodeCodePoint(strpart(str, idx, 6))
-	  idx_offset = 6
-	endif
-
-	if utf8_value_1st >= 224 && utf8_value_1st < 240
-	  if idx + 8 >= slen
-	    decode_str ..= char
-	    idx += 1
-	    continue
-	  endif
-	  unicode_cp = HexStrToUnicodeCodePoint(strpart(str, idx, 9))
-	  idx_offset = 9
-	endif
-
-	if utf8_value_1st >= 240 && utf8_value_1st < 248
-	  if idx + 11 >= slen
-	    decode_str ..= char
-	    idx += 1
-	    continue
-	  endif
-	  unicode_cp = HexStrToUnicodeCodePoint(strpart(str, idx, 12))
-	  idx_offset = 12
-	endif
-
-	if unicode_cp == -1
-	  decode_str ..= char
-	  idx += 1
-	else
-	  decode_str ..= nr2char(unicode_cp)
-	  idx += idx_offset
-	endif
-      endif
-    else
-      decode_str ..= char
-      idx += 1
-    endif
-  endwhile
-
-  return decode_str
+  return parts->join('')
 enddef
 
 # Convert a LSP file URI (file://<absolute_path>) to a Vim file name
