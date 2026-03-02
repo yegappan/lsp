@@ -1878,6 +1878,21 @@ LspDiagsUpdated			A |User| autocommand invoked when new
 				lsp#diag#GetDiagsForBuf() can be used to get
 				all the diagnostics for a buffer.
 
+						*LspOutlineSetup*
+LspOutlineSetup			A |User| autocmd fired after the outline window
+				is created with |:LspOutline|. The outline
+				window will be the active window. This is
+				mainly useful to change the window settings –
+				the window is populated later, and
+				|LspOutlineUpdated| can be used to take an
+				action after the contents is updated.
+
+						*LspOutlineUpdated*
+LspOutlineUpdated		A |User| autocmd fired after the contents of
+				the outline window is updated, including on
+				the initial populate when it's opened. The
+				outline window will be the active window.
+
 						*LspProgressUpdate*
 LspProgressUpdate		A |User| autocommand invoked when a progress
 				notification ($/progress) is received from
