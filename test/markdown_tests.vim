@@ -283,6 +283,518 @@ def g:Test_Markdown()
 	[]
       ]
     ],
+    [
+      # Fenced code block with backticks (unrecognized language)
+      # Input text
+      [
+	'```unknownlang',
+	'def hello():',
+	'    return "world"',
+	'```',
+	'Text after code'
+      ],
+      # Expected text
+      [
+	'def hello():',
+	'    return "world"',
+	'',
+	'Text after code'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownCodeBlock', 'end_lnum': 2, 'end_col': 19}],
+	[],
+	[],
+	[]
+      ]
+    ],
+    [
+      # Fenced code block with tildes (unrecognized language)
+      # Input text
+      [
+	'~~~unknownlang',
+	'console.log("test");',
+	'~~~'
+      ],
+      # Expected text
+      [
+	'console.log("test");'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownCodeBlock', 'end_lnum': 1, 'end_col': 21}]
+      ]
+    ],
+    [
+      # Indented code block
+      # Input text
+      [
+	'    code line 1',
+	'    code line 2',
+	'    code line 3'
+      ],
+      # Expected text
+      [
+	'code line 1',
+	'code line 2',
+	'code line 3'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownCodeBlock', 'end_lnum': 3, 'end_col': 12}],
+	[],
+	[]
+      ]
+    ],
+    [
+      # Unordered list with dash
+      # Input text
+      [
+	'- First item',
+	'- Second item',
+	'- Third item'
+      ],
+      # Expected text
+      [
+	' - First item',
+	' - Second item',
+	' - Third item'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}]
+      ]
+    ],
+    [
+      # Unordered list with asterisk and plus
+      # Input text
+      [
+	'* Item one',
+	'+ Item two'
+      ],
+      # Expected text
+      [
+	' * Item one',
+	' + Item two'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}]
+      ]
+    ],
+    [
+      # Ordered list
+      # Input text
+      [
+	'1. First item',
+	'2. Second item',
+	'10. Tenth item'
+      ],
+      # Expected text
+      [
+	' 1. First item',
+	' 2. Second item',
+	' 10. Tenth item'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 4}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 4}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 5}]
+      ]
+    ],
+    [
+      # List with inline formatting
+      # Input text
+      [
+	'- Item with **bold** text',
+	'- Item with `code` text',
+	'1. Numbered with *italic* text'
+      ],
+      # Expected text
+      [
+	' - Item with bold text',
+	' - Item with code text',
+	' 1. Numbered with italic text'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3},
+	 {'col': 14, 'type': 'LspMarkdownBold', 'length': 4}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3},
+	 {'col': 14, 'type': 'LspMarkdownCode', 'length': 4}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 4},
+	 {'col': 19, 'type': 'LspMarkdownItalic', 'length': 6}]
+      ]
+    ],
+    [
+      # Nested list
+      # Input text
+      [
+	'- Parent item',
+	'  - Child item 1',
+	'  - Child item 2',
+	'- Another parent'
+      ],
+      # Expected text
+      [
+	' - Parent item',
+	'    - Child item 1',
+	'    - Child item 2',
+	' - Another parent'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[{'col': 4, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[{'col': 4, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}]
+      ]
+    ],
+    [
+      # Thematic breaks (horizontal rules)
+      # Input text
+      [
+	'Before',
+	'---',
+	'After first',
+	'***',
+	'After second',
+	'___',
+	'After third'
+      ],
+      # Expected text
+      [
+	'Before',
+	'',
+	'After first',
+	"\u2500"->repeat(80),
+	'After second',
+	"\u2500"->repeat(80),
+	'After third'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 6}],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[]
+      ]
+    ],
+    [
+      # Table with headers and cells
+      # Input text
+      [
+	'| Header 1 | Header 2 |',
+	'|----------|----------|',
+	'| Cell 1   | Cell 2   |',
+	'| Cell 3   | Cell 4   |'
+      ],
+      # Expected text
+      [
+	' Header 1 | Header 2 ',
+	'----------|----------',
+	' Cell 1   | Cell 2   ',
+	' Cell 3   | Cell 4   '
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownTableHeader', 'length': 10},
+	 {'col': 11, 'type': 'LspMarkdownTableMarker', 'length': 1},
+	 {'col': 12, 'type': 'LspMarkdownTableHeader', 'length': 10}],
+	[{'col': 1, 'type': 'LspMarkdownTableMarker', 'length': 21}],
+	[{'col': 11, 'type': 'LspMarkdownTableMarker', 'length': 1}],
+	[{'col': 11, 'type': 'LspMarkdownTableMarker', 'length': 1}]
+      ]
+    ],
+    [
+      # Table with inline formatting
+      # Input text
+      [
+	'| **Bold** | `Code` |',
+	'|----------|--------|',
+	'| *Italic* | Normal |'
+      ],
+      # Expected text
+      [
+	' Bold | Code ',
+	'----------|--------',
+	' Italic | Normal '
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownTableHeader', 'length': 6},
+	 {'col': 2, 'type': 'LspMarkdownBold', 'length': 4},
+	 {'col': 7, 'type': 'LspMarkdownTableMarker', 'length': 1},
+	 {'col': 8, 'type': 'LspMarkdownTableHeader', 'length': 6},
+	 {'col': 9, 'type': 'LspMarkdownCode', 'length': 4}],
+	[{'col': 1, 'type': 'LspMarkdownTableMarker', 'length': 19}],
+	[{'col': 2, 'type': 'LspMarkdownItalic', 'length': 6},
+	 {'col': 9, 'type': 'LspMarkdownTableMarker', 'length': 1}]
+      ]
+    ],
+    [
+      # Code span with backticks inside
+      # Input text
+      [
+	'Use ``code with `backticks` inside`` here'
+      ],
+      # Expected text
+      [
+	'Use code with `backticks` inside here'
+      ],
+      # Expected text properties
+      [
+	[{'col': 5, 'type': 'LspMarkdownCode', 'length': 28}]
+      ]
+    ],
+    [
+      # Mixed inline code and emphasis
+      # Input text
+      [
+	'The `getValue()` function returns *important* data'
+      ],
+      # Expected text
+      [
+	'The getValue() function returns important data'
+      ],
+      # Expected text properties
+      [
+	[{'col': 5, 'type': 'LspMarkdownCode', 'length': 10},
+	 {'col': 33, 'type': 'LspMarkdownItalic', 'length': 9}]
+      ]
+    ],
+    [
+      # Escaped characters
+      # Input text
+      [
+	'Escaped \*asterisk\* and \_underscore\_',
+	'Escaped \`backtick\` here'
+      ],
+      # Expected text
+      [
+	'Escaped *asterisk* and _underscore_ Escaped `backtick` here'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # Complex LSP hover documentation
+      # Input text
+      [
+	'```unknownlang',
+	'function calculate(x: number): number',
+	'```',
+	'',
+	'Calculates a value.',
+	'',
+	'**Parameters:**',
+	'',
+	'- `x` - The input number',
+	'',
+	'**Returns:** The calculated `number`'
+      ],
+      # Expected text
+      [
+	'function calculate(x: number): number',
+	'',
+	'Calculates a value.',
+	'',
+	'Parameters:',
+	'',
+	' - x - The input number',
+	'',
+	'Returns: The calculated number'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownCodeBlock', 'end_lnum': 1, 'end_col': 38}],
+	[],
+	[],
+	[],
+	[{'col': 1, 'type': 'LspMarkdownBold', 'length': 11}],
+	[],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3},
+	 {'col': 4, 'type': 'LspMarkdownCode', 'length': 1}],
+	[],
+	[{'col': 1, 'type': 'LspMarkdownBold', 'length': 8},
+	 {'col': 25, 'type': 'LspMarkdownCode', 'length': 6}]
+      ]
+    ],
+    [
+      # Block quote
+      # Input text
+      [
+	'> This is quoted',
+	'> **Bold** in quote',
+	'> `code` in quote'
+      ],
+      # Expected text
+      [
+	'This is quoted Bold in quote code in quote'
+      ],
+      # Expected text properties
+      [
+	[{'col': 16, 'type': 'LspMarkdownBold', 'length': 4},
+	 {'col': 30, 'type': 'LspMarkdownCode', 'length': 4}]
+      ]
+    ],
+    [
+      # Multiple paragraphs
+      # Input text
+      [
+	'First paragraph.',
+	'Continues here.',
+	'',
+	'Second paragraph.',
+	'',
+	'Third paragraph.'
+      ],
+      # Expected text
+      [
+	'First paragraph. Continues here.',
+	'',
+	'Second paragraph.',
+	'',
+	'Third paragraph.'
+      ],
+      # Expected text properties
+      [
+	[], [], [], [], []
+      ]
+    ],
+    [
+      # Heading with inline code
+      # Input text
+      [
+	'# The `main()` function',
+	'## Using **bold** in heading'
+      ],
+      # Expected text
+      [
+	'The main() function',
+	'',
+	'Using bold in heading'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 21},
+	 {'col': 5, 'type': 'LspMarkdownCode', 'length': 6}],
+	[],
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 25},
+	 {'col': 7, 'type': 'LspMarkdownBold', 'length': 4}]
+      ]
+    ],
+    [
+      # Emphasis precedence test
+      # Input text
+      [
+	'***bold and italic***',
+	'**_bold and italic_**',
+	'*__bold and italic__*'
+      ],
+      # Expected text
+      [
+	'bold and italic  **bold and italic bold and italic'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownItalic', 'length': 16},
+	 {'col': 1, 'type': 'LspMarkdownBold', 'length': 15},
+	 {'col': 16, 'type': 'LspMarkdownBold', 'length': 1},
+	 {'col': 20, 'type': 'LspMarkdownItalic', 'length': 15},
+	 {'col': 35, 'type': 'LspMarkdownItalic', 'length': 16},
+	 {'col': 35, 'type': 'LspMarkdownItalic', 'length': 1},
+	 {'col': 36, 'type': 'LspMarkdownBold', 'length': 15}]
+      ]
+    ],
+    [
+      # Ordered list with parenthesis delimiter
+      # Input text
+      [
+	'1) First',
+	'2) Second',
+	'10) Tenth'
+      ],
+      # Expected text
+      [
+	' 1) First',
+	' 2) Second',
+	' 10) Tenth'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 4}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 4}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 5}]
+      ]
+    ],
+    [
+      # Strikethrough with double tilde
+      # Input text
+      [
+	'This ~~text~~ is struck',
+	'~~Entire line struck~~'
+      ],
+      # Expected text
+      [
+	'This text is struck Entire line struck'
+      ],
+      # Expected text properties
+      [
+	[{'col': 6, 'type': 'LspMarkdownStrikeThrough', 'length': 4},
+	 {'col': 21, 'type': 'LspMarkdownStrikeThrough', 'length': 18}]
+      ]
+    ],
+    [
+      # Empty lines in code block
+      # Input text
+      [
+	'    code line 1',
+	'',
+	'    code line 2'
+      ],
+      # Expected text
+      [
+	'code line 1',
+	'',
+	'code line 2'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownCodeBlock', 'end_lnum': 3, 'end_col': 12}],
+	[],
+	[]
+      ]
+    ],
+    [
+      # Heading with trailing spaces
+      # Input text
+      [
+	'#  Heading with spaces  ',
+	'##   Another one   '
+      ],
+      # Expected text
+      [
+	'Heading with spaces',
+	'',
+	'Another one'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 19}],
+	[],
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 11}]
+      ]
+    ],
   ]
 
   var doc: dict<list<any>>

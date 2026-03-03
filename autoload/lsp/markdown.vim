@@ -513,7 +513,7 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
 	  document.content->add(line)
 	  var startline = document.content->len()
 	  for l in block.text
-	    document.content->add({text: indent .. l})
+	    document.content->add({text: indent .. l, props: []})
 	  endfor
 	  if block->has_key('language')
 	      && !globpath(&rtp, $'syntax/{block.language}.vim')->empty()
@@ -633,7 +633,9 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
 	endif
 	line = line->strpart(marker[2])
       elseif open_blocks[cur].type == 'fenced_code'
-	if line =~ $'^ \{{,3}}{open_blocks[cur].fence}{open_blocks[cur].fence[0]}* *$'
+	var fence_char = open_blocks[cur].fence[0]->escape('\^$.*[]~')
+	var fence_pattern = fence_char->repeat(open_blocks[cur].fence->len())
+	if line =~ $'^ \{{,3}}{fence_pattern}{fence_char}* *$'
 	  CloseBlocks(document, open_blocks, cur)
 	else
 	  open_blocks[cur].text->add(line)
@@ -683,9 +685,9 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
     if line =~ thematic_break
       CloseBlocks(document, open_blocks)
       if &g:encoding == 'utf-8'
-	document.content->add({text: "\u2500"->repeat(width)})
+	document.content->add({text: "\u2500"->repeat(width), props: []})
       else
-	document.content->add({text: '-'->repeat(width)})
+	document.content->add({text: '-'->repeat(width), props: []})
       endif
       last_block = 'hr'
       continue
