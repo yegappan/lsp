@@ -686,10 +686,10 @@ def g:Test_Markdown()
       ],
       # Expected text properties
       [
-	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 21},
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 19},
 	 {'col': 5, 'type': 'LspMarkdownCode', 'length': 6}],
 	[],
-	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 25},
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 21},
 	 {'col': 7, 'type': 'LspMarkdownBold', 'length': 4}]
       ]
     ],
@@ -793,6 +793,656 @@ def g:Test_Markdown()
 	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 19}],
 	[],
 	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 11}]
+      ]
+    ],
+    [
+      # Inline links
+      # Input text
+      [
+	'Visit [GitHub](https://github.com) for more info.',
+	'',
+	'Check [this link](https://example.com "Example Site") for details.'
+      ],
+      # Expected text
+      [
+      'Visit GitHub for more info.',
+	'',
+      'Check this link for details.'
+      ],
+      # Expected text properties
+      [
+	[],
+	[],
+	[]
+      ]
+    ],
+    [
+      # Autolinks
+      # Input text
+      [
+	'Visit <https://github.com> or email <test@example.com>.'
+      ],
+      # Expected text
+      [
+	'Visit https://github.com or email test@example.com.'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # Links with inline formatting
+      # Input text
+      [
+	'See [**bold link**](https://example.com) and [*italic link*](https://test.com).'
+      ],
+      # Expected text
+      [
+	'See bold link and italic link.'
+      ],
+      # Expected text properties
+      [
+	[{'col': 5, 'type': 'LspMarkdownBold', 'length': 9},
+	 {'col': 19, 'type': 'LspMarkdownItalic', 'length': 11}]
+      ]
+    ],
+    [
+      # Task lists (GFM extension)
+      # Input text
+      [
+	'- [ ] Unchecked task',
+	'- [x] Checked task',
+	'- [X] Also checked'
+      ],
+      # Expected text
+      [
+	' - [ ] Unchecked task',
+	' - [x] Checked task',
+	' - [X] Also checked'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}]
+      ]
+    ],
+    [
+      # Table with column alignment (alignment syntax preserved)
+      # Input text
+      [
+	'| Left | Center | Right |',
+	'|:-----|:------:|------:|',
+	'| L1   | C1     | R1    |'
+      ],
+      # Expected text
+      [
+	' Left | Center | Right ',
+	':-----|:------:|------:',
+	' L1   | C1     | R1    '
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownTableHeader', 'length': 6},
+	 {'col': 7, 'type': 'LspMarkdownTableMarker', 'length': 1},
+	 {'col': 8, 'type': 'LspMarkdownTableHeader', 'length': 8},
+	 {'col': 16, 'type': 'LspMarkdownTableMarker', 'length': 1},
+	 {'col': 17, 'type': 'LspMarkdownTableHeader', 'length': 7}],
+	[{'col': 1, 'type': 'LspMarkdownTableMarker', 'length': 23}],
+	[{'col': 7, 'type': 'LspMarkdownTableMarker', 'length': 1},
+	 {'col': 16, 'type': 'LspMarkdownTableMarker', 'length': 1}]
+      ]
+    ],
+    [
+      # HTML entities
+      # Input text
+      [
+	'Use &lt;tag&gt; for HTML and &amp; for ampersand.',
+	'Quote with &quot; and apostrophe &apos;.'
+      ],
+      # Expected text
+      [
+	"Use <tag> for HTML and & for ampersand. Quote with \" and apostrophe '."
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # ATX heading with closing sequence
+      # Input text
+      [
+	'# Heading with hash #',
+	'## Multiple hashes ###',
+	'### Unbalanced ####'
+      ],
+      # Expected text
+      [
+	'Heading with hash',
+	'',
+	'Multiple hashes',
+	'',
+	'Unbalanced'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 17}],
+	[],
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 15}],
+	[],
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 10}]
+      ]
+    ],
+    [
+      # Intra-word emphasis (paragraph joining)
+      # Input text
+      [
+	'This is un*frigging*believable and super**great**stuff.',
+	'Use under_scores_in_words without emphasis.'
+      ],
+      # Expected text
+      [
+	'This is unfriggingbelievable and supergreatstuff. Use under_scores_in_words without emphasis.'
+      ],
+      # Expected text properties
+      [
+	[{'col': 11, 'type': 'LspMarkdownItalic', 'length': 8},
+	 {'col': 39, 'type': 'LspMarkdownBold', 'length': 5}]
+      ]
+    ],
+    [
+      # Ordered list starting with different numbers
+      # Input text
+      [
+	'5. Fifth item',
+	'6. Sixth item',
+	'100. Hundredth item'
+      ],
+      # Expected text
+      [
+	' 5. Fifth item',
+	' 6. Sixth item',
+	' 100. Hundredth item'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 4}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 4}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 6}]
+      ]
+    ],
+    [
+      # List with multiple paragraphs
+      # Input text
+      [
+	'- First item',
+	'',
+	'  Continuation of first',
+	'',
+	'- Second item'
+      ],
+      # Expected text
+      [
+	' - First item',
+	'',
+      'Continuation of first',
+	'',
+	' - Second item'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[],
+	[],
+	[],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}]
+      ]
+    ],
+    [
+      # Nested block quotes
+      # Input text
+      [
+	'> Level 1 quote',
+	'> > Level 2 nested',
+	'> Back to level 1'
+      ],
+      # Expected text
+      [
+	'Level 1 quote',
+	'Level 2 nested Back to level 1'
+      ],
+      # Expected text properties
+      [
+	[],
+	[]
+      ]
+    ],
+    [
+      # Backslash line breaks
+      # Input text
+      [
+	'Line with backslash\',
+	'continues here'
+      ],
+      # Expected text
+      [
+	'Line with backslash',
+	'continues here'
+      ],
+      # Expected text properties
+      [
+	[],
+	[]
+      ]
+    ],
+    [
+      # Code fence with longer delimiter
+      # Input text
+      [
+	'`````',
+	'Code with ``` inside',
+	'`````',
+	'Text after'
+      ],
+      # Expected text
+      [
+	'Code with ``` inside',
+	'',
+	'Text after'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownCodeBlock', 'end_lnum': 1, 'end_col': 21}],
+	[],
+	[]
+      ]
+    ],
+    [
+      # Empty emphasis should not format
+      # Input text
+      [
+	'Empty ** ** bold and __ __ underscore.',
+	'Empty * * italic and _ _ underscore.'
+      ],
+      # Expected text
+      [
+	'Empty ** ** bold and __ __ underscore. Empty * * italic and _ _ underscore.'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # Mixed list types (loose and tight)
+      # Input text
+      [
+	'- Tight item 1',
+	'- Tight item 2',
+	'',
+	'- Loose item 1',
+	'',
+	'- Loose item 2'
+      ],
+      # Expected text
+      [
+	' - Tight item 1',
+	' - Tight item 2',
+	' - Loose item 1',
+	' - Loose item 2'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}]
+      ]
+    ],
+    [
+      # Code span edge cases
+      # Input text
+      [
+	'Single `backtick` here.',
+	'Multiple `` backticks `` here.',
+	'No closing `backtick here.'
+      ],
+      # Expected text
+      [
+	'Single backtick here. Multiple backticks here. No closing `backtick here.'
+      ],
+      # Expected text properties
+      [
+	[{'col': 8, 'type': 'LspMarkdownCode', 'length': 8},
+	 {'col': 32, 'type': 'LspMarkdownCode', 'length': 9}]
+      ]
+    ],
+    [
+      # Emphasis with punctuation
+      # Input text
+      [
+	'*Emphasis* with trailing punctuation.',
+	'**Bold** text, and *italic* text.',
+	'_Underscore_ emphasis!'
+      ],
+      # Expected text
+      [
+	'Emphasis with trailing punctuation. Bold text, and italic text. Underscore emphasis!'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownItalic', 'length': 8},
+	 {'col': 37, 'type': 'LspMarkdownBold', 'length': 4},
+	 {'col': 52, 'type': 'LspMarkdownItalic', 'length': 6},
+	 {'col': 65, 'type': 'LspMarkdownItalic', 'length': 10}]
+      ]
+    ],
+    [
+      # Headings without space after hash
+      # Input text
+      [
+	'#No space heading',
+	'## Normal heading'
+      ],
+      # Expected text
+      [
+	'#No space heading',
+	'',
+	'Normal heading'
+      ],
+      # Expected text properties
+      [
+	[],
+	[],
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 14}]
+      ]
+    ],
+    [
+      # Fenced code with info string containing backticks
+      # Input text
+      [
+	'```lang`with`backticks',
+	'code content',
+	'```'
+      ],
+      # Expected text
+      [
+	'code content'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownCodeBlock', 'end_lnum': 1, 'end_col': 13}]
+      ]
+    ],
+    [
+      # List items with code blocks
+      # Input text
+      [
+	'- List item with code:',
+	'',
+	'      code block',
+	'',
+	'- Another item'
+      ],
+      # Expected text
+      [
+	' - List item with code:',
+	'',
+      '  code block',
+	'',
+	' - Another item'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[],
+      [{'col': 1, 'type': 'LspMarkdownCodeBlock', 'end_col': 13, 'end_lnum': 3}],
+	[],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}]
+      ]
+    ],
+    [
+      # Setext heading underline length
+      # Input text
+      [
+	'Heading',
+	'=',
+	'Another',
+	'---'
+      ],
+      # Expected text
+      [
+	'Heading',
+	'',
+	'Another'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 7}],
+	[],
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 7}]
+      ]
+    ],
+    [
+      # Zero-width spaces and special characters
+      # Input text
+      [
+	'Text with em—dash and en–dash.',
+	'Ellipsis… and bullet •.'
+      ],
+      # Expected text
+      [
+	'Text with em—dash and en–dash. Ellipsis… and bullet •.'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # Multiple consecutive blank lines
+      # Input text
+      [
+	'First paragraph.',
+	'',
+	'',
+	'',
+	'Second paragraph.'
+      ],
+      # Expected text
+      [
+	'First paragraph.',
+	'',
+	'Second paragraph.'
+      ],
+      # Expected text properties
+      [
+	[], [], []
+      ]
+    ],
+    [
+      # Link in heading
+      # Input text
+      [
+	'# Heading with [link](https://example.com)',
+	'## Another [**bold link**](https://test.com)'
+      ],
+      # Expected text
+      [
+      'Heading with link',
+	'',
+      'Another bold link'
+      ],
+      # Expected text properties
+      [
+      [{'col': 1, 'type': 'LspMarkdownHeading', 'length': 17}],
+	[],
+      [{'col': 1, 'type': 'LspMarkdownHeading', 'length': 17},
+       {'col': 9, 'type': 'LspMarkdownBold', 'length': 9}]
+      ]
+    ],
+    [
+      # Code block immediately after list
+      # Input text
+      [
+	'- List item',
+	'',
+	'    code block',
+	'    more code'
+      ],
+      # Expected text
+      [
+	' - List item',
+	'',
+	'code block',
+	'more code'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[],
+	[{'col': 1, 'type': 'LspMarkdownCodeBlock', 'end_col': 11, 'end_lnum': 4}],
+	[]
+      ]
+    ],
+    [
+      # Table without outer pipes (parsed as table)
+      # Input text
+      [
+	'Header 1 | Header 2',
+	'---------|----------',
+	'Cell 1   | Cell 2'
+      ],
+      # Expected text
+      [
+	'Header 1 | Header 2',
+	'---------|----------',
+	'Cell 1   | Cell 2'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownTableHeader', 'length': 9},
+	 {'col': 10, 'type': 'LspMarkdownTableMarker', 'length': 1},
+	 {'col': 11, 'type': 'LspMarkdownTableHeader', 'length': 9}],
+	[{'col': 1, 'type': 'LspMarkdownTableMarker', 'length': 20}],
+	[{'col': 10, 'type': 'LspMarkdownTableMarker', 'length': 1}]
+      ]
+    ],
+    [
+      # Emphasis not crossing paragraph boundaries
+      # Input text
+      [
+	'*Start emphasis',
+	'',
+	'End emphasis*'
+      ],
+      # Expected text
+      [
+	'*Start emphasis',
+	'',
+	'End emphasis*'
+      ],
+      # Expected text properties
+      [
+	[], [], []
+      ]
+    ],
+    [
+      # Reference-style links
+      # Input text
+      [
+	'Reference [GitHub][gh] link and [example][].',
+	'',
+	'[gh]: https://github.com',
+	'[example]: https://example.com "Example"'
+      ],
+      # Expected text
+      [
+	'Reference GitHub link and example.'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # Images (inline and reference)
+      # Input text
+      [
+	'Inline image ![logo](https://img.example/logo.png) here.',
+	'',
+	'Reference image ![banner][img].',
+	'',
+	'[img]: https://img.example/banner.png'
+      ],
+      # Expected text
+      [
+	'Inline image logo here.',
+	'',
+	'Reference image banner.'
+      ],
+      # Expected text properties
+      [
+	[],
+	[],
+	[]
+      ]
+    ],
+    [
+      # Heading levels 4 to 6
+      # Input text
+      [
+	'#### Level four heading',
+	'##### Level five heading',
+	'###### Level six heading'
+      ],
+      # Expected text
+      [
+	'Level four heading',
+	'',
+	'Level five heading',
+	'',
+	'Level six heading'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 18}],
+	[],
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 18}],
+	[],
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 17}]
+      ]
+    ],
+    [
+      # Bare URL autolinks
+      # Input text
+      [
+	'Visit https://example.com/path?q=1 and http://test.dev for details.'
+      ],
+      # Expected text
+      [
+	'Visit https://example.com/path?q=1 and http://test.dev for details.'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # Numeric HTML entities
+      # Input text
+      [
+	'Entity decimal: &#35;, hex: &#x23;, copy: &#169;.'
+      ],
+      # Expected text
+      [
+	'Entity decimal: #, hex: #, copy: ©.'
+      ],
+      # Expected text properties
+      [
+	[]
       ]
     ],
   ]

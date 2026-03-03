@@ -16,7 +16,6 @@ var list_item = $'^\%({list_marker}\)\ze\s*$\|^ \{{,3}}\zs\%({list_marker}\) \{{
 # pattern to match list items
 export var list_pattern = $'^ *\%({list_marker}\) *'
 
-
 # Leaf blocks
 var blank_line = '^\s*$'
 var thematic_break = '^ \{,3\}\([-_*]\)\%(\s*\1\)\{2,\}\s*$'
@@ -29,6 +28,7 @@ var setext_heading = '^ \{,3}\zs\%(=\{1,}\|-\{1,}\)\ze *$'
 var setext_heading_level = {"=": 1, "-": 2}
 
 var table_delimiter = '^|\=\zs *:\=-\{1,}:\= *\%(| *:\=-\{1,}:\= *\)*\ze|\=$'
+var link_reference_def = '^ \{,3}\[\([^][]\+\)\]:\s*\(\S\+\)\%(.\{-}\)\=$'
 
 var punctuation = "[!\"#$%&'()*+,-./:;<=>?@[\\\\\\\]^_`{|}~]"
 
@@ -152,6 +152,83 @@ def Unescape(text: string, block_marker: string = ""): string
   return result->substitute($'\\\({punctuation}\)', '\1', 'g')
 enddef
 
+def DecodeHtmlEntities(text: string): string
+  var result = text
+  result = result->substitute('&nbsp;', ' ', 'g')
+  result = result->substitute('&lt;', '<', 'g')
+  result = result->substitute('&gt;', '>', 'g')
+  result = result->substitute('&amp;', '\&', 'g')
+  result = result->substitute('&quot;', '"', 'g')
+  result = result->substitute('&apos;', "'", 'g')
+  result = result->substitute('&#\([0-9]\+\);', '\=nr2char(str2nr(submatch(1)))', 'g')
+  result = result->substitute('&#x\([0-9a-fA-F]\+\);', '\=nr2char(str2nr(submatch(1), 16))', 'g')
+  return result
+enddef
+
+var reference_defs: dict<string> = {}
+
+def NormalizeReferenceLabel(label: string): string
+  return label->tolower()->substitute('\s\+', ' ', 'g')->trim()
+enddef
+
+def ResolveReferenceText(link_text: string, label: string, full_match: string): string
+  var key = NormalizeReferenceLabel(label->empty() ? link_text : label)
+  if reference_defs->has_key(key)
+    return link_text
+  endif
+  return full_match
+enddef
+
+def ResolveReferenceLinks(text: string): string
+  if reference_defs->empty()
+    return text
+  endif
+  var result = text
+  result = result->substitute('!\[\([^][]\+\)\]\[\([^][]*\)\]',
+	      '\=ResolveReferenceText(submatch(1), submatch(2), submatch(0))',
+	      'g')
+  result = result->substitute('\%(^\|[^!]\)\zs\[\([^][]\+\)\]\[\([^][]*\)\]',
+	      '\=ResolveReferenceText(submatch(1), submatch(2), submatch(0))',
+	      'g')
+  return result
+enddef
+
+def StripInlineLinks(text: string): string
+  var result = text
+  result = ResolveReferenceLinks(result)
+  result = result->substitute('<\(https\?://[^>[:space:]]\+\)>', '\1', 'g')
+  result = result->substitute('<\([^< >]\+@[^< >]\+\)>', '\1', 'g')
+  while true
+    var stripped = result->substitute('\!\=\[\([^][]\+\)\](\s*[^)]\+\s*)', '\1', 'g')
+    if stripped == result
+      break
+    endif
+    result = stripped
+  endwhile
+  return result
+enddef
+
+def PreprocessInlineText(text: string): string
+  var code_spans = GetCodeSpans(text)
+  if code_spans->empty()
+    return DecodeHtmlEntities(StripInlineLinks(text))
+  endif
+  var result = ''
+  var pos = 0
+  for span in code_spans
+    if pos < span.start[0]
+      var seg = text->strpart(pos, span.start[0] - pos)
+      result ..= DecodeHtmlEntities(StripInlineLinks(seg))
+    endif
+    result ..= text->strpart(span.start[0], span.end[1] - span.start[0])
+    pos = span.end[1]
+  endfor
+  if pos < text->len()
+    result ..= DecodeHtmlEntities(StripInlineLinks(text->strpart(pos)))
+  endif
+  return result
+enddef
+
 def GetNextInlineDelimiter(text: string, start_pos: number, end_pos: number): dict<any>
   var pos = start_pos
   while pos < text->len()
@@ -235,16 +312,17 @@ def GetNextInlineBlock(text: string, blocks: list<any>, rel_pos: number): dict<a
 enddef
 
 def ParseInlines(text: string, rel_pos: number = 0): dict<any>
+  var input_text = PreprocessInlineText(text)
   var formatted = {
     text: '',
     props: []
   }
-  var code_spans = GetCodeSpans(text)
+  var code_spans = GetCodeSpans(input_text)
 
   var pos = 0
   var seq = []
   # search all emphasis
-  while pos < text->len()
+  while pos < input_text->len()
     var code_pos: list<number>
     if code_spans->len() > 0
       code_pos = [code_spans[0].start[0], code_spans[0].end[1]]
@@ -254,9 +332,9 @@ def ParseInlines(text: string, rel_pos: number = 0): dict<any>
 	continue
       endif
     else
-      code_pos = [text->len(), text->len()]
+      code_pos = [input_text->len(), input_text->len()]
     endif
-    var delimiter = GetNextInlineDelimiter(text, pos, code_pos[0])
+    var delimiter = GetNextInlineDelimiter(input_text, pos, code_pos[0])
     if delimiter->empty()
       pos = code_pos[1]
       continue
@@ -331,17 +409,17 @@ def ParseInlines(text: string, rel_pos: number = 0): dict<any>
   pos = 0
   while seq->len() > 0
     if pos < seq[0].start[0]
-      formatted.text ..= Unescape(text->strpart(pos, seq[0].start[0] - pos))
+      formatted.text ..= Unescape(input_text->strpart(pos, seq[0].start[0] - pos))
       pos = seq[0].start[0]
     endif
-    var inline = GetNextInlineBlock(text, seq,
+    var inline = GetNextInlineBlock(input_text, seq,
 				    rel_pos + formatted.text->len())
     formatted.text ..= inline.text
     formatted.props += inline.props
     pos = inline.end_pos
   endwhile
-  if pos < text->len()
-    formatted.text ..= Unescape(text->strpart(pos))
+  if pos < input_text->len()
+    formatted.text ..= Unescape(input_text->strpart(pos))
   endif
   return formatted
 enddef
@@ -528,11 +606,12 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
 	  endif
 	endif
       elseif block.type == 'heading'
-	line.props->add(GetMarkerProp('heading',
-				      line.text->len() + 1,
-				      block.text->len(),
-				      block.level))
 	var format = ParseInlines(block.text, line.text->len())
+	line.props->add(GetMarkerProp('heading',
+	  line.text->len() + 1,
+	  format.text->len(),
+	  block.level))
+
 	line.text ..= format.text
 	line.props += format.props
 	document.content += SplitLine(line)
@@ -613,8 +692,19 @@ enddef
 export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>>
   var document: dict<list<any>> = {content: [], syntax: []}
   var open_blocks: list<dict<any>> = []
+  reference_defs = {}
+  var filtered_data: list<string> = []
 
   for l in data
+    var ref = l->matchlist(link_reference_def)
+    if ref->len() > 0
+      reference_defs[NormalizeReferenceLabel(ref[1])] = ref[2]
+      continue
+    endif
+    filtered_data->add(l)
+  endfor
+
+  for l in filtered_data
     var line: string = ExpandTabs(l)
     var cur = 0
 
