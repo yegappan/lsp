@@ -1591,6 +1591,134 @@ def g:Test_Markdown()
 	[]
       ]
     ],
+    [
+      # Inline link destination with nested parentheses
+      # Input text
+      [
+	'Check [paren](https://example.com/a(b)c) link.'
+      ],
+      # Expected text
+      [
+	'Check paren link.'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # Inline link destination in angle brackets
+      # Input text
+      [
+	'Check [angle](<https://example.com/a(b)c>) now.'
+      ],
+      # Expected text
+      [
+	'Check angle now.'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # Unclosed fenced code block to end of document
+      # Input text
+      [
+	'```',
+	'line 1',
+	'line 2'
+      ],
+      # Expected text
+      [
+	'line 1',
+	'line 2'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownCodeBlock', 'end_lnum': 2, 'end_col': 7}],
+	[]
+      ]
+    ],
+    [
+      # Shorter closing fence does not terminate fenced code
+      # Input text
+      [
+	'````',
+	'alpha',
+	'```',
+	'omega'
+      ],
+      # Expected text
+      [
+	'alpha',
+	'```',
+	'omega'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownCodeBlock', 'end_lnum': 3, 'end_col': 6}],
+	[],
+	[]
+      ]
+    ],
+    [
+      # Nested task lists
+      # Input text
+      [
+	'- [ ] Parent task',
+	'  - [x] Child done',
+	'  - [ ] Child todo'
+      ],
+      # Expected text
+      [
+	' - [ ] Parent task',
+	'    - [x] Child done',
+	'    - [ ] Child todo'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[{'col': 4, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[{'col': 4, 'type': 'LspMarkdownListMarker', 'length': 3}]
+      ]
+    ],
+    [
+      # Raw HTML comment block is preserved
+      # Input text
+      [
+	'<!--',
+	'*not italic*',
+	'-->'
+      ],
+      # Expected text
+      [
+	'<!--',
+	'*not italic*',
+	'-->'
+      ],
+      # Expected text properties
+      [
+	[],
+	[],
+	[]
+      ]
+    ],
+    [
+      # Autolink literal outside code span only
+      # Input text
+      [
+	'`www.example.com` and www.example.com'
+      ],
+      # Expected text
+      [
+	'www.example.com and www.example.com'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownCode', 'length': 15}]
+      ]
+    ],
   ]
 
   var doc: dict<list<any>>

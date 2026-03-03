@@ -23,6 +23,7 @@ var code_fence = '^ \{,3\}\(`\{3,\}\|\~\{3,\}\)\s*\(\S*\)'
 var code_indent = '^ \{4\}\zs\s*\S.*'
 var paragraph = '^\s*\zs\S.\{-}\s*\ze$'
 var html_block_open = '^ \{,3}<\([A-Za-z][A-Za-z0-9-]*\)\%([ \t][^>]*\)\?>\s*$'
+var html_comment_open = '^ \{,3}<!--\s*$'
 
 var atx_heading = '^ \{,3}\zs\(#\{1,6}\) \s*\(.\{-}\)\s*\ze\%( #\{1,}\s*\)\=$'
 var setext_heading = '^ \{,3}\zs\%(=\{1,}\|-\{1,}\)\ze *$'
@@ -202,6 +203,8 @@ def StripInlineLinks(text: string): string
   result = ResolveReferenceLinks(result)
   result = result->substitute('<\(https\?://[^>[:space:]]\+\)>', '\1', 'g')
   result = result->substitute('<\([^< >]\+@[^< >]\+\)>', '\1', 'g')
+  result = result->substitute('\!\=\[\([^][]\+\)\](\s*<[^>]\+>\s*)', '\1', 'g')
+  result = result->substitute('\!\=\[\([^][]\+\)\](\s*[^()[:space:]]\+\%(([^()]*)[^()[:space:]]*\)*\s*)', '\1', 'g')
   while true
     var stripped = result->substitute('\!\=\[\([^][]\+\)\](\s*[^)]\+\s*)', '\1', 'g')
     if stripped == result
@@ -472,6 +475,11 @@ def CreateLeafBlock(block_type: string, line: string, ...opt: list<any>): dict<a
       tag: opt[0],
       text: [line]
     }
+  elseif block_type == 'html_comment'
+    return {
+      type: block_type,
+      text: [line]
+    }
   elseif block_type == 'heading'
     return {
       type: block_type,
@@ -616,6 +624,14 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
 	  endif
 	endif
       elseif block.type == 'html_block'
+	var indent = ' '->repeat(line.text->len())
+	var text = block.text->remove(0)
+	line.text ..= text
+	document.content->add(line)
+	for l in block.text
+	  document.content->add({text: indent .. l, props: []})
+	endfor
+      elseif block.type == 'html_comment'
 	var indent = ' '->repeat(line.text->len())
 	var text = block.text->remove(0)
 	line.text ..= text
@@ -787,6 +803,13 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
 	endif
 	cur = -1
 	break
+      elseif open_blocks[cur].type == 'html_comment'
+	open_blocks[cur].text->add(line)
+	if line =~ '^ \{,3}-->\s*$'
+	  CloseBlocks(document, open_blocks, cur)
+	endif
+	cur = -1
+	break
       endif
       cur += 1
     endwhile
@@ -853,6 +876,12 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
       var token = line->matchlist(atx_heading)
       open_blocks->add(CreateLeafBlock('heading', token[2], token[1]->len()))
       CloseBlocks(document, open_blocks, cur)
+    elseif line =~ html_comment_open
+      CloseBlocks(document, open_blocks, cur)
+      open_blocks->add(CreateLeafBlock('html_comment', line))
+      if line =~ '^ \{,3}-->\s*$'
+	CloseBlocks(document, open_blocks, cur)
+      endif
     elseif line =~ html_block_open
       CloseBlocks(document, open_blocks, cur)
       var html_token = line->matchlist(html_block_open)
