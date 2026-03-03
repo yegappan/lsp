@@ -22,6 +22,7 @@ var thematic_break = '^ \{,3\}\([-_*]\)\%(\s*\1\)\{2,\}\s*$'
 var code_fence = '^ \{,3\}\(`\{3,\}\|\~\{3,\}\)\s*\(\S*\)'
 var code_indent = '^ \{4\}\zs\s*\S.*'
 var paragraph = '^\s*\zs\S.\{-}\s*\ze$'
+var html_block_open = '^ \{,3}<\([A-Za-z][A-Za-z0-9-]*\)\%([ \t][^>]*\)\?>\s*$'
 
 var atx_heading = '^ \{,3}\zs\(#\{1,6}\) \s*\(.\{-}\)\s*\ze\%( #\{1,}\s*\)\=$'
 var setext_heading = '^ \{,3}\zs\%(=\{1,}\|-\{1,}\)\ze *$'
@@ -189,6 +190,9 @@ def ResolveReferenceLinks(text: string): string
 	      'g')
   result = result->substitute('\%(^\|[^!]\)\zs\[\([^][]\+\)\]\[\([^][]*\)\]',
 	      '\=ResolveReferenceText(submatch(1), submatch(2), submatch(0))',
+	      'g')
+  result = result->substitute('\%(^\|[^!]\)\zs\[\([^][]\+\)\]\ze\%([^[(]\|$\)',
+	      '\=ResolveReferenceText(submatch(1), submatch(1), submatch(0))',
 	      'g')
   return result
 enddef
@@ -462,6 +466,12 @@ def CreateLeafBlock(block_type: string, line: string, ...opt: list<any>): dict<a
       type: block_type,
       text: [line->matchstr(paragraph)]
     }
+  elseif block_type == 'html_block'
+    return {
+      type: block_type,
+      tag: opt[0],
+      text: [line]
+    }
   elseif block_type == 'heading'
     return {
       type: block_type,
@@ -605,6 +615,14 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
 					  indent->len() + max_len + 1))
 	  endif
 	endif
+      elseif block.type == 'html_block'
+	var indent = ' '->repeat(line.text->len())
+	var text = block.text->remove(0)
+	line.text ..= text
+	document.content->add(line)
+	for l in block.text
+	  document.content->add({text: indent .. l, props: []})
+	endfor
       elseif block.type == 'heading'
 	var format = ParseInlines(block.text, line.text->len())
 	line.props->add(GetMarkerProp('heading',
@@ -762,6 +780,13 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
 	  endif
 	endif
 	break
+      elseif open_blocks[cur].type == 'html_block'
+	open_blocks[cur].text->add(line)
+	if line =~ $'^ \{{,3}}</{open_blocks[cur].tag}>\s*$'
+	  CloseBlocks(document, open_blocks, cur)
+	endif
+	cur = -1
+	break
       endif
       cur += 1
     endwhile
@@ -828,6 +853,13 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
       var token = line->matchlist(atx_heading)
       open_blocks->add(CreateLeafBlock('heading', token[2], token[1]->len()))
       CloseBlocks(document, open_blocks, cur)
+    elseif line =~ html_block_open
+      CloseBlocks(document, open_blocks, cur)
+      var html_token = line->matchlist(html_block_open)
+      open_blocks->add(CreateLeafBlock('html_block', line, html_token[1]))
+      if line =~ $'^ \{{,3}}</{html_token[1]}>\s*$'
+	CloseBlocks(document, open_blocks, cur)
+      endif
     elseif !open_blocks->empty()
       if open_blocks[-1].type == 'table'
 	open_blocks[-1].text->add(line)

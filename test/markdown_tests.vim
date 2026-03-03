@@ -1445,6 +1445,152 @@ def g:Test_Markdown()
 	[]
       ]
     ],
+    [
+      # Reference labels are case-insensitive and whitespace-normalized
+      # Input text
+      [
+	'Use [A][foo   bar] and [B][FOO BAR].',
+	'',
+	'[Foo Bar]: https://example.com'
+      ],
+      # Expected text
+      [
+	'Use A and B.'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # Shortcut reference links
+      # Input text
+      [
+	'See [Docs] for details.',
+	'',
+	'[Docs]: https://example.com/docs'
+      ],
+      # Expected text
+      [
+	'See Docs for details.'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # Undefined reference links remain literal
+      # Input text
+      [
+	'Unknown [ref][missing] should stay literal.'
+      ],
+      # Expected text
+      [
+	'Unknown [ref][missing] should stay literal.'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # GFM autolink literals (www and email)
+      # Input text
+      [
+	'Contact test@example.com and visit www.example.com.'
+      ],
+      # Expected text
+      [
+	'Contact test@example.com and visit www.example.com.'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # Raw HTML block is preserved
+      # Input text
+      [
+	'<div class="note">',
+	'**not markdown** inside html block',
+	'</div>'
+      ],
+      # Expected text
+      [
+	'<div class="note">',
+	'**not markdown** inside html block',
+	'</div>'
+      ],
+      # Expected text properties
+      [
+	[],
+	[],
+	[]
+      ]
+    ],
+    [
+      # Raw HTML inline with surrounding markdown
+      # Input text
+      [
+	'Before <span>raw</span> after and *italic* text.'
+      ],
+      # Expected text
+      [
+	'Before <span>raw</span> after and italic text.'
+      ],
+      # Expected text properties
+      [
+	[{'col': 35, 'type': 'LspMarkdownItalic', 'length': 6}]
+      ]
+    ],
+    [
+      # Table escaped pipes inside cells
+      # Input text
+      [
+	'| H1 | H2 |',
+	'|----|----|',
+	'| a \| b | c |'
+      ],
+      # Expected text
+      [
+	' H1 | H2 ',
+	'----|----',
+	' a | b | c '
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownTableHeader', 'length': 4},
+	 {'col': 5, 'type': 'LspMarkdownTableMarker', 'length': 1},
+	 {'col': 6, 'type': 'LspMarkdownTableHeader', 'length': 4}],
+	[{'col': 1, 'type': 'LspMarkdownTableMarker', 'length': 9}],
+	[{'col': 8, 'type': 'LspMarkdownTableMarker', 'length': 1}]
+      ]
+    ],
+    [
+      # Table rows with missing trailing cells
+      # Input text
+      [
+	'| Left | Right |',
+	'|------|-------|',
+	'| only-left |'
+      ],
+      # Expected text
+      [
+	' Left | Right ',
+	'------|-------',
+	' only-left '
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownTableHeader', 'length': 6},
+	 {'col': 7, 'type': 'LspMarkdownTableMarker', 'length': 1},
+	 {'col': 8, 'type': 'LspMarkdownTableHeader', 'length': 7}],
+      [{'col': 1, 'type': 'LspMarkdownTableMarker', 'length': 14}],
+	[]
+      ]
+    ],
   ]
 
   var doc: dict<list<any>>
