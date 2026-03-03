@@ -698,7 +698,7 @@ export def AddServer(serverList: list<dict<any>>)
     endif
     server.omnicompl = server->get('omnicompl', omnicompl_def)
 
-    server.path = expand(server.path)
+    server.path = expandcmd(server.path)
 
     if !server.path->executable()
       if !opt.lspOptions.ignoreMissingServer
