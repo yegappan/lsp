@@ -38,7 +38,7 @@ export def HandleCodeAction(lspserver: dict<any>, selAction: dict<any>)
   # If we don't have a complete CodeAction then use the servers's CodeAction
   # property resolution to complete the definition.
   if !selAction->has_key('edit') && !selAction->has_key('command')
-    util.InfoMsg("Resolving incomplete CodeAction")
+    util.TraceLog("Resolving incomplete CodeAction")
     var resolved = lspserver.resolveCodeAction(selAction)
     if resolved->empty()
       util.WarnMsg("Code action could not be resolved by LSP server.")
