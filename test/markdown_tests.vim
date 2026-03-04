@@ -481,9 +481,9 @@ def g:Test_Markdown()
 	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 6}],
 	[],
 	[],
+      [{'col': 1, 'type': 'LspMarkdownThematicBreak', 'length': 240}],
 	[],
-	[],
-	[],
+      [{'col': 1, 'type': 'LspMarkdownThematicBreak', 'length': 240}],
 	[]
       ]
     ],
@@ -828,7 +828,8 @@ def g:Test_Markdown()
       ],
       # Expected text properties
       [
-	[]
+	[{'col': 7, 'type': 'LspMarkdownLink', 'length': 18},
+	 {'col': 35, 'type': 'LspMarkdownLink', 'length': 16}]
       ]
     ],
     [
@@ -863,9 +864,12 @@ def g:Test_Markdown()
       ],
       # Expected text properties
       [
-	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}],
-	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}],
-	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}]
+      [{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3},
+       {'col': 4, 'type': 'LspMarkdownTaskMarker', 'length': 3}],
+      [{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3},
+       {'col': 4, 'type': 'LspMarkdownTaskMarker', 'length': 3}],
+      [{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3},
+       {'col': 4, 'type': 'LspMarkdownTaskMarker', 'length': 3}]
       ]
     ],
     [
@@ -1427,7 +1431,8 @@ def g:Test_Markdown()
       ],
       # Expected text properties
       [
-	[]
+	[{'col': 7, 'type': 'LspMarkdownLink', 'length': 28},
+	 {'col': 40, 'type': 'LspMarkdownLink', 'length': 15}]
       ]
     ],
     [
@@ -1506,7 +1511,8 @@ def g:Test_Markdown()
       ],
       # Expected text properties
       [
-	[]
+	[{'col': 9, 'type': 'LspMarkdownLink', 'length': 16},
+	 {'col': 36, 'type': 'LspMarkdownLink', 'length': 15}]
       ]
     ],
     [
@@ -1678,9 +1684,12 @@ def g:Test_Markdown()
       ],
       # Expected text properties
       [
-	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}],
-	[{'col': 4, 'type': 'LspMarkdownListMarker', 'length': 3}],
-	[{'col': 4, 'type': 'LspMarkdownListMarker', 'length': 3}]
+      [{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3},
+       {'col': 4, 'type': 'LspMarkdownTaskMarker', 'length': 3}],
+      [{'col': 4, 'type': 'LspMarkdownListMarker', 'length': 3},
+       {'col': 7, 'type': 'LspMarkdownTaskMarker', 'length': 3}],
+      [{'col': 4, 'type': 'LspMarkdownListMarker', 'length': 3},
+       {'col': 7, 'type': 'LspMarkdownTaskMarker', 'length': 3}]
       ]
     ],
     [
@@ -1716,7 +1725,8 @@ def g:Test_Markdown()
       ],
       # Expected text properties
       [
-	[{'col': 1, 'type': 'LspMarkdownCode', 'length': 15}]
+	[{'col': 1, 'type': 'LspMarkdownCode', 'length': 15},
+	 {'col': 21, 'type': 'LspMarkdownLink', 'length': 15}]
       ]
     ],
     [

@@ -39,6 +39,12 @@ var punctuation = "[!\"#$%&'()*+,-./:;<=>?@[\\\\\\\]^_`{|}~]"
 highlight LspBold term=bold cterm=bold gui=bold
 highlight LspItalic term=italic cterm=italic gui=italic
 highlight LspStrikeThrough term=strikethrough cterm=strikethrough gui=strikethrough
+highlight default link LspMarkdownLink Underlined
+highlight default link LspMarkdownThematicBreak Special
+highlight default link LspMarkdownTaskMarker Todo
+highlight default link LspMarkdownBlockquoteMarker Comment
+highlight default link LspMarkdownCodeFence Type
+highlight default link LspMarkdownLanguage Type
 prop_type_add('LspMarkdownBold', {highlight: 'LspBold'})
 prop_type_add('LspMarkdownItalic', {highlight: 'LspItalic'})
 prop_type_add('LspMarkdownStrikeThrough', {highlight: 'LspStrikeThrough'})
@@ -48,6 +54,12 @@ prop_type_add('LspMarkdownCodeBlock', {highlight: 'PreProc'})
 prop_type_add('LspMarkdownListMarker', {highlight: 'Special'})
 prop_type_add('LspMarkdownTableHeader', {highlight: 'Label'})
 prop_type_add('LspMarkdownTableMarker', {highlight: 'Special'})
+prop_type_add('LspMarkdownLink', {highlight: 'LspMarkdownLink'})
+prop_type_add('LspMarkdownThematicBreak', {highlight: 'LspMarkdownThematicBreak'})
+prop_type_add('LspMarkdownTaskMarker', {highlight: 'LspMarkdownTaskMarker'})
+prop_type_add('LspMarkdownBlockquoteMarker', {highlight: 'LspMarkdownBlockquoteMarker'})
+prop_type_add('LspMarkdownCodeFence', {highlight: 'LspMarkdownCodeFence'})
+prop_type_add('LspMarkdownLanguage', {highlight: 'LspMarkdownLanguage'})
 
 
 def GetMarkerProp(marker: string, col: number, ...opt: list<any>): dict<any>
@@ -106,8 +118,120 @@ def GetMarkerProp(marker: string, col: number, ...opt: list<any>): dict<any>
       col: col,
       length: opt[0]
     }
+  elseif marker == 'thematic_break'
+    return {
+      type: 'LspMarkdownThematicBreak',
+      col: col,
+      length: opt[0]
+    }
+  elseif marker == 'link'
+    return {
+      type: 'LspMarkdownLink',
+      col: col,
+      length: opt[0]
+    }
+  elseif marker == 'task_marker'
+    return {
+      type: 'LspMarkdownTaskMarker',
+      col: col,
+      length: opt[0]
+    }
+  elseif marker == 'blockquote_marker'
+    return {
+      type: 'LspMarkdownBlockquoteMarker',
+      col: col,
+      length: opt[0]
+    }
+  elseif marker == 'code_fence'
+    return {
+      type: 'LspMarkdownCodeFence',
+      col: col,
+      length: opt[0]
+    }
+  elseif marker == 'language'
+    return {
+      type: 'LspMarkdownLanguage',
+      col: col,
+      length: opt[0]
+    }
   endif
   return {}
+enddef
+
+def IsRangeOverlapped(props: list<dict<any>>, col: number, length: number, ...types: list<string>): bool
+  if length <= 0
+    return false
+  endif
+  var start_col = col
+  var end_col = col + length - 1
+  for prop in props
+    if types->index(prop.type) < 0
+      continue
+    endif
+    var prop_end = prop.col + prop.length - 1
+    if start_col <= prop_end && end_col >= prop.col
+      return true
+    endif
+  endfor
+  return false
+enddef
+
+def AddAutoLinkProps(text: string, props: list<dict<any>>, rel_pos: number): list<dict<any>>
+  var link_props: list<dict<any>> = []
+  var patterns = [
+	'<https\?://[^>[:space:]]\+>',
+	'https\?://[[:alnum:]][[:alnum:]/?&=#._~%:+-]*',
+	'\<www\.[[:alnum:]][[:alnum:]/?&=#._~%:+-]*',
+	'\<[[:alnum:]._%+-]\+@[[:alnum:].-]\+\.[[:alpha:]]\{2,}\>'
+  ]
+
+  for pattern in patterns
+    var pos = 0
+    while pos < text->len()
+      var matched = text->matchstrpos(pattern, pos)
+      if matched[1] < 0
+	break
+      endif
+      var raw = matched[0]
+      var start_col = matched[1] + 1
+      var length = raw->len()
+      if raw[0] == '<' && raw[-1] == '>'
+	start_col += 1
+	length -= 2
+      endif
+      var target = text->strpart(start_col - 1, length)
+      var trimmed = target->substitute('[.,;:!?]\+$', '', '')
+      if trimmed->len() > 0
+	var link_col = start_col
+	var link_len = trimmed->len()
+	if !IsRangeOverlapped(props, link_col, link_len, 'LspMarkdownCode')
+	    && !IsRangeOverlapped(link_props, rel_pos + link_col, link_len, 'LspMarkdownLink')
+    var link_prop = GetMarkerProp('link', rel_pos + link_col, link_len)
+    var insert_idx = 0
+    while insert_idx < link_props->len() && link_props[insert_idx].col <= link_prop.col
+      insert_idx += 1
+    endwhile
+    link_props->insert(link_prop, insert_idx)
+	endif
+      endif
+      pos = matched[2]
+    endwhile
+  endfor
+
+  return link_props
+enddef
+
+def AddTaskMarkerProp(line: dict<any>): void
+  for prop in line.props
+    if prop.type != 'LspMarkdownListMarker'
+      continue
+    endif
+    var start = prop.col + prop.length
+    if start + 2 <= line.text->len() && line.text->strpart(start - 1, 3) =~ '^\[[ xX]\]$'
+      line.props->add(GetMarkerProp('task_marker', start, 3))
+    endif
+    break
+  endfor
 enddef
 
 def GetCodeSpans(text: string): list<dict<any>>
@@ -446,6 +570,7 @@ def ParseInlines(text: string, rel_pos: number = 0): dict<any>
   if pos < input_text->len()
     formatted.text ..= Unescape(input_text->strpart(pos))
   endif
+  formatted.props += AddAutoLinkProps(formatted.text, formatted.props, rel_pos)
   return formatted
 enddef
 
@@ -670,6 +795,7 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
 
 	line.text ..= format.text
 	line.props += format.props
+  AddTaskMarkerProp(line)
 	document.content += SplitLine(line)
       elseif block.type == 'table'
 	var indent = line.text
@@ -723,6 +849,7 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
 	var format = ParseInlines(block.text->join("\n")->substitute('\s\+$', '', ''), indent)
 	line.text ..= format.text
 	line.props += format.props
+  AddTaskMarkerProp(line)
 	document.content += SplitLine(line, indent)
       endif
     endif
@@ -851,11 +978,14 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
     # a thematic break close all previous blocks
     if line =~ thematic_break
       CloseBlocks(document, open_blocks)
+      var hr_text: string
       if &g:encoding == 'utf-8'
-	document.content->add({text: "\u2500"->repeat(width), props: []})
+	hr_text = "\u2500"->repeat(width)
       else
-	document.content->add({text: '-'->repeat(width), props: []})
+	hr_text = '-'->repeat(width)
       endif
+      document.content->add({text: hr_text,
+	props: [GetMarkerProp('thematic_break', 1, hr_text->len())]})
       last_block = 'hr'
       continue
     endif
