@@ -19,18 +19,19 @@ export var list_pattern = $'^ *\%({list_marker}\) *'
 # Leaf blocks
 var blank_line = '^\s*$'
 var thematic_break = '^ \{,3\}\([-_*]\)\%(\s*\1\)\{2,\}\s*$'
-var code_fence = '^ \{,3\}\(`\{3,\}\|\~\{3,\}\)\s*\(\S*\)'
+var code_fence = '^ \{,3\}\(`\{3,\}\|\~\{3,\}\)\s*\([^`]*\)'
 var code_indent = '^ \{4\}\zs\s*\S.*'
 var paragraph = '^\s*\zs\S.\{-}\s*\ze$'
 var html_block_open = '^ \{,3}<\([A-Za-z][A-Za-z0-9-]*\)\%([ \t][^>]*\)\?>\s*$'
 var html_comment_open = '^ \{,3}<!--\s*$'
 
-var atx_heading = '^ \{,3}\zs\(#\{1,6}\) \s*\(.\{-}\)\s*\ze\%( #\{1,}\s*\)\=$'
+var atx_heading = '^ \{,3}\zs\(#\{1,6}\)\%( \s*\(.\{-}\)\s*\ze\%( #\{1,}\s*\)\=\)\=$'
 var setext_heading = '^ \{,3}\zs\%(=\{1,}\|-\{1,}\)\ze *$'
 var setext_heading_level = {"=": 1, "-": 2}
 
 var table_delimiter = '^|\=\zs *:\=-\{1,}:\= *\%(| *:\=-\{1,}:\= *\)*\ze|\=$'
 var link_reference_def = '^ \{,3}\[\([^][]\+\)\]:\s*\(\S\+\)\%(.\{-}\)\=$'
+var link_reference_title_cont = '^ \{1,3}\%(".*"\|(.*)\|''.*''\)\s*$'
 
 var punctuation = "[!\"#$%&'()*+,-./:;<=>?@[\\\\\\\]^_`{|}~]"
 
@@ -203,8 +204,16 @@ def StripInlineLinks(text: string): string
   result = ResolveReferenceLinks(result)
   result = result->substitute('<\(https\?://[^>[:space:]]\+\)>', '\1', 'g')
   result = result->substitute('<\([^< >]\+@[^< >]\+\)>', '\1', 'g')
-  result = result->substitute('\!\=\[\([^][]\+\)\](\s*<[^>]\+>\s*)', '\1', 'g')
-  result = result->substitute('\!\=\[\([^][]\+\)\](\s*[^()[:space:]]\+\%(([^()]*)[^()[:space:]]*\)*\s*)', '\1', 'g')
+  # Handle links - must preserve link text, remove link syntax
+  # Empty URL: [text]()
+  result = result->substitute('\!\=\[\([^][]*\)\](\s*)', '\1', 'g')
+  # URL with angle brackets and optional title: [text](<url> "title")
+  result = result->substitute('\!\=\[\([^][]*\)\](\s*<[^>]\+>\s*\%("[^"]*"\|''[^'']*''\|(\([^)]\|\\.\)*)\)\=\s*)', '\1', 'g')
+  # URL (possibly with parens) and optional title: [text](url "title")
+  result = result->substitute('\!\=\[\([^][]*\)\](\s*[^()[:space:]]\+\%(([^()]*)[^()[:space:]]*\)*\s*\%("[^"]*"\|''[^'']*''\|(\([^)]\|\\.\)*)\)\=\s*)', '\1', 'g')
+  # Handle links with titles in angle brackets, quotes, or parentheses
+  result = result->substitute('\!\=\[\([^][]\+\)\](\s*<[^>]\+>\s*\%("[^"]*"\|''[^'']*''\|(\([^)]\|\\.\)*)\)\=\s*)', '\1', 'g')
+  result = result->substitute('\!\=\[\([^][]\+\)\](\s*[^()[:space:]]\+\%(([^()]*)[^()[:space:]]*\)*\s*\%("[^"]*"\|''[^'']*''\|(\([^)]\|\\.\)*)\)\=\s*)', '\1', 'g')
   while true
     var stripped = result->substitute('\!\=\[\([^][]\+\)\](\s*[^)]\+\s*)', '\1', 'g')
     if stripped == result
@@ -216,22 +225,25 @@ def StripInlineLinks(text: string): string
 enddef
 
 def PreprocessInlineText(text: string): string
-  var code_spans = GetCodeSpans(text)
+  # First strip links, then detect code spans, then decode HTML entities outside code spans
+  var text_no_links = StripInlineLinks(text)
+  var code_spans = GetCodeSpans(text_no_links)
   if code_spans->empty()
-    return DecodeHtmlEntities(StripInlineLinks(text))
+    return DecodeHtmlEntities(text_no_links)
   endif
   var result = ''
   var pos = 0
   for span in code_spans
     if pos < span.start[0]
-      var seg = text->strpart(pos, span.start[0] - pos)
-      result ..= DecodeHtmlEntities(StripInlineLinks(seg))
+      var seg = text_no_links->strpart(pos, span.start[0] - pos)
+      result ..= DecodeHtmlEntities(seg)
     endif
-    result ..= text->strpart(span.start[0], span.end[1] - span.start[0])
+    # Preserve code span content exactly, including HTML entities
+    result ..= text_no_links->strpart(span.start[0], span.end[1] - span.start[0])
     pos = span.end[1]
   endfor
-  if pos < text->len()
-    result ..= DecodeHtmlEntities(StripInlineLinks(text->strpart(pos)))
+  if pos < text_no_links->len()
+    result ..= DecodeHtmlEntities(text_no_links->strpart(pos))
   endif
   return result
 enddef
@@ -269,11 +281,17 @@ def GetNextInlineDelimiter(text: string, start_pos: number, end_pos: number): di
       pos = delimiter_run[2]
       continue
     endif
+    # GFM emphasis rules per spec:
+    # For underscore: simpler rule - skip if surrounded by word chars on both sides (intra-word)
+    # For asterisk: no restrictions (allows intra-word)
     if delimiter_run[0][0] == '_'
-	&& text->match($'^\w{delimiter_run[0]}\w', pos) >= 0
-      # intraword emphasis is disallowed
-      pos = delimiter_run[2]
-      continue
+      var preceded_by_word = delimiter_run[1] > 0 && text[delimiter_run[1] - 1] =~ '\w'
+      var followed_by_word = delimiter_run[2] < text->len() && text[delimiter_run[2]] =~ '\w'
+      if preceded_by_word && followed_by_word
+	# Underscore intra-word emphasis is disallowed
+	pos = delimiter_run[2]
+	continue
+      endif
     endif
     return {
       marker: delimiter_run[0],
@@ -603,13 +621,16 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
 	endif
 	if !block.text->empty()
 	  var indent = ' '->repeat(line.text->len())
-	  var max_len = mapnew(block.text, (_, l) => l->len())->max()
 	  var text = block.text->remove(0)
 	  line.text ..= text
 	  document.content->add(line)
 	  var startline = document.content->len()
+	  var max_len = text->len()
 	  for l in block.text
 	    document.content->add({text: indent .. l, props: []})
+	    if l->len() > max_len
+	      max_len = l->len()
+	    endif
 	  endfor
 	  if block->has_key('language')
 	      && !globpath(&rtp, $'syntax/{block.language}.vim')->empty()
@@ -617,10 +638,11 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
 				  start: $'\%{startline}l\%{indent->len() + 1}c',
 				  end: $'\%{document.content->len()}l$'})
 	  else
+	    # end_col is maximum content line length (rightmost column for multi-line highlight)
 	    line.props->add(GetMarkerProp('code_block',
 					  indent->len() + 1,
 					  document.content->len(),
-					  indent->len() + max_len + 1))
+					  max_len + 1))
 	  endif
 	endif
       elseif block.type == 'html_block'
@@ -729,14 +751,21 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
   reference_defs = {}
   var filtered_data: list<string> = []
 
-  for l in data
+  var idx = 0
+  while idx < data->len()
+    var l = data[idx]
     var ref = l->matchlist(link_reference_def)
     if ref->len() > 0
       reference_defs[NormalizeReferenceLabel(ref[1])] = ref[2]
+      if idx + 1 < data->len() && data[idx + 1] =~ link_reference_title_cont
+	idx += 1
+      endif
+      idx += 1
       continue
     endif
     filtered_data->add(l)
-  endfor
+    idx += 1
+  endwhile
 
   for l in filtered_data
     var line: string = ExpandTabs(l)
@@ -874,7 +903,8 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
     elseif line =~ atx_heading
       CloseBlocks(document, open_blocks, cur)
       var token = line->matchlist(atx_heading)
-      open_blocks->add(CreateLeafBlock('heading', token[2], token[1]->len()))
+      var heading_text = token->len() > 2 ? token[2] : ''
+      open_blocks->add(CreateLeafBlock('heading', heading_text, token[1]->len()))
       CloseBlocks(document, open_blocks, cur)
     elseif line =~ html_comment_open
       CloseBlocks(document, open_blocks, cur)

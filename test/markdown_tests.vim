@@ -1719,6 +1719,768 @@ def g:Test_Markdown()
 	[{'col': 1, 'type': 'LspMarkdownCode', 'length': 15}]
       ]
     ],
+    [
+      # Collapsed reference image
+      # Input text
+      [
+	'Look ![logo][] now.',
+	'',
+	'[logo]: https://img.example/logo.png'
+      ],
+      # Expected text
+      [
+	'Look logo now.'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # Reference definition with multiline title
+      # Input text
+      [
+	'Check [site][s].',
+	'',
+	'[s]: https://example.com',
+	'  "Example title"'
+      ],
+      # Expected text
+      [
+	'Check site.'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # Raw script HTML block is preserved
+      # Input text
+      [
+	'<script>',
+	'*not italic*',
+	'const x = 1',
+	'</script>'
+      ],
+      # Expected text
+      [
+	'<script>',
+	'*not italic*',
+	'const x = 1',
+	'</script>'
+      ],
+      # Expected text properties
+      [
+	[],
+	[],
+	[],
+	[]
+      ]
+    ],
+    [
+      # Fenced code with up to three-space indentation
+      # Input text
+      [
+	'   ```',
+	'indented fence content',
+	'   ```',
+	'after'
+      ],
+      # Expected text
+      [
+	'indented fence content',
+	'',
+	'after'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownCodeBlock', 'end_lnum': 1, 'end_col': 23}],
+	[],
+	[]
+      ]
+    ],
+    [
+      # Invalid table delimiter row is not parsed as table
+      # Input text
+      [
+	'| H1 | H2 |',
+	'|----|',
+	'| a | b |'
+      ],
+      # Expected text
+      [
+	'| H1 | H2 | |----| | a | b |'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # ATX heading with 7 or more hashes (not a heading)
+      # Input text
+      [
+	'####### Seven hashes',
+	'######## Eight hashes'
+      ],
+      # Expected text
+      [
+	'####### Seven hashes ######## Eight hashes'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # Setext heading with 4+ space indentation (code block, not heading)
+      # Input text
+      [
+	'    Indented text',
+	'    ==='
+      ],
+      # Expected text
+      [
+	'Indented text',
+	'==='
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownCodeBlock', 'end_lnum': 2, 'end_col': 14}],
+	[]
+      ]
+    ],
+    [
+      # Code span with leading and trailing spaces (trimmed to single space)
+      # Input text
+      [
+	'Text `  spaced  ` here.'
+      ],
+      # Expected text
+      [
+	'Text  spaced  here.'
+      ],
+      # Expected text properties
+      [
+	[{'col': 6, 'type': 'LspMarkdownCode', 'length': 8}]
+      ]
+    ],
+    [
+      # Code span with internal line ending
+      # Input text
+      [
+	'Code `with',
+	'newline` text.'
+      ],
+      # Expected text
+      [
+	'Code with newline text.'
+      ],
+      # Expected text properties
+      [
+	[{'col': 6, 'type': 'LspMarkdownCode', 'length': 12}]
+      ]
+    ],
+    [
+      # Emphasis with left-flanking and right-flanking delimiter rules
+      # Input text
+      [
+	'*before* and *after*.',
+	'Not*emphasized*at*all.',
+	'_before_ and _after_.'
+      ],
+      # Expected text
+      [
+	'before and after. Notemphasizedat*all. before and after.'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownItalic', 'length': 6},
+	 {'col': 12, 'type': 'LspMarkdownItalic', 'length': 5},
+	 {'col': 22, 'type': 'LspMarkdownItalic', 'length': 10},
+	 {'col': 40, 'type': 'LspMarkdownItalic', 'length': 6},
+	 {'col': 51, 'type': 'LspMarkdownItalic', 'length': 5}]
+      ]
+    ],
+    [
+      # Lazy continuation in lists
+      # Input text
+      [
+	'- First item',
+	'continues here',
+	'- Second item'
+      ],
+      # Expected text
+      [
+	' - First item continues here',
+	' - Second item'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}]
+      ]
+    ],
+    [
+      # Fenced code block with 4+ space indentation (not a code block)
+      # Input text
+      [
+	'    ```',
+	'    content',
+	'    ```'
+      ],
+      # Expected text
+      [
+	'```',
+	'content',
+	'```'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownCodeBlock', 'end_lnum': 3, 'end_col': 8}],
+	[],
+	[]
+      ]
+    ],
+    [
+      # Deeply nested block quotes
+      # Input text
+      [
+	'> Level 1',
+	'> > Level 2',
+	'> > > Level 3',
+	'> > Back to 2',
+	'> Back to 1'
+      ],
+      # Expected text
+      [
+	'Level 1',
+	'Level 2',
+	'Level 3 Back to 2 Back to 1'
+      ],
+      # Expected text properties
+      [
+	[],
+	[],
+	[]
+      ]
+    ],
+    [
+      # Link with title in double quotes
+      # Input text
+      [
+	'Link [here](https://example.com "Title with spaces").'
+      ],
+      # Expected text
+      [
+	'Link here.'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # Link with title in single quotes
+      # Input text
+      [
+	'Link [here](https://example.com ''Single quote title'').'
+      ],
+      # Expected text
+      [
+	'Link here.'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # Link with title in parentheses
+      # Input text
+      [
+	'Link [here](https://example.com (Paren title)).'
+      ],
+      # Expected text
+      [
+	'Link here.'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # Empty link text
+      # Input text
+      [
+	'Empty [](https://example.com) link.'
+      ],
+      # Expected text
+      [
+	'Empty  link.'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # Emphasis delimiter run with mixed content
+      # Input text
+      [
+	'**bold _nested italic_ end**'
+      ],
+      # Expected text
+      [
+	'bold nested italic end'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownBold', 'length': 22},
+	 {'col': 6, 'type': 'LspMarkdownItalic', 'length': 13}]
+      ]
+    ],
+    [
+      # List item with lazy continuation and code span
+      # Input text
+      [
+	'- Item with `code`',
+	'continues here'
+      ],
+      # Expected text
+      [
+	' - Item with code continues here'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3},
+	 {'col': 14, 'type': 'LspMarkdownCode', 'length': 4}]
+      ]
+    ],
+    [
+      # List starting at arbitrary number (maintains number)
+      # Input text
+      [
+	'7. Seventh',
+	'8. Eighth',
+	'9. Ninth'
+      ],
+      # Expected text
+      [
+	' 7. Seventh',
+	' 8. Eighth',
+	' 9. Ninth'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 4}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 4}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 4}]
+      ]
+    ],
+    [
+      # List with multiple blank lines between items
+      # Input text
+      [
+	'- First item',
+	'',
+	'',
+	'- Second item'
+      ],
+      # Expected text
+      [
+	' - First item',
+	' - Second item'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}]
+      ]
+    ],
+    [
+      # Nested emphasis with different markers
+      # Input text
+      [
+	'***bold and italic*** vs **bold with *italic* inside**'
+      ],
+      # Expected text
+      [
+	'bold and italic vs bold with italic inside'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownItalic', 'length': 15},
+	 {'col': 1, 'type': 'LspMarkdownBold', 'length': 15},
+	 {'col': 20, 'type': 'LspMarkdownBold', 'length': 23},
+	 {'col': 30, 'type': 'LspMarkdownItalic', 'length': 6}]
+      ]
+    ],
+    [
+      # Code block with mixed indentation
+      # Input text
+      [
+	'    line 1',
+	'      line 2 indented',
+	'    line 3'
+      ],
+      # Expected text
+      [
+	'line 1',
+	'  line 2 indented',
+	'line 3'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownCodeBlock', 'end_lnum': 3, 'end_col': 18}],
+	[],
+	[]
+      ]
+    ],
+    [
+      # Table with empty cells
+      # Input text
+      [
+	'| A | B | C |',
+	'|---|---|---|',
+	'| 1 |   | 3 |',
+	'|   | 2 |   |'
+      ],
+      # Expected text
+      [
+	' A | B | C ',
+	'---|---|---',
+	' 1 |   | 3 ',
+	'   | 2 |   '
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownTableHeader', 'length': 3},
+	 {'col': 4, 'type': 'LspMarkdownTableMarker', 'length': 1},
+	 {'col': 5, 'type': 'LspMarkdownTableHeader', 'length': 3},
+	 {'col': 8, 'type': 'LspMarkdownTableMarker', 'length': 1},
+	 {'col': 9, 'type': 'LspMarkdownTableHeader', 'length': 3}],
+	[{'col': 1, 'type': 'LspMarkdownTableMarker', 'length': 11}],
+	[{'col': 4, 'type': 'LspMarkdownTableMarker', 'length': 1},
+	 {'col': 8, 'type': 'LspMarkdownTableMarker', 'length': 1}],
+	[{'col': 4, 'type': 'LspMarkdownTableMarker', 'length': 1},
+	 {'col': 8, 'type': 'LspMarkdownTableMarker', 'length': 1}]
+      ]
+    ],
+    [
+      # Setext heading interrupted by thematic break
+      # Input text
+      [
+	'Heading text',
+	'---'
+      ],
+      # Expected text
+      [
+	'Heading text'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 12}]
+      ]
+    ],
+    [
+      # Block quote with multiple paragraphs
+      # Input text
+      [
+	'> First paragraph in quote.',
+	'>',
+	'> Second paragraph in quote.'
+      ],
+      # Expected text
+      [
+	'First paragraph in quote.',
+	'Second paragraph in quote.'
+      ],
+      # Expected text properties
+      [
+	[],
+	[]
+      ]
+    ],
+    [
+      # Emphasis immediately before/after punctuation
+      # Input text
+      [
+	'(*italic*) and [**bold**] and {_underscore_}.'
+      ],
+      # Expected text
+      [
+	'(italic) and [bold] and {underscore}.'
+      ],
+      # Expected text properties
+      [
+	[{'col': 2, 'type': 'LspMarkdownItalic', 'length': 6},
+	 {'col': 15, 'type': 'LspMarkdownBold', 'length': 4},
+	 {'col': 26, 'type': 'LspMarkdownItalic', 'length': 10}]
+      ]
+    ],
+    [
+      # List with deeply nested items (3+ levels)
+      # Input text
+      [
+	'- Level 1',
+	'  - Level 2',
+	'    - Level 3',
+	'      - Level 4'
+      ],
+      # Expected text
+      [
+	' - Level 1',
+	'    - Level 2',
+	'       - Level 3',
+	'          - Level 4'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[{'col': 4, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[{'col': 7, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[{'col': 10, 'type': 'LspMarkdownListMarker', 'length': 3}]
+      ]
+    ],
+    [
+      # HTML entity in code span (preserved)
+      # Input text
+      [
+	'Code `&lt;tag&gt;` and normal &lt;tag&gt;.'
+      ],
+      # Expected text
+      [
+	'Code &lt;tag&gt; and normal <tag>.'
+      ],
+      # Expected text properties
+      [
+	[{'col': 6, 'type': 'LspMarkdownCode', 'length': 11}]
+      ]
+    ],
+    [
+      # Fenced code with info string and attributes
+      # Input text
+      [
+	'```javascript {.highlight}',
+	'console.log("test");',
+	'```'
+      ],
+      # Expected text
+      [
+	'console.log("test");'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownCodeBlock', 'end_lnum': 1, 'end_col': 21}]
+      ]
+    ],
+    [
+      # Mixed ordered and unordered lists
+      # Input text
+      [
+	'1. Ordered item',
+	'2. Second ordered',
+	'- Unordered item',
+	'- Another unordered'
+      ],
+      # Expected text
+      [
+	' 1. Ordered item',
+	' 2. Second ordered',
+	' - Unordered item',
+	' - Another unordered'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 4}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 4}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}]
+      ]
+    ],
+    [
+      # Strikethrough with bold and italic
+      # Input text
+      [
+	'~~**bold strike**~~ and ~~*italic strike*~~'
+      ],
+      # Expected text
+      [
+	'bold strike and italic strike'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownStrikeThrough', 'length': 11},
+	 {'col': 1, 'type': 'LspMarkdownBold', 'length': 11},
+	 {'col': 17, 'type': 'LspMarkdownStrikeThrough', 'length': 13},
+	 {'col': 17, 'type': 'LspMarkdownItalic', 'length': 13}]
+      ]
+    ],
+    [
+      # Link with empty URL
+      # Input text
+      [
+	'Link [text]() is empty.'
+      ],
+      # Expected text
+      [
+	'Link text is empty.'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # Code fence with tilde and language having special chars
+      # Input text
+      [
+	'~~~c++',
+	'int main() { }',
+	'~~~'
+      ],
+      # Expected text
+      [
+	'int main() { }'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownCodeBlock', 'end_lnum': 1, 'end_col': 15}]
+      ]
+    ],
+    [
+      # ATX heading with only hashes (no space, no content)
+      # Input text
+      [
+	'###'
+      ],
+      # Expected text
+      [
+	''
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 0}]
+      ]
+    ],
+    [
+      # List item with paragraph and indented code
+      # Input text
+      [
+	'- List item paragraph',
+	'',
+	'      indented code in list',
+	'',
+	'- Next item'
+      ],
+      # Expected text
+      [
+	' - List item paragraph',
+	'',
+	'  indented code in list',
+	'',
+	' - Next item'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}],
+	[],
+	[{'col': 1, 'type': 'LspMarkdownCodeBlock', 'end_lnum': 3, 'end_col': 24}],
+	[],
+	[{'col': 1, 'type': 'LspMarkdownListMarker', 'length': 3}]
+      ]
+    ],
+    [
+      # Hard line break at end of heading (ignored)
+      # Input text
+      [
+	'# Heading with break  ',
+	'Next paragraph'
+      ],
+      # Expected text
+      [
+	'Heading with break',
+	'',
+	'Next paragraph'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownHeading', 'length': 18}],
+	[],
+	[]
+      ]
+    ],
+    [
+      # Thematic break with mixed markers (not valid)
+      # Input text
+      [
+	'Before',
+	'*-*',
+	'After'
+      ],
+      # Expected text
+      [
+	'Before *-* After'
+      ],
+      # Expected text properties
+      [
+	[]
+      ]
+    ],
+    [
+      # Code span at start and end of line
+      # Input text
+      [
+	'`start` middle `end`'
+      ],
+      # Expected text
+      [
+	'start middle end'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownCode', 'length': 5},
+	 {'col': 14, 'type': 'LspMarkdownCode', 'length': 3}]
+      ]
+    ],
+    [
+      # Reference link with complex label
+      # Input text
+      [
+	'See [label with **bold**][ref].',
+	'',
+	'[ref]: https://example.com'
+      ],
+      # Expected text
+      [
+	'See label with bold.'
+      ],
+      # Expected text properties
+      [
+	[{'col': 16, 'type': 'LspMarkdownBold', 'length': 4}]
+      ]
+    ],
+    [
+      # Double emphasis with underscore and asterisk
+      # Input text
+      [
+	'_italic_ and **bold** and **_both_**'
+      ],
+      # Expected text
+      [
+	'italic and bold and both'
+      ],
+      # Expected text properties
+      [
+	[{'col': 1, 'type': 'LspMarkdownItalic', 'length': 6},
+	 {'col': 12, 'type': 'LspMarkdownBold', 'length': 4},
+	 {'col': 21, 'type': 'LspMarkdownBold', 'length': 4},
+	 {'col': 21, 'type': 'LspMarkdownItalic', 'length': 4}]
+      ]
+    ],
   ]
 
   var doc: dict<list<any>>
