@@ -93,6 +93,11 @@ export var lspOptions: dict<any> = {
   # Allowed valuse: 'default' | 'truncate' | 'wrap' (default is 'default')
   diagVirtualTextWrap: 'default',
 
+  # Max number of diagnostics to process when receiving diagnostic notifications
+  # from the server, processing many hundreds of diagnostics is slow, especially
+  # when offset positions also need to be decoded
+  maxDiagnostics: 200,
+
   # Suppress adding a new line on completion selection with <CR>
   noNewlineInCompletion: false,
 
@@ -214,6 +219,9 @@ export var lspOptions: dict<any> = {
 
   # Ignore >ItemsIsIncomplete< messages from misbehaving servers:
   ignoreCompleteItemsIsIncomplete: [],
+
+  # Text format for documentation and hovers.
+  documentationFormat: ['markdown', 'plaintext'],
 }
 
 # set the LSP plugin options from the user provided option values

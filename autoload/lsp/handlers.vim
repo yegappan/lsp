@@ -8,11 +8,6 @@ import './util.vim'
 import './diag.vim'
 import './textedit.vim'
 
-# Process various reply messages from the LSP server
-export def ProcessReply(lspserver: dict<any>, req: dict<any>, reply: dict<any>): void
-  util.ErrMsg($'Unsupported reply received from LSP server: {reply->string()} for request: {req->string()}')
-enddef
-
 # process a diagnostic notification message from the LSP server
 # Notification: textDocument/publishDiagnostics
 # Param: PublishDiagnosticsParams
@@ -83,6 +78,47 @@ def ProcessUnsupportedNotifOnce(lspserver: dict<any>, reply: dict<any>)
   endif
 enddef
 
+# Global progress state: { token: { title, message, percentage, serverName } }
+if !exists('g:LspProgress')
+  g:LspProgress = {}
+endif
+
+# process the $/progress notification
+# Notification: $/progress
+# Param: ProgressParams { token, value: WorkDoneProgressBegin | Report | End }
+def ProcessProgressNotif(lspserver: dict<any>, reply: dict<any>)
+  var params = reply.params
+  var token = params.token
+  var value = params.value
+
+  if value.kind == 'begin'
+    g:LspProgress[token] = {
+      title: value->get('title', ''),
+      message: value->get('message', ''),
+      percentage: value->get('percentage', -1),
+      serverName: lspserver.name
+    }
+  elseif value.kind == 'report'
+    if g:LspProgress->has_key(token)
+      if value->has_key('message')
+        g:LspProgress[token].message = value.message
+      endif
+      if value->has_key('percentage')
+        g:LspProgress[token].percentage = value.percentage
+      endif
+    endif
+  elseif value.kind == 'end'
+    if g:LspProgress->has_key(token)
+      g:LspProgress->remove(token)
+    endif
+  endif
+
+  # Trigger statusline refresh
+  if exists('#User#LspProgressUpdate')
+    doautocmd <nomodeline> User LspProgressUpdate
+  endif
+enddef
+
 # process notification messages from the LSP server
 export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
   var lsp_notif_handlers: dict<func> =
@@ -92,13 +128,13 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
       'textDocument/publishDiagnostics': ProcessDiagNotif,
       '$/logTrace': ProcessLogTraceNotif,
       'telemetry/event': ProcessUnsupportedNotifOnce,
+      '$/progress': ProcessProgressNotif,
     }
 
   # Explicitly ignored notification messages (many of them are specific to a
   # particular language server)
   var lsp_ignored_notif_handlers: list<string> =
     [
-      '$/progress',
       '$/status/report',
       '$/status/show',
       # PHP intelephense server sends the "indexingStarted" and
@@ -313,24 +349,8 @@ export def ProcessMessages(lspserver: dict<any>): void
 
   msg = lspserver.data
   if msg->has_key('result') || msg->has_key('error')
-    # response message from the server
-    req = lspserver.requests->get(msg.id->string(), {})
-    if !req->empty()
-      # Remove the corresponding stored request message
-      lspserver.requests->remove(msg.id->string())
-
-      if msg->has_key('result')
-	lspserver.processReply(req, msg)
-      else
-	# request failed
-	var emsg: string = msg.error.message
-	emsg ..= $', code = {msg.error.code}'
-	if msg.error->has_key('data')
-	  emsg ..= $', data = {msg.error.data->string()}'
-	endif
-	util.ErrMsg($'request {req.method} failed ({emsg})')
-      endif
-    endif
+    # response message from the server not handled by vim channel job in LSP mode
+    util.ErrMsg($'Unrecognized id in reponse received from LSP server: {msg.id}')
   elseif msg->has_key('id') && msg->has_key('method')
     # request message from the server
     lspserver.processRequest(msg)

@@ -29,9 +29,14 @@ import './semantichighlight.vim'
 import './buffer.vim' as buf
 
 # LSP server standard output handler
+# LSP responses from server handled by channel job in LSP mode
 def Output_cb(lspserver: dict<any>, chan: channel, msg: any): void
   if lspserver.debug
-    lspserver.traceLog($'Received {msg->json_encode()}')
+    if msg->has_key('id')
+      lspserver.traceLog($'Got request {msg->json_encode()}')
+    else
+      lspserver.traceLog($'Got notification {msg->json_encode()}')
+    endif
   endif
   lspserver.data = msg
   lspserver.processMessages()
@@ -47,7 +52,6 @@ def Exit_cb(lspserver: dict<any>, job: job, status: number): void
   util.WarnMsg($'{strftime("%m/%d/%y %T")}: LSP server ({lspserver.name}) exited with status {status}')
   lspserver.running = false
   lspserver.ready = false
-  lspserver.requests = {}
 enddef
 
 # Start a LSP server
@@ -71,8 +75,6 @@ def StartServer(lspserver: dict<any>, bnr: number): number
 
   lspserver.data = ''
   lspserver.caps = {}
-  lspserver.nextID = 1
-  lspserver.requests = {}
   lspserver.omniCompletePending = false
   lspserver.completionLazyDoc = false
   lspserver.completionTriggerChars = []
@@ -256,7 +258,6 @@ def StopServer(lspserver: dict<any>): number
   endif
   lspserver.running = false
   lspserver.ready = false
-  lspserver.requests = {}
   return 0
 enddef
 
@@ -283,30 +284,8 @@ def ErrorLog(lspserver: dict<any>, errmsg: string)
   endif
 enddef
 
-# Return the next id for a LSP server request message
-def NextReqID(lspserver: dict<any>): number
-  var id = lspserver.nextID
-  lspserver.nextID = id + 1
-  return id
-enddef
-
-# create a LSP server request message
-def CreateRequest(lspserver: dict<any>, method: string): dict<any>
-  var req = {
-    jsonrpc: '2.0',
-    id: lspserver.nextReqID(),
-    method: method,
-    params: {}
-  }
-
-  # Save the request, so that the corresponding response can be processed
-  lspserver.requests->extend({[req.id->string()]: req})
-
-  return req
-enddef
-
 # create a LSP server response message
-def CreateResponse(lspserver: dict<any>, req_id: number): dict<any>
+def CreateResponse(lspserver: dict<any>, req_id: any): dict<any>
   var resp = {
     jsonrpc: '2.0',
     id: req_id
@@ -327,13 +306,11 @@ enddef
 
 # send a response message to the server
 def SendResponse(lspserver: dict<any>, request: dict<any>, result: any, error: dict<any>)
-  if (request.id->type() == v:t_string && request.id->trim()->empty())
-    || (request.id->type() != v:t_string && request.id->type() != v:t_number)
+  if request.id->type() != v:t_string && request.id->type() != v:t_number
     util.ErrMsg('request.id of response to LSP server must be a number or a string')
     return
   endif
-  var resp: dict<any> = lspserver.createResponse(
-	    request.id->type() == v:t_string ? request.id->str2nr() : request.id)
+  var resp: dict<any> = lspserver.createResponse(request.id)
   if error->empty()
     resp->extend({result: result})
   else
@@ -342,19 +319,31 @@ def SendResponse(lspserver: dict<any>, request: dict<any>, result: any, error: d
   lspserver.sendMessage(resp)
 enddef
 
-# Send a request message to LSP server
+# Send a message to LSP server without callback support
 def SendMessage(lspserver: dict<any>, content: dict<any>): void
   var job = lspserver.job
   if job->job_status() != 'run'
     # LSP server has exited
     return
   endif
-  job->ch_sendexpr(content)
-  if content->has_key('id')
-    if lspserver.debug
-      lspserver.traceLog($'Sent {content->json_encode()}')
+  if content->has_key('id') && content.id->type() == v:t_string
+    SendRawMessage(job, content)
+  else
+    job->ch_sendexpr(content)
+  endif
+  if lspserver.debug
+    if content->has_key('id')
+      lspserver.traceLog($'Sent response {content->json_encode()}')
+    else
+      lspserver.traceLog($'Sent notification {content->json_encode()}')
     endif
   endif
+enddef
+
+def SendRawMessage(job: job, content: dict<any>): void
+  var body = content->json_encode()
+  var rawmsg = $"Content-Length: {body->len()}\r\n\r\n{body}"
+  job->job_getchannel()->ch_sendraw(rawmsg)
 enddef
 
 # Send a notification message to the language server
@@ -416,15 +405,13 @@ def Rpc(lspserver: dict<any>, method: string, params: any, handleError: bool = t
     return {}
   endif
 
-  if lspserver.debug
-    lspserver.traceLog($'Sent {req->json_encode()}')
-  endif
-
   # Do the synchronous RPC call
   var reply = job->ch_evalexpr(req)
 
   if lspserver.debug
-    lspserver.traceLog($'Received {reply->json_encode()}')
+    var logreq = {id: reply.id}->extend(req)
+    lspserver.traceLog($'Sent request {logreq->json_encode()}')
+    lspserver.traceLog($'Got response {reply->json_encode()}')
   endif
 
   if reply->has_key('result')
@@ -443,7 +430,7 @@ enddef
 # LSP server asynchronous RPC callback
 def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel, reply: dict<any>)
   if lspserver.debug
-    lspserver.traceLog($'Received {reply->json_encode()}')
+    lspserver.traceLog($'Got response {reply->json_encode()}')
   endif
 
   if reply->empty()
@@ -468,7 +455,7 @@ def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel,
   RpcCb(lspserver, reply.result)
 enddef
 
-# Send a async RPC request message to the LSP server with a callback function.
+# Send an async RPC request message to the LSP server with a callback function.
 # Returns the LSP message id.  This id can be used to cancel the RPC request
 # (if needed).  Returns -1 on error.
 def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func): number
@@ -481,10 +468,6 @@ def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func): n
   if job->job_status() != 'run'
     # LSP server has exited
     return -1
-  endif
-
-  if lspserver.debug
-    lspserver.traceLog($'Sent {req->json_encode()}')
   endif
 
   # Do the asynchronous RPC call
@@ -503,19 +486,12 @@ def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func): n
     return -1
   endif
 
+  if lspserver.debug
+    var logreq = {id: reply.id}->extend(req)
+    lspserver.traceLog($'Sent request {logreq->json_encode()}')
+  endif
+
   return reply.id
-enddef
-
-# Wait for a response message from the LSP server for the request "req"
-# Waits for a maximum of 5 seconds
-def WaitForResponse(lspserver: dict<any>, req: dict<any>)
-  var maxCount: number = 2500
-  var key: string = req.id->string()
-
-  while lspserver.requests->has_key(key) && maxCount > 0
-    sleep 2m
-    maxCount -= 1
-  endwhile
 enddef
 
 # Returns true when the "lspserver" has "feature" enabled.
@@ -1948,9 +1924,7 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     stoppedByUser: false,
     job: v:none,
     data: '',
-    nextID: 1,
     caps: {},
-    requests: {},
     callHierarchyType: '',
     completionTriggerChars: [],
     customNotificationHandlers: serverParams.customNotificationHandlers->deepcopy(),
@@ -1991,16 +1965,12 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     setTrace: function(SetTrace, [lspserver]),
     traceLog: function(TraceLog, [lspserver]),
     errorLog: function(ErrorLog, [lspserver]),
-    nextReqID: function(NextReqID, [lspserver]),
-    createRequest: function(CreateRequest, [lspserver]),
     createResponse: function(CreateResponse, [lspserver]),
     sendResponse: function(SendResponse, [lspserver]),
     sendMessage: function(SendMessage, [lspserver]),
     sendNotification: function(SendNotification, [lspserver]),
     rpc: function(Rpc, [lspserver]),
     rpc_a: function(AsyncRpc, [lspserver]),
-    waitForResponse: function(WaitForResponse, [lspserver]),
-    processReply: function(handlers.ProcessReply, [lspserver]),
     processNotif: function(handlers.ProcessNotif, [lspserver]),
     processRequest: function(handlers.ProcessRequest, [lspserver]),
     processMessages: function(handlers.ProcessMessages, [lspserver]),

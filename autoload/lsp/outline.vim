@@ -73,10 +73,10 @@ def AddSymbolText(bnr: number,
       lnumMap->extend([{}])
     endif
     if children
-      text->extend([prefix .. symType])
+      text->extend([$"{prefix}{symType}"])
       prefix ..= '  '
     else
-      text->extend([symType])
+      text->extend([$"{symType}@"])
     endif
     lnumMap->extend([{}])
     for s in symbols
@@ -133,6 +133,10 @@ export def UpdateOutlineWindow(fname: string,
 
   if !saveCursor->empty()
     saveCursor->setpos('.')
+  endif
+
+  if exists('#User#LspOutlineUpdated')
+    :doautocmd <nomodeline> User LspOutlineUpdated
   endif
 
   prevWinID->win_gotoid()
@@ -215,16 +219,37 @@ def OutlineCleanup()
   # Remove the outline autocommands
   :silent! autocmd_delete([{group: 'LSPOutline'}])
 
-  :silent! syntax clear LSPTitle
+  :silent! syntax clear LSPTitle LSPTitleAt
+enddef
+
+# Toggle the outline window. Returns true if it opened the window, and false if it closed it.
+export def ToggleOutlineWindow(cmdmods: string, winsize: number): bool
+  var wid: number = bufwinid('LSP-Outline')
+  if wid != -1
+    win_execute(wid, ':q')
+    return false
+  endif
+  Open(cmdmods, winsize)
+  return true
 enddef
 
 # open the symbol outline window
 export def OpenOutlineWindow(cmdmods: string, winsize: number)
   var wid: number = bufwinid('LSP-Outline')
-  if wid != -1
-    return
+  if wid == -1
+    Open(cmdmods, winsize)
   endif
+enddef
 
+# close the symbol outline window
+export def CloseOutlineWindow()
+  var wid: number = bufwinid('LSP-Outline')
+  if wid != -1
+    win_execute(wid, ':q')
+  endif
+enddef
+
+def Open(cmdmods: string, winsize: number)
   var prevWinID: number = win_getid()
 
   var mods = cmdmods
@@ -260,14 +285,13 @@ export def OpenOutlineWindow(cmdmods: string, winsize: number)
   :setlocal nomodifiable
 
   # highlight all the symbol types
-  :syntax keyword LSPTitle File Module Namespace Package Class Method Property
-  :syntax keyword LSPTitle Field Constructor Enum Interface Function Variable
-  :syntax keyword LSPTitle Constant String Number Boolean Array Object Key Null
-  :syntax keyword LSPTitle EnumMember Struct Event Operator TypeParameter
+  :syntax match LSPTitle  "^\s*[a-zA-Z]\+@$" contains=LSPTitleAt
+  :execute ':syntax match LSPTitleAt contained "@"' .. (has('conceal') ? ' conceal' : '')
 
   if str2nr(&t_Co) > 2
-    :highlight clear LSPTitle
+    :highlight clear LSPTitle LSPTitleAt
     :highlight default link LSPTitle Title
+    :highlight default link LSPTitleAt Ignore
   endif
 
   prop_type_add('LspOutlineHighlight', {bufnr: bufnr(), highlight: 'Search', override: true})
@@ -297,6 +321,10 @@ export def OpenOutlineWindow(cmdmods: string, winsize: number)
 	      cmd: 'OutlineHighlightCurrentSymbol()'})
 
   autocmd_add(acmds)
+
+  if exists('#User#LspOutlineSetup')
+    :doautocmd <nomodeline> User LspOutlineSetup
+  endif
 
   prevWinID->win_gotoid()
 enddef

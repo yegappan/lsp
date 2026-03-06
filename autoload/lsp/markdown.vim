@@ -16,19 +16,22 @@ var list_item = $'^\%({list_marker}\)\ze\s*$\|^ \{{,3}}\zs\%({list_marker}\) \{{
 # pattern to match list items
 export var list_pattern = $'^ *\%({list_marker}\) *'
 
-
 # Leaf blocks
 var blank_line = '^\s*$'
 var thematic_break = '^ \{,3\}\([-_*]\)\%(\s*\1\)\{2,\}\s*$'
-var code_fence = '^ \{,3\}\(`\{3,\}\|\~\{3,\}\)\s*\(\S*\)'
+var code_fence = '^ \{,3\}\(`\{3,\}\|\~\{3,\}\)\s*\([^`]*\)'
 var code_indent = '^ \{4\}\zs\s*\S.*'
 var paragraph = '^\s*\zs\S.\{-}\s*\ze$'
+var html_block_open = '^ \{,3}<\([A-Za-z][A-Za-z0-9-]*\)\%([ \t][^>]*\)\?>\s*$'
+var html_comment_open = '^ \{,3}<!--\s*$'
 
-var atx_heading = '^ \{,3}\zs\(#\{1,6}\) \s*\(.\{-}\)\s*\ze\%( #\{1,}\s*\)\=$'
+var atx_heading = '^ \{,3}\zs\(#\{1,6}\)\%( \s*\(.\{-}\)\s*\ze\%( #\{1,}\s*\)\=\)\=$'
 var setext_heading = '^ \{,3}\zs\%(=\{1,}\|-\{1,}\)\ze *$'
 var setext_heading_level = {"=": 1, "-": 2}
 
 var table_delimiter = '^|\=\zs *:\=-\{1,}:\= *\%(| *:\=-\{1,}:\= *\)*\ze|\=$'
+var link_reference_def = '^ \{,3}\[\([^][]\+\)\]:\s*\(\S\+\)\%(.\{-}\)\=$'
+var link_reference_title_cont = '^ \{1,3}\%(".*"\|(.*)\|''.*''\)\s*$'
 
 var punctuation = "[!\"#$%&'()*+,-./:;<=>?@[\\\\\\\]^_`{|}~]"
 
@@ -36,6 +39,12 @@ var punctuation = "[!\"#$%&'()*+,-./:;<=>?@[\\\\\\\]^_`{|}~]"
 highlight LspBold term=bold cterm=bold gui=bold
 highlight LspItalic term=italic cterm=italic gui=italic
 highlight LspStrikeThrough term=strikethrough cterm=strikethrough gui=strikethrough
+highlight default link LspMarkdownLink Underlined
+highlight default link LspMarkdownThematicBreak Special
+highlight default link LspMarkdownTaskMarker Todo
+highlight default link LspMarkdownBlockquoteMarker Comment
+highlight default link LspMarkdownCodeFence Type
+highlight default link LspMarkdownLanguage Type
 prop_type_add('LspMarkdownBold', {highlight: 'LspBold'})
 prop_type_add('LspMarkdownItalic', {highlight: 'LspItalic'})
 prop_type_add('LspMarkdownStrikeThrough', {highlight: 'LspStrikeThrough'})
@@ -45,6 +54,12 @@ prop_type_add('LspMarkdownCodeBlock', {highlight: 'PreProc'})
 prop_type_add('LspMarkdownListMarker', {highlight: 'Special'})
 prop_type_add('LspMarkdownTableHeader', {highlight: 'Label'})
 prop_type_add('LspMarkdownTableMarker', {highlight: 'Special'})
+prop_type_add('LspMarkdownLink', {highlight: 'LspMarkdownLink'})
+prop_type_add('LspMarkdownThematicBreak', {highlight: 'LspMarkdownThematicBreak'})
+prop_type_add('LspMarkdownTaskMarker', {highlight: 'LspMarkdownTaskMarker'})
+prop_type_add('LspMarkdownBlockquoteMarker', {highlight: 'LspMarkdownBlockquoteMarker'})
+prop_type_add('LspMarkdownCodeFence', {highlight: 'LspMarkdownCodeFence'})
+prop_type_add('LspMarkdownLanguage', {highlight: 'LspMarkdownLanguage'})
 
 
 def GetMarkerProp(marker: string, col: number, ...opt: list<any>): dict<any>
@@ -103,8 +118,120 @@ def GetMarkerProp(marker: string, col: number, ...opt: list<any>): dict<any>
       col: col,
       length: opt[0]
     }
+  elseif marker == 'thematic_break'
+    return {
+      type: 'LspMarkdownThematicBreak',
+      col: col,
+      length: opt[0]
+    }
+  elseif marker == 'link'
+    return {
+      type: 'LspMarkdownLink',
+      col: col,
+      length: opt[0]
+    }
+  elseif marker == 'task_marker'
+    return {
+      type: 'LspMarkdownTaskMarker',
+      col: col,
+      length: opt[0]
+    }
+  elseif marker == 'blockquote_marker'
+    return {
+      type: 'LspMarkdownBlockquoteMarker',
+      col: col,
+      length: opt[0]
+    }
+  elseif marker == 'code_fence'
+    return {
+      type: 'LspMarkdownCodeFence',
+      col: col,
+      length: opt[0]
+    }
+  elseif marker == 'language'
+    return {
+      type: 'LspMarkdownLanguage',
+      col: col,
+      length: opt[0]
+    }
   endif
   return {}
+enddef
+
+def IsRangeOverlapped(props: list<dict<any>>, col: number, length: number, ...types: list<string>): bool
+  if length <= 0
+    return false
+  endif
+  var start_col = col
+  var end_col = col + length - 1
+  for prop in props
+    if types->index(prop.type) < 0
+      continue
+    endif
+    var prop_end = prop.col + prop.length - 1
+    if start_col <= prop_end && end_col >= prop.col
+      return true
+    endif
+  endfor
+  return false
+enddef
+
+def AddAutoLinkProps(text: string, props: list<dict<any>>, rel_pos: number): list<dict<any>>
+  var link_props: list<dict<any>> = []
+  var patterns = [
+	'<https\?://[^>[:space:]]\+>',
+	'https\?://[[:alnum:]][[:alnum:]/?&=#._~%:+-]*',
+	'\<www\.[[:alnum:]][[:alnum:]/?&=#._~%:+-]*',
+	'\<[[:alnum:]._%+-]\+@[[:alnum:].-]\+\.[[:alpha:]]\{2,}\>'
+  ]
+
+  for pattern in patterns
+    var pos = 0
+    while pos < text->len()
+      var matched = text->matchstrpos(pattern, pos)
+      if matched[1] < 0
+	break
+      endif
+      var raw = matched[0]
+      var start_col = matched[1] + 1
+      var length = raw->len()
+      if raw[0] == '<' && raw[-1] == '>'
+	start_col += 1
+	length -= 2
+      endif
+      var target = text->strpart(start_col - 1, length)
+      var trimmed = target->substitute('[.,;:!?]\+$', '', '')
+      if trimmed->len() > 0
+	var link_col = start_col
+	var link_len = trimmed->len()
+	if !IsRangeOverlapped(props, link_col, link_len, 'LspMarkdownCode')
+	    && !IsRangeOverlapped(link_props, rel_pos + link_col, link_len, 'LspMarkdownLink')
+    var link_prop = GetMarkerProp('link', rel_pos + link_col, link_len)
+    var insert_idx = 0
+    while insert_idx < link_props->len() && link_props[insert_idx].col <= link_prop.col
+      insert_idx += 1
+    endwhile
+    link_props->insert(link_prop, insert_idx)
+	endif
+      endif
+      pos = matched[2]
+    endwhile
+  endfor
+
+  return link_props
+enddef
+
+def AddTaskMarkerProp(line: dict<any>): void
+  for prop in line.props
+    if prop.type != 'LspMarkdownListMarker'
+      continue
+    endif
+    var start = prop.col + prop.length
+    if start + 2 <= line.text->len() && line.text->strpart(start - 1, 3) =~ '^\[[ xX]\]$'
+      line.props->add(GetMarkerProp('task_marker', start, 3))
+    endif
+    break
+  endfor
 enddef
 
 def GetCodeSpans(text: string): list<dict<any>>
@@ -152,6 +279,99 @@ def Unescape(text: string, block_marker: string = ""): string
   return result->substitute($'\\\({punctuation}\)', '\1', 'g')
 enddef
 
+def DecodeHtmlEntities(text: string): string
+  var result = text
+  result = result->substitute('&nbsp;', ' ', 'g')
+  result = result->substitute('&lt;', '<', 'g')
+  result = result->substitute('&gt;', '>', 'g')
+  result = result->substitute('&amp;', '\&', 'g')
+  result = result->substitute('&quot;', '"', 'g')
+  result = result->substitute('&apos;', "'", 'g')
+  result = result->substitute('&#\([0-9]\+\);', '\=nr2char(str2nr(submatch(1)))', 'g')
+  result = result->substitute('&#x\([0-9a-fA-F]\+\);', '\=nr2char(str2nr(submatch(1), 16))', 'g')
+  return result
+enddef
+
+var reference_defs: dict<string> = {}
+
+def NormalizeReferenceLabel(label: string): string
+  return label->tolower()->substitute('\s\+', ' ', 'g')->trim()
+enddef
+
+def ResolveReferenceText(link_text: string, label: string, full_match: string): string
+  var key = NormalizeReferenceLabel(label->empty() ? link_text : label)
+  if reference_defs->has_key(key)
+    return link_text
+  endif
+  return full_match
+enddef
+
+def ResolveReferenceLinks(text: string): string
+  if reference_defs->empty()
+    return text
+  endif
+  var result = text
+  result = result->substitute('!\[\([^][]\+\)\]\[\([^][]*\)\]',
+	      '\=ResolveReferenceText(submatch(1), submatch(2), submatch(0))',
+	      'g')
+  result = result->substitute('\%(^\|[^!]\)\zs\[\([^][]\+\)\]\[\([^][]*\)\]',
+	      '\=ResolveReferenceText(submatch(1), submatch(2), submatch(0))',
+	      'g')
+  result = result->substitute('\%(^\|[^!]\)\zs\[\([^][]\+\)\]\ze\%([^[(]\|$\)',
+	      '\=ResolveReferenceText(submatch(1), submatch(1), submatch(0))',
+	      'g')
+  return result
+enddef
+
+def StripInlineLinks(text: string): string
+  var result = text
+  result = ResolveReferenceLinks(result)
+  result = result->substitute('<\(https\?://[^>[:space:]]\+\)>', '\1', 'g')
+  result = result->substitute('<\([^< >]\+@[^< >]\+\)>', '\1', 'g')
+  # Handle links - must preserve link text, remove link syntax
+  # Empty URL: [text]()
+  result = result->substitute('\!\=\[\([^][]*\)\](\s*)', '\1', 'g')
+  # URL with angle brackets and optional title: [text](<url> "title")
+  result = result->substitute('\!\=\[\([^][]*\)\](\s*<[^>]\+>\s*\%("[^"]*"\|''[^'']*''\|(\([^)]\|\\.\)*)\)\=\s*)', '\1', 'g')
+  # URL (possibly with parens) and optional title: [text](url "title")
+  result = result->substitute('\!\=\[\([^][]*\)\](\s*[^()[:space:]]\+\%(([^()]*)[^()[:space:]]*\)*\s*\%("[^"]*"\|''[^'']*''\|(\([^)]\|\\.\)*)\)\=\s*)', '\1', 'g')
+  # Handle links with titles in angle brackets, quotes, or parentheses
+  result = result->substitute('\!\=\[\([^][]\+\)\](\s*<[^>]\+>\s*\%("[^"]*"\|''[^'']*''\|(\([^)]\|\\.\)*)\)\=\s*)', '\1', 'g')
+  result = result->substitute('\!\=\[\([^][]\+\)\](\s*[^()[:space:]]\+\%(([^()]*)[^()[:space:]]*\)*\s*\%("[^"]*"\|''[^'']*''\|(\([^)]\|\\.\)*)\)\=\s*)', '\1', 'g')
+  while true
+    var stripped = result->substitute('\!\=\[\([^][]\+\)\](\s*[^)]\+\s*)', '\1', 'g')
+    if stripped == result
+      break
+    endif
+    result = stripped
+  endwhile
+  return result
+enddef
+
+def PreprocessInlineText(text: string): string
+  # First strip links, then detect code spans, then decode HTML entities outside code spans
+  var text_no_links = StripInlineLinks(text)
+  var code_spans = GetCodeSpans(text_no_links)
+  if code_spans->empty()
+    return DecodeHtmlEntities(text_no_links)
+  endif
+  var result = ''
+  var pos = 0
+  for span in code_spans
+    if pos < span.start[0]
+      var seg = text_no_links->strpart(pos, span.start[0] - pos)
+      result ..= DecodeHtmlEntities(seg)
+    endif
+    # Preserve code span content exactly, including HTML entities
+    result ..= text_no_links->strpart(span.start[0], span.end[1] - span.start[0])
+    pos = span.end[1]
+  endfor
+  if pos < text_no_links->len()
+    result ..= DecodeHtmlEntities(text_no_links->strpart(pos))
+  endif
+  return result
+enddef
+
 def GetNextInlineDelimiter(text: string, start_pos: number, end_pos: number): dict<any>
   var pos = start_pos
   while pos < text->len()
@@ -185,11 +405,17 @@ def GetNextInlineDelimiter(text: string, start_pos: number, end_pos: number): di
       pos = delimiter_run[2]
       continue
     endif
+    # GFM emphasis rules per spec:
+    # For underscore: simpler rule - skip if surrounded by word chars on both sides (intra-word)
+    # For asterisk: no restrictions (allows intra-word)
     if delimiter_run[0][0] == '_'
-	&& text->match($'^\w{delimiter_run[0]}\w', pos) >= 0
-      # intraword emphasis is disallowed
-      pos = delimiter_run[2]
-      continue
+      var preceded_by_word = delimiter_run[1] > 0 && text[delimiter_run[1] - 1] =~ '\w'
+      var followed_by_word = delimiter_run[2] < text->len() && text[delimiter_run[2]] =~ '\w'
+      if preceded_by_word && followed_by_word
+	# Underscore intra-word emphasis is disallowed
+	pos = delimiter_run[2]
+	continue
+      endif
     endif
     return {
       marker: delimiter_run[0],
@@ -235,16 +461,17 @@ def GetNextInlineBlock(text: string, blocks: list<any>, rel_pos: number): dict<a
 enddef
 
 def ParseInlines(text: string, rel_pos: number = 0): dict<any>
+  var input_text = PreprocessInlineText(text)
   var formatted = {
     text: '',
     props: []
   }
-  var code_spans = GetCodeSpans(text)
+  var code_spans = GetCodeSpans(input_text)
 
   var pos = 0
   var seq = []
   # search all emphasis
-  while pos < text->len()
+  while pos < input_text->len()
     var code_pos: list<number>
     if code_spans->len() > 0
       code_pos = [code_spans[0].start[0], code_spans[0].end[1]]
@@ -254,9 +481,9 @@ def ParseInlines(text: string, rel_pos: number = 0): dict<any>
 	continue
       endif
     else
-      code_pos = [text->len(), text->len()]
+      code_pos = [input_text->len(), input_text->len()]
     endif
-    var delimiter = GetNextInlineDelimiter(text, pos, code_pos[0])
+    var delimiter = GetNextInlineDelimiter(input_text, pos, code_pos[0])
     if delimiter->empty()
       pos = code_pos[1]
       continue
@@ -331,18 +558,19 @@ def ParseInlines(text: string, rel_pos: number = 0): dict<any>
   pos = 0
   while seq->len() > 0
     if pos < seq[0].start[0]
-      formatted.text ..= Unescape(text->strpart(pos, seq[0].start[0] - pos))
+      formatted.text ..= Unescape(input_text->strpart(pos, seq[0].start[0] - pos))
       pos = seq[0].start[0]
     endif
-    var inline = GetNextInlineBlock(text, seq,
+    var inline = GetNextInlineBlock(input_text, seq,
 				    rel_pos + formatted.text->len())
     formatted.text ..= inline.text
     formatted.props += inline.props
     pos = inline.end_pos
   endwhile
-  if pos < text->len()
-    formatted.text ..= Unescape(text->strpart(pos))
+  if pos < input_text->len()
+    formatted.text ..= Unescape(input_text->strpart(pos))
   endif
+  formatted.props += AddAutoLinkProps(formatted.text, formatted.props, rel_pos)
   return formatted
 enddef
 
@@ -383,6 +611,17 @@ def CreateLeafBlock(block_type: string, line: string, ...opt: list<any>): dict<a
     return {
       type: block_type,
       text: [line->matchstr(paragraph)]
+    }
+  elseif block_type == 'html_block'
+    return {
+      type: block_type,
+      tag: opt[0],
+      text: [line]
+    }
+  elseif block_type == 'html_comment'
+    return {
+      type: block_type,
+      text: [line]
     }
   elseif block_type == 'heading'
     return {
@@ -507,13 +746,16 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
 	endif
 	if !block.text->empty()
 	  var indent = ' '->repeat(line.text->len())
-	  var max_len = mapnew(block.text, (_, l) => l->len())->max()
 	  var text = block.text->remove(0)
 	  line.text ..= text
 	  document.content->add(line)
 	  var startline = document.content->len()
+	  var max_len = text->len()
 	  for l in block.text
-	    document.content->add({text: indent .. l})
+	    document.content->add({text: indent .. l, props: []})
+	    if l->len() > max_len
+	      max_len = l->len()
+	    endif
 	  endfor
 	  if block->has_key('language')
 	      && !globpath(&rtp, $'syntax/{block.language}.vim')->empty()
@@ -521,20 +763,39 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
 				  start: $'\%{startline}l\%{indent->len() + 1}c',
 				  end: $'\%{document.content->len()}l$'})
 	  else
+	    # end_col is maximum content line length (rightmost column for multi-line highlight)
 	    line.props->add(GetMarkerProp('code_block',
 					  indent->len() + 1,
 					  document.content->len(),
-					  indent->len() + max_len + 1))
+					  max_len + 1))
 	  endif
 	endif
+      elseif block.type == 'html_block'
+	var indent = ' '->repeat(line.text->len())
+	var text = block.text->remove(0)
+	line.text ..= text
+	document.content->add(line)
+	for l in block.text
+	  document.content->add({text: indent .. l, props: []})
+	endfor
+      elseif block.type == 'html_comment'
+	var indent = ' '->repeat(line.text->len())
+	var text = block.text->remove(0)
+	line.text ..= text
+	document.content->add(line)
+	for l in block.text
+	  document.content->add({text: indent .. l, props: []})
+	endfor
       elseif block.type == 'heading'
-	line.props->add(GetMarkerProp('heading',
-				      line.text->len() + 1,
-				      block.text->len(),
-				      block.level))
 	var format = ParseInlines(block.text, line.text->len())
+	line.props->add(GetMarkerProp('heading',
+	  line.text->len() + 1,
+	  format.text->len(),
+	  block.level))
+
 	line.text ..= format.text
 	line.props += format.props
+  AddTaskMarkerProp(line)
 	document.content += SplitLine(line)
       elseif block.type == 'table'
 	var indent = line.text
@@ -588,6 +849,7 @@ def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start: numbe
 	var format = ParseInlines(block.text->join("\n")->substitute('\s\+$', '', ''), indent)
 	line.text ..= format.text
 	line.props += format.props
+  AddTaskMarkerProp(line)
 	document.content += SplitLine(line, indent)
       endif
     endif
@@ -613,8 +875,26 @@ enddef
 export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>>
   var document: dict<list<any>> = {content: [], syntax: []}
   var open_blocks: list<dict<any>> = []
+  reference_defs = {}
+  var filtered_data: list<string> = []
 
-  for l in data
+  var idx = 0
+  while idx < data->len()
+    var l = data[idx]
+    var ref = l->matchlist(link_reference_def)
+    if ref->len() > 0
+      reference_defs[NormalizeReferenceLabel(ref[1])] = ref[2]
+      if idx + 1 < data->len() && data[idx + 1] =~ link_reference_title_cont
+	idx += 1
+      endif
+      idx += 1
+      continue
+    endif
+    filtered_data->add(l)
+    idx += 1
+  endwhile
+
+  for l in filtered_data
     var line: string = ExpandTabs(l)
     var cur = 0
 
@@ -633,7 +913,9 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
 	endif
 	line = line->strpart(marker[2])
       elseif open_blocks[cur].type == 'fenced_code'
-	if line =~ $'^ \{{,3}}{open_blocks[cur].fence}{open_blocks[cur].fence[0]}* *$'
+	var fence_char = open_blocks[cur].fence[0]->escape('\^$.*[]~')
+	var fence_pattern = fence_char->repeat(open_blocks[cur].fence->len())
+	if line =~ $'^ \{{,3}}{fence_pattern}{fence_char}* *$'
 	  CloseBlocks(document, open_blocks, cur)
 	else
 	  open_blocks[cur].text->add(line)
@@ -670,6 +952,20 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
 	  endif
 	endif
 	break
+      elseif open_blocks[cur].type == 'html_block'
+	open_blocks[cur].text->add(line)
+	if line =~ $'^ \{{,3}}</{open_blocks[cur].tag}>\s*$'
+	  CloseBlocks(document, open_blocks, cur)
+	endif
+	cur = -1
+	break
+      elseif open_blocks[cur].type == 'html_comment'
+	open_blocks[cur].text->add(line)
+	if line =~ '^ \{,3}-->\s*$'
+	  CloseBlocks(document, open_blocks, cur)
+	endif
+	cur = -1
+	break
       endif
       cur += 1
     endwhile
@@ -682,11 +978,14 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
     # a thematic break close all previous blocks
     if line =~ thematic_break
       CloseBlocks(document, open_blocks)
+      var hr_text: string
       if &g:encoding == 'utf-8'
-	document.content->add({text: "\u2500"->repeat(width)})
+	hr_text = "\u2500"->repeat(width)
       else
-	document.content->add({text: '-'->repeat(width)})
+	hr_text = '-'->repeat(width)
       endif
+      document.content->add({text: hr_text,
+	props: [GetMarkerProp('thematic_break', 1, hr_text->len())]})
       last_block = 'hr'
       continue
     endif
@@ -734,8 +1033,22 @@ export def ParseMarkdown(data: list<string>, width: number = 80): dict<list<any>
     elseif line =~ atx_heading
       CloseBlocks(document, open_blocks, cur)
       var token = line->matchlist(atx_heading)
-      open_blocks->add(CreateLeafBlock('heading', token[2], token[1]->len()))
+      var heading_text = token->len() > 2 ? token[2] : ''
+      open_blocks->add(CreateLeafBlock('heading', heading_text, token[1]->len()))
       CloseBlocks(document, open_blocks, cur)
+    elseif line =~ html_comment_open
+      CloseBlocks(document, open_blocks, cur)
+      open_blocks->add(CreateLeafBlock('html_comment', line))
+      if line =~ '^ \{,3}-->\s*$'
+	CloseBlocks(document, open_blocks, cur)
+      endif
+    elseif line =~ html_block_open
+      CloseBlocks(document, open_blocks, cur)
+      var html_token = line->matchlist(html_block_open)
+      open_blocks->add(CreateLeafBlock('html_block', line, html_token[1]))
+      if line =~ $'^ \{{,3}}</{html_token[1]}>\s*$'
+	CloseBlocks(document, open_blocks, cur)
+      endif
     elseif !open_blocks->empty()
       if open_blocks[-1].type == 'table'
 	open_blocks[-1].text->add(line)

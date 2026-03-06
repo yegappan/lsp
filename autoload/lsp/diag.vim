@@ -408,7 +408,7 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<d
   endif
   var bnr: number = fname->bufnr()
 
-  var newDiags: list<dict<any>> = diags_arg
+  var newDiags: list<dict<any>> = diags_arg->slice(0, opt.lspOptions.maxDiagnostics)
 
   if lspserver.needOffsetEncoding
     # Decode the position encoding in all the diags
@@ -581,7 +581,7 @@ export def ShowAllDiags(): void
   # make the diagnostics error list the active one and open it
   var LspQfId: number = bnr->getbufvar('LspQfId', 0)
   var LspQfNr: number = getloclist(0, {id: LspQfId, nr: 0}).nr
-  exe $':{LspQfNr} lhistory'
+  execute($':{LspQfNr} lhistory', 'silent')
   :lopen
   if !opt.lspOptions.keepFocusInDiags
     save_winid->win_gotoid()

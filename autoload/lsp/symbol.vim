@@ -471,7 +471,7 @@ def SymbolFilterCB(lspserver: dict<any>, id: number, key: string): bool
       || key == "\<PageUp>"
       || key == "\<C-Home>"
       || key == "\<C-End>"
-    # scroll the hover popup window
+    # scroll the symbol popup window
     win_execute(id, $'normal! {key}')
     return true
   endif

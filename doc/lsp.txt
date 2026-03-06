@@ -23,12 +23,13 @@ CONTENTS                                                     *lsp-contents*
     12. Highlight Groups ........................... |lsp-highlight-groups|
     13. Debugging .................................. |lsp-debug|
     14. Custom Command Handlers .................... |lsp-custom-commands|
-    15. Custom LSP Completion Kinds ................ |lsp-custom-kinds|
-    16. Custom Popup Styles ........................ |lsp-custom-popup-styles|
-    17. Custom Locations Request ................... |lsp-custom-locations|
-    18. Multiple Language Servers for a buffer ..... |lsp-multiple-servers|
-    19. Language Servers Features .................. |lsp-features|
-    20. License .................................... |lsp-license|
+    15. Custom LSP Requests ........................ |lsp-custom-requests|
+    16. Custom LSP Completion Kinds ................ |lsp-custom-kinds|
+    17. Custom Popup Styles ........................ |lsp-custom-popup-styles|
+    18. Custom Locations Request ................... |lsp-custom-locations|
+    19. Multiple Language Servers for a buffer ..... |lsp-multiple-servers|
+    20. Language Servers Features .................. |lsp-features|
+    21. License .................................... |lsp-license|
 
 ==============================================================================
 1. Overview					*lsp-overview*
@@ -54,9 +55,7 @@ The Github repository for this plugin is available at:
 
 You can install this plugin directly from github using the following steps:
 
-    $ mkdir -p $HOME/.vim/pack/downloads/opt
-    $ cd $HOME/.vim/pack/downloads/opt
-    $ git clone https://github.com/yegappan/lsp
+    $ git clone https://github.com/yegappan/lsp $HOME/.vim/pack/downloads/opt/lsp
     $ vim -u NONE -c "helptags $HOME/.vim/pack/downloads/opt/lsp/doc" -c q
 
 ALternatively, you can use any one of the Vim plugin managers such as
@@ -65,7 +64,7 @@ this plugin.
 
 Uninstallation:
     - If installed with a plugin manager: use its uninstall command.
-    - If installed manually: remove the $HOME/.vim/pack/downloads/lsp
+    - If installed manually: remove the $HOME/.vim/pack/downloads/opt/lsp
       directory.
 
 Activation:
@@ -208,7 +207,7 @@ Shell script, Vim script and PHP file types: >
 		     {
 			name: 'clangd',
 		        filetype: ['c', 'cpp'],
-		        path: '/usr/local/bin/clangd',
+		        path: 'clangd',
 		        args: ['--background-index']
 		     },
                      {
@@ -228,7 +227,7 @@ Shell script, Vim script and PHP file types: >
 		     {
 			name: 'bashls',
 			filetype: 'sh',
-			path: '/usr/local/bin/bash-language-server',
+			path: '~/src/bash-language-server/bash-language-server',
 			args: ['start']
 		     },
 		     {
@@ -256,8 +255,9 @@ To add a language server, the following information is needed:
 	name		(Optional) name of the language server.  Can by any
 			string.  Used in LSP messages and log files.
 						*lsp-cfg-path*
-	path		complete path to the language server executable
-			(without any arguments).
+	path		path to the language server executable (without any
+			arguments). The value is expanded with |expandcmd()|
+			and looked up in $PATH. A full path can also be used.
 						*lsp-cfg-args*
 	args		a |List| of command-line arguments passed to the
 			language server.  Each space separated language server
@@ -591,7 +591,7 @@ closePreviewOnComplete	|Boolean| option. When using the |preview-window| for
 			completion menu is closed. By default this is set to true.
 
 						*lsp-opt-hoverFallback*
-hoverFallback		|Boolean| option. Fall back to file type 'keywordprg' 
+hoverFallback		|Boolean| option. Fall back to file type 'keywordprg'
                         in case no hover information available. Do not set
                         'keywordprg' to |:LspHover| but use with suitable
                         mapping like
@@ -633,6 +633,13 @@ keepFocusInDiags     	|Boolean| option.  Focus on the location list window
 keepFocusInReferences	|Boolean| option.  Focus on the location list window
 			after LspShowReferences.
 			By default this is set to true.
+
+						*lsp-opt-maxDiagnostics*
+maxDiagnostics		|Number| option. Maximum nmber of diagnostics to
+			process when receiving diagnostic notifications
+			from the server. Processing hundreds of diagnostic
+			messages is slow, especially when offset positions
+			need to be decoded. By default this is set to 200.
 
 					*lsp-opt-noNewlineInCompletion*
 noNewlineInCompletion	|Boolean| option.  Suppress adding a new line on
@@ -831,8 +838,8 @@ useBufferCompletion     |Boolean| option. If enabled, the words from the
 			By default this is set to false.
 
 						*lsp-opt-bufferCompletionTimeout*
-bufferCompletionTimeout |Number| option. Specifies how long (in milliseconds) 
-			to wait while processing current buffer for 
+bufferCompletionTimeout |Number| option. Specifies how long (in milliseconds)
+			to wait while processing current buffer for
 			autocompletion words.  If set too high Vim performance
 			may degrade as the current buffer contents are
 			processed every time the completion menu is displayed.
@@ -841,12 +848,12 @@ bufferCompletionTimeout |Number| option. Specifies how long (in milliseconds)
 			By default this is set to 100 ms.
 
 						*lsp-opt-filterCompletionDuplicates*
-filterCompletionDuplicates |Boolean| option. If enabled, duplicate completion 
+filterCompletionDuplicates |Boolean| option. If enabled, duplicate completion
 			items sent from the server will be filtered to only
-			include one instance of the duplicates. 
+			include one instance of the duplicates.
 
 						*lsp-opt-condensedCompletionMenu*
-condensedCompletionMenu |Boolean| option. If enabled, minimizes completion 
+condensedCompletionMenu |Boolean| option. If enabled, minimizes completion
 			menu items to single (key-) words (plus kind).
 			Moves all additional details to info popup.
 			Caveat: LazyDoc will override moved details!
@@ -859,6 +866,11 @@ ignoreCompleteItemsIsIncomplete |List| of strings option.
 			is enforced. This is helpful for LSP servers
 			that are misbehaving and always send this
 			kind of 'IsIncomplete' messages.
+
+						*lsp-opt-documentationFormat*
+documentationFormat |List| of strings option.
+			DocumentationFormat to tell the LSP we want, in order
+			of preference.
 
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file: >
@@ -1141,7 +1153,8 @@ can map these commands to keys and make it easier to invoke them.
 			not all the language servers support this feature.
 
 						*:LspInlayHints*
-:LspInlayHints		Enable or disable inlay hints.  Supports the "enable",
+:LspInlayHints {enable | disable | toggle}
+			Enable or disable inlay hints.  Supports the "enable",
 			"disable" and "toggle" arguments.  When "enable" is
 			specified, enables the inlay hints for all the buffers
 			with a language server that supports inlay hints.
@@ -1156,16 +1169,21 @@ can map these commands to keys and make it easier to invoke them.
 			not all the language servers support this feature.
 
 						*:LspOutline*
-:[count]LspOutline	Opens a vertically split window with the list of
-			symbols defined in the current file. The current
-			symbol is highlighted. The symbols are grouped by
-			their type. You can select a symbol and press <Enter>
-			to jump to the position of the symbol. As you move the
-			cursor in a file, the current symbol is automatically
-			highlighted in the outline window. If you open a new
-			file, the outline window is automatically updated with
-			the symbols in the new file.  Folds are created in the
-			outline window for the various group of symbols.
+:[count]LspOutline [ {open | close | toggle} ]
+			Opens a vertically split window with the list of
+			symbols defined in the current file. Supports the
+			"open", "close", and "toggle" arguments. It assumes
+			"open" if no argument is given.
+
+			The current symbol is highlighted. The symbols are
+			grouped by their type. You can select a symbol and
+			press <Enter> to jump to the position of the symbol.
+			As you move the cursor in a file, the current symbol
+			is automatically highlighted in the outline window. If
+			you open a new file, the outline window is updated
+			with the symbols in the new file.  Folds are created
+			in the outline window for the various group of
+			symbols.
 
 			You can use |lsp-opt-outlineOnRight| and
 			|lsp-opt-outlineWinSize| to customize the placement
@@ -1872,6 +1890,59 @@ LspDiagsUpdated			A |User| autocommand invoked when new
 				lsp#diag#GetDiagsForBuf() can be used to get
 				all the diagnostics for a buffer.
 
+						*LspOutlineSetup*
+LspOutlineSetup			A |User| autocmd fired after the outline window
+				is created with |:LspOutline|. The outline
+				window will be the active window. This is
+				mainly useful to change the window settings –
+				the window is populated later, and
+				|LspOutlineUpdated| can be used to take an
+				action after the contents is updated.
+
+						*LspOutlineUpdated*
+LspOutlineUpdated		A |User| autocmd fired after the contents of
+				the outline window is updated, including on
+				the initial populate when it's opened. The
+				outline window will be the active window.
+
+						*LspProgressUpdate*
+LspProgressUpdate		A |User| autocommand invoked when a progress
+				notification ($/progress) is received from
+				the language server.  This can be used to
+				update a statusline component.  The current
+				progress state is stored in |g:LspProgress|.
+
+						*g:LspProgress*
+g:LspProgress			A |Dictionary| containing the current progress
+				state from all language servers.  The keys are
+				progress tokens and the values are dictionaries
+				with the following fields:
+
+				  title		The title of the operation
+				  message	The current progress message
+				  percentage	Progress percentage (0-100),
+						or -1 if not available
+				  serverName	Name of the LSP server
+
+				Example statusline function: >
+
+				  def LspProgressStatus(): string
+				    if empty(g:LspProgress)
+				      return ''
+				    endif
+				    for info in values(g:LspProgress)
+				      var parts = []
+				      if !empty(info.title)
+					parts->add(info.title)
+				      endif
+				      if info.percentage >= 0
+					parts->add(info.percentage .. '%')
+				      endif
+				      return parts->join(' ')
+				    endfor
+				    return ''
+				  enddef
+<
 ==============================================================================
 12. Highlight Groups				*lsp-highlight-groups*
 
@@ -2028,7 +2099,98 @@ contains the LSP Command interface fields.  Refer to the LSP specification for
 more information about the "Command" interface.
 
 ==============================================================================
-15. Custom LSP Completion Kinds			*lsp-custom-kinds*
+15. Custom LSP Requests				*lsp-custom-requests*
+
+The lsp.Server() function can be used to get the LSP server for the current
+buffer. It returns an empty dict if there is no LSP server.
+
+The returned dict has the following methods:
+
+	getPosition(find_ident: bool): dict<number>
+		Return the current cursor position as a LSP position.
+		find_ident will search for a identifier in front of the
+		cursor, just like CTRL-] and c_CTRL-R_CTRL-W does.
+
+		LSP line and column numbers start from zero, whereas Vim line
+		and column numbers start from one. The LSP column number is
+		the character index in the line and not the byte index in the
+		line.
+
+	getTextDocPosition(find_ident: bool): dict<dict<any>>
+		Return the current file name and current cursor position as a
+		LSP TextDocumentPositionParams structure
+
+	featureEnabled(feature: string): bool
+		Returns true when the lspserver has feature enabled. By
+		default, all the features of a lsp server are enabled.
+
+	rpc(method: string, params: any, handleError: bool = true): dict<any>
+		Send a sync RPC request message to the LSP server and return
+		the received reply. In case of an error, an empty Dict is
+		returned.
+
+	rpc_a(method: string, params: any, Cbfunc: func): number
+		Send an async RPC request message to the LSP server with a
+		callback function. Returns the LSP message id.  This id can be
+		used to cancel the RPC request (if needed).  Returns -1 on
+		error.
+
+Some examples:
+
+	A version of |:LspShowSignature| that also works inside parenthesis,
+	using synchronous rpc() calls:
+>
+            import autoload 'lsp/lsp.vim'
+
+            def g:FindSig()
+                var s = lsp.Server()
+                if s->empty()
+                    return
+                endif
+
+                var sig = s.rpc('textDocument/signatureHelp', s.getTextDocPosition(false))
+                if sig.result->empty()
+                    var save = winsaveview()
+                    normal! F(
+                    if getline('.')[charcol('.') - 1] == '('
+                        sig = s.rpc('textDocument/signatureHelp', s.getTextDocPosition(false))
+                    endif
+                    winrestview(save)
+                endif
+
+                echon "\r\r"
+                if sig.result->empty()
+                    echon 'No signature found'
+                else
+                    echon sig.result.signatures[0].label
+                endif
+            enddef
+            nnoremap <C-k> :call g:FindSig()<CR>
+<
+	Using async a_rpc() calls to find and echo the signature:
+>
+            import autoload 'lsp/lsp.vim'
+
+            def FindSigReply(s: dict<any>, sig: any)
+                echon "\r\r"
+                if sig->empty()
+                    echon 'No signature found'
+                else
+                    echon sig.signatures[0].label
+                endif
+            enddef
+
+            def g:FindSigAsync()
+                var s = lsp.Server()
+                if s->empty()
+                    return
+                endif
+                s.rpc_a('textDocument/signatureHelp', s.getTextDocPosition(false), FindSigReply)
+            enddef
+            nnoremap <C-k> :call g:FindSigAsync()<CR>
+
+==============================================================================
+16. Custom LSP Completion Kinds			*lsp-custom-kinds*
 
 When a completion popup is triggered, the LSP client will use a default kind
 list to show in the completion "kind" section, to customize it, you need to
@@ -2086,7 +2248,7 @@ In the completion popup, will show something like this: >
 		| ...				 |
 <
 ==============================================================================
-16. Custom Popup Styles			*lsp-custom-popup-styles*
+17. Custom Popup Styles			*lsp-custom-popup-styles*
 
 The plugin provides the possibility to style popups according to one's liking.
 By default, popups do not have borders configured, and use the |hl-Pmenu|
@@ -2133,7 +2295,7 @@ popup-type |lsp-options|: >
 For styling the completion menu please refer to |hl-pmenu|.
 
 ==============================================================================
-17. Custom Locations Request			*lsp-custom-locations*
+18. Custom Locations Request			*lsp-custom-locations*
 
 Language server may support non-standard locations request. To display the
 locations of the symbol under cursor, you can use the
@@ -2168,7 +2330,7 @@ For example: >
     }
 
 ==============================================================================
-18. Multiple Language Servers for a buffer	*lsp-multiple-servers*
+19. Multiple Language Servers for a buffer	*lsp-multiple-servers*
 
 It's possible to run multiple language servers for a given buffer.
 
@@ -2259,7 +2421,7 @@ everything else: >
 	])
 <
 ==============================================================================
-19. Language Server Features			*lsp-features*
+20. Language Server Features			*lsp-features*
 
 When using multiple language servers for a given file type, by providing the
 configuration |lsp-cfg-features| it is possible to specify which language

@@ -466,7 +466,7 @@ export def GetClientCaps(): dict<any>
       completion: {
 	dynamicRegistration: false,
 	completionItem: {
-	  documentationFormat: ['markdown', 'plaintext'],
+	  documentationFormat: opt.lspOptions.documentationFormat,
 	  resolveSupport: {
 	    properties: ['detail', 'documentation']
 	  },
@@ -512,7 +512,7 @@ export def GetClientCaps(): dict<any>
       },
       hover: {
 	dynamicRegistration: false,
-	contentFormat: ['markdown', 'plaintext']
+	contentFormat: opt.lspOptions.documentationFormat,
       },
       implementation: {
 	dynamicRegistration: false,
@@ -543,7 +543,7 @@ export def GetClientCaps(): dict<any>
       signatureHelp: {
 	dynamicRegistration: false,
 	signatureInformation: {
-	  documentationFormat: ['markdown', 'plaintext'],
+	  documentationFormat: opt.lspOptions.documentationFormat,
 	  activeParameterSupport: true
 	}
       },
@@ -587,7 +587,7 @@ export def GetClientCaps(): dict<any>
       }
     },
     window: {
-      workDoneProgress: false,
+      workDoneProgress: true,
     },
     workspace: {
       workspaceFolders: true,

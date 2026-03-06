@@ -24,7 +24,7 @@ enddef
 # Lsp server trace log directory
 var lsp_log_dir: string
 if has('unix')
-  lsp_log_dir = '/tmp/'
+  lsp_log_dir = (exists('$TMPDIR') && !empty($TMPDIR) ? $TMPDIR : '/tmp')->fnamemodify(':p')
 else
   lsp_log_dir = $TEMP .. '\\'
 endif
@@ -75,17 +75,82 @@ export def LspLocationParse(lsploc: dict<any>): list<any>
   endif
 enddef
 
+# convert a normal string to a url encoded string
+def UriEncode(str: string): string
+  var parts: list<string> = []
+  for ch in str
+    if ch =~# '[A-Za-z0-9-._~:/]'
+      parts->add(ch)
+    else
+      # Get UTF-8 bytes for the character and encode each byte
+      var byte_len = strlen(ch)
+      for i in range(byte_len)
+        var byte = char2nr(strpart(ch, i, 1))
+        parts->add(printf('%%%02X', byte))
+      endfor
+    endif
+  endfor
+  return parts->join('')
+enddef
+
+# convert an url encoded string to a normal string
+def UriDecode(str: string): string
+  var parts: list<string> = []
+  var i: number = 0
+  var byte_array: list<number> = []
+  var str_len = strlen(str)
+
+  while i < str_len
+    # Use byte-level operations since we're dealing with percent-encoded bytes
+    var ch = strpart(str, i, 1)
+    if ch == '%' && i + 2 < str_len
+      var hex = strpart(str, i + 1, 2)
+      # Check if the next two characters are valid hex digits
+      if hex =~# '^[0-9A-Fa-f]\{2}$'
+        byte_array->add(str2nr(hex, 16))
+        i += 3
+        continue
+      endif
+    endif
+
+    # If we have accumulated bytes, convert them to a UTF-8 string
+    if !byte_array->empty()
+      for byte in byte_array
+        parts->add(printf('%c', byte))
+      endfor
+      byte_array = []
+    endif
+
+    parts->add(ch)
+    i += 1
+  endwhile
+
+  # Handle any remaining bytes at the end
+  if !byte_array->empty()
+    for byte in byte_array
+      parts->add(printf('%c', byte))
+    endfor
+  endif
+
+  return parts->join('')
+enddef
+
 # Convert a LSP file URI (file://<absolute_path>) to a Vim file name
 export def LspUriToFile(uri: string): string
   # Replace all the %xx numbers (e.g. %20 for space) in the URI to character
-  var uri_decoded: string = substitute(uri, '%\(\x\x\)',
-				'\=nr2char(str2nr(submatch(1), 16))', 'g')
+  var uri_decoded: string = UriDecode(uri)
 
   # File URIs on MS-Windows start with file:///[a-zA-Z]:'
   if uri_decoded =~? '^file:///\a:'
     # MS-Windows URI
     uri_decoded = uri_decoded[8 : ]
-    uri_decoded = uri_decoded->substitute('/', '\\', 'g')
+    if has("win32unix")
+      # Cygwin, C:/path/to/file -> /c/path/to/file
+      uri_decoded = uri_decoded->substitute('^\(\a\):',
+	'\="/" .. submatch(1)', '')
+    else
+      uri_decoded = uri_decoded->substitute('/', '\\', 'g')
+    endif
   # On GNU/Linux (pattern not end with `:`)
   elseif uri_decoded =~? '^file:///\a'
     uri_decoded = uri_decoded[7 : ]
@@ -136,13 +201,12 @@ export def LspFileToUri(fname: string): string
     uri = uri->substitute('\\', '/', 'g')
   endif
 
-  uri = uri->substitute('\([^A-Za-z0-9-._~:/]\)',
-			'\=printf("%%%02x", char2nr(submatch(1)))', 'g')
+  var uri_encoded: string = UriEncode(uri)
 
   if on_windows
-    uri = $'file:///{uri}'
+    uri = $'file:///{uri_encoded}'
   else
-    uri = $'file://{uri}'
+    uri = $'file://{uri_encoded}'
   endif
 
   resolvedUris[fname_full] = uri
