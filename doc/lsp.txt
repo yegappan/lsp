@@ -537,6 +537,16 @@ diagSignInfoText        |String| option. Change diag sign text for info
 diagSignWarningText     |String| option. Change diag sign text for warnings
                         By default 'W>',
 
+						*lsp-opt-diagNoOverrideSyntaxHighlighting*
+diagNoOverrideSyntaxHighlighting
+			|Boolean| option. Whether or not to allow
+			LspDiagInline{Hint,Info,Warning,Error} highlighting to
+			override other syntax groups. Only takes effect if
+			|cursorline| is set
+			By default this is set to false. Depending on your
+			theme, setting this to true may make the cursorline
+			completely hide the diagnostics syntax groups.
+
 						*lsp-opt-diagVirtualTextAlign*
 diagVirtualTextAlign	|String| option.   Alignment of diagnostics messages
 			if |lsp-opt-showDiagWithVirtualText| is set to true.

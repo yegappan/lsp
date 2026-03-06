@@ -66,6 +66,7 @@ export def InitOnce()
 
   var override = &cursorline
       && &cursorlineopt =~ '\<line\>\|\<screenline\>\|\<both\>'
+      && !opt.lspOptions.diagNoOverrideSyntaxHighlighting
 
   prop_type_add('LspDiagInlineError',
 		{highlight: 'LspDiagInlineError',
