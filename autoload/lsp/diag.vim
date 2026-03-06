@@ -377,7 +377,7 @@ export def ProcessNewDiags(bnr: number)
 
   var lspOpts = opt.lspOptions
   if lspOpts.aleSupport
-    if textChangedMode && !g:ale_lint_on_text_changed
+    if textChangedMode && !get(g:, 'ale_lint_on_text_changed', 0)
       # do nothing
     else
       SendAleDiags(bnr, -1)
