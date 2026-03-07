@@ -372,17 +372,23 @@ enddef
 export def ProcessNewDiags(bnr: number)
   DiagsUpdateLocList(bnr)
 
+  var curmode: string = mode()
+  var textChangedMode: bool = (curmode == 'i' || curmode == 'R' || curmode == 'Rv')
+
   var lspOpts = opt.lspOptions
   if lspOpts.aleSupport
-    SendAleDiags(bnr, -1)
+    if textChangedMode && !get(g:, 'ale_lint_on_text_changed', 0)
+      # do nothing
+    else
+      SendAleDiags(bnr, -1)
+    endif
   endif
 
   if bnr == -1 || !diagsMap->has_key(bnr)
     return
   endif
 
-  var curmode: string = mode()
-  if curmode == 'i' || curmode == 'R' || curmode == 'Rv'
+  if textChangedMode
     # postpone placing signs in insert mode and replace mode. These will be
     # placed after the user returns to Normal mode.
     setbufvar(bnr, 'LspDiagsUpdatePending', true)
