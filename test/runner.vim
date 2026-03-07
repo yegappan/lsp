@@ -21,7 +21,7 @@ def LspRunTests()
     ->sort()
 
   if fns->empty()
-    writefile([$'FAIL: No tests found in {g:TestName}'], 'results.txt', 'a')
+    writefile([$'No tests found in {g:TestName}'], 'results.txt', 'a')
     return
   endif
 
