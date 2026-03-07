@@ -262,15 +262,28 @@ def Unescape(text: string, block_marker: string = ""): string
 enddef
 
 def DecodeHtmlEntities(text: string): string
-  # Chain substitutions for better performance
-  return text->substitute('&nbsp;', ' ', 'g')
-    ->substitute('&lt;', '<', 'g')
-    ->substitute('&gt;', '>', 'g')
-    ->substitute('&amp;', '\&', 'g')
-    ->substitute('&quot;', '"', 'g')
-    ->substitute('&apos;', "'", 'g')
-    ->substitute('&#\([0-9]\+\);', '\=nr2char(str2nr(submatch(1)))', 'g')
-    ->substitute('&#x\([0-9a-fA-F]\+\);', '\=nr2char(str2nr(submatch(1), 16))', 'g')
+  # Map of simple entity replacements
+  var entities = {
+    '&nbsp;': ' ',
+    '&lt;':   '<',
+    '&gt;':   '>',
+    '&amp;':  '&',
+    '&quot;': '"',
+    '&apos;': "'"
+  }
+
+  # Single regex to match all entities, hex codes, and decimal codes
+  var pattern = '&\(nbsp\|lt\|gt\|amp\|quot\|apos\);\|&#\([0-9]\+\);\|&#x\([0-9a-fA-F]\+\);'
+
+  return text->substitute(pattern, (m) => {
+    if m[1] != ''      # Named entity
+      return entities[m[0]]
+    elseif m[2] != ''  # Decimal &#123;
+      return nr2char(str2nr(m[2]))
+    else               # Hex &#xABC;
+      return nr2char(str2nr(m[3], 16))
+    endif
+  }, 'g')
 enddef
 
 var reference_defs: dict<string> = {}
