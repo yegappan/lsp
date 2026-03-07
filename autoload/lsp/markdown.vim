@@ -116,11 +116,11 @@ highlight LspStrikeThrough term=strikethrough cterm=strikethrough gui=strikethro
 
 # Create a text property for a given marker type
 def GetMarkerProp(marker: string, col: number, ...opt: list<any>): dict<any>
-  if !MARKER_PROP_MAP->has_key(marker)
+  var prop_key = MARKER_PROP_MAP->get(marker, '')
+  if prop_key == ''
     return {}
   endif
 
-  var prop_key = MARKER_PROP_MAP[marker]
   var prop_config = PROP_TYPES[prop_key]
   var result = {type: prop_config.type, col: col}
 
@@ -145,11 +145,12 @@ def IsRangeOverlapped(props: list<dict<any>>, col: number, length: number, ...ty
   var range_end = col + length - 1
 
   for prop in props
-    if !prop->has_key('length') || types->index(prop.type) < 0
+    var p_len = prop->get('length', 0)
+    if p_len == 0 || types->index(prop.type) < 0
       continue
     endif
 
-    var prop_end = prop.col + prop.length - 1
+    var prop_end = prop.col + p_len - 1
     if range_start <= prop_end && range_end >= prop.col
       return true
     endif
@@ -596,26 +597,34 @@ def FindEmphasisMatches(input_text: string, code_spans: list<dict<any>>): list<d
   var seq = []
   var text_len = input_text->len()
 
+  var span_idx = 0
+  var num_spans = code_spans->len()
+
   # Search all emphasis delimiters
   while search_pos < text_len
-    var code_pos: list<number>
+    var code_pos_start = text_len
+    var code_pos_end = text_len
 
     # Handle code spans (skip emphasis inside code)
-    if !code_spans->empty()
-      code_pos = [code_spans[0].start[0], code_spans[0].end[1]]
-      if search_pos >= code_pos[0]
-	search_pos = code_pos[1]
-	seq->add(code_spans->remove(0))
-	continue
+    if span_idx < num_spans
+      var span = code_spans[span_idx]
+      code_pos_start = span.start[0]
+      code_pos_end = span.end[1]
+
+      if search_pos >= code_pos_start
+        search_pos = code_pos_end
+        seq->add(span)
+        span_idx += 1
+        continue
       endif
-    else
-      code_pos = [text_len, text_len]
     endif
 
-    # Find next delimiter before code span
-    var delimiter = GetNextInlineDelimiter(input_text, search_pos, code_pos[0])
+    # Find next delimiter before the next code span
+    var delimiter = GetNextInlineDelimiter(input_text, search_pos, code_pos_start)
+
     if delimiter->empty()
-      search_pos = code_pos[1]
+      # Jump to the end of the current code span if we found nothing before it
+      search_pos = code_pos_end
       continue
     endif
 
@@ -633,16 +642,13 @@ def FindEmphasisMatches(input_text: string, code_spans: list<dict<any>>): list<d
   endwhile
 
   # Add remaining code spans
-  seq += code_spans
+  if span_idx < num_spans
+    seq->extend(code_spans[span_idx :])
+  endif
 
   # Remove unclosed delimiters
-  for i in range(seq->len() - 1, 0, -1)
-    if !seq[i]->has_key('end')
-      seq->remove(i)
-    endif
-  endfor
-
-  return seq
+  # This keeps only matched emphasis blocks and all code spans
+  return seq->filter((_, val) => val->has_key('end'))
 enddef
 
 # Compose formatted text from inline blocks with text properties
@@ -848,50 +854,60 @@ enddef
 
 # Render code block with optional syntax highlighting
 def RenderCodeBlock(block: dict<any>, line: dict<any>, document: dict<list<any>>): void
+  var code_lines = block.text
+
   if block.type == 'indented_code'
     # Trim leading and trailing blank lines from indented code
-    while !block.text->empty() && block.text[0] !~ '\S'
-      block.text->remove(0)
+    var first = 0
+    var last = code_lines->len() - 1
+    while first <= last && code_lines[first] !~ '\S'
+      first += 1
     endwhile
-    while !block.text->empty() && block.text[-1] !~ '\S'
-      block.text->remove(-1)
+    while last >= first && code_lines[last] !~ '\S'
+      last -= 1
     endwhile
+
+    if first > last
+      return
+    endif
+    code_lines = code_lines[first : last]
   endif
 
-  if block.text->empty()
+  if code_lines->empty()
     return
   endif
 
-  var line_len = line.text->len()
-  var indent = ' '->repeat(line_len)
-  var first_code_line = block.text->remove(0)
-  line.text ..= first_code_line
+  var content_list = document.content
+  var line_text_len = line.text->len()
+  var indent_str = ' '->repeat(line_text_len)
 
-  var startline = document.content->len() + 1
-  var max_code_line_len = first_code_line->len()
+  var first_line = code_lines[0]
+  line.text ..= first_line
+  var remaining_lines = code_lines[1 :]
+
+  var start_lnum = content_list->len() + 1
 
   # Find maximum line length for code block property
-  for code_line in block.text
-    var line_len_temp = code_line->len()
-    if line_len_temp > max_code_line_len
-      max_code_line_len = line_len_temp
-    endif
-  endfor
+  var max_line_len = max(code_lines->mapnew((_, v) => v->len()))
 
   # Apply syntax highlighting if available, otherwise use code_block property
-  if block->has_key('language') && HasSyntaxForLanguage(block.language)
-    document.content->add(line)
-    AppendIndentedLines(document, indent, block.text)
+  var lang = block->get('language', '')
+  if lang != '' && HasSyntaxForLanguage(lang)
+    content_list->add(line)
+    AppendIndentedLines(document, indent_str, remaining_lines)
+
     document.syntax->add({
-      lang: block.language,
-      start: $'\%{startline}l\%{line_len + 1}c',
-      end: $'\%{document.content->len()}l$'
+      lang: lang,
+      start: $'\%{start_lnum}l\%{line_text_len + 1}c',
+      end: $'\%{content_list->len()}l$'
     })
   else
-    var final_lnum = startline + block.text->len()
-    line.props->add(GetMarkerProp('code_block', line_len + 1, final_lnum, max_code_line_len + 1))
-    document.content->add(line)
-    AppendIndentedLines(document, indent, block.text)
+    var total_lines = code_lines->len()
+    var final_lnum = start_lnum + total_lines - 1
+
+    line.props->add(GetMarkerProp('code_block', line_text_len + 1, final_lnum, max_line_len + 1))
+    content_list->add(line)
+    AppendIndentedLines(document, indent_str, remaining_lines)
   endif
 enddef
 
@@ -995,13 +1011,17 @@ def RenderLeafBlock(block: dict<any>, line: dict<any>, document: dict<list<any>>
 enddef
 
 def AppendContainerMarker(line: dict<any>, block: dict<any>): void
-  if !block->has_key('marker')
+  var marker = block->get('marker', '')
+  if marker == ''
     return
   endif
-  if block.marker =~ '\S'
-    var marker_len = block.marker->len()
+
+  var marker_len = marker->len()
+  var current_text_len = line.text->len()
+
+  if marker->trim() != ''
     line.props->add(GetMarkerProp('list_item',
-				  line.text->len() + 1,
+				  current_text_len + 1,
 				  marker_len))
     line.text ..= block.marker
     block.marker = ' '->repeat(marker_len)
