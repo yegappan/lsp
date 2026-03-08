@@ -93,10 +93,17 @@ enddef
 
 # Expand tabs to spaces in block markers (preserves tab stops)
 def ExpandTabs(line: string): string
-  var block_marker = line->matchstrpos($'^ \{{,3}}>[ \t]\+\|^[ \t]*\%({c.LIST_MARKER}\)\=[ \t]*')
-  if block_marker[0]->match('\t') < 0
+  # Fast path: no tabs present
+  if stridx(line, "\t") < 0
     return line
   endif
+
+  # Slow path: expand tabs (only when tabs are present)
+  var block_marker = line->matchstrpos($'^ \{{,3}}>[ \t]\+\|^[ \t]*\%({c.LIST_MARKER}\)\=[ \t]*')
+  if block_marker[1] < 0 || stridx(block_marker[0], "\t") < 0
+    return line
+  endif
+
   var begin: string = ""
   var begin_len = 0
   for char in block_marker[0]
@@ -115,6 +122,19 @@ enddef
 
 # Extract link reference definitions and filter them from content
 def FilterLinkReferences(data: list<string>): list<string>
+  # Quick check: if no reference definitions found, return original data
+  var has_refs = false
+  for line in data
+    if line =~ c.LINK_REFERENCE_DEF
+      has_refs = true
+      break
+    endif
+  endfor
+
+  if !has_refs
+    return data
+  endif
+
   var filtered_data: list<string> = []
   var idx = 0
   var data_len = data->len()
@@ -149,7 +169,7 @@ def ContinueContainerBlock(line_in: string, block: dict<any>): list<any>
   var line = line_in
   if block.type == 'quote_block'
     var marker = line->matchstrpos(c.BLOCK_QUOTE)
-    if marker[1] == -1
+    if marker[1] < 0
       return [false, line]
     endif
     return [true, line->strpart(marker[2])]
@@ -160,7 +180,7 @@ def ContinueContainerBlock(line_in: string, block: dict<any>): list<any>
       return [false, line]
     endif
     var marker = line->matchstrpos($'^ \{{{block.indent}}}')
-    if marker[1] == -1
+    if marker[1] < 0
       return [false, line]
     endif
     return [true, line->strpart(marker[2])]
@@ -177,21 +197,25 @@ def HandleParagraphContinuation(line: string, cur: number,
   # Check for setext heading underline
   if line =~ c.SETEXT_HEADING
     var marker = line->matchstrpos(c.SETEXT_HEADING)
-    var heading_text = open_blocks->remove(cur).text->join("\n")->substitute('\s\+$', '', '')
+    var para_block = open_blocks->remove(cur)
+    var heading_text = para_block.text->join("\n")->substitute('\s\+$', '', '')
     open_blocks->add(CreateLeafBlock('heading', heading_text, c.SETEXT_HEADING_LEVEL[marker[0][0]]))
     CloseBlocks(document, open_blocks, cur)
     return [true, false]
   endif
 
   # Check for table delimiter (only for single-line paragraphs)
-  if open_blocks[cur].text->len() == 1
+  var para_text = open_blocks[cur].text
+  if para_text->len() == 1
     var delimiter = line->matchstr(c.TABLE_DELIMITER)
     if !delimiter->empty()
-      var header_cols = open_blocks[cur].text[0]->split('\\\@1<!|')->len()
+      var header_line = para_text[0]
+      var header_cols = header_line->split('\\\@1<!|')->len()
       var delimiter_cols = delimiter->split('|')->len()
 
       if header_cols == delimiter_cols
-	open_blocks->add(CreateLeafBlock('table', open_blocks->remove(cur).text[0], delimiter))
+	open_blocks->add(CreateLeafBlock('table', header_line, delimiter))
+	open_blocks->remove(cur)
 	return [true, false]
       endif
     endif
@@ -208,7 +232,8 @@ def HandleTerminalOpenBlock(line: string, cur: number,
 
   if block.type == 'fenced_code'
     var fence_char = block.fence[0]->escape('\^$.*[]~')
-    var fence_pattern = fence_char->repeat(block.fence->len())
+    var fence_len = block.fence->len()
+    var fence_pattern = fence_char->repeat(fence_len)
 
     if line =~ $'^ \{{,3}}{fence_pattern}{fence_char}* *$'
       # Closing fence found
@@ -254,7 +279,7 @@ def ProcessOpenBlocks(line_in: string, open_blocks: list<dict<any>>, document: d
   while cur < open_blocks->len()
     var block = open_blocks[cur]
 
-    if block.type =~ 'quote_block\|list_item'
+    if c.IsContainerBlock(block)
       # Handle container blocks
       var continued = ContinueContainerBlock(line, block)
       if !continued[0]
@@ -273,7 +298,7 @@ def ProcessOpenBlocks(line_in: string, open_blocks: list<dict<any>>, document: d
 	  break
 	endif
 
-      elseif block.type == 'paragraph'
+      elseif c.IsParagraphBlock(block)
 	var para_result = HandleParagraphContinuation(line, cur, open_blocks, document)
 	if para_result[0]
 	  return [line, -1, true]
@@ -290,7 +315,147 @@ def ProcessOpenBlocks(line_in: string, open_blocks: list<dict<any>>, document: d
   return [line, cur, false]
 enddef
 
-# Handle thematic break (horizontal rule)
+# Detect line type based on content patterns
+# Returns one of: 'code_fence', 'blank', 'code_indent', 'atx_heading',
+# 'html_comment', 'html_block', 'new_containers', 'open_blocks', or 'default'
+def DetectLineType(line: string, new_containers_created: bool, open_blocks: list<dict<any>>): string
+  if line =~ c.CODE_FENCE
+    return 'code_fence'
+  elseif line =~ c.BLANK_LINE
+    return 'blank'
+  elseif line =~ c.CODE_INDENT
+    return 'code_indent'
+  elseif line =~ c.ATX_HEADING
+    return 'atx_heading'
+  elseif line =~ c.HTML_COMMENT_OPEN
+    return 'html_comment'
+  elseif line =~ c.HTML_BLOCK_OPEN
+    return 'html_block'
+  elseif new_containers_created
+    return 'new_containers'
+  elseif !open_blocks->empty()
+    return 'open_blocks'
+  else
+    return 'default'
+  endif
+enddef
+
+# Handle fenced code block start
+def HandleFencedCodeLine(line: string, cur: number, open_blocks: list<dict<any>>, document: dict<list<any>>): list<any>
+  CloseBlocks(document, open_blocks, cur)
+  open_blocks->add(CreateLeafBlock('fenced_code', line))
+  return [line, cur]
+enddef
+
+# Handle blank line within document context
+def HandleBlankLine(line: string, cur: number, open_blocks: list<dict<any>>, document: dict<list<any>>): list<any>
+  if open_blocks->empty()
+    return [line, cur]
+  endif
+  if c.IsParagraphBlock(open_blocks[-1])
+    CloseBlocks(document, open_blocks, min([cur, open_blocks->len() - 1]))
+  elseif c.IsTableBlock(open_blocks[-1])
+    CloseBlocks(document, open_blocks, open_blocks->len() - 1)
+  elseif c.IsCodeBlock(open_blocks[-1])
+    open_blocks[-1].text->add(line)
+  endif
+  return [line, cur]
+enddef
+
+# Handle indented code block
+def HandleIndentedCodeLine(line: string, cur: number, open_blocks: list<dict<any>>, document: dict<list<any>>): list<any>
+  if open_blocks->empty()
+    open_blocks->add(CreateLeafBlock('indented_code', line))
+  elseif c.IsCodeBlock(open_blocks[-1])
+    open_blocks[-1].text->add(line->matchstr(c.CODE_INDENT))
+  elseif c.IsParagraphBlock(open_blocks[-1])
+    open_blocks[-1].text->add(line->matchstr(c.PARAGRAPH))
+  else
+    CloseBlocks(document, open_blocks, cur)
+    open_blocks->add(CreateLeafBlock('indented_code', line))
+  endif
+  return [line, cur]
+enddef
+
+# Handle ATX heading (# heading)
+def HandleAtxHeadingLine(line: string, cur: number, open_blocks: list<dict<any>>, document: dict<list<any>>): list<any>
+  CloseBlocks(document, open_blocks, cur)
+  var token = line->matchlist(c.ATX_HEADING)
+  var heading_text = token->len() > 2 ? token[2] : ''
+  open_blocks->add(CreateLeafBlock('heading', heading_text, token[1]->len()))
+  CloseBlocks(document, open_blocks, cur)
+  return [line, cur]
+enddef
+
+# Handle HTML comment block
+def HandleHtmlCommentLine(line: string, cur: number, open_blocks: list<dict<any>>, document: dict<list<any>>): list<any>
+  CloseBlocks(document, open_blocks, cur)
+  open_blocks->add(CreateLeafBlock('html_comment', line))
+  if line =~ '^ \{,3}-->'
+    CloseBlocks(document, open_blocks, cur)
+  endif
+  return [line, cur]
+enddef
+
+# Handle HTML block
+def HandleHtmlBlockLine(line: string, cur: number, open_blocks: list<dict<any>>, document: dict<list<any>>): list<any>
+  CloseBlocks(document, open_blocks, cur)
+  var html_token = line->matchlist(c.HTML_BLOCK_OPEN)
+  open_blocks->add(CreateLeafBlock('html_block', line, html_token[1]))
+  if line =~ $'^ \{{,3}}</{html_token[1]}>\s*$'
+    CloseBlocks(document, open_blocks, cur)
+  endif
+  return [line, cur]
+enddef
+
+# Handle text after new container blocks
+def HandleNewContainersLine(line: string, cur: number, open_blocks: list<dict<any>>, document: dict<list<any>>): list<any>
+  if line->len() > 0
+    open_blocks->add(CreateLeafBlock('paragraph', line))
+  endif
+  return [line, cur]
+enddef
+
+# Handle content within or after open blocks
+def HandleOpenBlocksLine(line_in: string, cur_in: number, open_blocks: list<dict<any>>, document: dict<list<any>>): list<any>
+  var line = line_in
+  var cur = cur_in
+  var last_block = open_blocks[-1]
+
+  if c.IsTableBlock(last_block)
+    last_block.text->add(line)
+  elseif c.IsParagraphBlock(last_block)
+    last_block.text->add(line->matchstr(c.PARAGRAPH))
+  elseif last_block.type == 'list_item'
+    var line_len = line->len()
+    # Check if line is a new list item at same/outer indentation level
+    if line_len > 0 && line[0] != ' ' && line =~ '^\([-+*]\|[0-9]\+[.)]\) '
+      # Line starts with list marker at indent 0 - close current list item
+      CloseBlocks(document, open_blocks, 0)
+      # Process through HandleNewContainerBlocks
+      var new_container = HandleNewContainerBlocks(line, open_blocks, document, 0)
+      line = new_container[0]
+      cur = new_container[1]
+      if line->len() > 0
+	open_blocks->add(CreateLeafBlock('paragraph', line))
+      endif
+    else
+      # Continuation of current list item
+      CloseBlocks(document, open_blocks, cur)
+      open_blocks->add(CreateLeafBlock('paragraph', line))
+    endif
+  else
+    CloseBlocks(document, open_blocks, cur)
+    open_blocks->add(CreateLeafBlock('paragraph', line))
+  endif
+  return [line, cur]
+enddef
+
+# Handle default paragraph content
+def HandleDefaultLine(line: string, cur: number, open_blocks: list<dict<any>>, document: dict<list<any>>): list<any>
+  open_blocks->add(CreateLeafBlock('paragraph', line))
+  return [line, cur]
+enddef
 def HandleThematicBreak(line: string, open_blocks: list<dict<any>>, document: dict<list<any>>, width: number): bool
   if line !~ c.THEMATIC_BREAK
     return false
@@ -345,86 +510,28 @@ def HandleLineContent(line_in: string, cur_in: number, new_containers_created: b
   var line = line_in
   var cur = cur_in
 
-  if line =~ c.CODE_FENCE
-    CloseBlocks(document, open_blocks, cur)
-    open_blocks->add(CreateLeafBlock('fenced_code', line))
-  elseif line =~ c.BLANK_LINE
-    if open_blocks->empty()
-      return [line, cur]
-    endif
-    if open_blocks[-1].type == 'paragraph'
-      CloseBlocks(document, open_blocks, min([cur, open_blocks->len() - 1]))
-    elseif open_blocks[-1].type == 'table'
-      CloseBlocks(document, open_blocks, open_blocks->len() - 1)
-    elseif open_blocks[-1].type =~ '_code'
-      open_blocks[-1].text->add(line)
-    endif
-  elseif line =~ c.CODE_INDENT
-    if open_blocks->empty()
-      open_blocks->add(CreateLeafBlock('indented_code', line))
-    elseif open_blocks[-1].type =~ '_code'
-      open_blocks[-1].text->add(line->matchstr(c.CODE_INDENT))
-    elseif open_blocks[-1].type == 'paragraph'
-      open_blocks[-1].text->add(line->matchstr(c.PARAGRAPH))
-    else
-      CloseBlocks(document, open_blocks, cur)
-      open_blocks->add(CreateLeafBlock('indented_code', line))
-    endif
-  elseif line =~ c.ATX_HEADING
-    CloseBlocks(document, open_blocks, cur)
-    var token = line->matchlist(c.ATX_HEADING)
-    var heading_text = token->len() > 2 ? token[2] : ''
-    open_blocks->add(CreateLeafBlock('heading', heading_text, token[1]->len()))
-    CloseBlocks(document, open_blocks, cur)
-  elseif line =~ c.HTML_COMMENT_OPEN
-    CloseBlocks(document, open_blocks, cur)
-    open_blocks->add(CreateLeafBlock('html_comment', line))
-    if line =~ '^ \{,3}-->'
-      CloseBlocks(document, open_blocks, cur)
-    endif
-  elseif line =~ c.HTML_BLOCK_OPEN
-    CloseBlocks(document, open_blocks, cur)
-    var html_token = line->matchlist(c.HTML_BLOCK_OPEN)
-    open_blocks->add(CreateLeafBlock('html_block', line, html_token[1]))
-    if line =~ $'^ \{{,3}}</{html_token[1]}>\s*$'
-      CloseBlocks(document, open_blocks, cur)
-    endif
-  elseif new_containers_created
-    # New containers were just created, add remaining text as leaf block
-    if line->len() > 0
-      open_blocks->add(CreateLeafBlock('paragraph', line))
-    endif
-  elseif !open_blocks->empty()
-    if open_blocks[-1].type == 'table'
-      open_blocks[-1].text->add(line)
-    elseif open_blocks[-1].type == 'paragraph'
-      open_blocks[-1].text->add(line->matchstr(c.PARAGRAPH))
-    elseif open_blocks[-1].type == 'list_item'
-      # Check if line is a new list item at same/outer indentation level
-      if line->len() > 0 && line[0] != ' ' && line =~ '^\([-+*]\|[0-9]\+[.)]\) '
-	# Line starts with list marker at indent 0 - close current list item
-	CloseBlocks(document, open_blocks, 0)
-	# Process through HandleNewContainerBlocks
-	var new_container = HandleNewContainerBlocks(line, open_blocks, document, 0)
-	line = new_container[0]
-	cur = new_container[1]
-	if line->len() > 0
-	  open_blocks->add(CreateLeafBlock('paragraph', line))
-	endif
-      else
-	# Continuation of current list item
-	CloseBlocks(document, open_blocks, cur)
-	open_blocks->add(CreateLeafBlock('paragraph', line))
-      endif
-    else
-      CloseBlocks(document, open_blocks, cur)
-      open_blocks->add(CreateLeafBlock('paragraph', line))
-    endif
-  else
-    open_blocks->add(CreateLeafBlock('paragraph', line))
-  endif
+  # Detect line type and dispatch to appropriate handler
+  var line_type = DetectLineType(line, new_containers_created, open_blocks)
 
-  return [line, cur]
+  if line_type == 'code_fence'
+    return HandleFencedCodeLine(line, cur, open_blocks, document)
+  elseif line_type == 'blank'
+    return HandleBlankLine(line, cur, open_blocks, document)
+  elseif line_type == 'code_indent'
+    return HandleIndentedCodeLine(line, cur, open_blocks, document)
+  elseif line_type == 'atx_heading'
+    return HandleAtxHeadingLine(line, cur, open_blocks, document)
+  elseif line_type == 'html_comment'
+    return HandleHtmlCommentLine(line, cur, open_blocks, document)
+  elseif line_type == 'html_block'
+    return HandleHtmlBlockLine(line, cur, open_blocks, document)
+  elseif line_type == 'new_containers'
+    return HandleNewContainersLine(line, cur, open_blocks, document)
+  elseif line_type == 'open_blocks'
+    return HandleOpenBlocksLine(line, cur, open_blocks, document)
+  else
+    return HandleDefaultLine(line, cur, open_blocks, document)
+  endif
 enddef
 
 # ============================================================================

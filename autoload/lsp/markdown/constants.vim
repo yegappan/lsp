@@ -44,6 +44,17 @@ export const PUNCTUATION = MARKDOWN_PATTERNS.punctuation
 export const SETEXT_HEADING_LEVEL = {'=': 1, '-': 2}
 export const list_item = '^\([-+*]\|[0-9]\+[.)]\)\ze\s*$\|^ \{,3\}\zs\([-+*]\|[0-9]\+[.)]\) \{1,4\}\ze\S\|^ \{,3\}\zs\([-+*]\|[0-9]\+[.)]\) \{5}\ze\s*\S'
 
+# ============================================================================
+# MARKDOWN CONFIGURATION CONSTANTS
+# ============================================================================
+
+# Structural constants for markdown parsing
+export const MIN_CODE_FENCE_LENGTH = 3  # Minimum backticks/tildes for code fence
+export const CODE_INDENT_WIDTH = 4      # Spaces required for indented code block
+export const LIST_INDENT_MAX = 4        # Max spaces before list marker content
+export const TAB_STOP_WIDTH = 4         # Tab expansion width
+export const EMPHASIS_WEIGHT_THRESHOLD = 3  # GFM rule for emphasis matching
+
 # Configuration: Text property types and highlights
 const PROP_TYPES = {
   bold: {type: 'LspMarkdownBold', highlight: 'LspBold'},
@@ -129,12 +140,18 @@ export def IsRangeOverlapped(props: list<dict<any>>, col: number, length: number
     return false
   endif
 
+  # Convert types list to set (dict) for O(1) lookup
+  var type_set: dict<bool> = {}
+  for t in types
+    type_set[t] = true
+  endfor
+
   var range_start = col
   var range_end = col + length - 1
 
   for prop in props
     var p_len = prop->get('length', 0)
-    if p_len == 0 || types->index(prop.type) < 0
+    if p_len == 0 || !type_set->has_key(prop.type)
       continue
     endif
 
@@ -158,6 +175,41 @@ export def HasSyntaxForLanguage(language: string): bool
   syntax_exists_cache[language] = has_syntax
 
   return has_syntax
+enddef
+
+# ============================================================================
+# ESCAPE AND TYPE CHECKING HELPERS
+# ============================================================================
+
+# Check if a matched character sequence is escaped (preceded by odd backslashes)
+# Returns true if the backslash count before the character is even (character is escaped)
+export def IsEscaped(matched_text: string): bool
+  return matched_text->len() % 2 == 0
+enddef
+
+# Check if a block is a container block (quote or list item)
+export def IsContainerBlock(block: dict<any>): bool
+  return block.type =~ 'quote_block\|list_item'
+enddef
+
+# Check if a block is a leaf block (not a container)
+export def IsLeafBlock(block: dict<any>): bool
+  return !IsContainerBlock(block)
+enddef
+
+# Check if a block is any type of code block
+export def IsCodeBlock(block: dict<any>): bool
+  return block.type =~ '_code'
+enddef
+
+# Check if a block is a paragraph block
+export def IsParagraphBlock(block: dict<any>): bool
+  return block.type == 'paragraph'
+enddef
+
+# Check if a block is a table block
+export def IsTableBlock(block: dict<any>): bool
+  return block.type == 'table'
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab

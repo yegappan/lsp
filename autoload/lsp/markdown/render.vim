@@ -82,6 +82,16 @@ def SplitLine(line: dict<any>): list<dict<any>>
   return lines
 enddef
 
+# Split line only if it contains newlines
+def SplitLineIfNeeded(line: dict<any>): list<dict<any>>
+  # Fast path: no newlines present
+  if stridx(line.text, "\n") < 0
+    return [line]
+  endif
+  # Slow path: actually split the line
+  return SplitLine(line)
+enddef
+
 # Append indented lines to document
 def AppendIndentedLines(document: dict<list<any>>, indent: string, lines: list<string>): void
   for line_text in lines
@@ -103,8 +113,9 @@ def RenderCodeBlock(block: dict<any>, line: dict<any>, document: dict<list<any>>
 
   if block.type == 'indented_code'
     # Trim leading and trailing blank lines from indented code
+    var code_lines_len = code_lines->len()
     var first = 0
-    var last = code_lines->len() - 1
+    var last = code_lines_len - 1
     while first <= last && code_lines[first] !~ '\S'
       first += 1
     endwhile
@@ -118,6 +129,7 @@ def RenderCodeBlock(block: dict<any>, line: dict<any>, document: dict<list<any>>
     code_lines = code_lines[first : last]
   endif
 
+  # Early return for empty code blocks
   if code_lines->empty()
     return
   endif
@@ -132,9 +144,6 @@ def RenderCodeBlock(block: dict<any>, line: dict<any>, document: dict<list<any>>
 
   var start_lnum = content_list->len() + 1
 
-  # Find maximum line length for code block property
-  var max_line_len = max(code_lines->mapnew((_, v) => v->len()))
-
   # Apply syntax highlighting if available, otherwise use code_block property
   var lang = block->get('language', '')
   if lang != '' && c.HasSyntaxForLanguage(lang)
@@ -147,8 +156,10 @@ def RenderCodeBlock(block: dict<any>, line: dict<any>, document: dict<list<any>>
       end: $'\%{content_list->len()}l$'
     })
   else
-    var total_lines = code_lines->len()
-    var final_lnum = start_lnum + total_lines - 1
+    # Find maximum line length for code block property (cached calculation)
+    var max_line_len = max(code_lines->mapnew((_, v) => v->len()))
+    var code_lines_len = code_lines->len()
+    var final_lnum = start_lnum + code_lines_len - 1
 
     line.props->add(c.GetMarkerProp('code_block', line_text_len + 1, final_lnum, max_line_len + 1))
     content_list->add(line)
@@ -165,16 +176,19 @@ def RenderHTMLComment(block: dict<any>, line: dict<any>, document: dict<list<any
 enddef
 
 def RenderHeading(block: dict<any>, line: dict<any>, document: dict<list<any>>): void
-  var format = inline.ParseInlines(block.text, line.text->len())
+  var line_text_len = line.text->len()
+  var format = inline.ParseInlines(block.text, line_text_len)
+  var format_text_len = format.text->len()
+
   line.props->add(c.GetMarkerProp('heading',
-		  line.text->len() + 1,
-		  format.text->len(),
+		  line_text_len + 1,
+		  format_text_len,
 		  block.level))
 
   line.text ..= format.text
   line.props += format.props
   inline.AddTaskMarkerProp(line)
-  document.content += SplitLine(line)
+  document.content += SplitLineIfNeeded(line)
 enddef
 
 # Append table cells to line with proper formatting and properties
@@ -182,9 +196,10 @@ def AppendTableCells(line: dict<any>, cells: list<string>, is_header: bool): voi
   var first_cell = cells->remove(0)->substitute('\\|', '|', 'g')
   var line_len = line.text->len()
   var format = inline.ParseInlines(first_cell, line_len)
+  var format_text_len = format.text->len()
 
   if is_header
-    line.props->add(c.GetMarkerProp('table_header', line_len + 1, format.text->len()))
+    line.props->add(c.GetMarkerProp('table_header', line_len + 1, format_text_len))
   endif
 
   line.text ..= format.text
@@ -194,10 +209,11 @@ def AppendTableCells(line: dict<any>, cells: list<string>, is_header: bool): voi
     var col_text = cell_text->substitute('\\|', '|', 'g')
     line_len = line.text->len()
     format = inline.ParseInlines(col_text, line_len + 1)
+    format_text_len = format.text->len()
 
     line.props->add(c.GetMarkerProp('table_sep', line_len + 1, 1))
     if is_header
-      line.props->add(c.GetMarkerProp('table_header', line_len + 2, format.text->len()))
+      line.props->add(c.GetMarkerProp('table_header', line_len + 2, format_text_len))
     endif
 
     line.text ..= $'|{format.text}'
@@ -208,6 +224,7 @@ enddef
 # Render table block with header, delimiter, and rows
 def RenderTable(block: dict<any>, line: dict<any>, document: dict<list<any>>): void
   var indent = line.text
+  var indent_len = indent->len()
   var header_cells = block.header->split('\\\@1<!|')
 
   # Render header row
@@ -215,16 +232,18 @@ def RenderTable(block: dict<any>, line: dict<any>, document: dict<list<any>>): v
   document.content->add(line)
 
   # Render delimiter row
+  var delimiter_len = block.delimiter->len()
   var delimiter_line = {
     text: indent .. block.delimiter,
-    props: [c.GetMarkerProp('table_sep', indent->len() + 1, block.delimiter->len())]
+    props: [c.GetMarkerProp('table_sep', indent_len + 1, delimiter_len)]
   }
   document.content->add(delimiter_line)
 
   # Render data rows
+  const split_pattern = '\\\@1<!|'
   for row in block.text
     var data_line = {text: indent, props: []}
-    var row_cells = row->split('\\\@1<!|')
+    var row_cells = row->split(split_pattern)
     AppendTableCells(data_line, row_cells, false)
     document.content->add(data_line)
   endfor
@@ -236,11 +255,11 @@ def RenderParagraph(block: dict<any>, line: dict<any>, document: dict<list<any>>
   line.text ..= format.text
   line.props += format.props
   inline.AddTaskMarkerProp(line)
-  document.content += SplitLine(line)
+  document.content += SplitLineIfNeeded(line)
 enddef
 
 def RenderLeafBlock(block: dict<any>, line: dict<any>, document: dict<list<any>>): void
-  if block.type =~ '_code'
+  if c.IsCodeBlock(block)
     RenderCodeBlock(block, line, document)
   elseif block.type == 'html_block'
     RenderHTMLBlock(block, line, document)
@@ -248,9 +267,9 @@ def RenderLeafBlock(block: dict<any>, line: dict<any>, document: dict<list<any>>
     RenderHTMLComment(block, line, document)
   elseif block.type == 'heading'
     RenderHeading(block, line, document)
-  elseif block.type == 'table'
+  elseif c.IsTableBlock(block)
     RenderTable(block, line, document)
-  elseif block.type == 'paragraph'
+  elseif c.IsParagraphBlock(block)
     RenderParagraph(block, line, document)
   endif
 enddef
@@ -263,15 +282,16 @@ def AppendContainerMarker(line: dict<any>, block: dict<any>): void
 
   var marker_len = marker->len()
   var current_text_len = line.text->len()
+  var marker_trimmed = marker->trim()
 
-  if marker->trim() != ''
+  if marker_trimmed != ''
     line.props->add(c.GetMarkerProp('list_item',
 				  current_text_len + 1,
 				  marker_len))
-    line.text ..= block.marker
+    line.text ..= marker
     block.marker = ' '->repeat(marker_len)
   else
-    line.text ..= block.marker
+    line.text ..= marker
   endif
 enddef
 
@@ -296,10 +316,10 @@ export def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start
 
   var prev_was_container = false
   for block in blocks->remove(start, -1)
-    if block.type =~ 'quote_block\|list_item'
+    if c.IsContainerBlock(block)
       # Finalize previous sibling container before adding new one
       if prev_was_container && line.text =~ '\S'
-	document.content += SplitLine(line)
+	document.content += SplitLineIfNeeded(line)
 	line = {text: '', props: []}
       endif
       AppendContainerMarker(line, block)
@@ -315,7 +335,7 @@ export def CloseBlocks(document: dict<list<any>>, blocks: list<dict<any>>, start
   endfor
   # Finalize the last container block if it has content
   if line.text->len() > 0
-    document.content += SplitLine(line)
+    document.content += SplitLineIfNeeded(line)
   endif
 enddef
 

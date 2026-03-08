@@ -14,9 +14,12 @@ const INLINE_PROP_TYPES = {
 }
 
 var reference_defs: dict<string> = {}
+var normalized_labels_cache: dict<string> = {}
 
 export def SetReferenceDefinitions(refs: dict<string>): void
   reference_defs = refs
+  # Clear cache when new references are set
+  normalized_labels_cache = {}
 enddef
 
 # ============================================================================
@@ -98,7 +101,7 @@ def GetCodeSpans(text: string): list<dict<any>>
     endif
 
     # Check if backtick is escaped (even number of backslashes)
-    if backtick[0]->len() % 2 == 0
+    if c.IsEscaped(backtick[0])
       search_pos = backtick[2]
       continue
     endif
@@ -181,7 +184,13 @@ enddef
 
 # Normalize reference label for lookup (lowercase, collapse whitespace)
 export def NormalizeReferenceLabel(label: string): string
-  return label->tolower()->substitute('\s\+', ' ', 'g')->trim()
+  if normalized_labels_cache->has_key(label)
+    return normalized_labels_cache[label]
+  endif
+
+  var normalized = label->tolower()->substitute('\s\+', ' ', 'g')->trim()
+  normalized_labels_cache[label] = normalized
+  return normalized
 enddef
 
 # Resolve reference link to display text or return original if not found
@@ -211,6 +220,13 @@ enddef
 
 def StripInlineLinks(text: string): string
   var result = ResolveReferenceLinks(text)
+
+  # Fast path: no links present
+  if result !~ '!\=\[\|<https\?://\|<[^< >]\+@'
+    return result
+  endif
+
+  result = result
     ->substitute('<\(https\?://[^>[:space:]]\+\)>', '\1', 'g')
     ->substitute('<\([^< >]\+@[^< >]\+\)>', '\1', 'g')
     # Handle links - must preserve link text, remove link syntax
@@ -235,6 +251,14 @@ enddef
 
 # Preprocess inline text: strip links, detect code spans, decode HTML entities
 def PreprocessInlineText(text: string): string
+  # Fast path: no special content to process
+  if text !~ '!\=\[\|<\|&#\|&nbsp;\|&lt;\|&gt;\|&amp;\|&quot;\|&apos;'
+    var code_spans = GetCodeSpans(text)
+    if code_spans->empty()
+      return text
+    endif
+  endif
+
   var text_no_links = StripInlineLinks(text)
   var code_spans = GetCodeSpans(text_no_links)
 
@@ -280,7 +304,7 @@ def GetNextInlineDelimiter(text: string, start_pos: number, end_pos: number): di
     endif
 
     # Check if delimiter is escaped
-    if delimiter[0]->len() % 2 == 0
+    if c.IsEscaped(delimiter[0])
       search_pos = delimiter[2]
       continue
     endif
