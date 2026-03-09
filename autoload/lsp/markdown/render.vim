@@ -108,27 +108,60 @@ def RenderRawMultilineBlock(block: dict<any>, line: dict<any>, document: dict<li
   AppendIndentedLines(document, indent, block.text)
 enddef
 
+def TrimIndentedCodeLines(code_lines: list<string>): list<string>
+  # Trim leading and trailing blank lines from indented code
+  var code_lines_len = code_lines->len()
+  var first = 0
+  var last = code_lines_len - 1
+  while first <= last && code_lines[first] !~ '\S'
+    first += 1
+  endwhile
+  while last >= first && code_lines[last] !~ '\S'
+    last -= 1
+  endwhile
+
+  if first > last
+    return []
+  endif
+  return code_lines[first : last]
+enddef
+
+def AppendCodeBlockWithSyntax(document: dict<list<any>>, line: dict<any>, indent_str: string,
+			    remaining_lines: list<string>, lang: string,
+			    start_lnum: number, line_text_len: number): void
+  var content_list = document.content
+  content_list->add(line)
+  AppendIndentedLines(document, indent_str, remaining_lines)
+
+  document.syntax->add({
+    lang: lang,
+    start: $'\%{start_lnum}l\%{line_text_len + 1}c',
+    end: $'\%{content_list->len()}l$'
+  })
+enddef
+
+def AppendCodeBlockWithMarker(document: dict<list<any>>, line: dict<any>, indent_str: string,
+			    remaining_lines: list<string>, code_lines: list<string>,
+			    start_lnum: number, line_text_len: number): void
+  var content_list = document.content
+
+  # Optimization: calculate max line length once (cached)
+  var max_line_len = max(code_lines->mapnew((_, v) => v->len()))
+  var code_lines_len = code_lines->len()
+  var final_lnum = start_lnum + code_lines_len - 1
+
+  line.props->add(c.GetMarkerProp('code_block', line_text_len + 1, final_lnum, max_line_len + 1))
+  content_list->add(line)
+  AppendIndentedLines(document, indent_str, remaining_lines)
+enddef
+
 # Render code block with optional syntax highlighting
 # Uses Vim's syntax system for known languages, otherwise applies code_block property
 def RenderCodeBlock(block: dict<any>, line: dict<any>, document: dict<list<any>>): void
   var code_lines = block.text
 
   if block.type == 'indented_code'
-    # Trim leading and trailing blank lines from indented code
-    var code_lines_len = code_lines->len()
-    var first = 0
-    var last = code_lines_len - 1
-    while first <= last && code_lines[first] !~ '\S'
-      first += 1
-    endwhile
-    while last >= first && code_lines[last] !~ '\S'
-      last -= 1
-    endwhile
-
-    if first > last
-      return
-    endif
-    code_lines = code_lines[first : last]
+    code_lines = TrimIndentedCodeLines(code_lines)
   endif
 
   # Early return for empty code blocks
@@ -149,23 +182,9 @@ def RenderCodeBlock(block: dict<any>, line: dict<any>, document: dict<list<any>>
   # Syntax highlighting if language is recognized, else use text properties
   var lang = block->get('language', '')
   if lang != '' && c.HasSyntaxForLanguage(lang)
-    content_list->add(line)
-    AppendIndentedLines(document, indent_str, remaining_lines)
-
-    document.syntax->add({
-      lang: lang,
-      start: $'\%{start_lnum}l\%{line_text_len + 1}c',
-      end: $'\%{content_list->len()}l$'
-    })
+    AppendCodeBlockWithSyntax(document, line, indent_str, remaining_lines, lang, start_lnum, line_text_len)
   else
-    # Optimization: calculate max line length once (cached)
-    var max_line_len = max(code_lines->mapnew((_, v) => v->len()))
-    var code_lines_len = code_lines->len()
-    var final_lnum = start_lnum + code_lines_len - 1
-
-    line.props->add(c.GetMarkerProp('code_block', line_text_len + 1, final_lnum, max_line_len + 1))
-    content_list->add(line)
-    AppendIndentedLines(document, indent_str, remaining_lines)
+    AppendCodeBlockWithMarker(document, line, indent_str, remaining_lines, code_lines, start_lnum, line_text_len)
   endif
 enddef
 
@@ -193,35 +212,44 @@ def RenderHeading(block: dict<any>, line: dict<any>, document: dict<list<any>>):
   document.content += SplitLineIfNeeded(line)
 enddef
 
-# Append table cells to line with proper formatting and properties
-# Handles inline parsing and property distribution for each cell
-def AppendTableCells(line: dict<any>, cells: list<string>, is_header: bool): void
-  var first_cell = cells->remove(0)->substitute('\\|', '|', 'g')
+def ParseTableCell(cell_text: string, rel_pos: number): dict<any>
+  var col_text = cell_text->substitute('\\|', '|', 'g')
+  var format = inline.ParseInlines(col_text, rel_pos)
+  return {
+    text: format.text,
+    props: format.props
+  }
+enddef
+
+def AppendTableCell(line: dict<any>, cell_text: string, is_header: bool, has_separator: bool): void
   var line_len = line.text->len()
-  var format = inline.ParseInlines(first_cell, line_len)
+  var rel_pos = has_separator ? line_len + 1 : line_len
+  var format = ParseTableCell(cell_text, rel_pos)
   var format_text_len = format.text->len()
 
+  if has_separator
+    line.props->add(c.GetMarkerProp('table_sep', line_len + 1, 1))
+    # Cached line_len ensures proper positioning
+    line.text ..= '|'
+  endif
+
   if is_header
-    line.props->add(c.GetMarkerProp('table_header', line_len + 1, format_text_len))
+    var header_col = has_separator ? line_len + 2 : line_len + 1
+    line.props->add(c.GetMarkerProp('table_header', header_col, format_text_len))
   endif
 
   line.text ..= format.text
   line.props += format.props
+enddef
+
+# Append table cells to line with proper formatting and properties
+# Handles inline parsing and property distribution for each cell
+def AppendTableCells(line: dict<any>, cells: list<string>, is_header: bool): void
+  var first_cell = cells->remove(0)
+  AppendTableCell(line, first_cell, is_header, false)
 
   for cell_text in cells
-    var col_text = cell_text->substitute('\\|', '|', 'g')
-    line_len = line.text->len()
-    format = inline.ParseInlines(col_text, line_len + 1)
-    format_text_len = format.text->len()
-
-    line.props->add(c.GetMarkerProp('table_sep', line_len + 1, 1))
-    if is_header
-      line.props->add(c.GetMarkerProp('table_header', line_len + 2, format_text_len))
-    endif
-
-    # Cached line_len ensures proper positioning
-    line.text ..= $'|{format.text}'
-    line.props += format.props
+    AppendTableCell(line, cell_text, is_header, true)
   endfor
 enddef
 

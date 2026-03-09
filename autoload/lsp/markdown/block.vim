@@ -277,6 +277,31 @@ def HandleTerminalOpenBlock(line: string, cur: number,
   return [false, false, false]
 enddef
 
+def ProcessContainerOpenBlock(line: string, block: dict<any>): list<any>
+  var continued = ContinueContainerBlock(line, block)
+  if !continued[0]
+    return [line, false]
+  endif
+  return [continued[1], true]
+enddef
+
+def ProcessLeafOpenBlock(line: string, cur: number,
+		    open_blocks: list<dict<any>>, document: dict<list<any>>): list<any>
+  # Returns [handled, consumed, should_break]
+  var block = open_blocks[cur]
+  var terminal = HandleTerminalOpenBlock(line, cur, open_blocks, document)
+  if terminal[0]
+    return [true, terminal[1], terminal[2]]
+  endif
+
+  if c.IsParagraphBlock(block)
+    var para_result = HandleParagraphContinuation(line, cur, open_blocks, document)
+    return [true, para_result[0], para_result[1]]
+  endif
+
+  return [false, false, false]
+enddef
+
 # Process open blocks to see how many the current line continues
 # Returns: [processed_line, block_index, consumed]
 #   block_index: how many blocks matched (-1 if line was consumed)
@@ -290,29 +315,20 @@ def ProcessOpenBlocks(line_in: string, open_blocks: list<dict<any>>, document: d
 
     if c.IsContainerBlock(block)
       # Handle container blocks
-      var continued = ContinueContainerBlock(line, block)
-      if !continued[0]
+      var container_result = ProcessContainerOpenBlock(line, block)
+      if !container_result[1]
 	break
       endif
-      line = continued[1]
+      line = container_result[0]
 
     else
       # Handle leaf blocks
-      var terminal = HandleTerminalOpenBlock(line, cur, open_blocks, document)
-      if terminal[0]
-	if terminal[1]
+      var leaf_result = ProcessLeafOpenBlock(line, cur, open_blocks, document)
+      if leaf_result[0]
+	if leaf_result[1]
 	  return [line, -1, true]
 	endif
-	if terminal[2]
-	  break
-	endif
-
-      elseif c.IsParagraphBlock(block)
-	var para_result = HandleParagraphContinuation(line, cur, open_blocks, document)
-	if para_result[0]
-	  return [line, -1, true]
-	endif
-	if para_result[1]
+	if leaf_result[2]
 	  break
 	endif
       endif
@@ -426,6 +442,36 @@ def HandleNewContainersLine(line: string, cur: number, open_blocks: list<dict<an
   return [line, cur]
 enddef
 
+def IsTopLevelListItemStart(line: string): bool
+  var line_len = line->len()
+  return line_len > 0 && line[0] != ' ' && line =~ '^\([-+*]\|[0-9]\+[.)]\) '
+enddef
+
+def HandleListItemOpenBlocksLine(line_in: string, cur_in: number,
+			 open_blocks: list<dict<any>>, document: dict<list<any>>): list<any>
+  var line = line_in
+  var cur = cur_in
+
+  # Check if line is a new list item at same/outer indentation level
+  if IsTopLevelListItemStart(line)
+    # Line starts with list marker at indent 0 - close current list item
+    CloseBlocks(document, open_blocks, 0)
+    # Process through HandleNewContainerBlocks
+    var new_container = HandleNewContainerBlocks(line, open_blocks, document, 0)
+    line = new_container[0]
+    cur = new_container[1]
+    if line->len() > 0
+      open_blocks->add(CreateLeafBlock('paragraph', line))
+    endif
+  else
+    # Continuation of current list item
+    CloseBlocks(document, open_blocks, cur)
+    open_blocks->add(CreateLeafBlock('paragraph', line))
+  endif
+
+  return [line, cur]
+enddef
+
 # Handle content within or after open blocks
 def HandleOpenBlocksLine(line_in: string, cur_in: number, open_blocks: list<dict<any>>, document: dict<list<any>>): list<any>
   var line = line_in
@@ -437,23 +483,9 @@ def HandleOpenBlocksLine(line_in: string, cur_in: number, open_blocks: list<dict
   elseif c.IsParagraphBlock(last_block)
     last_block.text->add(line->matchstr(c.PARAGRAPH))
   elseif last_block.type == 'list_item'
-    var line_len = line->len()
-    # Check if line is a new list item at same/outer indentation level
-    if line_len > 0 && line[0] != ' ' && line =~ '^\([-+*]\|[0-9]\+[.)]\) '
-      # Line starts with list marker at indent 0 - close current list item
-      CloseBlocks(document, open_blocks, 0)
-      # Process through HandleNewContainerBlocks
-      var new_container = HandleNewContainerBlocks(line, open_blocks, document, 0)
-      line = new_container[0]
-      cur = new_container[1]
-      if line->len() > 0
-	open_blocks->add(CreateLeafBlock('paragraph', line))
-      endif
-    else
-      # Continuation of current list item
-      CloseBlocks(document, open_blocks, cur)
-      open_blocks->add(CreateLeafBlock('paragraph', line))
-    endif
+    var list_result = HandleListItemOpenBlocksLine(line, cur, open_blocks, document)
+    line = list_result[0]
+    cur = list_result[1]
   else
     CloseBlocks(document, open_blocks, cur)
     open_blocks->add(CreateLeafBlock('paragraph', line))

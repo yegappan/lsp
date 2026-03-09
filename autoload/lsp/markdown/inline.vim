@@ -130,12 +130,7 @@ def GetCodeSpans(text: string): list<dict<any>>
 enddef
 
 # Unescape markdown escape sequences and normalize whitespace
-def Unescape(text: string, block_marker: string = ""): string
-  if block_marker == '`'
-    # Line breaks do not occur inside code spans
-    return text->substitute('\n', ' ', 'g')
-  endif
-
+def NormalizeMarkdownLineBreaks(text: string): string
   # Handle hard line breaks (backslash followed by newline)
   var result = text->substitute('\\\@<!\(\(\\\\\)*\)\\\n', '\1  \n', 'g')
 
@@ -146,11 +141,23 @@ def Unescape(text: string, block_marker: string = ""): string
   result = result->substitute(' \{2,}\n', '\n', 'g')
 
   # Replace non-breaking spaces
-  result = result->substitute('&nbsp;', ' ', 'g')
+  return result->substitute('&nbsp;', ' ', 'g')
+enddef
 
+def UnescapeMarkdownPunctuation(text: string): string
   # Unescape only markdown punctuation characters (preserve \u sequences)
   var punct = '!"#$%&' .. "'" .. '()*+,-./:;<=>?@[\]^_`{|}~'
-  return result->substitute('\\\([' .. punct .. ']\)', '\1', 'g')
+  return text->substitute('\\\([' .. punct .. ']\)', '\1', 'g')
+enddef
+
+def Unescape(text: string, block_marker: string = ""): string
+  if block_marker == '`'
+    # Line breaks do not occur inside code spans
+    return text->substitute('\n', ' ', 'g')
+  endif
+
+  var result = NormalizeMarkdownLineBreaks(text)
+  return UnescapeMarkdownPunctuation(result)
 enddef
 
 def DecodeHtmlEntities(text: string): string
@@ -218,6 +225,34 @@ def ResolveReferenceLinks(text: string): string
     '\=ResolveReferenceText(submatch(1), submatch(1), submatch(0))',
     'g')
 enddef
+
+def StripSimpleInlineLinks(text: string): string
+  return text
+    ->substitute('<\(https\?://[^>[:space:]]\+\)>', '\1', 'g')
+    ->substitute('<\([^< >]\+@[^< >]\+\)>', '\1', 'g')
+    # Handle links - must preserve link text, remove link syntax
+    # Empty URL: [text]()
+    ->substitute('\!\=\[\([^][]*\)\](\s*)', '\1', 'g')
+    # URL with angle brackets and optional title: [text](<url> "title")
+    ->substitute('\!\=\[\([^][]*\)\](\s*<[^>]\+>\s*\%("[^"]*"\|''[^'']*''\|(\([^)]\|\\.\)*)\)\=\s*)', '\1', 'g')
+    # URL (possibly with parens) and optional title: [text](url "title")
+    ->substitute('\!\=\[\([^][]*\)\](\s*[^()[:space:]]\+\%(([^()]*)[^()[:space:]]*\)*\s*\%("[^"]*"\|''[^'']*''\|(\([^)]\|\\.\)*)\)\=\s*)', '\1', 'g')
+enddef
+
+def StripComplexInlineLinks(text: string): string
+  var result = text
+
+  # Fallback for complex nested cases
+  while true
+    var stripped = result->substitute('\!\=\[\([^][]\+\)\](\s*[^)]\+\s*)', '\1', 'g')
+    if stripped == result
+      break
+    endif
+    result = stripped
+  endwhile
+
+  return result
+enddef
 # Strip inline links/images for display purposes
 # Optimization: fast-path check avoids expensive regex when no links present
 def StripInlineLinks(text: string): string
@@ -228,25 +263,8 @@ def StripInlineLinks(text: string): string
     return result
   endif
 
-  result = result
-    ->substitute('<\(https\?://[^>[:space:]]\+\)>', '\1', 'g')
-    ->substitute('<\([^< >]\+@[^< >]\+\)>', '\1', 'g')
-    # Handle links - must preserve link text, remove link syntax
-    # Empty URL: [text]()
-    ->substitute('\!\=\[\([^][]*\)\](\s*)', '\1', 'g')
-    # URL with angle brackets and optional title: [text](<url> "title")
-    ->substitute('\!\=\[\([^][]*\)\](\s*<[^>]\+>\s*\%("[^"]*"\|''[^'']*''\|(\([^)]\|\\.\)*)\)\=\s*)', '\1', 'g')
-    # URL (possibly with parens) and optional title: [text](url "title")
-    ->substitute('\!\=\[\([^][]*\)\](\s*[^()[:space:]]\+\%(([^()]*)[^()[:space:]]*\)*\s*\%("[^"]*"\|''[^'']*''\|(\([^)]\|\\.\)*)\)\=\s*)', '\1', 'g')
-
-  # Fallback for complex nested cases
-  while true
-    var stripped = result->substitute('\!\=\[\([^][]\+\)\](\s*[^)]\+\s*)', '\1', 'g')
-    if stripped == result
-      break
-    endif
-    result = stripped
-  endwhile
+  result = StripSimpleInlineLinks(result)
+  result = StripComplexInlineLinks(result)
 
   return result
 enddef
