@@ -15,6 +15,7 @@ var reference_defs: dict<string> = {}
 # ============================================================================
 
 # Create a new container block (quote or list item)
+# match: [matched_text, start_pos, end_pos] from matchstrpos()
 def CreateContainerBlock(match: list<any>, start_lnum: number): dict<any>
   if match[0][0] == '>'
     return {
@@ -27,12 +28,14 @@ def CreateContainerBlock(match: list<any>, start_lnum: number): dict<any>
       type: 'list_item',
       lnum: start_lnum,
       marker: $' {match[0]->matchstr("\\S\\+")} ',
+      # End position becomes indent level for continuation
       indent: match[2]
     }
   endif
 enddef
 
 # Create a new leaf block (code, paragraph, heading, table, etc.)
+# opt: type-specific parameters (e.g., heading level, table delimiter)
 def CreateLeafBlock(block_type: string, line: string, ...opt: list<any>): dict<any>
   if block_type == 'fenced_code'
     var token = line->matchlist(c.CODE_FENCE)
@@ -104,10 +107,12 @@ def ExpandTabs(line: string): string
     return line
   endif
 
+  # Expand tabs respecting 4-space tab stops
   var begin: string = ""
   var begin_len = 0
   for char in block_marker[0]
     if char == '	'
+      # Next tab stop
       var spaces_needed = 4 - (begin_len % 4)
       begin ..= ' '->repeat(spaces_needed)
       begin_len += spaces_needed
@@ -121,6 +126,7 @@ def ExpandTabs(line: string): string
 enddef
 
 # Extract link reference definitions and filter them from content
+# Optimization: Early scan to avoid rebuilding array when no refs present
 def FilterLinkReferences(data: list<string>): list<string>
   # Quick check: if no reference definitions found, return original data
   var has_refs = false
@@ -225,6 +231,7 @@ def HandleParagraphContinuation(line: string, cur: number,
 enddef
 
 # Handle terminal open blocks (fenced code, indented code, HTML)
+# Terminal blocks consume lines until their closing condition is met
 def HandleTerminalOpenBlock(line: string, cur: number,
 			    open_blocks: list<dict<any>>, document: dict<list<any>>): list<any>
   # Returns [handled, consumed, should_break]
@@ -271,8 +278,10 @@ def HandleTerminalOpenBlock(line: string, cur: number,
 enddef
 
 # Process open blocks to see how many the current line continues
+# Returns: [processed_line, block_index, consumed]
+#   block_index: how many blocks matched (-1 if line was consumed)
+#   consumed: true if line was fully processed (e.g., inside code block)
 def ProcessOpenBlocks(line_in: string, open_blocks: list<dict<any>>, document: dict<list<any>>): list<any>
-  # Returns [processed_line, block_index, consumed]
   var line = line_in
   var cur = 0
 
@@ -315,9 +324,10 @@ def ProcessOpenBlocks(line_in: string, open_blocks: list<dict<any>>, document: d
   return [line, cur, false]
 enddef
 
-# Detect line type based on content patterns
+# Detect line type based on content patterns (dispatch optimization)
 # Returns one of: 'code_fence', 'blank', 'code_indent', 'atx_heading',
 # 'html_comment', 'html_block', 'new_containers', 'open_blocks', or 'default'
+# Pattern matching happens once; handlers process based on type
 def DetectLineType(line: string, new_containers_created: bool, open_blocks: list<dict<any>>): string
   if line =~ c.CODE_FENCE
     return 'code_fence'

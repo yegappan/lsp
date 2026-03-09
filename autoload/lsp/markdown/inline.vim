@@ -183,6 +183,7 @@ enddef
 # ============================================================================
 
 # Normalize reference label for lookup (lowercase, collapse whitespace)
+# Caching optimization: avoids repeated normalization of same labels
 export def NormalizeReferenceLabel(label: string): string
   if normalized_labels_cache->has_key(label)
     return normalized_labels_cache[label]
@@ -217,7 +218,8 @@ def ResolveReferenceLinks(text: string): string
     '\=ResolveReferenceText(submatch(1), submatch(1), submatch(0))',
     'g')
 enddef
-
+# Strip inline links/images for display purposes
+# Optimization: fast-path check avoids expensive regex when no links present
 def StripInlineLinks(text: string): string
   var result = ResolveReferenceLinks(text)
 
@@ -250,6 +252,7 @@ def StripInlineLinks(text: string): string
 enddef
 
 # Preprocess inline text: strip links, detect code spans, decode HTML entities
+# Optimization: fast-path check avoids GetCodeSpans when no special chars present
 def PreprocessInlineText(text: string): string
   # Fast path: no special content to process
   if text !~ '!\=\[\|<\|&#\|&nbsp;\|&lt;\|&gt;\|&amp;\|&quot;\|&apos;'
@@ -278,7 +281,7 @@ def PreprocessInlineText(text: string): string
       result ..= DecodeHtmlEntities(segment)
     endif
 
-    # Preserve code span content exactly (no HTML decoding)
+    # Code spans preserve literal content (no HTML entity decoding)
     result ..= text_no_links->strpart(span.start[0], span.end[1] - span.start[0])
     search_pos = span.end[1]
   endfor
@@ -292,6 +295,7 @@ def PreprocessInlineText(text: string): string
 enddef
 
 # Find the next emphasis/strikethrough delimiter in text
+# Returns delimiter with flanking info per GFM emphasis rules
 def GetNextInlineDelimiter(text: string, start_pos: number, end_pos: number): dict<any>
   var search_pos = start_pos
   var text_len = text->len()
@@ -348,12 +352,12 @@ def GetNextInlineDelimiter(text: string, start_pos: number, end_pos: number): di
       continue
     endif
 
-    # Apply GFM emphasis rules for underscores
+    # GFM intra-word rule: _ cannot emphasize inside words (unlike *)
     if delimiter_run[0][0] == '_'
       var preceded_by_word = delimiter_run[1] > 0 && text[delimiter_run[1] - 1] =~ '\w'
       var followed_by_word = delimiter_run[2] < text_len && text[delimiter_run[2]] =~ '\w'
 
-      # Underscore intra-word emphasis is disallowed in GFM
+      # Example: foo_bar_baz does not produce emphasis
       if preceded_by_word && followed_by_word
 	search_pos = delimiter_run[2]
 	continue
@@ -397,6 +401,7 @@ def GetNextInlineBlock(text: string, blocks: list<any>, rel_pos: number): dict<a
 enddef
 
 # Match right delimiter with left delimiters in sequence
+# Implements GFM emphasis matching algorithm with sum rule
 def MatchRightDelimiter(delimiter: dict<any>, seq: list<any>): void
   var idx = seq->len() - 1
 
@@ -410,7 +415,9 @@ def MatchRightDelimiter(delimiter: dict<any>, seq: list<any>): void
     var delimiter_len = delimiter.marker->len()
     var seq_marker_len = seq[idx].marker->len()
 
-    # Apply GFM rule: check sum rule for emphasis matching
+    # GFM sum rule: prevents ***text*** from mismatching when nested
+    # If both delimiters can open/close and their sum is divisible by 3,
+    # they don't match (unless one is also divisible by 3)
     if delimiter.left || seq[idx].right
       if (delimiter_len + seq_marker_len) % 3 == 0
 	  && (delimiter_len % 3 > 0 || seq_marker_len % 3 > 0)
@@ -419,10 +426,10 @@ def MatchRightDelimiter(delimiter: dict<any>, seq: list<any>): void
       endif
     endif
 
-    # Match with minimum of delimiter lengths (max 2 for strong)
+    # Match emphasis: use min of both delimiter lengths (max 2 for strong)
     var marker_len = min([delimiter_len, seq_marker_len, 2])
 
-    # If left delimiter is longer, split it
+    # Split longer opener to consume only what's needed
     if seq_marker_len > marker_len
       var new_delim = {
 	marker: delimiter.marker[0]->repeat(marker_len),
@@ -475,7 +482,7 @@ def FindEmphasisMatches(input_text: string, code_spans: list<dict<any>>): list<d
     var code_pos_start = text_len
     var code_pos_end = text_len
 
-    # Handle code spans (skip emphasis inside code)
+    # Skip emphasis processing inside code spans
     if span_idx < num_spans
       var span = code_spans[span_idx]
       code_pos_start = span.start[0]
@@ -516,8 +523,7 @@ def FindEmphasisMatches(input_text: string, code_spans: list<dict<any>>): list<d
     seq->extend(code_spans[span_idx :])
   endif
 
-  # Remove unclosed delimiters
-  # This keeps only matched emphasis blocks and all code spans
+  # Remove unclosed delimiters (keeps only matched emphasis and code spans)
   return seq->filter((_, val) => val->has_key('end'))
 enddef
 

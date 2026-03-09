@@ -114,6 +114,7 @@ highlight LspStrikeThrough term=strikethrough cterm=strikethrough gui=strikethro
 # ============================================================================
 
 # Create a text property for a given marker type
+# Returns property dict with type, col, and either length or end_lnum/end_col
 export def GetMarkerProp(marker: string, col: number, ...opt: list<any>): dict<any>
   var prop_key = MARKER_PROP_MAP->get(marker, '')
   if prop_key == ''
@@ -123,7 +124,7 @@ export def GetMarkerProp(marker: string, col: number, ...opt: list<any>): dict<a
   var prop_config = PROP_TYPES[prop_key]
   var result = {type: prop_config.type, col: col}
 
-  # Code blocks use end position instead of length
+  # Code blocks span multiple lines using end position
   if marker == 'code_block'
     result.end_lnum = opt[0]
     result.end_col = opt[1]
@@ -135,12 +136,13 @@ export def GetMarkerProp(marker: string, col: number, ...opt: list<any>): dict<a
 enddef
 
 # Check if a text range overlaps with any existing properties of specific types
+# Optimization: O(1) intersection check instead of O(n) element-wise comparison
 export def IsRangeOverlapped(props: list<dict<any>>, col: number, length: number, ...types: list<string>): bool
   if length <= 0
     return false
   endif
 
-  # Convert types list to set (dict) for O(1) lookup
+  # Convert types list to dict for O(1) membership testing
   var type_set: dict<bool> = {}
   for t in types
     type_set[t] = true
@@ -156,6 +158,7 @@ export def IsRangeOverlapped(props: list<dict<any>>, col: number, length: number
     endif
 
     var prop_end = prop.col + p_len - 1
+    # Two ranges overlap if one starts before the other ends
     if range_start <= prop_end && range_end >= prop.col
       return true
     endif
@@ -167,6 +170,7 @@ enddef
 var syntax_exists_cache: dict<bool> = {}
 
 # Check if syntax highlighting is available for a given language
+# Caching optimization: globpath is expensive, cache results per language
 export def HasSyntaxForLanguage(language: string): bool
   if syntax_exists_cache->has_key(language)
     return syntax_exists_cache[language]
@@ -182,7 +186,7 @@ enddef
 # ============================================================================
 
 # Check if a matched character sequence is escaped (preceded by odd backslashes)
-# Returns true if the backslash count before the character is even (character is escaped)
+# Example: \\\* has 2 backslashes before *, so * is escaped (matched_text = "\\\*")
 export def IsEscaped(matched_text: string): bool
   return matched_text->len() % 2 == 0
 enddef

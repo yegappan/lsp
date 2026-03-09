@@ -33,6 +33,7 @@ def NeedBlankLine(prev: string, cur: string): bool
 enddef
 
 # Split a line with text properties at newline boundaries
+# Handles property splitting across lines: properties may span, fit, or start in next line
 def SplitLine(line: dict<any>): list<dict<any>>
   var tokens: list<string> = line.text->split("\n", true)
   var tokens_len = tokens->len()
@@ -55,11 +56,11 @@ def SplitLine(line: dict<any>): list<dict<any>>
 	# Property fits entirely in current line
 	cur_props->add(prop)
       elseif prop.col > text_length
-	# Property starts in next line
+	# Property starts in next line (adjust column)
 	prop.col -= text_length + 1
 	next_props->add(prop)
       else
-	# Property spans lines - split it
+	# Property spans multiple lines - split proportionally
 	var cur_length: number = text_length - prop.col + 1
 	cur_props->add({
 	  type: prop.type,
@@ -82,13 +83,13 @@ def SplitLine(line: dict<any>): list<dict<any>>
   return lines
 enddef
 
-# Split line only if it contains newlines
+# Split line only if it contains newlines (optimization: fast-path check)
 def SplitLineIfNeeded(line: dict<any>): list<dict<any>>
-  # Fast path: no newlines present
+  # Fast path: no newlines present (common case)
   if stridx(line.text, "\n") < 0
     return [line]
   endif
-  # Slow path: actually split the line
+  # Slow path: split and distribute properties
   return SplitLine(line)
 enddef
 
@@ -108,6 +109,7 @@ def RenderRawMultilineBlock(block: dict<any>, line: dict<any>, document: dict<li
 enddef
 
 # Render code block with optional syntax highlighting
+# Uses Vim's syntax system for known languages, otherwise applies code_block property
 def RenderCodeBlock(block: dict<any>, line: dict<any>, document: dict<list<any>>): void
   var code_lines = block.text
 
@@ -144,7 +146,7 @@ def RenderCodeBlock(block: dict<any>, line: dict<any>, document: dict<list<any>>
 
   var start_lnum = content_list->len() + 1
 
-  # Apply syntax highlighting if available, otherwise use code_block property
+  # Syntax highlighting if language is recognized, else use text properties
   var lang = block->get('language', '')
   if lang != '' && c.HasSyntaxForLanguage(lang)
     content_list->add(line)
@@ -156,7 +158,7 @@ def RenderCodeBlock(block: dict<any>, line: dict<any>, document: dict<list<any>>
       end: $'\%{content_list->len()}l$'
     })
   else
-    # Find maximum line length for code block property (cached calculation)
+    # Optimization: calculate max line length once (cached)
     var max_line_len = max(code_lines->mapnew((_, v) => v->len()))
     var code_lines_len = code_lines->len()
     var final_lnum = start_lnum + code_lines_len - 1
@@ -192,6 +194,7 @@ def RenderHeading(block: dict<any>, line: dict<any>, document: dict<list<any>>):
 enddef
 
 # Append table cells to line with proper formatting and properties
+# Handles inline parsing and property distribution for each cell
 def AppendTableCells(line: dict<any>, cells: list<string>, is_header: bool): void
   var first_cell = cells->remove(0)->substitute('\\|', '|', 'g')
   var line_len = line.text->len()
@@ -216,12 +219,14 @@ def AppendTableCells(line: dict<any>, cells: list<string>, is_header: bool): voi
       line.props->add(c.GetMarkerProp('table_header', line_len + 2, format_text_len))
     endif
 
+    # Cached line_len ensures proper positioning
     line.text ..= $'|{format.text}'
     line.props += format.props
   endfor
 enddef
 
 # Render table block with header, delimiter, and rows
+# Processing order: header -> delimiter -> data rows
 def RenderTable(block: dict<any>, line: dict<any>, document: dict<list<any>>): void
   var indent = line.text
   var indent_len = indent->len()
