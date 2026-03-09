@@ -164,7 +164,7 @@ enddef
 def DiagSevToSignName(severity: number): string
   var typeMap: list<string> = ['LspDiagError', 'LspDiagWarning',
 						'LspDiagInfo', 'LspDiagHint']
-  if severity > 4
+  if severity < 1 || severity > 4
     return 'LspDiagHint'
   endif
   return typeMap[severity - 1]
@@ -177,7 +177,7 @@ def DiagSevToInlineHLName(severity: number): string
     'LspDiagInlineInfo',
     'LspDiagInlineHint'
   ]
-  if severity > 4
+  if severity < 1 || severity > 4
     return 'LspDiagInlineHint'
   endif
   return typeMap[severity - 1]
@@ -190,7 +190,7 @@ def DiagSevToVirtualTextHLName(severity: number): string
     'LspDiagVirtualTextInfo',
     'LspDiagVirtualTextHint'
   ]
-  if severity > 4
+  if severity < 1 || severity > 4
     return 'LspDiagVirtualTextHint'
   endif
   return typeMap[severity - 1]
@@ -204,7 +204,7 @@ def DiagSevToSymbolText(severity: number): string
     lspOpts.diagSignInfoText,
     lspOpts.diagSignHintText
   ]
-  if severity > 4
+  if severity < 1 || severity > 4
     return lspOpts.diagSignHintText
   endif
   return typeMap[severity - 1]
@@ -424,7 +424,7 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<d
   endif
 
   if lspserver.processDiagHandler != null_function
-    newDiags = lspserver.processDiagHandler(diags_arg)
+    newDiags = lspserver.processDiagHandler(newDiags)
   endif
 
   # TODO: Is the buffer (bnr) always a loaded buffer? Should we load it here?
@@ -503,7 +503,7 @@ enddef
 def DiagSevToQfType(severity: number): string
   var typeMap: list<string> = ['E', 'W', 'I', 'N']
 
-  if severity > 4
+  if severity < 1 || severity > 4
     return ''
   endif
 
@@ -598,18 +598,20 @@ enddef
 def ShowDiagInPopup(diag: dict<any>)
   var d_start = diag.range.start
   var dlnum = d_start.line + 1
-  var ltext = dlnum->getline()
-  var dlcol = ltext->byteidxcomp(d_start.character) + 1
 
   var lastline = line('$')
   if dlnum > lastline
     # The line number is outside the last line in the file.
     dlnum = lastline
   endif
+
+  var ltext = dlnum->getline()
+  var dlcol = ltext->byteidxcomp(d_start.character) + 1
   if dlcol < 1
     # The column is outside the last character in line.
     dlcol = ltext->len() + 1
   endif
+
   var d = screenpos(0, dlnum, dlcol)
   if d->empty()
     # If the diag position cannot be converted to Vim lnum/col, then use
