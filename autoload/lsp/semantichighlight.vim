@@ -2,6 +2,7 @@ vim9script
 
 # LSP semantic highlighting functions
 
+import './util.vim'
 import './offset.vim'
 import './options.vim' as opt
 import './buffer.vim' as buf
@@ -72,7 +73,7 @@ def ParseSemanticTokenMods(lspserverTokenMods: list<string>, tokenMods: number):
   var str = ''
 
   while n > 0
-    tokenMod = float2nr(log10(and(n, invert(n - 1))) / log10(2))
+    tokenMod = float2nr(round(log10(and(n, invert(n - 1))) / log10(2)))
     str = $'{str}{lspserverTokenMods[tokenMod]},'
     n = and(n, n - 1)
   endwhile
@@ -91,7 +92,7 @@ def ApplySemanticTokenEdits(bnr: number, semTokens: dict<any>)
     return
   endif
 
-  # Need to sort the edits and apply the last edit first.
+  # Need to sort the edits and apply the them sequentially.
   semTokens.edits->sort((a: dict<any>, b: dict<any>) => a.start - b.start)
 
   # TODO: Remove this code
@@ -172,7 +173,10 @@ def ProcessSemanticTokens(lspserver: dict<any>, bnr: number, tokens: list<number
     if !props->has_key(typeStr)
       props[typeStr] = []
     endif
-    props[typeStr]->add([lnum, r.start.character + 1, lnum, r.end.character + 1])
+
+    var startByteIdx = util.GetLineByteFromPos(bnr, r.start)
+    var endByteIdx   = util.GetLineByteFromPos(bnr, r.end)
+    props[typeStr]->add([lnum, startByteIdx + 1, lnum, endByteIdx + 1])
 
     i += 5
   endwhile
@@ -192,8 +196,8 @@ export def UpdateTokens(lspserver: dict<any>, bnr: number, semTokens: dict<any>,
   endif
 
   if semTokens->has_key('edits')
-    # Delta semantic update.  Need to sort the edits and apply the last edit
-    # first.
+    # Delta semantic update.  Need to sort the edits and apply them
+    # sequentially.
     ApplySemanticTokenEdits(bnr, semTokens)
   endif
 
