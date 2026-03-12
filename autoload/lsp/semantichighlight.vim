@@ -34,6 +34,9 @@ var TokenTypeMap: dict<string> = {
   'decorator': 'LspSemanticDecorator'
 }
 
+# Cache text property type names to avoid rebuilding this list on each update.
+var TokenPropTypes: list<string> = TokenTypeMap->values()
+
 export def InitOnce()
   # Define the default semantic token type highlight groups
   hlset([
@@ -74,7 +77,9 @@ def ParseSemanticTokenMods(lspserverTokenMods: list<string>, tokenMods: number):
 
   while n > 0
     tokenMod = float2nr(round(log10(and(n, invert(n - 1))) / log10(2)))
-    str = $'{str}{lspserverTokenMods[tokenMod]},'
+    if tokenMod >= 0 && tokenMod < lspserverTokenMods->len()
+      str = $'{str}{lspserverTokenMods[tokenMod]},'
+    endif
     n = and(n, n - 1)
   endwhile
 
@@ -135,10 +140,12 @@ def ProcessSemanticTokens(lspserver: dict<any>, bnr: number, tokens: list<number
 				lspserver.semanticTokensLegend.tokenTypes
   var lspserverTokenMods: list<string> =
 				lspserver.semanticTokensLegend.tokenModifiers
+  var tokenTypesLen = lspserverTokenTypes->len()
 
   # Each semantic token uses 5 items in the tokens List
   var i = 0
-  while i < tokens->len()
+  var tokensLen = tokens->len()
+  while i + 4 < tokensLen
     tokenLine = tokens[i]
     # tokenLine is relative to the previous token line number
     lnum += tokenLine
@@ -153,8 +160,15 @@ def ProcessSemanticTokens(lspserver: dict<any>, bnr: number, tokens: list<number
     tokenType = tokens[i + 3]
     tokenMods = tokens[i + 4]
 
+    if tokenType < 0 || tokenType >= tokenTypesLen
+      i += 5
+      continue
+    endif
+
     var typeStr = lspserverTokenTypes[tokenType]
-    var modStr = ParseSemanticTokenMods(lspserverTokenMods, tokenMods)
+    if tokenMods > 0
+      var modStr = ParseSemanticTokenMods(lspserverTokenMods, tokenMods)
+    endif
 
     # Decode the semantic token line number, column number and length to
     # UTF-32 encoding.
@@ -184,14 +198,50 @@ def ProcessSemanticTokens(lspserver: dict<any>, bnr: number, tokens: list<number
   return props
 enddef
 
+def ClearSemanticHighlightProps(bnr: number)
+  if has('patch-9.0.0233')
+    prop_remove({types: TokenPropTypes, bufnr: bnr, all: true})
+  else
+    for propName in TokenPropTypes
+      prop_remove({type: propName, bufnr: bnr, all: true})
+    endfor
+  endif
+enddef
+
+def SemanticHighlightTimerCb(lspserver: dict<any>, bnr: number, _: number)
+  if !bufexists(bnr)
+    return
+  endif
+  setbufvar(bnr, 'LspSemanticTimer', 0)
+  lspserver.semanticHighlightUpdate(bnr)
+enddef
+
+def StopSemanticHighlightTimer(bnr: number)
+  var timerId = getbufvar(bnr, 'LspSemanticTimer', 0)
+  if timerId > 0
+    timer_stop(timerId)
+    setbufvar(bnr, 'LspSemanticTimer', 0)
+  endif
+enddef
+
+def SemanticHighlightCleanup(bnr: number)
+  setbufvar(bnr, 'LspSemanticTokensData', [])
+  setbufvar(bnr, 'LspSemanticResultId', '')
+enddef
+
+def SemanticHighlightBufUnload(bnr: number)
+  StopSemanticHighlightTimer(bnr)
+  SemanticHighlightCleanup(bnr)
+enddef
+
 # Parse the semantic highlight reply from the language server and update the
 # text properties
 export def UpdateTokens(lspserver: dict<any>, bnr: number, semTokens: dict<any>, requestTick: number)
   # Validate buffer hasn't changed since request
   if getbufvar(bnr, 'changedtick') != requestTick
     # Clear the data as our local copy will be out of sync
-    setbufvar(bnr, 'LspSemanticTokensData', [])
-    setbufvar(bnr, 'LspSemanticResultId', '')
+    SemanticHighlightCleanup(bnr)
+    ClearSemanticHighlightProps(bnr)
     return
   endif
 
@@ -213,22 +263,16 @@ export def UpdateTokens(lspserver: dict<any>, bnr: number, semTokens: dict<any>,
   props = ProcessSemanticTokens(lspserver, bnr, semTokens.data)
 
   # First clear all the previous text properties
-  if has('patch-9.0.0233')
-    prop_remove({types: TokenTypeMap->values(), bufnr: bnr, all: true})
-  else
-    for propName in TokenTypeMap->values()
-      prop_remove({type: propName, bufnr: bnr, all: true})
-    endfor
-  endif
+  ClearSemanticHighlightProps(bnr)
 
   if props->empty()
     return
   endif
 
   # Apply the new text properties
-  for tokenType in TokenTypeMap->keys()
-    if props->has_key(tokenType)
-      prop_add_list({bufnr: bnr, type: TokenTypeMap[tokenType]}, props[tokenType])
+  for [tokenType, tokenProps] in props->items()
+    if TokenTypeMap->has_key(tokenType)
+      prop_add_list({bufnr: bnr, type: TokenTypeMap[tokenType]}, tokenProps)
     endif
   endfor
 enddef
@@ -241,16 +285,15 @@ def LspUpdateSemanticHighlight(bnr: number)
   endif
 
   # Cancel existing timer if any
-  var timerId = getbufvar(bnr, 'LspSemanticTimer', 0)
-  if timerId > 0
-    timer_stop(timerId)
+  StopSemanticHighlightTimer(bnr)
+
+  if !bufexists(bnr)
+    return
   endif
 
   # Start new debounced timer
-  timerId = timer_start(opt.lspOptions.semanticHighlightDelay, (_) => {
-    setbufvar(bnr, 'LspSemanticTimer', 0)
-    lspserver.semanticHighlightUpdate(bnr)
-  })
+  var timerId = timer_start(opt.lspOptions.semanticHighlightDelay,
+    function('SemanticHighlightTimerCb', [lspserver, bnr]))
   setbufvar(bnr, 'LspSemanticTimer', timerId)
 enddef
 
@@ -274,7 +317,7 @@ export def BufferInit(lspserver: dict<any>, bnr: number)
   acmds->add({bufnr: bnr,
 	      event: 'BufUnload',
 	      group: 'LSPBufferAutocmds',
-	      cmd: $"b:LspSemanticTokensData = [] | b:LspSemanticResultId = ''"})
+        cmd: $'SemanticHighlightBufUnload({bnr})'})
 
   autocmd_add(acmds)
 enddef
