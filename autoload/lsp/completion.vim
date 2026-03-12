@@ -502,10 +502,14 @@ def g:LspOmniFunc(findstart: number, base: string): any
   if findstart
 
     var [triggerKind, triggerChar] = GetTriggerAttributes(lspserver)
-    if triggerKind < 0 && !opt.lspOptions.omniCompleteAllowBare
-      # previous character is not a keyword character or a trigger character,
-      # so cancel omni completion.
-      return -2
+    if triggerKind < 0
+      # previous character is not a keyword character or a trigger character, so
+      # cancel omni completion.
+      if !opt.lspOptions.omniCompleteAllowBare
+        return -2
+      endif
+      # Override triggerKind if we want to complete anyway.
+      triggerKind = 1
     endif
 
     # first send all the changes in the current buffer to the LSP server
