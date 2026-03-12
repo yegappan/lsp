@@ -625,9 +625,7 @@ def ProcessDocSymbolTable(lspserver: dict<any>,
     symbolType = SymbolKindToName(syminfo.kind)
     r = syminfo.selectionRange
     lspserver.decodeRange(bnr, r)
-    if syminfo->has_key('detail')
-      symbolDetail = syminfo.detail
-    endif
+    symbolDetail = syminfo->get('detail', '')
     if !symbolTypeTable->has_key(symbolType)
       symbolTypeTable[symbolType] = []
     endif
