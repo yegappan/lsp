@@ -3,7 +3,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: Sep 8, 2025
+Last change: March 13 2026
 
 ==============================================================================
 CONTENTS                                                     *lsp-contents*
@@ -58,7 +58,7 @@ You can install this plugin directly from github using the following steps:
     $ git clone https://github.com/yegappan/lsp $HOME/.vim/pack/downloads/opt/lsp
     $ vim -u NONE -c "helptags $HOME/.vim/pack/downloads/opt/lsp/doc" -c q
 
-ALternatively, you can use any one of the Vim plugin managers such as
+Alternatively, you can use any one of the Vim plugin managers such as
 dein.vim, pathogen, vam, vim-plug, volt, Vundle, etc. to install and manage
 this plugin.
 
@@ -165,13 +165,13 @@ The following commands are provided:
 
 ==============================================================================
 4. Configuration				*lsp-configuration*
-					*LspAddServer()* *g:LspAddServer()*
 
 To use the plugin features with a particular file type(s), you need to first
 register a language server for that file type(s).
 
+					*LspAddServer()* *g:LspAddServer()*
 To register one or more language servers, use the LspAddServer() function with
-a list of lanaguge server details in the .vimrc file.
+a list of language server details in the .vimrc file.
 
 To register a language server, add the following lines to your .vimrc file
 (use only the language servers that you need from the below list).
@@ -239,7 +239,7 @@ Shell script, Vim script and PHP file types: >
 		     {
 			name: 'phpls',
 		        filetype: ['php'],
-		        path': '/usr/local/bin/intelephense',
+		        path: '/usr/local/bin/intelephense',
 		        args: ['--stdio'],
 		        syncInit: true,
 		        initializationOptions: {
@@ -252,7 +252,7 @@ Shell script, Vim script and PHP file types: >
 To add a language server, the following information is needed:
 
 						*lsp-cfg-name*
-	name		(Optional) name of the language server.  Can by any
+	name		(Optional) name of the language server.  Can be any
 			string.  Used in LSP messages and log files.
 						*lsp-cfg-path*
 	path		path to the language server executable (without any
@@ -274,7 +274,7 @@ To add a language server, the following information is needed:
 			this dictionary and if present will be transmitted to
 			the lsp server.
 						*lsp-cfg-workspaceConfig*
-	workspaceConfig (Optional) a json encodable value that will be sent to
+	workspaceConfig (Optional) a |Dict| value that will be sent to
 			the language server after initialization as the
 			"settings" in a "workspace/didChangeConfiguration"
 			notification.  Refer to the language server
@@ -294,12 +294,12 @@ To add a language server, the following information is needed:
 
 			If this parameter is not specified or the files are
 			not found, then the current working directory is used
-			as the workspace root for decendent files, for any
+			as the workspace root for descendant files, for any
 			other files the parent directory of the file is used.
 
 						*lsp-cfg-runIfSearch*
 	runIfSearch	(Optional) a List of file and directory names used to
-			determinate if a server should run or not. The
+			determine if a server should run or not. The
 			directory names in "runIfSearch" must end in "/" or
 			"\".  Each file and directory name in "runIfSearch" is
 			searched upwards in all the parent directories.
@@ -426,7 +426,7 @@ Additionally the following configurations can be made:
 						*lsp-cfg-traceLevel*
 	traceLevel	(Optional) set the debug trace level for this language
 			server.  Supported values are: "off", "debug" and
-			"verbose".  By default this is seto "off".
+			"verbose".  By default this is set to "off".
 
 The language servers are added using the LspAddServer() function. This
 function accepts a list of language servers with the above information.
@@ -450,9 +450,8 @@ language server and to set the language server options.  For example: >
 		   ]
     autocmd User LspSetup LspAddServer(lspServers)
 <
-						*lsp-options* *LspOptionsSet()*
-						*g:LspOptionsSet()*
-
+					*lsp-options*
+					*LspOptionsSet()* *g:LspOptionsSet()*
 Some of the LSP plugin features can be enabled or disabled by using the
 LspOptionsSet() function. This function accepts a dictionary argument with the
 following optional items:
@@ -625,7 +624,7 @@ keepFocusInReferences	|Boolean| option.  Focus on the location list window
 			By default this is set to true.
 
 						*lsp-opt-maxDiagnostics*
-maxDiagnostics		|Number| option. Maximum nmber of diagnostics to
+maxDiagnostics		|Number| option. Maximum number of diagnostics to
 			process when receiving diagnostic notifications
 			from the server. Processing hundreds of diagnostic
 			messages is slow, especially when offset positions
@@ -865,14 +864,25 @@ documentationFormat |List| of strings option.
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file: >
 
-	call LspOptionsSet({'autoHighlightDiags': false})
+	call g:LspOptionsSet({'autoHighlightDiags': false})
 <
-						*LspOptionsGet()*
-The LspOptionsGet() function returns a |Dict| of all the LSP plugin options,
+				    *LspOptionsGet()* *g:LspOptionsSet()*
+The g:LspOptionsGet() function returns a |Dict| of all the LSP plugin options,
 To get a particular option value you can use the following: >
 
-	echo LspOptionsGet()['autoHighlightDiags']
+	echo g:LspOptionsGet()['autoHighlightDiags']
 <
+				    *LspServerReady()* *g:LspServerReady()*
+The g:LspServerReady() function returns |v:true| if all the language servers
+attached to the current buffer have completed initialization and are ready to
+accept requests.  It returns |v:false| if there is no current file, if no
+language server is attached, or if one or more attached servers are still
+initializing.
+
+				    *LspServerRunning()* *g:LspServerRunning()*
+The g:LspServerRunning({filetype}) function returns |v:true| if one or more
+language servers registered for {filetype} are currently running.
+
 ==============================================================================
 5. Commands					*lsp-commands*
 
@@ -911,7 +921,7 @@ can map these commands to keys and make it easier to invoke them.
 			under the cursor.  Otherwise works exactly like
 			":LspDiag current"
 
-			To show the current diagnotic under the cursor while
+			To show the current diagnostic under the cursor while
 			moving around the following autocmd can be used: >
 
 			    augroup LspCustom
@@ -1106,7 +1116,7 @@ can map these commands to keys and make it easier to invoke them.
 			    <CTRL-E> - Scroll window downwards by a line.
 			    <CTRL-D> - Scroll window downwards by 'scroll'
 				       lines.
-			    <CTRL-F> - Scroll window downards by a page.
+			    <CTRL-F> - Scroll window downwards by a page.
 			    <PageDown> - ditto.
 			    <CTRL-Y> - Scroll window upwards by a line.
 			    <CTRL-U> - Scroll window upwards by 'scroll'
@@ -1822,7 +1832,7 @@ To format code using the 'gq' command, you can set the 'formatexpr' option: >
 ==============================================================================
 10. Call Hierarchy				*lsp-call-hierarchy*
 
-The |:LspIncomingCalls| and the |:LspOutoingCalls| commands can be used to
+The |:LspIncomingCalls| and the |:LspOutgoingCalls| commands can be used to
 display the call hierarchy of a symbol.  For example, the functions calling a
 function or the functions called by a function.  These two commands open a
 window containing the call hierarchy tree.  You can use the Vim motion
@@ -2065,6 +2075,8 @@ use the ":LspServer trace" command to set the server trace value: >
 ==============================================================================
 14. Custom Command Handlers			*lsp-custom-commands*
 
+						*LspRegisterCmdHandler()*
+						*g:LspRegisterCmdHandler()*
 When applying a code action, the language server may issue a non-standard
 command.  For example, the Java language server uses non-standard commands
 (e.g. java.apply.workspaceEdit).  To handle these commands, you can register a
@@ -2178,6 +2190,14 @@ Some examples:
                 s.rpc_a('textDocument/signatureHelp', s.getTextDocPosition(false), FindSigReply)
             enddef
             nnoremap <C-k> :call g:FindSigAsync()<CR>
+<
+				*LspRequestCustom()* *g:LspRequestCustom()*
+The LspRequestCustom({name}, {method}, {params}) function can be used to
+send an asynchronous custom request to the language server named {name} for
+the current buffer.  This is useful for non-standard requests that are not
+wrapped by one of the built-in commands or helper functions.  If no matching
+language server is attached to the current buffer, then the request is not
+sent.
 
 ==============================================================================
 16. Custom LSP Completion Kinds			*lsp-custom-kinds*
@@ -2287,13 +2307,16 @@ For styling the completion menu please refer to |hl-pmenu|.
 ==============================================================================
 18. Custom Locations Request			*lsp-custom-locations*
 
-Language server may support non-standard locations request. To display the
+				    *LspFindLocations()* *g:LspFindLocations()*
+A Language server may support non-standard locations request. To display the
 locations of the symbol under cursor, you can use the
 g:LspFindLocations(server_name, peek, method, args) function. "server_name" is
-then "name" you pass in LspAddServer(). "peek" is a boolean value. If true, it
-displays the list of locations in a popup menu, otherwise in a new locations
-list. It behaves like |:LspPeekReferences| and |:LspShowReferences| .
-For example: >
+the "name" you pass in LspAddServer(). "peek" is a boolean value. If true, it
+displays the list of locations in a popup menu, otherwise in a new location
+list.  The request parameters are built from the current buffer and cursor
+position and then extended with the optional {args} dictionary.  The named
+language server must be attached to the current buffer, running, and ready.
+It behaves like |:LspPeekReferences| and |:LspShowReferences|.  For example: >
 
     vim9script
 
