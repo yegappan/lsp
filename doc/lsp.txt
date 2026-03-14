@@ -602,7 +602,8 @@ highlightDiagInline	|Boolean| option.  Highlight the diagnostics inline.
 
 						*lsp-opt-hoverInPreview*
 hoverInPreview		|Boolean| option. Show |:LspHover| in a preview window
-			instead of a popup.
+			instead of a popup.  The preview buffer name is
+			"LspHover" and can be closed with |:pclose|.
 			By default this is set to false.
 
 						*lsp-opt-completionInPreview*
@@ -620,12 +621,18 @@ closePreviewOnComplete	|Boolean| option. When using the |preview-window| for
 
 						*lsp-opt-hoverFallback*
 hoverFallback		|Boolean| option. Fall back to file type 'keywordprg'
-                        in case no hover information available. Do not set
-                        'keywordprg' to |:LspHover| but use with suitable
-                        mapping like
+			in case no hover information is available.  If enabled,
+			and local 'keywordprg' is not empty and is not set to
+			|:LspHover|, then |:LspHover| executes the built-in |K|
+			behavior as a fallback.
+
+			Do not set 'keywordprg' to |:LspHover| when using this
+			option, because that would disable fallback and can
+			cause recursion in custom mappings.  Use a mapping
+			like >
 
                           nnoremap K <cmd>LspHover<cr>
-
+<
 			By default this is set to false.
 
 						*lsp-opt-definitionFallback*
@@ -1161,8 +1168,14 @@ can map these commands to keys and make it easier to invoke them.
 
 						*:LspHover*
 :LspHover		Show the documentation for the symbol under the cursor
-			in a popup window.  The following keys can be used to
-			scroll the popup window:
+			in a popup window.
+
+			Hover content can be plain text or markdown.  Markdown
+			content (including code blocks) is rendered using the
+			|lspgfm| filetype for display.
+
+			In popup mode, the following keys can be used to scroll
+			the popup window:
 
 			    <CTRL-E> - Scroll window downwards by a line.
 			    <CTRL-D> - Scroll window downwards by 'scroll'
@@ -1176,8 +1189,11 @@ can map these commands to keys and make it easier to invoke them.
 			    <PageUp> - ditto.
 			    <CTRL-Home> - Goto the first line
 			    <CTRL-End>  - Goto the last line
+			    <Esc>       - Close the popup
+			    <CTRL-C>    - ditto
 
-			Pressing any other key will close the popup window.
+			Clicking the popup also closes it.  In normal use,
+			moving the cursor or using other keys will close it.
 
 			If you want to show the symbol documentation in the
 			|preview-window| instead of in a popup window set >
@@ -1185,17 +1201,27 @@ can map these commands to keys and make it easier to invoke them.
 			    LspOptionsSet({'hoverInPreview': true})
 <
 			You can use the |:pclose| command to close the preview
-			window.
+			window.  The preview buffer is named "LspHover".
 
-			You can use the |K| key in normal mode to display the
-			documentation for the keyword under the cursor by
-			setting the 'keywordprg' Vim option: >
+			To use |K| for hover requests, map it directly: >
 
-			    :set keywordprg=:LspHover
+			    nnoremap K <Cmd>LspHover<CR>
 <
+			If you enable |lsp-opt-hoverFallback|, keep
+			'keywordprg' set to your normal filetype-specific
+			program (for example, |:help| for Vim help buffers)
+			instead of setting it to |:LspHover|.
+
+			This command supports |:command-modifiers|.  Use
+			|:silent| to suppress "No documentation found" warning
+			messages.
+
                         With hoverFallback enabled (disabled by default),
                         falls back to the file type specific 'keywordprg'.
                         See |lsp-opt-hoverFallback|.
+
+			Popup appearance can be customized with
+			|lsp-opt-popup-Hover| and the global popup options.
 
 						*:LspIncomingCalls*
 :LspIncomingCalls	Display the incoming call hierarchy for the symbol
@@ -2135,9 +2161,9 @@ instead of replacing them entirely.
 To use semantic highlighting, set |lsp-opt-semanticHighlight| to |true| and
 use a language server that advertises semantic tokens support.  When enabled,
 the plugin requests semantic tokens for the current buffer and refreshes them
-after text changes using the delay configured by
-|lsp-opt-semanticHighlightDelay|.  If the server supports semantic token
-delta updates, they are used automatically.
+after buffer changes (using the |TextChanged| autocommand) with the delay
+configured by |lsp-opt-semanticHighlightDelay|.  If the server supports
+semantic token delta updates, they are used automatically.
 
 Only the semantic token types listed below have built-in highlight groups in
 this plugin.  If a language server returns other token types, they are
