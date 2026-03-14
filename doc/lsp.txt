@@ -1001,6 +1001,11 @@ can map these commands to keys and make it easier to invoke them.
 			a popup window.  Otherwise the message is displayed in
 			the status message area.
 
+			When there are multiple diagnostics on the current
+			line, this selects the first diagnostic whose start
+			position is at or to the right of the cursor; if none
+			match, the last diagnostic on the line is shown.
+
 :LspDiag! current	Only display a diagnostic message if it's directly
 			under the cursor.  Otherwise works exactly like
 			":LspDiag current"
@@ -1038,7 +1043,7 @@ can map these commands to keys and make it easier to invoke them.
 			the buffers.
 
 						*:LspDiag-last* *:LspDiagLast*
-:LspDiag last		Jumps to the location of the first diagnostic message
+:LspDiag last		Jumps to the location of the last diagnostic message
 			for the current file.
 
 						*:LspDiag-next* *:LspDiagNext*
@@ -1056,8 +1061,8 @@ can map these commands to keys and make it easier to invoke them.
 :[count]LspDiag prev	Go to the [count] diagnostic message before the
 			current cursor position.  If [count] is omitted, then
 			1 is used.  If [count] exceeds the number of
-			diagnostics before the current position, then first
-			last diagnostic is selected.
+			diagnostics before the current position, then the
+			first diagnostic is selected.
 
 						*:LspDiag-prevWrap* *:LspDiagPrevWrap*
 :[count]LspDiag prevWrap	Same as |:LspDiag-prev|, but wrap back to the
@@ -2085,9 +2090,15 @@ LspAttached			A |User| autocommand fired after all language
 LspDiagsUpdated			A |User| autocommand invoked when new
 				diagnostics are received from the language
 				server.  This is invoked after the LSP client
-				has processed the diagnostics.  The function
+				has processed the diagnostics and updated its
+				internal diagnostics state.  The function
 				lsp#diag#GetDiagsForBuf() can be used to get
 				all the diagnostics for a buffer.
+
+				If diagnostics arrive while in Insert/Replace
+				mode, diagnostic signs/inline
+				highlights/virtual text are refreshed after
+				returning to Normal mode.
 
 						*LspOutlineSetup*
 LspOutlineSetup			A |User| autocmd fired after the outline window
