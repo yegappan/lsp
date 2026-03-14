@@ -842,9 +842,18 @@ showDiagWithVirtualText	|Boolean| option.  Show diagnostic message text from
 
 						*lsp-opt-showInlayHints*
 showInlayHints		|Boolean| option.  Show inlay hints from the language
-			server.  By default this is set to false.  The inlay
-			hint text is displayed as a virtual text.  Needs Vim
-			version 9.0.0178 or later.
+			server.  By default this is set to false.
+			Inlay hints display inferred type annotations
+			(|LspInlayHintsType|) and parameter name labels
+			(|LspInlayHintsParam|) as virtual text inline in the
+			buffer.  Hints are shown only in normal mode.  Updates
+			are requested when the cursor has not moved for
+			|'updatetime'| milliseconds (|CursorHold|), followed
+			by a short debounce delay.
+			Use |:LspInlayHints| to enable, disable, or toggle
+			hints for the current session without permanently
+			changing this option.
+			Needs Vim version 9.0.0178 or later.
 
 						*lsp-opt-showSignature*
 showSignature		|Boolean| option.  In insert mode, automatically show
@@ -1238,13 +1247,18 @@ can map these commands to keys and make it easier to invoke them.
 
 						*:LspInlayHints*
 :LspInlayHints {enable | disable | toggle}
-			Enable or disable inlay hints.  Supports the "enable",
-			"disable" and "toggle" arguments.  When "enable" is
-			specified, enables the inlay hints for all the buffers
-			with a language server that supports inlay hints.
-			When "disable" is specified, disables the inlay hints.
-			When "toggle" is specified, either enables or disables
-			the inlay hints.
+			Enable, disable, or toggle inlay hints globally.
+			Supports the "enable", "disable", and "toggle"
+			arguments.  The argument is required.
+			When "enable" is specified, sets
+			|lsp-opt-showInlayHints| to true and activates inlay
+			hints for all open buffers whose attached language
+			server supports the inlayHint capability.
+			When "disable" is specified, sets
+			|lsp-opt-showInlayHints| to false and immediately
+			removes all inlay hints from every open buffer.
+			When "toggle" is specified, enables or disables inlay
+			hints depending on the current state.
 
 						*:LspOutgoingCalls*
 :LspOutgoingCalls	Display the outgoing call hierarchy for the symbol
@@ -2117,9 +2131,9 @@ override them.
 				highlight group.
 *LspInlayHintsParam*		Used to highlight inlay hints of kind
 				"parameter".  By default, linked to the
-				"Label" highlight group.
+				"Conceal" highlight group.
 *LspInlayHintsType*		Used to highlight inlay hints of kind "type".
-				By default, linked to the "Conceal" highlight
+				By default, linked to the "Label" highlight
 				group.
 *LspPopup*			Used to highlight popup contents.  By default,
 				linked to the "Pmenu" highlight group.
@@ -2698,8 +2712,10 @@ hover				Used by the |:LspHover| command.
 implementation			Used by the |:LspGotoImpl| and the
 				|:LspPeekImpl| commands.
 						*lsp-features-inlayHint*
-inlayHint			Used to show the inlay hints for
-				function/method arguments.
+inlayHint			Used to show inlay hints: inferred type
+				annotations and parameter name labels displayed
+				as virtual text in the buffer.  Controlled by
+				|lsp-opt-showInlayHints| and |:LspInlayHints|.
 						*lsp-features-references*
 references			Used by the |:LspShowReferences| command.
 						*lsp-features-rename*
