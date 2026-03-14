@@ -132,12 +132,12 @@ To make the features easy to use, it is recommended to define mappings
 when a language server attaches to a buffer: >
 
     autocmd User LspAttached {
-        nnoremap <buffer> <silent> gd <scriptcmd>LspGotoDefinition<cr>
-        nnoremap <buffer> <silent> K  <scriptcmd>LspHover<cr>
-        nnoremap <buffer> <silent> [d <scriptcmd>LspDiag prev<cr>
-        nnoremap <buffer> <silent> ]d <scriptcmd>LspDiag next<cr>
-        nnoremap <buffer> <silent> <leader>rn <scriptcmd>LspRename<cr>
-        nnoremap <buffer> <silent> <leader>ca <scriptcmd>LspCodeAction<cr>
+        nnoremap <buffer> <silent> gd <cmd>LspGotoDefinition<cr>
+        nnoremap <buffer> <silent> K  <cmd>LspHover<cr>
+        nnoremap <buffer> <silent> [d <cmd>LspDiag prev<cr>
+        nnoremap <buffer> <silent> ]d <cmd>LspDiag next<cr>
+        nnoremap <buffer> <silent> <leader>rn <cmd>LspRename<cr>
+        nnoremap <buffer> <silent> <leader>ca <cmd>LspCodeAction<cr>
     }
 
 ==============================================================================
