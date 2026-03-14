@@ -14,6 +14,14 @@ CONTENTS                                                     *lsp-contents*
        3.1 Quick Start ............................. |lsp-quick-start|
      4. Adding a Language Server ................... |lsp-server-add|
      5. Commands ................................... |lsp-commands|
+       5.1 Navigation (Jumps & References) ......... |lsp-navigation-cmds|
+       5.2 Peeks (View without jumping) ............ |lsp-peek-cmds|
+       5.3 Symbols & Structure ..................... |lsp-symbol-cmds|
+       5.4 Symbol Information & Documentation ...... |lsp-symbol-info-cmds|
+       5.5 Code Modification & Refactoring ......... |lsp-editing-cmds|
+       5.6 Hierarchies (Call & Type) ............... |lsp-hiearchy-cmds|
+       5.7 Diagnostics (Errors & Warnings) ......... |lsp-diag-cmds|
+       5.8 Server & Workspace Management ........... |lsp-server-cmds|
      6. Configuration............................... |lsp-configuration|
      7. Insert Mode Completion ..................... |lsp-ins-mode-completion|
        7.1. Forcing completion without characters .. |lsp-ins-force|
@@ -117,6 +125,18 @@ Open a file of that type and verify the server status with
 - |:LspGotoDefinition| to jump to definitions.
 - |:LspShowReferences| to list references.
 - |:LspDiag| current to show diagnostics at cursor line.
+
+To make the features easy to use, it is recommended to define mappings
+when a language server attaches to a buffer: >
+
+    autocmd User LspAttached {
+        nnoremap <buffer> <silent> gd <scriptcmd>LspGotoDefinition<cr>
+        nnoremap <buffer> <silent> K  <scriptcmd>LspHover<cr>
+        nnoremap <buffer> <silent> [d <scriptcmd>LspDiag prev<cr>
+        nnoremap <buffer> <silent> ]d <scriptcmd>LspDiag next<cr>
+        nnoremap <buffer> <silent> <leader>rn <scriptcmd>LspRename<cr>
+        nnoremap <buffer> <silent> <leader>ca <scriptcmd>LspCodeAction<cr>
+    }
 
 The following commands are provided:
 
@@ -512,7 +532,12 @@ language servers registered for {filetype} are currently running.
 A description of the various commands provided by this plugin is below.  You
 can map these commands to keys and make it easier to invoke them.
 
+							*lsp-navigation-cmds*
 5.1 Navigation (Jumps & References)~
+
+Commands to navigate the codebase by jumping to definitions or listing all
+locations where a symbol is referenced.
+
 							*:LspGotoDeclaration*
 :[count]LspGotoDeclaration
 			Jumps to the declaration of the symbol under the
@@ -600,7 +625,12 @@ can map these commands to keys and make it easier to invoke them.
 			source files.
 
 ------------------------------------------------------------------------------
+							*lsp-peek-cmds*
 5.2 Peeks (View without jumping)~
+
+Commands to view symbol details in a popup window while maintaining your
+current cursor position in the buffer.
+
 							*:LspPeekDeclaration*
 :[count]LspPeekDeclaration
 			Displays the line where the symbol under the
@@ -665,7 +695,12 @@ can map these commands to keys and make it easier to invoke them.
 			language servers support this feature.
 
 ------------------------------------------------------------------------------
+							*lsp-symbol-cmds*
 5.3 Symbols & Structure~
+
+Commands to search for symbols or view the logical structure of a file or the
+entire workspace.
+
 							*:LspDocumentSymbol*
 :LspDocumentSymbol	Display the symbols in the current file in a popup
 			menu.  When a symbol is selected in the popup menu by
@@ -797,7 +832,12 @@ can map these commands to keys and make it easier to invoke them.
 				:tab LspSymbolSearch baz
 <
 ------------------------------------------------------------------------------
-5.4 Documentation & UI Hints~
+							*lsp-symbol-info-cmds*
+5.4 Symbol Information & Documentation~
+
+Commands to display documentation, function signatures, and extra metadata for
+the symbol under the cursor.
+
 							*:LspHighlight*
 :LspHighlight		Highlights all the matches for the symbol under
 			cursor. The text, read and write references to the
@@ -902,7 +942,12 @@ can map these commands to keys and make it easier to invoke them.
 			Default is false.
 
 ------------------------------------------------------------------------------
-5.5 Editing & Refactoring~
+							*lsp-editing-cmds*
+5.5 Code Modification & Refactoring~
+
+Commands to modify, rename, or format your code using the language server's
+intelligence
+
 							*:LspCodeAction*
 :LspCodeAction [query]	Apply the code action supplied by the language server
 			for the current line.  If invoked with a range (for
@@ -999,7 +1044,12 @@ can map these commands to keys and make it easier to invoke them.
 			region.
 
 ------------------------------------------------------------------------------
-5.6 Call & Type Hierarchy~
+							*lsp-hiearchy-cmds*
+5.6 Hierarchies (Call & Type)~
+
+Commands to explore deep relationships between function callers/callees or
+class and interface hierarchies.
+
 							*:LspIncomingCalls*
 :LspIncomingCalls	Display the incoming call hierarchy for the symbol
 			under the cursor in a window.  Incoming calls are the
@@ -1067,7 +1117,12 @@ can map these commands to keys and make it easier to invoke them.
 			See also |:LspSubTypeHierarchy|.
 
 ------------------------------------------------------------------------------
-5.7 Diagnostic Navigation~
+							*lsp-diag-cmds*
+5.7 Diagnostics (Errors & Warnings)~
+
+Commands to navigate through and view the error, warning, and hint messages
+reported by the language server.
+
 					*:LspDiag-current* *:LspDiagCurrent*
 :LspDiag current	Displays the diagnostic message (if any) for the
 			current line.  If the option 'showDiagInPopup' is set
@@ -1150,7 +1205,12 @@ can map these commands to keys and make it easier to invoke them.
 			list.
 
 ------------------------------------------------------------------------------
-5.8 Workspace & Server Management~
+							*lsp-server-cmds*
+5.8 Server & Workspace Management~
+
+Commands to control language server processes, monitor their status, and
+manage workspace folder scope.
+
 						*:LspServer*
 :LspServer { debug | restart | show | start | stop | trace }
 			Command to display and control the language server for
@@ -1415,7 +1475,7 @@ hoverFallback		|Boolean| option. Fall back to file type 'keywordprg'
 			cause recursion in custom mappings.  Use a mapping
 			like >
 
-                          nnoremap K <cmd>LspHover<cr>
+                          nnoremap K <Cmd>LspHover<CR>
 <
 			By default this is set to false.
 
@@ -1424,8 +1484,8 @@ definitionFallback	|Boolean| option. Fall back to |:tjump| in case no
                         definition information available. Do not set 'tagfunc'
                         to 'lsp#lsp#TagFunc' but use with suitable mappings
 
-                          nnoremap <c-]> <cmd>LspGotoDefinition<cr>
-                          nnoremap g]    <cmd>LspPeekDefinition<cr>
+                          nnoremap <c-]> <Cmd>LspGotoDefinition<CR>
+                          nnoremap g]    <Cmd>LspPeekDefinition<CR>
 
 			See 'previewpopup' if you prefer using a popup window
 			to the default |preview-window| for the peek fallback.
