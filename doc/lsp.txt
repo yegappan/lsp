@@ -593,8 +593,12 @@ echoSignature		|Boolean| option.  In insert mode, echo the current
 			By default this is set to false.
 
 					*lsp-opt-hideDisabledCodeActions*
-hideDisabledCodeActions |Boolean| option. Hide all the disabled code actions.
+hideDisabledCodeActions |Boolean| option.  Hide code actions marked as
+			disabled by the language server (CodeAction.disabled).
 			By default this is set to false.
+			When enabled, disabled items are removed before
+			matching or prompting, so action indices can differ
+			from the server's original list.
 
 						*lsp-opt-highlightDiagInline*
 highlightDiagInline	|Boolean| option.  Highlight the diagnostics inline.
@@ -702,12 +706,17 @@ omniCompleteAllowBare   |Boolean| option. Defines whether or not the
 			|lsp-ins-force|
 
 						*lsp-opt-outlineOnRight*
-outlineOnRight		|Boolean| option.  Open the outline window on the
-			right side, by default this is false.
+outlineOnRight		|Boolean| option.  When true, open the outline window
+			on the right side of the screen.  When false (the
+			default), open it on the left side.  Providing
+			|:command-modifiers| to |:LspOutline| overrides this
+			option.
 
 						*lsp-opt-outlineWinSize*
-outlineWinSize		|Number| option.  The size of the symbol Outline
-			window.  By default this is set to 20.
+outlineWinSize		|Number| option.  The width (number of columns) of
+			the symbol outline window.  By default this is set
+			to 20.  Overridden by providing a [count] to
+			|:LspOutline|.
 
 						*lsp-opt-popupBorder*
 popupBorder		|Boolean| option.  Enables popup borders.
@@ -879,8 +888,8 @@ vsnipSupport		|Boolean| option.  Enable hrsh7th/vim-vsnip support.
 
 						*lsp-opt-usePopupInCodeAction*
 usePopupInCodeAction    |Boolean| option.  When using the |:LspCodeAction|
-			command to display the code action for the current
-			line, use a popup menu instead of echoing.
+			command, use a popup menu instead of |inputlist()|
+			when no [query] is given.
 			By default this is set to false.
 
 					*lsp-opt-useQuickfixForLocations*
@@ -958,26 +967,34 @@ can map these commands to keys and make it easier to invoke them.
 
 						*:LspCodeAction*
 :LspCodeAction [query]	Apply the code action supplied by the language server
-			to the diagnostic in the current line. This works only
-			if there is a diagnostic message for the current line.
-			You can use the ":LspDiag current" command to display
-			the diagnostic for the current line.
+			for the current line.  If invoked with a range (for
+			example from visual mode), code actions are requested
+			for that line range.
 
-			When [query] is given the code action starting with
-			[query] will be applied. [query] can be a regexp
-			pattern, or a digit corresponding to the index of the
-			code actions in the created prompt.
+			Diagnostics from the selected line/range are sent in
+			the code action context.  Actions are still available
+			even without diagnostics when the server provides
+			source or other context-independent actions.
 
-			When [query] is not given you will be prompted to
-			select one of the actions supplied by the language
-			server.
+			When [query] is given, one action is selected directly:
+			- digits (for example, "2") select by 1-based index,
+			- text starting with "/" is treated as a regexp,
+			- other text matches an action title prefix.
+			Leading and trailing whitespace in [query] is ignored.
+
+			When [query] is not given, you are prompted to select
+			an action (popup menu or |inputlist()| depending on
+			|lsp-opt-usePopupInCodeAction|).
+
+			CodeAction edits are applied before any associated
+			command is executed.
 
 						*:LspCodeLens*
 :LspCodeLens		Display a list of code lens commands available for the
 			current buffer and apply the selected code lens
 			command.
 
-						*:LspDiag-current* *:LspDiagCurrent*
+					*:LspDiag-current* *:LspDiagCurrent*
 :LspDiag current	Displays the diagnostic message (if any) for the
 			current line.  If the option 'showDiagInPopup' is set
 			to true (default), then the message is displayed in
@@ -1276,20 +1293,32 @@ can map these commands to keys and make it easier to invoke them.
 
 						*:LspOutline*
 :[count]LspOutline [ {open | close | toggle} ]
-			Opens a vertically split window with the list of
-			symbols defined in the current file. Supports the
-			"open", "close", and "toggle" arguments. It assumes
-			"open" if no argument is given.
+			Opens a vertically split window named "LSP-Outline"
+			with the list of symbols defined in the current file.
+			Supports the "open", "close", and "toggle" arguments.
+			It assumes "open" if no argument is given.
 
-			The current symbol is highlighted. The symbols are
-			grouped by their type. You can select a symbol and
-			press <Enter> to jump to the position of the symbol.
-			As you move the cursor in a file, the current symbol
-			is automatically highlighted in the outline window. If
-			you open a new file, the outline window is updated
-			with the symbols in the new file.  Folds are created
-			in the outline window for the various group of
-			symbols.
+			The window header shows shows the file name and its
+			parent directory.  Symbols are grouped under their
+			kind (e.g., Function, Variable) and nested children
+			are indented below their parent kind.  Folds are
+			created using indent-based folding; up to four levels
+			are expanded by default.
+
+			The following keys are available in the outline
+			window:
+			<CR>	  Jump to the selected symbol in the source
+				  file.  If the file is already open in a
+				  window, that window is reused; otherwise the
+				  file is opened in the nearest normal buffer
+				  window, or a new split is created.
+			q	  Close the outline window.
+
+			The current symbol is highlighted using the |Search|
+			highlight group and updated when the cursor is idle
+			in a source file (|CursorHold|).  Switching to a
+			different file updates the outline window with the
+			symbols for the new file.
 
 			You can use |lsp-opt-outlineOnRight| and
 			|lsp-opt-outlineWinSize| to customize the placement
@@ -1390,16 +1419,22 @@ can map these commands to keys and make it easier to invoke them.
 			the operation.
 
 						*:LspSelectionExpand*
-:LspSelectionExpand	Visually select the region of the symbol under the
-			cursor.  In visual mode, expands the current symbol
-			visual region selection to include the next level.
+:LspSelectionExpand	Start a character-wise visual selection using the
+			language server's selection range hierarchy at the
+			cursor position.
+
+			If invoked again in visual mode, this expands to the
+			next parent range only when the current visual
+			selection still matches the previously returned LSP
+			range for the same buffer.  Otherwise, a new selection
+			range request is started from the cursor.
 
 			For example, if the cursor is on a "for" statement,
-			this command selects the "for" statement and the body
-			of the "for" statement.
+			this command can first select the statement and then
+			expand to include enclosing blocks.
 
-			It is useful to create a visual map to use this
-			command.  Example: >
+			It is useful to create a visual map for repeated
+			expansion.  Example: >
 
 			xnoremap <silent> <Leader>e <Cmd>LspSelectionExpand<CR>
 <
@@ -1408,9 +1443,16 @@ can map these commands to keys and make it easier to invoke them.
 			region.
 
 						*:LspSelectionShrink*
-:LspSelectionShrink	Shrink the current symbol range visual selection. It
-			is useful to create a visual map to use this command.
-			Example: >
+:LspSelectionShrink	Shrink the current character-wise visual selection to
+			the previous level in the last LSP selection range
+			chain.
+
+			If there is no matching previous LSP-derived selection
+			state for the current buffer, a new selection range
+			request is started from the cursor.
+
+			It is useful to create a visual map for repeated
+			shrinking.  Example: >
 
 			xnoremap <silent> <Leader>s <Cmd>LspSelectionShrink<CR>
 <
@@ -2332,6 +2374,11 @@ this plugin.
 The callback function should accept a Dict argument.  The Dict argument
 contains the LSP Command interface fields.  Refer to the LSP specification for
 more information about the "Command" interface.
+
+If no custom handler is registered for a command, then the command is sent
+to the server using the standard |workspace/executeCommand| request.
+If a registered handler throws an exception, the plugin reports an error
+message and continues running.
 
 ==============================================================================
 16. Custom LSP Requests				*lsp-custom-requests*
