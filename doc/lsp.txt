@@ -11,6 +11,7 @@ CONTENTS                                                     *lsp-contents*
      1. Overview ................................... |lsp-overview|
      2. Requirements ............................... |lsp-installation|
      3. Usage ...................................... |lsp-usage|
+       3.1 Quick Start ............................. |lsp-quick-start|
      4. Configuration............................... |lsp-configuration|
      5. Commands ................................... |lsp-commands|
      6. Insert Mode Completion ..................... |lsp-ins-mode-completion|
@@ -21,15 +22,16 @@ CONTENTS                                                     *lsp-contents*
     10. Call Hierarchy ............................. |lsp-call-hierarchy|
     11. Autocommands ............................... |lsp-autocmds|
     12. Highlight Groups ........................... |lsp-highlight-groups|
-    13. Debugging .................................. |lsp-debug|
-    14. Custom Command Handlers .................... |lsp-custom-commands|
-    15. Custom LSP Requests ........................ |lsp-custom-requests|
-    16. Custom LSP Completion Kinds ................ |lsp-custom-kinds|
-    17. Custom Popup Styles ........................ |lsp-custom-popup-styles|
-    18. Custom Locations Request ................... |lsp-custom-locations|
-    19. Multiple Language Servers for a buffer ..... |lsp-multiple-servers|
-    20. Language Servers Features .................. |lsp-features|
-    21. License .................................... |lsp-license|
+    13. Semantic Highlighting ...................... |lsp-semantic-highlighting|
+    14. Debugging .................................. |lsp-debug|
+    15. Custom Command Handlers .................... |lsp-custom-commands|
+    16. Custom LSP Requests ........................ |lsp-custom-requests|
+    17. Custom LSP Completion Kinds ................ |lsp-custom-kinds|
+    18. Custom Popup Styles ........................ |lsp-custom-popup-styles|
+    19. Custom Locations Request ................... |lsp-custom-locations|
+    20. Multiple Language Servers for a buffer ..... |lsp-multiple-servers|
+    21. Language Servers Features .................. |lsp-features|
+    22. License .................................... |lsp-license|
 
 ==============================================================================
 1. Overview					*lsp-overview*
@@ -74,6 +76,43 @@ To use this plugin, add the following line to your .vimrc file:
 
 ==============================================================================
 3. Usage					*lsp-usage*
+
+The plugin workflow has three parts:
+
+1. Load the plugin (for example using |:packadd|).
+2. Register one or more language servers with |g:LspAddServer()|.
+3. Use LSP commands such as |:LspGotoDefinition|, |:LspHover|,
+   |:LspShowReferences|, and |:LspCodeAction|.
+
+						*lsp-quick-start*
+3.1 Quick Start
+
+Use this minimal setup to get started quickly: >
+
+		vim9script
+
+		# 1) Configure plugin options (optional)
+		autocmd User LspSetup g:LspOptionsSet({
+			autoHighlightDiags: true,
+			showDiagInPopup: true,
+		})
+
+		# 2) Register one or more language servers
+		autocmd User LspSetup g:LspAddServer([{
+			name: 'clangd',
+			filetype: ['c', 'cpp'],
+			path: 'clangd',
+			args: ['--background-index']
+		}])
+<
+
+Open a file of that type and verify the server status with
+|:LspShowAllServers|.  Then try these commands:
+
+- |:LspHover| to show symbol documentation.
+- |:LspGotoDefinition| to jump to definitions.
+- |:LspShowReferences| to list references.
+- |:LspDiag| current to show diagnostics at cursor line.
 
 The following commands are provided:
 
@@ -125,10 +164,10 @@ The following commands are provided:
 :LspHighlightClear	Clear all the matches highlighted by :LspHighlight
 :LspHover		Show the documentation for the symbol under the cursor
 			in a popup window.
-:LspIncomingCalls	Display the list of symbols calling the current symbol
-			in a window.
+:LspIncomingCalls	Display the incoming call hierarchy for the current
+			symbol in a window.
 :LspInlayHints		Enable or disable or toggle inlay hints.
-:LspOutgoingCalls	Display the list of symbols called by the current
+:LspOutgoingCalls	Display the outgoing call hierarchy for the current
 			symbol in a window.
 :LspOutline		Show the list of symbols defined in the current file
 			in a separate window.
@@ -739,13 +778,25 @@ popupHighlightTypeHierarchy		|String| option.
 
 						*lsp-opt-semanticHighlight*
 semanticHighlight	|Boolean| option.  Enables or disables semantic
-			highlighting.
+			highlighting.  When enabled, the plugin requests
+			semantic tokens from the language server and applies
+			text properties to the buffer using the
+			|LspSemanticNamespace|, |LspSemanticType|,
+			|LspSemanticClass| and related highlight groups.
+			Semantic highlighting is enabled only for buffers
+			attached to a language server that advertises semantic
+			tokens support.
 			By default this is set to false.
+			See also |lsp-opt-semanticHighlightDelay| and
+			|lsp-semantic-highlighting|.
 
 					*lsp-opt-semanticHighlightDelay*
 semanticHighlightDelay	|Number| option.  Delay in milliseconds for semantic
-			highlighting requests. This prevents excessive
-			requests during rapid text changes.
+			highlighting requests.  This is a debounce delay used
+			when refreshing semantic tokens after text changes, so
+			it prevents excessive requests during rapid editing.
+			A lower value updates highlighting sooner but can send
+			more requests to the language server.
 			By default this is set to 1000.
 
 						*lsp-opt-showDiagInBalloon*
@@ -1147,10 +1198,17 @@ can map these commands to keys and make it easier to invoke them.
                         See |lsp-opt-hoverFallback|.
 
 						*:LspIncomingCalls*
-:LspIncomingCalls	Display a hierarchy of symbols calling the symbol
-			under the cursor in a window.  See
-			|lsp-call-hierarchy| for more information.  Note that
-			not all the language servers support this feature.
+:LspIncomingCalls	Display the incoming call hierarchy for the symbol
+			under the cursor in a window.  Incoming calls are the
+			symbols that call the current symbol.  The hierarchy is
+			shown in a scratch window named "LSP-CallHierarchy".
+			The top line shows the current mode, and the tree below
+			starts with the selected symbol and its callers.
+
+			See |lsp-call-hierarchy| for navigation and for the
+			buffer-local commands available in the hierarchy
+			window.  Note that not all language servers support
+			this feature.
 
 						*:LspInlayHints*
 :LspInlayHints {enable | disable | toggle}
@@ -1163,10 +1221,18 @@ can map these commands to keys and make it easier to invoke them.
 			the inlay hints.
 
 						*:LspOutgoingCalls*
-:LspOutgoingCalls	Display a hierarchy of symbols called by the symbol
-			under the cursor in a window.  See
-			|lsp-call-hierarchy| for more information.  Note that
-			not all the language servers support this feature.
+:LspOutgoingCalls	Display the outgoing call hierarchy for the symbol
+			under the cursor in a window.  Outgoing calls are the
+			symbols that the current symbol calls.  The hierarchy
+			is shown in a scratch window named
+			"LSP-CallHierarchy".  The top line shows the current
+			mode, and the tree below starts with the selected
+			symbol and its callees.
+
+			See |lsp-call-hierarchy| for navigation and for the
+			buffer-local commands available in the hierarchy
+			window.  Note that not all language servers support
+			this feature.
 
 						*:LspOutline*
 :[count]LspOutline [ {open | close | toggle} ]
@@ -1435,24 +1501,42 @@ can map these commands to keys and make it easier to invoke them.
 
 						*:LspSubTypeHierarchy*
 :LspSubTypeHierarchy	Show the sub type hierarchy for the symbol under the
-			cursor in a popup window.  The file containing the
-			type is shown in another popup window.  You can jump
-			to the location where a type is defined by browsing
-			the popup menu and selecting an entry.
+			cursor.  Sub types are the types that are derived from
+			(or implement) the current type.  The hierarchy is
+			displayed as a tree in a popup window, with child types
+			indented beneath their parents.  A second popup window
+			shows the source location for the currently highlighted
+			type.  As you navigate the hierarchy the file popup
+			updates automatically.
+
+			Navigate with j/k.  Press Enter to jump to the type
+			definition (the current position is first saved to the
+			|tagstack| so you can return with CTRL-T).  Press Esc
+			to close the popup without jumping.
+
+			See also |:LspSuperTypeHierarchy|.
 
 						*:LspSuperTypeHierarchy*
 :LspSuperTypeHierarchy	Show the super type hierarchy for the symbol under the
-			cursor in a popup window.  The file containing the
-			type is shown in another popup window.  As the current
-			entry in the type hierarchy popup menu changes, the
-			file popup window is updated to show the location
-			where the type is defined.  You can jump to the
-			location where a type is defined by selecting the
-			entry in the popup menu.
+			cursor.  Super types are the base types (parent classes
+			or interfaces) that the current type derives from.  The
+			hierarchy is displayed as a tree in a popup window,
+			with ancestor types indented beneath the current type.
+			A second popup window shows the source location for
+			the currently highlighted type.  As you navigate the
+			hierarchy the file popup updates automatically.
 
-			Note that the type hierarchy support is based on the
-			protocol supported by clangd.  This is different from
-			the one specified in the 3.17 of the LSP standard.
+			Navigate with j/k.  Press Enter to jump to the type
+			definition (the current position is first saved to the
+			|tagstack| so you can return with CTRL-T).  Press Esc
+			to close the popup without jumping.
+
+			Note: type hierarchy uses the clangd-specific
+			"textDocument/typeHierarchy" protocol.  This differs
+			from the method defined in LSP version 3.17 and will
+			not work with servers that only support the standard.
+
+			See also |:LspSubTypeHierarchy|.
 
 						*:LspSwitchSourceHeader*
 :LspSwitchSourceHeader	Switch between source and header files. This is a
@@ -1834,18 +1918,28 @@ To format code using the 'gq' command, you can set the 'formatexpr' option: >
 
 The |:LspIncomingCalls| and the |:LspOutgoingCalls| commands can be used to
 display the call hierarchy of a symbol.  For example, the functions calling a
-function or the functions called by a function.  These two commands open a
-window containing the call hierarchy tree.  You can use the Vim motion
-commands to browse the call hierarchy.
+function or the functions called by a function.  The result is shown in a
+scratch window named "LSP-CallHierarchy".  The first line identifies whether
+the window is showing incoming calls or outgoing calls for the selected
+symbol.  The tree below starts with the selected symbol itself.
+
+Each tree entry shows the symbol name together with the file name and parent
+directory that contain the symbol.  Child items are loaded on demand when you
+expand an entry, so deeper levels of the hierarchy are only queried when you
+ask for them.
+
+Use the normal Vim motion commands to move through the tree.  The same window
+is reused when you refresh the hierarchy or switch between incoming and
+outgoing views.
 
 In the call hierarchy tree window, the following keys are supported:
 
 <Enter>				Jump to the location of the symbol under the
 				cursor.
--				Expand and show the symbols calling or called
-				by the symbol under the cursor.
-+				Close the call hierarchy for the symbol under
-				the cursor.
+-				Expand the symbol under the cursor.  If the
+				child items have not been retrieved yet, the
+				language server is queried first.
++				Collapse the symbol under the cursor.
 
 You can display either the incoming call hierarchy or the outgoing call
 hierarchy in this window.  You cannot display both at the same time.
@@ -1855,7 +1949,9 @@ In the call hierarchy tree window, the following commands are supported:
 						*:LspCallHierarchyRefresh*
 :LspCallHierarchyRefresh	Query the language server again for the top
 				level symbol and refresh the call hierarchy
-				tree.
+				tree.  This discards any cached child items and
+				reloads the hierarchy from the top-level symbol.
+
 						*:LspCallHierarchyIncoming*
 :LspCallHierarchyIncoming	Display the incoming call hierarchy for the
 				top level symbol.  If the window is currently
@@ -1866,6 +1962,10 @@ In the call hierarchy tree window, the following commands are supported:
 				top level symbol.  If the window is currently
 				displaying the incoming calls, then it is
 				refreshed to display the outgoing calls.
+
+If the language server cannot prepare a call hierarchy for the symbol under
+the cursor, or if no callers/callees are returned, then a warning message is
+displayed instead of opening the hierarchy window.
 
 ==============================================================================
 11. Autocommands				*lsp-autocmds*
@@ -2021,7 +2121,100 @@ or >
     highlight link LspDiagVirtualText WarningMsg
 <
 ==============================================================================
-13. Debugging					*lsp-debug*
+13. Semantic Highlighting			 *lsp-semantic-highlighting*
+
+Semantic highlighting uses the LSP semantic tokens feature to apply more
+precise highlighting than plain syntax highlighting.  For example, a language
+server can distinguish between a class name, a function name, a parameter and
+an enum member even when they use similar text.
+
+The semantic text properties are combined with the existing syntax
+highlighting, so this usually refines the colors already shown in the buffer
+instead of replacing them entirely.
+
+To use semantic highlighting, set |lsp-opt-semanticHighlight| to |true| and
+use a language server that advertises semantic tokens support.  When enabled,
+the plugin requests semantic tokens for the current buffer and refreshes them
+after text changes using the delay configured by
+|lsp-opt-semanticHighlightDelay|.  If the server supports semantic token
+delta updates, they are used automatically.
+
+Only the semantic token types listed below have built-in highlight groups in
+this plugin.  If a language server returns other token types, they are
+ignored unless the plugin is extended to handle them.
+
+*LspSemanticNamespace*		Used to highlight semantic tokens of type
+				"namespace".  By default, linked to the
+				"Type" highlight group.
+*LspSemanticType*		Used to highlight semantic tokens of type
+				"type".  By default, linked to the "Type"
+				highlight group.
+*LspSemanticClass*		Used to highlight semantic tokens of type
+				"class".  By default, linked to the "Type"
+				highlight group.
+*LspSemanticEnum*		Used to highlight semantic tokens of type
+				"enum".  By default, linked to the "Type"
+				highlight group.
+*LspSemanticInterface*		Used to highlight semantic tokens of type
+				"interface".  By default, linked to the
+				"TypeDef" highlight group.
+*LspSemanticStruct*		Used to highlight semantic tokens of type
+				"struct".  By default, linked to the "Type"
+				highlight group.
+*LspSemanticTypeParameter*	Used to highlight semantic tokens of type
+				"typeParameter".  By default, linked to the
+				"Type" highlight group.
+*LspSemanticParameter*		Used to highlight semantic tokens of type
+				"parameter".  By default, linked to the
+				"Identifier" highlight group.
+*LspSemanticVariable*		Used to highlight semantic tokens of type
+				"variable".  By default, linked to the
+				"Identifier" highlight group.
+*LspSemanticProperty*		Used to highlight semantic tokens of type
+				"property".  By default, linked to the
+				"Identifier" highlight group.
+*LspSemanticEnumMember*		Used to highlight semantic tokens of type
+				"enumMember".  By default, linked to the
+				"Constant" highlight group.
+*LspSemanticEvent*		Used to highlight semantic tokens of type
+				"event".  By default, linked to the
+				"Identifier" highlight group.
+*LspSemanticFunction*		Used to highlight semantic tokens of type
+				"function".  By default, linked to the
+				"Function" highlight group.
+*LspSemanticMethod*		Used to highlight semantic tokens of type
+				"method".  By default, linked to the
+				"Function" highlight group.
+*LspSemanticMacro*		Used to highlight semantic tokens of type
+				"macro".  By default, linked to the "Macro"
+				highlight group.
+*LspSemanticKeyword*		Used to highlight semantic tokens of type
+				"keyword".  By default, linked to the
+				"Keyword" highlight group.
+*LspSemanticModifier*		Used to highlight semantic tokens of type
+				"modifier".  By default, linked to the
+				"Type" highlight group.
+*LspSemanticComment*		Used to highlight semantic tokens of type
+				"comment".  By default, linked to the
+				"Comment" highlight group.
+*LspSemanticString*		Used to highlight semantic tokens of type
+				"string".  By default, linked to the
+				"String" highlight group.
+*LspSemanticNumber*		Used to highlight semantic tokens of type
+				"number".  By default, linked to the
+				"Number" highlight group.
+*LspSemanticRegexp*		Used to highlight semantic tokens of type
+				"regexp".  By default, linked to the
+				"String" highlight group.
+*LspSemanticOperator*		Used to highlight semantic tokens of type
+				"operator".  By default, linked to the
+				"Operator" highlight group.
+*LspSemanticDecorator*		Used to highlight semantic tokens of type
+				"decorator".  By default, linked to the
+				"Macro" highlight group.
+
+==============================================================================
+14. Debugging					*lsp-debug*
 
 To debug this plugin, you can log the Language Server Protocol (LSP) messages
 sent and received by the plugin from the language server.  The following
@@ -2073,7 +2266,7 @@ use the ":LspServer trace" command to set the server trace value: >
     :LspServer trace { off | messages | verbose }
 <
 ==============================================================================
-14. Custom Command Handlers			*lsp-custom-commands*
+15. Custom Command Handlers			*lsp-custom-commands*
 
 						*LspRegisterCmdHandler()*
 						*g:LspRegisterCmdHandler()*
@@ -2101,7 +2294,7 @@ contains the LSP Command interface fields.  Refer to the LSP specification for
 more information about the "Command" interface.
 
 ==============================================================================
-15. Custom LSP Requests				*lsp-custom-requests*
+16. Custom LSP Requests				*lsp-custom-requests*
 
 The lsp.Server() function can be used to get the LSP server for the current
 buffer. It returns an empty dict if there is no LSP server.
@@ -2200,7 +2393,7 @@ language server is attached to the current buffer, then the request is not
 sent.
 
 ==============================================================================
-16. Custom LSP Completion Kinds			*lsp-custom-kinds*
+17. Custom LSP Completion Kinds			*lsp-custom-kinds*
 
 When a completion popup is triggered, the LSP client will use a default kind
 list to show in the completion "kind" section, to customize it, you need to
@@ -2258,7 +2451,7 @@ In the completion popup, will show something like this: >
 		| ...				 |
 <
 ==============================================================================
-17. Custom Popup Styles			*lsp-custom-popup-styles*
+18. Custom Popup Styles			*lsp-custom-popup-styles*
 
 The plugin provides the possibility to style popups according to one's liking.
 By default, popups do not have borders configured, and use the |hl-Pmenu|
@@ -2305,7 +2498,7 @@ popup-type |lsp-options|: >
 For styling the completion menu please refer to |hl-pmenu|.
 
 ==============================================================================
-18. Custom Locations Request			*lsp-custom-locations*
+19. Custom Locations Request			*lsp-custom-locations*
 
 				    *LspFindLocations()* *g:LspFindLocations()*
 A Language server may support non-standard locations request. To display the
@@ -2343,7 +2536,7 @@ It behaves like |:LspPeekReferences| and |:LspShowReferences|.  For example: >
     }
 
 ==============================================================================
-19. Multiple Language Servers for a buffer	*lsp-multiple-servers*
+20. Multiple Language Servers for a buffer	*lsp-multiple-servers*
 
 It's possible to run multiple language servers for a given buffer.
 
@@ -2434,7 +2627,7 @@ everything else: >
 	])
 <
 ==============================================================================
-20. Language Server Features			*lsp-features*
+21. Language Server Features				*lsp-features*
 
 When using multiple language servers for a given file type, by providing the
 configuration |lsp-cfg-features| it is possible to specify which language
@@ -2442,7 +2635,7 @@ server should be used for a given method/functionality.  The following feature
 flags are supported: See |lsp-multiple-servers| for examples.
 
 						*lsp-features-callHierarchy*
-callHierarchy			Used by the|:LspIncomingCalls| and the
+callHierarchy			Used by the |:LspIncomingCalls| and the
 				|:LspOutgoingCalls| commands.
 						*lsp-features-codeAction*
 codeAction			Used by the |:LspCodeAction| command.
@@ -2488,19 +2681,24 @@ rename				Used by the |:LspRename| command.
 						*lsp-features-selectionRange*
 selectionRange			Used by the |:LspSelectionExpand| and the
 				|:LspSelectionShrink| commands.
+						*lsp-features-semanticTokens*
+semanticTokens			Used by |lsp-opt-semanticHighlight| when a
+				language server provides semantic tokens.
 						*lsp-features-signatureHelp*
 signatureHelp			Used by the |:LspShowSignature| command.
 						*lsp-features-typeDefinition*
 typeDefinition			Used by the |:LspGotoTypeDef| and the
 				|:LspPeekTypeDef| commands.
+						*lsp-features-typeHierarchy*
 typeHierarchy			Used by the |:LspSubTypeHierarchy| and the
-				|:LspSuperTypeHiearchy| commands.
+				|:LspSuperTypeHierarchy| commands.
 workspaceSymbol			Used by the |:LspSymbolSearch| command.
 
 ==============================================================================
-						*lsp-license*
+22. License						*lsp-license*
+
 License: MIT License
-Copyright (c) 2020-2024 Yegappan Lakshmanan
+Copyright (c) 2020-2026 Yegappan Lakshmanan
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to
