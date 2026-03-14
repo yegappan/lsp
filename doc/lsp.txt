@@ -1545,11 +1545,16 @@ can map these commands to keys and make it easier to invoke them.
 :LspShowAllServers	Displays the list of registered language servers and
 			their status.  The language servers are registered
 			using the LspAddServer() function.  The output is
-			displayed in a scratch buffer.  The output shows the
-			Vim file type, the corresponding language server
-			status and the path to the language server executable.
-			The language server information for each buffer is
-			also shown.
+			displayed in a scratch buffer named
+			"Language-Servers".  If that window already exists, it
+			is reused and refreshed.
+
+			The output has two sections:
+			- "Filetype Information" shows the registered Vim file
+			  types, matching language servers, executable paths,
+			  and whether each server is currently running.
+			- "Buffer Information" shows which language servers
+			  are attached to each buffer.
 
 						*:LspShowReferences*
 :LspShowReferences	Creates a new location list with the list of locations
@@ -1676,14 +1681,19 @@ can map these commands to keys and make it easier to invoke them.
 <
 						*:LspWorkspaceAddFolder*
 :LspWorkspaceAddFolder {folder}
-			Add a folder to the workspace
+			Add {folder} to the workspace folders of all language
+			servers attached to the current buffer.  {folder}
+			must name an existing directory.
 
 :LspWorkspaceListFolders			*:LspWorkspaceListFolders*
-			Show the list of folders in the workspace.
+			Show the current workspace folders for each language
+			server attached to the current buffer.
 
 						*:LspWorkspaceRemoveFolder*
 :LspWorkspaceRemoveFolder {folder}
-			Remove a folder from the workspace
+			Remove {folder} from the workspace folders of all
+			language servers attached to the current buffer.
+			{folder} must name an existing directory.
 
 ==============================================================================
 6. Insert Mode Completion		    *lsp-ins-mode-completion*
@@ -2060,9 +2070,16 @@ LspSetup			A |User| autocommand fired when the LSP plugin
 				|LspOptionsSet()| function.
 
 						*LspAttached*
-LspAttached			A |User| autocommand fired when the LSP client
-				attaches to a buffer. Can be used to configure
+LspAttached			A |User| autocommand fired after all language
+				servers attached to a buffer are ready and the
+				buffer-specific LSP features have been
+				initialized.  Can be used to configure
 				buffer-local mappings or options.
+
+				If the buffer is not the current buffer when
+				the server becomes ready, then the autocommand
+				is delayed until the next time you enter that
+				buffer.
 
 						*LspDiagsUpdated*
 LspDiagsUpdated			A |User| autocommand invoked when new
