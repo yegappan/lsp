@@ -11,8 +11,10 @@ def GetHoverText(lspserver: dict<any>, hoverResult: any): list<any>
     return ['', '']
   endif
 
+  var contents_type: number = hoverResult.contents->type()
+
   # MarkupContent
-  if hoverResult.contents->type() == v:t_dict
+  if contents_type == v:t_dict
       && hoverResult.contents->has_key('kind')
     if hoverResult.contents.kind == 'plaintext'
       return [hoverResult.contents.value->split("\n"), 'text']
@@ -29,10 +31,14 @@ def GetHoverText(lspserver: dict<any>, hoverResult: any): list<any>
   endif
 
   # MarkedString
-  if hoverResult.contents->type() == v:t_dict
+  if contents_type == v:t_dict
       && hoverResult.contents->has_key('value')
+    var lang = hoverResult.contents->get('language', '')
+    if lang->empty()
+      return [hoverResult.contents.value->split("\n"), 'lspgfm']
+    endif
     return [
-      [$'``` {hoverResult.contents.language}']
+      [$'``` {lang}']
         + hoverResult.contents.value->split("\n")
         + ['```'],
       'lspgfm'
@@ -40,12 +46,12 @@ def GetHoverText(lspserver: dict<any>, hoverResult: any): list<any>
   endif
 
   # MarkedString
-  if hoverResult.contents->type() == v:t_string
+  if contents_type == v:t_string
     return [hoverResult.contents->split("\n"), 'lspgfm']
   endif
 
   # interface MarkedString[]
-  if hoverResult.contents->type() == v:t_list
+  if contents_type == v:t_list
     var hoverText: list<string> = []
     for e in hoverResult.contents
       if !hoverText->empty()
@@ -54,10 +60,19 @@ def GetHoverText(lspserver: dict<any>, hoverResult: any): list<any>
 
       if e->type() == v:t_string
         hoverText->extend(e->split("\n"))
+      elseif e->type() == v:t_dict && e->has_key('value')
+	var lang = e->get('language', '')
+	if lang->empty()
+	  hoverText->extend(e.value->split("\n"))
+	else
+	  hoverText->extend([$'``` {lang}'])
+	  hoverText->extend(e.value->split("\n"))
+	  hoverText->extend(['```'])
+	endif
       else
-        hoverText->extend([$'``` {e.language}'])
-        hoverText->extend(e.value->split("\n"))
-        hoverText->extend(['```'])
+	lspserver.errorLog(
+	  $'{strftime("%m/%d/%y %T")}: Unsupported hover list item ({e})'
+	)
       endif
     endfor
 
