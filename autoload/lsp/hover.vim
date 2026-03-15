@@ -73,6 +73,7 @@ def ShowHover(lspserver: dict<any>, hoverText: list<any>, hoverKind: string,
       moved: 'any',
       close: 'click',
       fixed: true,
+      maxwidth: 80,
       filter: HoverWinFilterKey,
       callback: HoverPopupClosed,
       padding: [0, 1, 0, 1]
@@ -213,7 +214,7 @@ def HoverWinFilterKey(hoverWin: number, key: string): bool
       || key == "\<C-Home>"
       || key == "\<C-End>"
     # scroll the hover popup window
-    win_execute(hoverWin, $'execute "normal! {key}"')
+    win_execute(hoverWin, $'normal! {key}')
     keyHandled = true
   endif
 
