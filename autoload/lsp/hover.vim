@@ -8,6 +8,10 @@ import './options.vim' as opt
 # Hover popup window id
 var hoverPopupWin: number = 0
 
+# Last hover result cached per language server.  The cache is invalidated when
+# the buffer, cursor position or changedtick differs from the cached request.
+var hoverCache: dict<dict<any>> = {}
+
 def HoverPopupClose()
   if hoverPopupWin != 0 && popup_list()->index(hoverPopupWin) != -1
     hoverPopupWin->popup_close()
@@ -21,10 +25,97 @@ def HoverPopupClosed(winid: number, result: any)
   endif
 enddef
 
+def HoverRequestContextMatches(reqctx: dict<any>): bool
+  return reqctx.bnr == bufnr()
+      && reqctx.changedtick == reqctx.bnr->getbufvar('changedtick', -1)
+      && reqctx.lnum == line('.')
+      && reqctx.col == charcol('.')
+enddef
+
+def ShowHover(lspserver: dict<any>, hoverText: list<any>, hoverKind: string,
+		cmdmods: string): void
+  var isSilent = cmdmods =~ 'silent'
+
+  # Nothing to show
+  if hoverText->empty()
+    # If 'keywordprg' is set to a value other than ':LspHover' and the
+    # hoverFallback option is set, then invoke 'keywordprg'
+    if &keywordprg !=# ':LspHover' && !empty(&l:keywordprg) && opt.lspOptions.hoverFallback
+      if !isSilent
+        util.WarnMsg($'No documentation found for current keyword; falling back to built-in.')
+      endif
+      try
+        execute 'normal! K'
+      catch /.*/
+        # Ignore any errors from built-in fallback
+      endtry
+    else
+      if !isSilent
+        util.WarnMsg($'No documentation found for current keyword')
+      endif
+    endif
+    return
+  endif
+
+  if opt.lspOptions.hoverInPreview
+    execute $':silent! {cmdmods} pedit LspHover'
+    :wincmd P
+    :setlocal buftype=nofile
+    :setlocal bufhidden=delete
+    bufnr()->deletebufline(1, '$')
+    hoverText->append(0)
+    [1, 1]->cursor()
+    exe $'setlocal ft={hoverKind}'
+    :wincmd p
+  else
+    HoverPopupClose()
+    var popupAttrs = opt.PopupConfigure('Hover', {
+      moved: 'any',
+      close: 'click',
+      fixed: true,
+      filter: HoverWinFilterKey,
+      callback: HoverPopupClosed,
+      padding: [0, 1, 0, 1]
+    })
+    hoverPopupWin = hoverText->popup_atcursor(popupAttrs)
+    win_execute(hoverPopupWin, $'setlocal ft={hoverKind}')
+  endif
+enddef
+
+export def HoverRequestContextGet(lspserver: dict<any>): dict<any>
+  var bnr = bufnr()
+  return {
+    serverid: lspserver.id,
+    bnr: bnr,
+    changedtick: bnr->getbufvar('changedtick', -1),
+    lnum: line('.'),
+    col: charcol('.')
+  }
+enddef
+
+export def HoverShowCached(reqctx: dict<any>, lspserver: dict<any>,
+		cmdmods: string): bool
+  var cacheKey = reqctx.serverid->string()
+  if !hoverCache->has_key(cacheKey)
+    return false
+  endif
+
+  var entry = hoverCache[cacheKey]
+  if entry.bnr != reqctx.bnr
+      || entry.changedtick != reqctx.changedtick
+      || entry.lnum != reqctx.lnum
+      || entry.col != reqctx.col
+    return false
+  endif
+
+  ShowHover(lspserver, entry.hoverText, entry.hoverKind, cmdmods)
+  return true
+enddef
+
 # Util used to compute the hoverText from textDocument/hover reply
 def GetHoverText(lspserver: dict<any>, hoverResult: any): list<any>
   if hoverResult->empty()
-    return ['', '']
+    return [[], '']
   endif
 
   var contents = hoverResult.contents
@@ -44,7 +135,7 @@ def GetHoverText(lspserver: dict<any>, hoverResult: any): list<any>
     lspserver.errorLog(
       $'{strftime("%m/%d/%y %T")}: Unsupported hover contents kind ({contents.kind})'
     )
-    return ['', '']
+    return [[], '']
   endif
 
   # MarkedString
@@ -103,7 +194,7 @@ def GetHoverText(lspserver: dict<any>, hoverResult: any): list<any>
   lspserver.errorLog(
     $'{strftime("%m/%d/%y %T")}: Unsupported hover reply ({hoverResult})'
   )
-  return ['', '']
+  return [[], '']
 enddef
 
 # Key filter function for the hover popup window.
@@ -122,7 +213,7 @@ def HoverWinFilterKey(hoverWin: number, key: string): bool
       || key == "\<C-Home>"
       || key == "\<C-End>"
     # scroll the hover popup window
-    win_execute(hoverWin, $'normal! {key}')
+    win_execute(hoverWin, $'execute "normal! {key}"')
     keyHandled = true
   endif
 
@@ -136,53 +227,26 @@ enddef
 
 # process the 'textDocument/hover' reply from the LSP server
 # Result: Hover | null
-export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string): void
-  var [hoverText, hoverKind] = GetHoverText(lspserver, hoverResult)
-  var isSilent = cmdmods =~ 'silent'
-
-  # Nothing to show
-  if hoverText->empty()
-    if &keywordprg !=# ':LspHover' && !empty(&l:keywordprg) && opt.lspOptions.hoverFallback
-      if !isSilent
-        util.WarnMsg($'No documentation found for current keyword; falling back to built-in.')
-      endif
-      try
-        execute 'normal! K'
-      catch /.*/
-        # Ignore any errors from built-in fallback
-      endtry
-    else
-      if !isSilent
-        util.WarnMsg($'No documentation found for current keyword')
-      endif
-    endif
+export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string,
+		reqctx: dict<any> = {}): void
+  if !reqctx->empty() && !HoverRequestContextMatches(reqctx)
     return
   endif
 
-  if opt.lspOptions.hoverInPreview
-    execute $':silent! {cmdmods} pedit LspHover'
-    :wincmd P
-    :setlocal buftype=nofile
-    :setlocal bufhidden=delete
-    bufnr()->deletebufline(1, '$')
-    hoverText->append(0)
-    [1, 1]->cursor()
-    exe $'setlocal ft={hoverKind}'
-    :wincmd p
-  else
-    HoverPopupClose()
-    var popupAttrs = opt.PopupConfigure('Hover', {
-      moved: 'any',
-      close: 'click',
-      fixed: true,
-      maxwidth: 80,
-      filter: HoverWinFilterKey,
-      callback: HoverPopupClosed,
-      padding: [0, 1, 0, 1]
-    })
-    hoverPopupWin = hoverText->popup_atcursor(popupAttrs)
-    win_execute(hoverPopupWin, $'setlocal ft={hoverKind}')
+  var [hoverText, hoverKind] = GetHoverText(lspserver, hoverResult)
+
+  if !reqctx->empty()
+    hoverCache[reqctx.serverid->string()] = {
+      bnr: reqctx.bnr,
+      changedtick: reqctx.changedtick,
+      lnum: reqctx.lnum,
+      col: reqctx.col,
+      hoverText: hoverText,
+      hoverKind: hoverKind
+    }
   endif
+
+  ShowHover(lspserver, hoverText, hoverKind, cmdmods)
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab

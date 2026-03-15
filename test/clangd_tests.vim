@@ -1,6 +1,9 @@
 vim9script
 # Unit tests for Vim Language Server Protocol (LSP) clangd client
 
+import '../autoload/lsp/hover.vim' as hover
+import '../autoload/lsp/buffer.vim' as buf
+
 source common.vim
 
 var lspOpts = {autoComplete: false}
@@ -1306,6 +1309,31 @@ def g:Test_LspHover()
   assert_equal([2, 2, 'preview'], [winnr('$'), winnr(), win_gettype(1)])
   g:LspOptionsSet({hoverInPreview: false})
   :pclose
+
+  # Hover cache: first lookup misses, second lookup at the same position hits,
+  # moving the cursor or changing the buffer invalidates the cached entry.
+  cursor(8, 4)
+  var hoverServer = buf.CurbufGetServerChecked('hover')
+  var reqctx = hover.HoverRequestContextGet(hoverServer)
+  assert_equal(false, hover.HoverShowCached(reqctx, hoverServer, 'silent'))
+
+  :LspHover
+  g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
+  popup_clear()
+
+  assert_equal(true, hover.HoverShowCached(reqctx, hoverServer, 'silent'))
+  assert_equal(1, popup_list()->len())
+  popup_clear()
+
+  cursor(9, 9)
+  var movedReqctx = hover.HoverRequestContextGet(hoverServer)
+  assert_equal(false, hover.HoverShowCached(movedReqctx, hoverServer, 'silent'))
+
+  cursor(8, 4)
+  setline(1, getline(1, 1)[0] .. ' ')
+  setline(1, 'int f1(int a)')
+  var changedReqctx = hover.HoverRequestContextGet(hoverServer)
+  assert_equal(false, hover.HoverShowCached(changedReqctx, hoverServer, 'silent'))
 
   :%bw!
 enddef

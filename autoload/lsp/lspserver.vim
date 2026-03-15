@@ -968,11 +968,16 @@ def ShowHoverInfo(lspserver: dict<any>, cmdmods: string): void
     return
   endif
 
+  var reqctx = hover.HoverRequestContextGet(lspserver)
+  if hover.HoverShowCached(reqctx, lspserver, cmdmods)
+    return
+  endif
+
   # interface HoverParams
   #   interface TextDocumentPositionParams
   var params = lspserver.getTextDocPosition(false)
   lspserver.rpc_a('textDocument/hover', params, (_, reply) => {
-    hover.HoverReply(lspserver, reply, cmdmods)
+    hover.HoverReply(lspserver, reply, cmdmods, reqctx)
   })
 enddef
 
@@ -1909,7 +1914,7 @@ enddef
 # Returns unique ID used for identifying the various servers
 var UniqueServerIdCounter = 0
 def GetUniqueServerId(): number
-  UniqueServerIdCounter = UniqueServerIdCounter + 1
+  UniqueServerIdCounter += 1
   return UniqueServerIdCounter
 enddef
 
