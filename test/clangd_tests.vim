@@ -1335,6 +1335,14 @@ def g:Test_LspHover()
   var changedReqctx = hover.HoverRequestContextGet(hoverServer)
   assert_equal(false, hover.HoverShowCached(changedReqctx, hoverServer, 'silent'))
 
+  # CursorHold auto-hover scheduling (debounced) should display hover popup.
+  g:LspOptionsSet({hoverOnCursorHold: true, hoverDelay: 1})
+  cursor(8, 4)
+  hover.HoverAutoSchedule(bufnr())
+  g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
+  popup_clear()
+  g:LspOptionsSet({hoverOnCursorHold: false})
+
   :%bw!
 enddef
 

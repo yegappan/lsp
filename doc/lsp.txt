@@ -899,6 +899,11 @@ the symbol under the cursor.
 			|:silent| to suppress "No documentation found" warning
 			messages.
 
+			With |lsp-opt-hoverOnCursorHold| enabled, hover
+			documentation is requested automatically when the
+			cursor is idle (|CursorHold|).  Requests are debounced
+			using |lsp-opt-hoverDelay|.
+
                         With hoverFallback enabled (disabled by default),
                         falls back to the file type specific 'keywordprg'.
                         See |lsp-opt-hoverFallback|.
@@ -1467,6 +1472,18 @@ hoverInPreview		|Boolean| option. Show |:LspHover| in a preview window
 			instead of a popup.  The preview buffer name is
 			"LspHover" and can be closed with |:pclose|.
 			By default this is set to false.
+
+						*lsp-opt-hoverOnCursorHold*
+hoverOnCursorHold	|Boolean| option. Automatically request hover
+			documentation when the cursor is idle
+			(|CursorHold|).
+			By default this is set to false.
+
+						*lsp-opt-hoverDelay*
+hoverDelay		|Number| option. Debounce delay in milliseconds used
+			for automatic hover requests when
+			|lsp-opt-hoverOnCursorHold| is enabled.
+			By default this is set to 300.
 
 						*lsp-opt-completionInPreview*
 completionInPreview	|Boolean| option. Show completion documentation

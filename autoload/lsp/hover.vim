@@ -4,6 +4,7 @@ vim9script
 
 import './util.vim'
 import './options.vim' as opt
+import './buffer.vim' as buf
 
 # Hover popup window id
 var hoverPopupWin: number = 0
@@ -12,6 +13,7 @@ var hoverPopupWin: number = 0
 # the buffer, cursor position or changedtick differs from the cached request.
 var hoverCache: dict<dict<any>> = {}
 
+# Close the hover popup window (if present)
 def HoverPopupClose()
   if hoverPopupWin != 0 && popup_list()->index(hoverPopupWin) != -1
     hoverPopupWin->popup_close()
@@ -19,12 +21,65 @@ def HoverPopupClose()
   hoverPopupWin = 0
 enddef
 
+# Hover popup window is closed.
 def HoverPopupClosed(winid: number, result: any)
   if hoverPopupWin == winid
     hoverPopupWin = 0
   endif
 enddef
 
+# Timer callback to automatically display the hover information
+def HoverAutoTimerCb(bnr: number, timerid: number)
+  setbufvar(bnr, 'LspHoverTimer', -1)
+
+  if bufnr() != bnr || mode() !=# 'n'
+    return
+  endif
+
+  var lspserver: dict<any> = buf.BufLspServerGet(bnr, 'hover')
+  if lspserver->empty()
+    return
+  endif
+
+  lspserver.hover('silent')
+enddef
+
+# Stop the timer to automatically display the hover information
+export def HoverAutoStop(bnr: number)
+  var timerid = bnr->getbufvar('LspHoverTimer', -1)
+  if timerid != -1
+    timer_stop(timerid)
+    setbufvar(bnr, 'LspHoverTimer', -1)
+  endif
+enddef
+
+# Schedule the timer to automatically display the hover information
+export def HoverAutoSchedule(bnr: number)
+  if !opt.lspOptions.hoverOnCursorHold
+    return
+  endif
+
+  HoverAutoStop(bnr)
+
+  var lspserver: dict<any> = buf.BufLspServerGet(bnr, 'hover')
+  if lspserver->empty()
+    return
+  endif
+
+  var timerid: number
+  if get(g:, 'LSPTest')
+    HoverAutoTimerCb(bnr, -1)
+  else
+    timerid = timer_start(opt.lspOptions.hoverDelay,
+			  function('HoverAutoTimerCb', [bnr]))
+    setbufvar(bnr, 'LspHoverTimer', timerid)
+  endif
+enddef
+
+# Hover context contains the buffer number, current cursor position and
+# changedtick.  This is used to correctly match the cached hover information.
+# Returns true if the cached context (reqctx) matches with the current hover
+# context.
 def HoverRequestContextMatches(reqctx: dict<any>): bool
   return reqctx.bnr == bufnr()
       && reqctx.changedtick == reqctx.bnr->getbufvar('changedtick', -1)
@@ -32,6 +87,7 @@ def HoverRequestContextMatches(reqctx: dict<any>): bool
       && reqctx.col == charcol('.')
 enddef
 
+# Show the hover information in a popup or the preview window
 def ShowHover(lspserver: dict<any>, hoverText: list<any>, hoverKind: string,
 		cmdmods: string): void
   var isSilent = cmdmods =~ 'silent'
@@ -69,7 +125,7 @@ def ShowHover(lspserver: dict<any>, hoverText: list<any>, hoverKind: string,
     :wincmd p
   else
     HoverPopupClose()
-    var popupAttrs = opt.PopupConfigure('Hover', {
+    var popupAttrs = {
       moved: 'any',
       close: 'click',
       fixed: true,
@@ -77,12 +133,14 @@ def ShowHover(lspserver: dict<any>, hoverText: list<any>, hoverKind: string,
       filter: HoverWinFilterKey,
       callback: HoverPopupClosed,
       padding: [0, 1, 0, 1]
-    })
+    }
+    popupAttrs = opt.PopupConfigure('Hover', popupAttrs)
     hoverPopupWin = hoverText->popup_atcursor(popupAttrs)
     win_execute(hoverPopupWin, $'setlocal ft={hoverKind}')
   endif
 enddef
 
+# Get the current context for showing the hover information
 export def HoverRequestContextGet(lspserver: dict<any>): dict<any>
   var bnr = bufnr()
   return {
@@ -94,6 +152,7 @@ export def HoverRequestContextGet(lspserver: dict<any>): dict<any>
   }
 enddef
 
+# Display the cached hover information
 export def HoverShowCached(reqctx: dict<any>, lspserver: dict<any>,
 		cmdmods: string): bool
   var cacheKey = reqctx.serverid->string()

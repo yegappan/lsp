@@ -20,6 +20,7 @@ import './symbol.vim'
 import './outline.vim'
 import './signature.vim'
 import './codeaction.vim'
+import './hover.vim'
 import './inlayhints.vim'
 import './semantichighlight.vim'
 
@@ -429,6 +430,14 @@ def LspLeftInsertMode(bnr: number)
   diag.ProcessNewDiags(bnr)
 enddef
 
+def LspHoverAutoSchedule(bnr: number)
+  hover.HoverAutoSchedule(bnr)
+enddef
+
+def LspHoverAutoStop(bnr: number)
+  hover.HoverAutoStop(bnr)
+enddef
+
 # Add buffer-local autocmds when attaching a LSP server to a buffer
 def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
   var acmds: list<dict<any>> = []
@@ -452,6 +461,18 @@ def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
 		event: 'CursorMoved',
 		group: 'LSPBufferAutocmds',
 		cmd: $'call LspDocHighlightClear({bnr}) | call LspDocHighlight({bnr}, "silent")'})
+  endif
+
+  if opt.lspOptions.hoverOnCursorHold && lspserver.isHoverProvider
+    # Setup autocmds for auto hover display
+    acmds->add({bufnr: bnr,
+		event: 'CursorHold',
+		group: 'LSPBufferAutocmds',
+		cmd: $'LspHoverAutoSchedule({bnr})'})
+    acmds->add({bufnr: bnr,
+		event: ['CursorMoved', 'BufLeave'],
+		group: 'LSPBufferAutocmds',
+		cmd: $'LspHoverAutoStop({bnr})'})
   endif
 
   autocmd_add(acmds)

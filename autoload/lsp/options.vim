@@ -52,6 +52,12 @@ export var lspOptions: dict<any> = {
   # Show the symbol documentation in the preview window instead of in a popup
   hoverInPreview: false,
 
+  # Automatically request hover on CursorHold
+  hoverOnCursorHold: false,
+
+  # Debounce delay in milliseconds before requesting hover on CursorHold
+  hoverDelay: 300,
+
   # Show completion documentation in the preview window instead of in a popup
   completionInPreview: false,
 
