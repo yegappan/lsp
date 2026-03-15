@@ -5,6 +5,22 @@ vim9script
 import './util.vim'
 import './options.vim' as opt
 
+# Hover popup window id
+var hoverPopupWin: number = 0
+
+def HoverPopupClose()
+  if hoverPopupWin != 0 && popup_list()->index(hoverPopupWin) != -1
+    hoverPopupWin->popup_close()
+  endif
+  hoverPopupWin = 0
+enddef
+
+def HoverPopupClosed(winid: number, result: any)
+  if hoverPopupWin == winid
+    hoverPopupWin = 0
+  endif
+enddef
+
 # Util used to compute the hoverText from textDocument/hover reply
 def GetHoverText(lspserver: dict<any>, hoverResult: any): list<any>
   if hoverResult->empty()
@@ -154,17 +170,18 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string): 
     exe $'setlocal ft={hoverKind}'
     :wincmd p
   else
-    popup_clear()
+    HoverPopupClose()
     var popupAttrs = opt.PopupConfigure('Hover', {
       moved: 'any',
       close: 'click',
       fixed: true,
       maxwidth: 80,
       filter: HoverWinFilterKey,
+      callback: HoverPopupClosed,
       padding: [0, 1, 0, 1]
     })
-    var winid = hoverText->popup_atcursor(popupAttrs)
-    win_execute(winid, $'setlocal ft={hoverKind}')
+    hoverPopupWin = hoverText->popup_atcursor(popupAttrs)
+    win_execute(hoverPopupWin, $'setlocal ft={hoverKind}')
   endif
 enddef
 

@@ -1286,13 +1286,13 @@ def g:Test_LspHover()
   assert_equal([], output)
   assert_equal([], popup_list())
 
-  # Show current diagnostic as to open another popup.
-  # Then we can test that LspHover closes all existing popups
+  # Show current diagnostic to open another popup.
+  # LspHover should only manage its own popup and not close unrelated popups.
   cursor(10, 6)
   :LspDiag current
   assert_equal(1, popup_list()->len())
   :LspHover
-  assert_equal(1, popup_list()->len())
+  assert_equal(2, popup_list()->len())
   popup_clear()
 
   # Show hover information in a preview window
