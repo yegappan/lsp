@@ -6,12 +6,29 @@ import './util.vim'
 import './options.vim' as opt
 import './buffer.vim' as buf
 
-# Hover popup window id
+# Window id of the currently open hover popup, or 0 when none is open.
 var hoverPopupWin: number = 0
 
 # Last hover result cached per language server.  The cache is invalidated when
 # the buffer, cursor position or changedtick differs from the cached request.
 var hoverCache: dict<dict<any>> = {}
+
+# Keys supported for scrolling the hover popup window.
+const hoverScrollKeys = [
+  "\<C-E>", "\<C-D>", "\<C-F>", "\<PageDown>",
+  "\<C-Y>", "\<C-U>", "\<C-B>", "\<PageUp>",
+  "\<C-Home>", "\<C-End>"
+]
+
+# Return true if 'key' is one of the recognised hover popup scroll keys.
+def IsHoverScrollKey(key: string): bool
+  return hoverScrollKeys->index(key) != -1
+enddef
+
+# Wrap 'value' in a fenced markdown code block annotated with 'lang'.
+def MarkdownCodeBlock(lang: string, value: string): list<string>
+  return [$'``` {lang}'] + value->split("\n") + ['```']
+enddef
 
 # Close the hover popup window (if present)
 def HoverPopupClose()
@@ -21,14 +38,19 @@ def HoverPopupClose()
   hoverPopupWin = 0
 enddef
 
-# Hover popup window is closed.
+# Callback invoked by Vim when the hover popup is closed (e.g. via mouse click
+# or the Esc key).  Clears the tracked window id so a fresh popup can be
+# opened afterwards.
 def HoverPopupClosed(winid: number, result: any)
   if hoverPopupWin == winid
     hoverPopupWin = 0
   endif
 enddef
 
-# Timer callback to automatically display the hover information
+# Timer callback fired after the auto-hover debounce delay.  Clears the
+# buffer-local timer handle, then guards against two race conditions before
+# sending the hover request: the user may have switched buffers, or left
+# normal mode (e.g. started typing).
 def HoverAutoTimerCb(bnr: number, timerid: number)
   setbufvar(bnr, 'LspHoverTimer', -1)
 
@@ -44,7 +66,8 @@ def HoverAutoTimerCb(bnr: number, timerid: number)
   lspserver.hover('silent')
 enddef
 
-# Stop the timer to automatically display the hover information
+# Cancel the pending auto-hover timer for buffer 'bnr', if one exists.
+# The buffer-local 'LspHoverTimer' variable is reset to -1 afterwards.
 export def HoverAutoStop(bnr: number)
   var timerid = bnr->getbufvar('LspHoverTimer', -1)
   if timerid != -1
@@ -53,7 +76,11 @@ export def HoverAutoStop(bnr: number)
   endif
 enddef
 
-# Schedule the timer to automatically display the hover information
+# Schedule a debounced auto-hover request for buffer 'bnr'.  Any previously
+# pending timer is cancelled first so rapid cursor movement resets the delay.
+# Does nothing when 'hoverOnCursorHold' is disabled or no hover-capable server
+# is attached.  In test mode the callback is invoked synchronously so tests do
+# not need to wait for real timers.
 export def HoverAutoSchedule(bnr: number)
   if !opt.lspOptions.hoverOnCursorHold
     return
@@ -76,10 +103,9 @@ export def HoverAutoSchedule(bnr: number)
   endif
 enddef
 
-# Hover context contains the buffer number, current cursor position and
-# changedtick.  This is used to correctly match the cached hover information.
-# Returns true if the cached context (reqctx) matches with the current hover
-# context.
+# Return true when 'reqctx' still matches the current editor state (buffer,
+# cursor line/column, and changedtick).  Used to discard stale async replies
+# that arrived after the user moved the cursor or edited the buffer.
 def HoverRequestContextMatches(reqctx: dict<any>): bool
   return reqctx.bnr == bufnr()
       && reqctx.changedtick == reqctx.bnr->getbufvar('changedtick', -1)
@@ -87,7 +113,10 @@ def HoverRequestContextMatches(reqctx: dict<any>): bool
       && reqctx.col == charcol('.')
 enddef
 
-# Show the hover information in a popup or the preview window
+# Render 'hoverText' to the user.  When 'hoverInPreview' is set the text is
+# written into a dedicated preview window; otherwise it is shown in a popup
+# at the cursor.  An empty 'hoverText' triggers a warning (or a fallback to
+# 'keywordprg' when 'hoverFallback' is set).
 def ShowHover(lspserver: dict<any>, hoverText: list<any>, hoverKind: string,
 		cmdmods: string): void
   var isSilent = cmdmods =~ 'silent'
@@ -114,6 +143,9 @@ def ShowHover(lspserver: dict<any>, hoverText: list<any>, hoverKind: string,
   endif
 
   if opt.lspOptions.hoverInPreview
+    # Open (or reuse) the named preview window, clear its previous content,
+    # write the new hover text, set the filetype for syntax highlighting, then
+    # return focus to the originating window.
     execute $':silent! {cmdmods} pedit LspHover'
     :wincmd P
     :setlocal buftype=nofile
@@ -124,6 +156,8 @@ def ShowHover(lspserver: dict<any>, hoverText: list<any>, hoverKind: string,
     exe $'setlocal ft={hoverKind}'
     :wincmd p
   else
+    # Close any existing hover popup before opening a new one so there is
+    # never more than one hover popup on screen at a time.
     HoverPopupClose()
     var popupAttrs = {
       moved: 'any',
@@ -140,7 +174,10 @@ def ShowHover(lspserver: dict<any>, hoverText: list<any>, hoverKind: string,
   endif
 enddef
 
-# Get the current context for showing the hover information
+# Snapshot the current editor state (server id, buffer, cursor line/column,
+# and changedtick) into a context dict.  The context is recorded with async
+# hover requests so that stale replies can be detected on arrival, and stored
+# alongside cache entries so that invalidation is automatic.
 export def HoverRequestContextGet(lspserver: dict<any>): dict<any>
   var bnr = bufnr()
   return {
@@ -152,7 +189,10 @@ export def HoverRequestContextGet(lspserver: dict<any>): dict<any>
   }
 enddef
 
-# Display the cached hover information
+# Try to show hover information from the cache for 'reqctx'.  Returns true
+# and renders the result when a valid, up-to-date cache entry exists for the
+# current buffer position.  Returns false when no entry exists or the cached
+# entry no longer matches the current buffer / cursor / changedtick.
 export def HoverShowCached(reqctx: dict<any>, lspserver: dict<any>,
 		cmdmods: string): bool
   var cacheKey = reqctx.serverid->string()
@@ -172,7 +212,12 @@ export def HoverShowCached(reqctx: dict<any>, lspserver: dict<any>,
   return true
 enddef
 
-# Util used to compute the hoverText from textDocument/hover reply
+# Convert the raw 'hoverResult' from the LSP server into a [lines, filetype]
+# pair ready for display.  Handles all three shapes defined by the LSP spec:
+#   MarkupContent  – dict with a 'kind' field ("plaintext" or "markdown")
+#   MarkedString   – dict with a 'value' field, or a plain string
+#   MarkedString[] – list mixing strings and dicts
+# Returns [[], ''] for an empty or unrecognised result.
 def GetHoverText(lspserver: dict<any>, hoverResult: any): list<any>
   if hoverResult->empty()
     return [[], '']
@@ -198,22 +243,17 @@ def GetHoverText(lspserver: dict<any>, hoverResult: any): list<any>
     return [[], '']
   endif
 
-  # MarkedString
+  # MarkedString (dict form) – deprecated but still used by some servers.
   if contents_type == v:t_dict
       && contents->has_key('value')
     var lang = contents->get('language', '')
     if lang->empty()
       return [contents.value->split("\n"), 'lspgfm']
     endif
-    return [
-      [$'``` {lang}']
-        + contents.value->split("\n")
-        + ['```'],
-      'lspgfm'
-    ]
+    return [MarkdownCodeBlock(lang, contents.value), 'lspgfm']
   endif
 
-  # MarkedString
+  # MarkedString (plain string form) – deprecated but still used by some servers.
   if contents_type == v:t_string
     return [contents->split("\n"), 'lspgfm']
   endif
@@ -237,9 +277,7 @@ def GetHoverText(lspserver: dict<any>, hoverResult: any): list<any>
 	if lang->empty()
 	  hoverText->extend(e.value->split("\n"))
 	else
-	  hoverText->extend([$'``` {lang}'])
-	  hoverText->extend(e.value->split("\n"))
-	  hoverText->extend(['```'])
+    hoverText->extend(MarkdownCodeBlock(lang, e.value))
 	endif
       else
 	lspserver.errorLog(
@@ -257,22 +295,15 @@ def GetHoverText(lspserver: dict<any>, hoverResult: any): list<any>
   return [[], '']
 enddef
 
-# Key filter function for the hover popup window.
-# Only keys to scroll the popup window are supported.
+# Key filter for the hover popup window.  Scroll keys (see hoverScrollKeys)
+# are forwarded to the popup as normal-mode commands.  Pressing Esc closes the
+# popup.  All other keys are not consumed, allowing them to reach the editor
+# in the normal way.
 def HoverWinFilterKey(hoverWin: number, key: string): bool
   var keyHandled = false
 
-  if key == "\<C-E>"
-      || key == "\<C-D>"
-      || key == "\<C-F>"
-      || key == "\<PageDown>"
-      || key == "\<C-Y>"
-      || key == "\<C-U>"
-      || key == "\<C-B>"
-      || key == "\<PageUp>"
-      || key == "\<C-Home>"
-      || key == "\<C-End>"
-    # scroll the hover popup window
+  if IsHoverScrollKey(key)
+    # Forward the key as a normal-mode command so the popup scrolls.
     win_execute(hoverWin, $'normal! {key}')
     keyHandled = true
   endif
@@ -285,8 +316,12 @@ def HoverWinFilterKey(hoverWin: number, key: string): bool
   return keyHandled
 enddef
 
-# process the 'textDocument/hover' reply from the LSP server
-# Result: Hover | null
+# Handle a 'textDocument/hover' reply from the LSP server.
+# 'hoverResult' is the raw LSP Hover object (or null/empty on no result).
+# When 'reqctx' is provided the reply is validated against the current editor
+# state: if the cursor has moved or the buffer has changed since the request
+# was sent the reply is silently discarded.  Otherwise the result is stored in
+# the hover cache and rendered via ShowHover.
 export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string,
 		reqctx: dict<any> = {}): void
   if !reqctx->empty() && !HoverRequestContextMatches(reqctx)
@@ -296,7 +331,8 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string,
   var [hoverText, hoverKind] = GetHoverText(lspserver, hoverResult)
 
   if !reqctx->empty()
-    hoverCache[reqctx.serverid->string()] = {
+    var cacheKey = reqctx.serverid->string()
+    hoverCache[cacheKey] = {
       bnr: reqctx.bnr,
       changedtick: reqctx.changedtick,
       lnum: reqctx.lnum,
