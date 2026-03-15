@@ -1281,7 +1281,13 @@ def g:Test_LspHover()
   var p: list<number> = popup_list()
   assert_equal(1, p->len())
   assert_equal(['### function `f1`  ', '', '---', '→ `int`  ', 'Parameters:  ', '- `int a`', '', '---', '```cpp', 'int f1(int a)', '```'], getbufline(winbufnr(p[0]), 1, '$'))
-  popup_close(p[0])
+
+  # Re-running :LspHover at the same position should replace the existing
+  # hover popup, not create additional hover popups.
+  :LspHover
+  assert_equal(1, popup_list()->len())
+  var activeHoverPopups = popup_list()
+  popup_close(activeHoverPopups[0])
   cursor(7, 1)
   output = execute(':LspHover')->split("\n")
   assert_equal('Warn: No documentation found for current keyword', output[0])
@@ -1289,8 +1295,9 @@ def g:Test_LspHover()
   assert_equal([], output)
   assert_equal([], popup_list())
 
-  # Show current diagnostic to open another popup.
-  # LspHover should only manage its own popup and not close unrelated popups.
+  # Open a diagnostics popup first, then request hover.
+  # Expect both popups to coexist: :LspHover should manage only its own popup
+  # and must not close unrelated popups.
   cursor(10, 6)
   :LspDiag current
   assert_equal(1, popup_list()->len())
@@ -1298,7 +1305,8 @@ def g:Test_LspHover()
   assert_equal(2, popup_list()->len())
   popup_clear()
 
-  # Show hover information in a preview window
+  # When hoverInPreview is enabled, :LspHover should render into the preview
+  # window named "LspHover" and reuse that preview window across calls.
   g:LspOptionsSet({hoverInPreview: true})
   cursor(8, 4)
   :LspHover
@@ -1310,10 +1318,26 @@ def g:Test_LspHover()
   g:LspOptionsSet({hoverInPreview: false})
   :pclose
 
-  # Hover cache: first lookup misses, second lookup at the same position hits,
-  # moving the cursor or changing the buffer invalidates the cached entry.
-  cursor(8, 4)
   var hoverServer = buf.CurbufGetServerChecked('hover')
+
+  # Directly feed a synthetic plaintext hover reply and verify
+  #   1) lines are preserved as-is, and
+  #   2) the hover buffer filetype is set to "text".
+  hover.HoverReply(hoverServer,
+    {contents: {kind: 'plaintext', value: "line one\nline two"}},
+    'silent')
+  p = popup_list()
+  assert_equal(1, p->len())
+  assert_equal(['line one', 'line two'], getbufline(winbufnr(p[0]), 1, '$'))
+  assert_equal('text', getbufvar(winbufnr(p[0]), '&filetype'))
+  popup_clear()
+
+  # Hover cache behavior:
+  #   - first lookup at a position is a miss,
+  #   - after one successful hover reply, same-position lookup is a hit,
+  #   - moving the cursor invalidates the cache,
+  #   - changing buffer text (changedtick) invalidates the cache.
+  cursor(8, 4)
   var reqctx = hover.HoverRequestContextGet(hoverServer)
   assert_equal(false, hover.HoverShowCached(reqctx, hoverServer, 'silent'))
 
@@ -1335,7 +1359,9 @@ def g:Test_LspHover()
   var changedReqctx = hover.HoverRequestContextGet(hoverServer)
   assert_equal(false, hover.HoverShowCached(changedReqctx, hoverServer, 'silent'))
 
-  # Stale async hover reply should be ignored and not cached/shown.
+  # Simulate an async race: capture request context at position A, move to
+  # position B, then deliver a reply for A. The stale reply must be ignored,
+  # and must not be shown or cached.
   cursor(8, 4)
   reqctx = hover.HoverRequestContextGet(hoverServer)
   cursor(9, 9)
@@ -1344,19 +1370,35 @@ def g:Test_LspHover()
   cursor(8, 4)
   assert_equal(false, hover.HoverShowCached(reqctx, hoverServer, 'silent'))
 
-  # Hover auto scheduling should be a no-op when disabled.
+  # Auto-hover scheduling is gated by the option. With hoverOnCursorHold
+  # disabled, scheduling should be a no-op.
   g:LspOptionsSet({hoverOnCursorHold: false})
   cursor(8, 4)
   hover.HoverAutoSchedule(bufnr())
   :sleep 20m
   assert_equal([], popup_list())
 
-  # CursorHold auto-hover scheduling (debounced) should display hover popup.
+  # With hoverOnCursorHold enabled, scheduling should trigger a debounced
+  # hover request and eventually display a hover popup.
   g:LspOptionsSet({hoverOnCursorHold: true, hoverDelay: 1})
   cursor(8, 4)
   hover.HoverAutoSchedule(bufnr())
   g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
   popup_clear()
+
+  # HoverAutoStop should cancel a pending timer and clear the buffer-local
+  # timer handle. Temporarily disable LSPTest shortcut path to ensure a real
+  # timer is created.
+  var saveLspTest = get(g:, 'LSPTest', false)
+  g:LSPTest = false
+  g:LspOptionsSet({hoverOnCursorHold: true, hoverDelay: 1000})
+  hover.HoverAutoSchedule(bufnr())
+  var hoverTimer = getbufvar(bufnr(), 'LspHoverTimer', -1)
+  assert_true(hoverTimer != -1)
+  hover.HoverAutoStop(bufnr())
+  assert_equal(-1, getbufvar(bufnr(), 'LspHoverTimer', -1))
+  g:LSPTest = saveLspTest
+
   g:LspOptionsSet({hoverOnCursorHold: false})
 
   :%bw!
