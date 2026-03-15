@@ -482,7 +482,8 @@ these commands is provided later in this section.
 			server for the current buffer in a location list.
 :LspDocumentSymbol	Display the symbols in the current file in a popup
 			menu and jump to the location of a selected symbol.
-:LspFold		Fold the current file
+:LspFold		Create folds for the current buffer using
+			language-server folding ranges.
 :LspFormat		Format a range of lines in the current file using the
 			language server.  The default range is the entire
 			file.  See |lsp-format| for more information.
@@ -511,7 +512,7 @@ these commands is provided later in this section.
 			cursor in a popup window.
 :LspPeekTypeDef		Open the type definition of the symbol under cursor in
 			a popup window.
-:LspRename		Rename the current symbol
+:LspRename		Rename the current symbol.
 :LspSelectionExpand	Expand the current symbol range visual selection
 :LspSelectionShrink	Shrink the current symbol range visual selection
 :LspServer		Command to display the status and messages from a
@@ -979,6 +980,21 @@ Commands to modify, rename, or format your code using the language server.
 							*:LspFold*
 :LspFold		Create folds for the current buffer.
 
+			This command requires a server that supports
+			|lsp-features-foldingRange|.
+
+			The current buffer must use 'foldmethod=manual'.
+			If not, the command fails with an error.
+
+			Before creating new folds, existing manual folds in
+			the current window are cleared (equivalent to |zE|).
+
+			If no folding ranges are returned, no folds are
+			created.
+
+			If 'foldcolumn' is 0, this command sets it to 2 so
+			the created folds are visible.
+
 							*:LspFormat*
 :LspFormat		Format the current file using the language server. The
 			'shiftwidth' and 'expandtab' values set for the
@@ -996,9 +1012,14 @@ Commands to modify, rename, or format your code using the language server.
 :LspRename [newName]	Rename the current symbol.
 
 			When [newName] is not given, then you will be prompted
-			to enter the new name for the symbol. You can press
-			<Esc> or enter an empty string in the prompt to cancel
-			the operation.
+			to enter the new name for the symbol.  The prompt is
+			pre-filled with the current word under the cursor.
+			You can press <Esc> or enter an empty string in the
+			prompt to cancel the operation.
+
+			This command requires a server that supports
+			|lsp-features-rename|.  If rename is unsupported,
+			an error is displayed and no request is sent.
 
 							*:LspSelectionExpand*
 :LspSelectionExpand	Start a character-wise visual selection using the
