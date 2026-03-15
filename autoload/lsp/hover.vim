@@ -11,35 +11,36 @@ def GetHoverText(lspserver: dict<any>, hoverResult: any): list<any>
     return ['', '']
   endif
 
-  var contents_type: number = hoverResult.contents->type()
+  var contents = hoverResult.contents
+  var contents_type: number = contents->type()
 
   # MarkupContent
   if contents_type == v:t_dict
-      && hoverResult.contents->has_key('kind')
-    if hoverResult.contents.kind == 'plaintext'
-      return [hoverResult.contents.value->split("\n"), 'text']
+      && contents->has_key('kind')
+    if contents.kind == 'plaintext'
+      return [contents.value->split("\n"), 'text']
     endif
 
-    if hoverResult.contents.kind == 'markdown'
-      return [hoverResult.contents.value->split("\n"), 'lspgfm']
+    if contents.kind == 'markdown'
+      return [contents.value->split("\n"), 'lspgfm']
     endif
 
     lspserver.errorLog(
-      $'{strftime("%m/%d/%y %T")}: Unsupported hover contents kind ({hoverResult.contents.kind})'
+      $'{strftime("%m/%d/%y %T")}: Unsupported hover contents kind ({contents.kind})'
     )
     return ['', '']
   endif
 
   # MarkedString
   if contents_type == v:t_dict
-      && hoverResult.contents->has_key('value')
-    var lang = hoverResult.contents->get('language', '')
+      && contents->has_key('value')
+    var lang = contents->get('language', '')
     if lang->empty()
-      return [hoverResult.contents.value->split("\n"), 'lspgfm']
+      return [contents.value->split("\n"), 'lspgfm']
     endif
     return [
       [$'``` {lang}']
-        + hoverResult.contents.value->split("\n")
+        + contents.value->split("\n")
         + ['```'],
       'lspgfm'
     ]
@@ -47,20 +48,24 @@ def GetHoverText(lspserver: dict<any>, hoverResult: any): list<any>
 
   # MarkedString
   if contents_type == v:t_string
-    return [hoverResult.contents->split("\n"), 'lspgfm']
+    return [contents->split("\n"), 'lspgfm']
   endif
 
   # interface MarkedString[]
   if contents_type == v:t_list
     var hoverText: list<string> = []
-    for e in hoverResult.contents
-      if !hoverText->empty()
-        hoverText->extend(['- - -'])
+    var first = true
+    for e in contents
+      if !first
+        hoverText->add('- - -')
       endif
+      first = false
 
-      if e->type() == v:t_string
+      var e_type = e->type()
+
+      if e_type == v:t_string
         hoverText->extend(e->split("\n"))
-      elseif e->type() == v:t_dict && e->has_key('value')
+      elseif e_type == v:t_dict && e->has_key('value')
 	var lang = e->get('language', '')
 	if lang->empty()
 	  hoverText->extend(e.value->split("\n"))
@@ -117,11 +122,12 @@ enddef
 # Result: Hover | null
 export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string): void
   var [hoverText, hoverKind] = GetHoverText(lspserver, hoverResult)
+  var isSilent = cmdmods =~ 'silent'
 
   # Nothing to show
   if hoverText->empty()
     if &keywordprg !=# ':LspHover' && !empty(&l:keywordprg) && opt.lspOptions.hoverFallback
-      if cmdmods !~ 'silent'
+      if !isSilent
         util.WarnMsg($'No documentation found for current keyword; falling back to built-in.')
       endif
       try
@@ -130,7 +136,7 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string): 
         # Ignore any errors from built-in fallback
       endtry
     else
-      if cmdmods !~ 'silent'
+      if !isSilent
         util.WarnMsg($'No documentation found for current keyword')
       endif
     endif

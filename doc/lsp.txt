@@ -2887,7 +2887,7 @@ completion			Used by 24/7 Completion and 'omnifunc'
 declaration			Used by the |:LspGotoDeclaration|, and
 				the |:LspPeekDeclaration| commands.
 						*lsp-features-definition*
-definition			Used by the|:LspGotoDefinition|, and
+definition			Used by the |:LspGotoDefinition|, and
 				the |:LspPeekDefinition| commands.
 						*lsp-features-diagnostics*
 diagnostics			Used to disable diagnostics for a single
@@ -2905,7 +2905,7 @@ documentHighlight		Used by the |:LspHighlight| and the
 documentSymbol			Used by the |:LspDocumentSymbol| and the
 				|:LspOutline| commands.
 						*lsp-features-foldingRange*
-foldingRange			Used by the|:LspFold| command.
+foldingRange			Used by the |:LspFold| command.
 						*lsp-features-hover*
 hover				Used by the |:LspHover| command.
 						*lsp-features-implementation*
