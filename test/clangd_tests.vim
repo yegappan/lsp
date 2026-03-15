@@ -1335,6 +1335,22 @@ def g:Test_LspHover()
   var changedReqctx = hover.HoverRequestContextGet(hoverServer)
   assert_equal(false, hover.HoverShowCached(changedReqctx, hoverServer, 'silent'))
 
+  # Stale async hover reply should be ignored and not cached/shown.
+  cursor(8, 4)
+  reqctx = hover.HoverRequestContextGet(hoverServer)
+  cursor(9, 9)
+  hover.HoverReply(hoverServer, {contents: 'stale hover result'}, 'silent', reqctx)
+  assert_equal([], popup_list())
+  cursor(8, 4)
+  assert_equal(false, hover.HoverShowCached(reqctx, hoverServer, 'silent'))
+
+  # Hover auto scheduling should be a no-op when disabled.
+  g:LspOptionsSet({hoverOnCursorHold: false})
+  cursor(8, 4)
+  hover.HoverAutoSchedule(bufnr())
+  :sleep 20m
+  assert_equal([], popup_list())
+
   # CursorHold auto-hover scheduling (debounced) should display hover popup.
   g:LspOptionsSet({hoverOnCursorHold: true, hoverDelay: 1})
   cursor(8, 4)
