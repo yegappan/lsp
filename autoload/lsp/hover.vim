@@ -98,7 +98,7 @@ export def HoverAutoSchedule(bnr: number)
     HoverAutoTimerCb(bnr, -1)
   else
     timerid = timer_start(opt.lspOptions.hoverDelay,
-			  function('HoverAutoTimerCb', [bnr]))
+                          function('HoverAutoTimerCb', [bnr]))
     setbufvar(bnr, 'LspHoverTimer', timerid)
   endif
 enddef
@@ -113,64 +113,74 @@ def HoverRequestContextMatches(reqctx: dict<any>): bool
       && reqctx.col == charcol('.')
 enddef
 
-# Render 'hoverText' to the user.  When 'hoverInPreview' is set the text is
-# written into a dedicated preview window; otherwise it is shown in a popup
-# at the cursor.  An empty 'hoverText' triggers a warning (or a fallback to
-# 'keywordprg' when 'hoverFallback' is set).
-def ShowHover(lspserver: dict<any>, hoverText: list<any>, hoverKind: string,
-		cmdmods: string): void
-  var isSilent = cmdmods =~ 'silent'
-
-  # Nothing to show
-  if hoverText->empty()
-    # If 'keywordprg' is set to a value other than ':LspHover' and the
-    # hoverFallback option is set, then invoke 'keywordprg'
-    if &keywordprg !=# ':LspHover' && !empty(&l:keywordprg) && opt.lspOptions.hoverFallback
-      if !isSilent
-        util.WarnMsg($'No documentation found for current keyword; falling back to built-in.')
-      endif
-      try
-        execute 'normal! K'
-      catch /.*/
-        # Ignore any errors from built-in fallback
-      endtry
-    else
-      if !isSilent
-        util.WarnMsg($'No documentation found for current keyword')
-      endif
+# When no hover text is available, emit a warning.  When 'hoverFallback' is
+# enabled and 'keywordprg' points to something other than ':LspHover', the
+# built-in 'K' command is invoked as a fallback instead.
+def HoverShowEmpty(isSilent: bool)
+  if &keywordprg !=# ':LspHover' && !empty(&l:keywordprg) &&
+                                                  opt.lspOptions.hoverFallback
+    if !isSilent
+      util.WarnMsg($'No documentation found for current keyword; falling back to built-in.')
     endif
+    try
+      execute 'normal! K'
+    catch /.*/
+      # Ignore any errors from built-in fallback
+    endtry
+  else
+    if !isSilent
+      util.WarnMsg($'No documentation found for current keyword')
+    endif
+  endif
+enddef
+
+# Open (or reuse) the named preview window, clear its previous content, write
+# the new hover text, set the filetype for syntax highlighting, then return
+# focus to the originating window.
+def HoverShowInPreview(hoverText: list<any>, hoverKind: string, cmdmods: string)
+  execute $':silent! {cmdmods} pedit LspHover'
+  :wincmd P
+  :setlocal buftype=nofile
+  :setlocal bufhidden=delete
+  bufnr()->deletebufline(1, '$')
+  hoverText->append(0)
+  [1, 1]->cursor()
+  exe $'setlocal ft={hoverKind}'
+  :wincmd p
+enddef
+
+# Close any existing hover popup, then open a new one at the cursor.  There is
+# never more than one hover popup on screen at a time.
+def HoverShowInPopup(hoverText: list<any>, hoverKind: string)
+  HoverPopupClose()
+  var popupAttrs = {
+    moved: 'any',
+    close: 'click',
+    fixed: true,
+    maxwidth: 80,
+    filter: HoverWinFilterKey,
+    callback: HoverPopupClosed,
+    padding: [0, 1, 0, 1]
+  }
+  popupAttrs = opt.PopupConfigure('Hover', popupAttrs)
+  hoverPopupWin = hoverText->popup_atcursor(popupAttrs)
+  win_execute(hoverPopupWin, $'setlocal ft={hoverKind}')
+enddef
+
+# Render 'hoverText' to the user.  Dispatches to HoverShowEmpty when there is
+# nothing to show, HoverShowInPreview when 'hoverInPreview' is set, or
+# HoverShowInPopup otherwise.
+def ShowHover(lspserver: dict<any>, hoverText: list<any>, hoverKind: string,
+              cmdmods: string): void
+  if hoverText->empty()
+    HoverShowEmpty(cmdmods =~ 'silent')
     return
   endif
 
   if opt.lspOptions.hoverInPreview
-    # Open (or reuse) the named preview window, clear its previous content,
-    # write the new hover text, set the filetype for syntax highlighting, then
-    # return focus to the originating window.
-    execute $':silent! {cmdmods} pedit LspHover'
-    :wincmd P
-    :setlocal buftype=nofile
-    :setlocal bufhidden=delete
-    bufnr()->deletebufline(1, '$')
-    hoverText->append(0)
-    [1, 1]->cursor()
-    exe $'setlocal ft={hoverKind}'
-    :wincmd p
+    HoverShowInPreview(hoverText, hoverKind, cmdmods)
   else
-    # Close any existing hover popup before opening a new one so there is
-    # never more than one hover popup on screen at a time.
-    HoverPopupClose()
-    var popupAttrs = {
-      moved: 'any',
-      close: 'click',
-      fixed: true,
-      maxwidth: 80,
-      filter: HoverWinFilterKey,
-      callback: HoverPopupClosed,
-      padding: [0, 1, 0, 1]
-    }
-    popupAttrs = opt.PopupConfigure('Hover', popupAttrs)
-    hoverPopupWin = hoverText->popup_atcursor(popupAttrs)
-    win_execute(hoverPopupWin, $'setlocal ft={hoverKind}')
+    HoverShowInPopup(hoverText, hoverKind)
   endif
 enddef
 
@@ -194,7 +204,7 @@ enddef
 # current buffer position.  Returns false when no entry exists or the cached
 # entry no longer matches the current buffer / cursor / changedtick.
 export def HoverShowCached(reqctx: dict<any>, lspserver: dict<any>,
-		cmdmods: string): bool
+                           cmdmods: string): bool
   var cacheKey = reqctx.serverid->string()
   if !hoverCache->has_key(cacheKey)
     return false
@@ -218,6 +228,65 @@ enddef
 #   MarkedString   – dict with a 'value' field, or a plain string
 #   MarkedString[] – list mixing strings and dicts
 # Returns [[], ''] for an empty or unrecognised result.
+def HoverTextFromMarkupContent(lspserver: dict<any>, contents: dict<any>): list<any>
+  if contents.kind == 'plaintext'
+    return [contents.value->split("\n"), 'text']
+  endif
+
+  if contents.kind == 'markdown'
+    return [contents.value->split("\n"), 'lspgfm']
+  endif
+
+  lspserver.errorLog(
+    $'{strftime("%m/%d/%y %T")}: Unsupported hover contents kind ({contents.kind})'
+  )
+  return [[], '']
+enddef
+
+# Parse deprecated MarkedString dict form: {language?: string, value: string}.
+def HoverTextFromMarkedStringDict(contents: dict<any>): list<any>
+  var lang = contents->get('language', '')
+  if lang->empty()
+    return [contents.value->split("\n"), 'lspgfm']
+  endif
+  return [MarkdownCodeBlock(lang, contents.value), 'lspgfm']
+enddef
+
+# Parse MarkedString[] and join entries with a visual separator.
+def HoverTextFromMarkedStringList(lspserver: dict<any>, contents: list<any>): list<any>
+  var hoverText: list<string> = []
+  var first = true
+
+  for e in contents
+    if !first
+      hoverText->add('- - -')
+    endif
+    first = false
+
+    var e_type = e->type()
+    if e_type == v:t_string
+      hoverText->extend(e->split("\n"))
+      continue
+    endif
+
+    if e_type == v:t_dict && e->has_key('value')
+      var lang = e->get('language', '')
+      if lang->empty()
+        hoverText->extend(e.value->split("\n"))
+      else
+        hoverText->extend(MarkdownCodeBlock(lang, e.value))
+      endif
+      continue
+    endif
+
+    lspserver.errorLog(
+      $'{strftime("%m/%d/%y %T")}: Unsupported hover list item ({e})'
+    )
+  endfor
+
+  return [hoverText, 'lspgfm']
+enddef
+
 def GetHoverText(lspserver: dict<any>, hoverResult: any): list<any>
   if hoverResult->empty()
     return [[], '']
@@ -227,30 +296,13 @@ def GetHoverText(lspserver: dict<any>, hoverResult: any): list<any>
   var contents_type: number = contents->type()
 
   # MarkupContent
-  if contents_type == v:t_dict
-      && contents->has_key('kind')
-    if contents.kind == 'plaintext'
-      return [contents.value->split("\n"), 'text']
-    endif
-
-    if contents.kind == 'markdown'
-      return [contents.value->split("\n"), 'lspgfm']
-    endif
-
-    lspserver.errorLog(
-      $'{strftime("%m/%d/%y %T")}: Unsupported hover contents kind ({contents.kind})'
-    )
-    return [[], '']
+  if contents_type == v:t_dict && contents->has_key('kind')
+    return HoverTextFromMarkupContent(lspserver, contents)
   endif
 
   # MarkedString (dict form) – deprecated but still used by some servers.
-  if contents_type == v:t_dict
-      && contents->has_key('value')
-    var lang = contents->get('language', '')
-    if lang->empty()
-      return [contents.value->split("\n"), 'lspgfm']
-    endif
-    return [MarkdownCodeBlock(lang, contents.value), 'lspgfm']
+  if contents_type == v:t_dict && contents->has_key('value')
+    return HoverTextFromMarkedStringDict(contents)
   endif
 
   # MarkedString (plain string form) – deprecated but still used by some servers.
@@ -260,33 +312,7 @@ def GetHoverText(lspserver: dict<any>, hoverResult: any): list<any>
 
   # interface MarkedString[]
   if contents_type == v:t_list
-    var hoverText: list<string> = []
-    var first = true
-    for e in contents
-      if !first
-        hoverText->add('- - -')
-      endif
-      first = false
-
-      var e_type = e->type()
-
-      if e_type == v:t_string
-        hoverText->extend(e->split("\n"))
-      elseif e_type == v:t_dict && e->has_key('value')
-	var lang = e->get('language', '')
-	if lang->empty()
-	  hoverText->extend(e.value->split("\n"))
-	else
-    hoverText->extend(MarkdownCodeBlock(lang, e.value))
-	endif
-      else
-	lspserver.errorLog(
-	  $'{strftime("%m/%d/%y %T")}: Unsupported hover list item ({e})'
-	)
-      endif
-    endfor
-
-    return [hoverText, 'lspgfm']
+    return HoverTextFromMarkedStringList(lspserver, contents)
   endif
 
   lspserver.errorLog(
@@ -323,7 +349,7 @@ enddef
 # was sent the reply is silently discarded.  Otherwise the result is stored in
 # the hover cache and rendered via ShowHover.
 export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string,
-		reqctx: dict<any> = {}): void
+                      reqctx: dict<any> = {}): void
   if !reqctx->empty() && !HoverRequestContextMatches(reqctx)
     return
   endif
@@ -345,4 +371,4 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string,
   ShowHover(lspserver, hoverText, hoverKind, cmdmods)
 enddef
 
-# vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab
+# vim: tabstop=8 shiftwidth=2 softtabstop=2 expandtab
