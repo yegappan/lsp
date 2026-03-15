@@ -1,34 +1,45 @@
 name: unit-tests
 on: [push, pull_request]
+permissions:
+  contents: read
 jobs:
   linux:
     name: linux
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     strategy:
       matrix:
         vim:
           - nightly
           - v9.0.0000
     steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
       - name: Install packages
         run: |
+          set -euo pipefail
           sudo apt update
-          # install clangd language server
-          sudo apt install -y clangd-15
-          # install nodejs
-          sudo apt install -y curl
-          curl -fsSL https://deb.nodesource.com/setup_18.x | sudo bash -
-          sudo apt install -y nodejs
-          # install the typescript language server
+          # Install language servers and toolchain packages in one apt invocation.
+          sudo apt install -y --no-install-recommends \
+            clangd-15 \
+            golang \
+            gopls \
+            cargo \
+            rust-src \
+            curl \
+            gzip
+
+          # Install the TypeScript language server.
           sudo npm install -g typescript-language-server typescript
-          # install the golang language server
-          sudo apt install -y golang
-          sudo apt install -y gopls
-          # install the rust language server
-          sudo apt install -y cargo rust-src
+
           mkdir -p ~/.local/bin
           # Use version v0.3.2011 as the later versions fail the tests
-          curl -L https://github.com/rust-lang/rust-analyzer/releases/download/2024-06-24/rust-analyzer-x86_64-unknown-linux-gnu.gz | gunzip -c - > ~/.local/bin/rust-analyzer
+          curl -fsSL -o /tmp/rust-analyzer.gz https://github.com/rust-lang/rust-analyzer/releases/download/2024-06-24/rust-analyzer-x86_64-unknown-linux-gnu.gz
+          curl -fsSL -o /tmp/rust-analyzer.gz.sha256 https://github.com/rust-lang/rust-analyzer/releases/download/2024-06-24/rust-analyzer-x86_64-unknown-linux-gnu.gz.sha256
+          (cd /tmp && sha256sum -c rust-analyzer.gz.sha256)
+          gunzip -c /tmp/rust-analyzer.gz > ~/.local/bin/rust-analyzer
           chmod +x ~/.local/bin/rust-analyzer
       - name: Setup Vim
         uses: rhysd/action-setup-vim@v1
@@ -39,6 +50,7 @@ jobs:
         uses: actions/checkout@v6
       - name: Run Tests
         run: |
+          set -euo pipefail
           uname -a
           ~/.local/bin/rust-analyzer --version
           export VIMPRG=${{ steps.vim.outputs.executable }}
