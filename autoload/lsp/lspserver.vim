@@ -1221,6 +1221,26 @@ def TextDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
   save_cursor->setpos('.')
 enddef
 
+def DecodeCallHierarchyItem(lspserver: dict<any>, item: dict<any>)
+  if !lspserver.needOffsetEncoding
+    return
+  endif
+
+  var bnr = util.LspUriToBufnr(item.uri)
+  lspserver.decodeRange(bnr, item.range)
+  lspserver.decodeRange(bnr, item.selectionRange)
+enddef
+
+def EncodeCallHierarchyItem(lspserver: dict<any>, item: dict<any>)
+  if !lspserver.needOffsetEncoding
+    return
+  endif
+
+  var bnr = util.LspUriToBufnr(item.uri)
+  lspserver.encodeRange(bnr, item.range)
+  lspserver.encodeRange(bnr, item.selectionRange)
+enddef
+
 # Request: "textDocument/prepareCallHierarchy"
 def PrepareCallHierarchy(lspserver: dict<any>): dict<any>
   # interface CallHierarchyPrepareParams
@@ -1245,7 +1265,10 @@ def PrepareCallHierarchy(lspserver: dict<any>): dict<any>
     endif
   endif
 
-  return reply.result[choice - 1]
+  var prepareItem: dict<any> = reply.result[choice - 1]
+  DecodeCallHierarchyItem(lspserver, prepareItem)
+
+  return prepareItem
 enddef
 
 # Request: "callHierarchy/incomingCalls"
@@ -1262,8 +1285,11 @@ enddef
 def GetIncomingCalls(lspserver: dict<any>, item_arg: dict<any>): any
   # Request: "callHierarchy/incomingCalls"
   # Param: CallHierarchyIncomingCallsParams
+  var requestItem = item_arg->deepcopy()
+  EncodeCallHierarchyItem(lspserver, requestItem)
+
   var param = {
-    item: item_arg
+    item: requestItem
   }
   var reply = lspserver.rpc('callHierarchy/incomingCalls', param)
   if reply->empty()
@@ -1275,6 +1301,7 @@ def GetIncomingCalls(lspserver: dict<any>, item_arg: dict<any>): any
     var bnr = util.LspUriToBufnr(item_arg.uri)
     reply.result->map((_, hierItem) => {
       lspserver.decodeRange(bnr, hierItem.from.range)
+      lspserver.decodeRange(bnr, hierItem.from.selectionRange)
       return hierItem
     })
   endif
@@ -1296,8 +1323,11 @@ enddef
 def GetOutgoingCalls(lspserver: dict<any>, item_arg: dict<any>): any
   # Request: "callHierarchy/outgoingCalls"
   # Param: CallHierarchyOutgoingCallsParams
+  var requestItem = item_arg->deepcopy()
+  EncodeCallHierarchyItem(lspserver, requestItem)
+
   var param = {
-    item: item_arg
+    item: requestItem
   }
   var reply = lspserver.rpc('callHierarchy/outgoingCalls', param)
   if reply->empty()
@@ -1309,6 +1339,7 @@ def GetOutgoingCalls(lspserver: dict<any>, item_arg: dict<any>): any
     var bnr = util.LspUriToBufnr(item_arg.uri)
     reply.result->map((_, hierItem) => {
       lspserver.decodeRange(bnr, hierItem.to.range)
+      lspserver.decodeRange(bnr, hierItem.to.selectionRange)
       return hierItem
     })
   endif
