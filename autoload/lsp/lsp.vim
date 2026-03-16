@@ -639,12 +639,17 @@ export def BufferLoadedInWin(bnr: number)
   endif
 enddef
 
-# Stop all the LSP servers
-export def StopAllServers()
+# Send shutdown/exit to all the LSP servers
+# Probably only appropriate for vim exit as the only delay is between the synchronous
+# call to shutdownServer and the call to exitServer.
+export def FastShutdownExitAllServers()
   for [ftype, lspservers] in ftypeServerMap->items()
     for lspserver in lspservers
       if lspserver.running
-	lspserver.stopServer()
+	lspserver.shutdownServer()
+	lspserver.exitServer()
+	lspserver.running = false
+	lspserver.ready = false
       endif
     endfor
   endfor
