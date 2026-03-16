@@ -1151,9 +1151,11 @@ enddef
 def TextDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
 				start_lnum: number, end_lnum: number)
   # Check whether LSP server supports required formatting
-  if rangeFormat && !lspserver.isDocumentRangeFormattingProvider
-    util.ErrMsg('LSP server does not support range formatting')
-    return
+  if rangeFormat
+    if !lspserver.isDocumentRangeFormattingProvider
+      util.ErrMsg('LSP server does not support range formatting')
+      return
+    endif
   elseif !lspserver.isDocumentFormattingProvider
     util.ErrMsg('LSP server does not support formatting documents')
     return
