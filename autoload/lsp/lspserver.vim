@@ -1261,7 +1261,7 @@ def PrepareCallHierarchy(lspserver: dict<any>): dict<any>
       items->add(printf("%d. %s", i + 1, reply.result[i].name))
     endfor
     choice = items->inputlist()
-    if choice < 1 || choice > items->len()
+    if choice < 1 || choice >= items->len()
       return {}
     endif
   endif
