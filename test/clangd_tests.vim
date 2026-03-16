@@ -1593,6 +1593,14 @@ enddef
 # Test for setting the 'tagfunc'
 def g:Test_LspTagFunc()
   var lines: list<string> =<< trim END
+    void xFuncTag(void)
+    {
+    }
+
+    void yFuncTag(void)
+    {
+    }
+
     void aFuncTag(void)
     {
       xFuncTag();
@@ -1600,22 +1608,23 @@ def g:Test_LspTagFunc()
 
     void bFuncTag(void)
     {
-      xFuncTag();
-    }
-
-    void xFuncTag(void)
-    {
+      yFuncTag();
     }
   END
   writefile(lines, 'Xtagfunc.c')
   :silent! edit Xtagfunc.c
-  g:WaitForServerFileLoad(1)
+  g:WaitForServerFileLoad(0)
   :setlocal tagfunc=lsp#lsp#TagFunc
-  cursor(3, 4)
+  cursor(11, 4)
   :exe "normal \<C-]>"
-  assert_equal([11, 6], [line('.'), col('.')])
+  assert_equal([1, 6], [line('.'), col('.')])
   cursor(1, 1)
   assert_fails('exe "normal \<C-]>"', 'E433:')
+
+  # Keep the cursor on a different symbol and do an explicit :tag lookup.
+  cursor(11, 4)
+  :tag yFuncTag
+  assert_equal([5, 6], [line('.'), col('.')])
 
   :set tagfunc&
   :%bw!

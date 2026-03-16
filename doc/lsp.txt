@@ -2125,6 +2125,11 @@ function: >
 After setting the above option, you can use |Ctrl-]| and other tag related
 commands to jump to the symbol definition.
 
+For cursor based jumps (for example |Ctrl-]|), the tag function uses
+"textDocument/definition". For explicit pattern based tag lookups (for
+example |:tag| or |:tjump| with a symbol name), it uses
+"workspace/symbol" and keeps only exact symbol-name matches.
+
 Note that most of the language servers return only one symbol location even if
 the symbol is defined in multiple places in the code.
 

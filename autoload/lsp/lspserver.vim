@@ -1936,24 +1936,53 @@ enddef
 # Returns null if the LSP server doesn't support getting the location of a
 # symbol definition or the symbol is not defined.
 def TagFunc(lspserver: dict<any>, pat: string, flags: string, info: dict<any>): any
-  # Check whether LSP server supports getting the location of a definition
-  if !lspserver.isDefinitionProvider
-    return null
-  endif
+  var taglocations: list<dict<any>> = []
 
-  # interface DefinitionParams
-  #   interface TextDocumentPositionParams
-  var reply = lspserver.rpc('textDocument/definition',
-			    lspserver.getTextDocPosition(false))
-  if reply->empty() || reply.result->empty()
-    return null
-  endif
+  # For explicit tag lookups (for example: :tag Foo), use workspace/symbol.
+  # The definition request uses only the cursor position and may return the
+  # wrong symbol for these lookups.
+  if pat != '' && pat != expand('<cword>')
+    if !lspserver.isWorkspaceSymbolProvider
+      return null
+    endif
 
-  var taglocations: list<dict<any>>
-  if reply.result->type() == v:t_list
-    taglocations = reply.result
+    var wsReply = lspserver.rpc('workspace/symbol', {query: pat}, false)
+    if wsReply->empty() || wsReply.result->empty()
+      return null
+    endif
+
+    for sym in wsReply.result
+      if !sym->has_key('location') || !sym.location->has_key('range')
+	continue
+      endif
+      if sym->get('name', '') != pat
+	continue
+      endif
+      taglocations->add(sym.location)
+    endfor
+
+    if taglocations->empty()
+      return null
+    endif
   else
-    taglocations = [reply.result]
+    # Check whether LSP server supports getting the location of a definition.
+    if !lspserver.isDefinitionProvider
+      return null
+    endif
+
+    # interface DefinitionParams
+    #   interface TextDocumentPositionParams
+    var reply = lspserver.rpc('textDocument/definition',
+			      lspserver.getTextDocPosition(false))
+    if reply->empty() || reply.result->empty()
+      return null
+    endif
+
+    if reply.result->type() == v:t_list
+      taglocations = reply.result
+    else
+      taglocations = [reply.result]
+    endif
   endif
 
   if lspserver.needOffsetEncoding
