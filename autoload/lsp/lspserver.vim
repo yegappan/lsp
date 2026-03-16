@@ -189,6 +189,7 @@ def InitServer(lspserver: dict<any>, bnr: number)
     endif
   endif
 
+  rootPath = rootPath->fnamemodify(':p')
   lspserver.workspaceFolders = [rootPath]
 
   var rootUri = util.LspFileToUri(rootPath)
