@@ -55,9 +55,7 @@ augroup LSPAutoCmds
   autocmd BufWinEnter * lsp.BufferLoadedInWin(expand('<abuf>')->str2nr())
 augroup END
 
-# TODO: Is it needed to shutdown all the LSP servers when exiting Vim?
-# This takes some time.
-# autocmd VimLeavePre * call lsp.StopAllServers()
+autocmd VimLeavePre * call lsp.StopAllServers()
 
 # LSP commands
 command! -nargs=? -bar -range LspCodeAction lsp.CodeAction(<line1>, <line2>, <q-args>)

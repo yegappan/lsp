@@ -240,19 +240,11 @@ def StopServer(lspserver: dict<any>): number
     return 0
   endif
 
-  # Send the shutdown request to the server
+  # Send the shutdown request to the server (synchronously)
   lspserver.shutdownServer()
 
   # Notify the server to exit
   lspserver.exitServer()
-
-  # Wait for the server to process the exit notification and exit for a
-  # maximum of 2 seconds.
-  var maxCount: number = 1000
-  while lspserver.job->job_status() == 'run' && maxCount > 0
-    sleep 2m
-    maxCount -= 1
-  endwhile
 
   if lspserver.job->job_status() == 'run'
     lspserver.job->job_stop()

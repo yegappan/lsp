@@ -24,9 +24,6 @@ import './hover.vim'
 import './inlayhints.vim'
 import './semantichighlight.vim'
 
-# LSP server information
-var LSPServers: list<dict<any>> = []
-
 # filetype to LSP server map
 var ftypeServerMap: dict<list<dict<any>>> = {}
 
@@ -644,10 +641,12 @@ enddef
 
 # Stop all the LSP servers
 export def StopAllServers()
-  for lspserver in LSPServers
-    if lspserver.running
-      lspserver.stopServer()
-    endif
+  for [ftype, lspservers] in ftypeServerMap->items()
+    for lspserver in lspservers
+      if lspserver.running
+	lspserver.stopServer()
+      endif
+    endfor
   endfor
 enddef
 
