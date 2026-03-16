@@ -1180,10 +1180,13 @@ def TextDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
     options: fmtopts
   }
 
+  var bnr: number = fname->bufnr()
+
   if rangeFormat
     var r: dict<dict<number>> = {
 	start: {line: start_lnum - 1, character: 0},
 	end: {line: end_lnum - 1, character: charcol([end_lnum, '$']) - 1}}
+    lspserver.encodeRange(bnr, r)
     param.range = r
   endif
 
@@ -1196,7 +1199,6 @@ def TextDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
     return
   endif
 
-  var bnr: number = fname->bufnr()
   if bnr == -1
     # file is already removed
     return
