@@ -1337,7 +1337,7 @@ def GetOutgoingCalls(lspserver: dict<any>, item_arg: dict<any>): any
   if lspserver.needOffsetEncoding
     # Decode the position encoding in all the outgoing call locations
     reply.result->map((_, hierItem) => {
-      var bnr = util.LspUriToBufnr(hierItem.from.uri)
+      var bnr = util.LspUriToBufnr(hierItem.to.uri)
       lspserver.decodeRange(bnr, hierItem.to.range)
       lspserver.decodeRange(bnr, hierItem.to.selectionRange)
       return hierItem
