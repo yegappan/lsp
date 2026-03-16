@@ -1110,7 +1110,7 @@ def DocHighlight(lspserver: dict<any>, bnr: number, cmdmods: string): void
   #   interface TextDocumentPositionParams
   var params = lspserver.getTextDocPosition(false)
   lspserver.rpc_a('textDocument/documentHighlight', params, (_, reply) => {
-    DocHighlightReply(lspserver, reply, bufnr(), cmdmods)
+    DocHighlightReply(lspserver, reply, bnr, cmdmods)
   })
 enddef
 
