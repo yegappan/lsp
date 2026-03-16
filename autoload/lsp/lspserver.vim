@@ -1645,8 +1645,19 @@ def WorkspaceQuerySymbols(lspserver: dict<any>, query: string, firstCall: bool, 
   endif
 enddef
 
+# Return the LSP WorkspaceFolder interface for the directory "dirName"
+def GetWorkspaceFolder(dirName: string): dict<any>
+  var normalizedDir = dirName->fnamemodify(':p')
+  return {
+    name: normalizedDir->fnamemodify(':t'),
+    uri: util.LspFileToUri(normalizedDir)
+  }
+enddef
+
 # Add a workspace folder to the language server.
-def AddWorkspaceFolder(lspserver: dict<any>, dirName: string): void
+def AddWorkspaceFolder(lspserver: dict<any>, dirName_arg: string): void
+  var dirName = dirName_arg->fnamemodify(':p')
+
   if !lspserver.caps->has_key('workspace')
 	  || !lspserver.caps.workspace->has_key('workspaceFolders')
 	  || !lspserver.caps.workspace.workspaceFolders->has_key('supported')
@@ -1662,14 +1673,16 @@ def AddWorkspaceFolder(lspserver: dict<any>, dirName: string): void
 
   # Notification: 'workspace/didChangeWorkspaceFolders'
   # Params: DidChangeWorkspaceFoldersParams
-  var params = {event: {added: [dirName], removed: []}}
+  var params = {event: {added: [GetWorkspaceFolder(dirName)], removed: []}}
   lspserver.sendNotification('workspace/didChangeWorkspaceFolders', params)
 
   lspserver.workspaceFolders->add(dirName)
 enddef
 
 # Remove a workspace folder from the language server.
-def RemoveWorkspaceFolder(lspserver: dict<any>, dirName: string): void
+def RemoveWorkspaceFolder(lspserver: dict<any>, dirName_arg: string): void
+  var dirName = dirName_arg->fnamemodify(':p')
+
   if !lspserver.caps->has_key('workspace')
 	  || !lspserver.caps.workspace->has_key('workspaceFolders')
 	  || !lspserver.caps.workspace.workspaceFolders->has_key('supported')
@@ -1686,7 +1699,7 @@ def RemoveWorkspaceFolder(lspserver: dict<any>, dirName: string): void
 
   # Notification: "workspace/didChangeWorkspaceFolders"
   # Param: DidChangeWorkspaceFoldersParams
-  var params = {event: {added: [], removed: [dirName]}}
+  var params = {event: {added: [], removed: [GetWorkspaceFolder(dirName)]}}
   lspserver.sendNotification('workspace/didChangeWorkspaceFolders', params)
 
   lspserver.workspaceFolders->remove(idx)
