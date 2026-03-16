@@ -564,6 +564,14 @@ def SendWorkspaceConfig(lspserver: dict<any>)
   lspserver.sendNotification('workspace/didChangeConfiguration', params)
 enddef
 
+def BufferText(bnr: number): string
+  var text = bnr->getbufline(1, '$')->join("\n")
+  if bnr->getbufvar('&eol')
+    text ..= "\n"
+  endif
+  return text
+enddef
+
 # Send a file/document opened notification to the language server.
 def TextdocDidOpen(lspserver: dict<any>, bnr: number, ftype: string): void
   # Notification: 'textDocument/didOpen'
@@ -574,7 +582,7 @@ def TextdocDidOpen(lspserver: dict<any>, bnr: number, ftype: string): void
       languageId: ftype,
       # Use Vim 'changedtick' as the LSP document version number
       version: bnr->getbufvar('changedtick'),
-      text: bnr->getbufline(1, '$')->join("\n") .. "\n"
+      text: BufferText(bnr)
     }
   }
   lspserver.sendNotification('textDocument/didOpen', params)
@@ -645,7 +653,7 @@ def TextdocDidChange(lspserver: dict<any>, bnr: number, start: number,
       version: bnr->getbufvar('changedtick')
     },
     contentChanges: [
-      {text: bnr->getbufline(1, '$')->join("\n") .. "\n"}
+      {text: BufferText(bnr)}
     ]
   }
   lspserver.sendNotification('textDocument/didChange', params)
@@ -951,7 +959,7 @@ def DidSaveFile(lspserver: dict<any>, bnr: number): void
     if lspserver.caps.textDocumentSync.save->type() == v:t_dict
 	&& lspserver.caps.textDocumentSync.save->has_key('includeText')
 	&& lspserver.caps.textDocumentSync.save.includeText
-      params.text = bnr->getbufline(1, '$')->join("\n") .. "\n"
+      params.text = BufferText(bnr)
     endif
   endif
 
