@@ -639,14 +639,27 @@ export def BufferLoadedInWin(bnr: number)
   endif
 enddef
 
-# Send shutdown/exit to all the LSP servers
-# Probably only appropriate for vim exit as the only delay is between the synchronous
-# call to shutdownServer and the call to exitServer.
+# Send synchronous "shutdown" request to LSP server with a tiny timeout.
+# It's for vim exit. We're in a hurry and ain't waiting for slow servers.
+# Time out of slow responses within a split second (125 milliseconds).
+def FastShutdownServer(lspserver: dict<any>): void
+  if lspserver.job->job_status() == 'run'
+    var req = {method: 'shutdown', params: v:null}
+    var timeout = 125
+    var reply = lspserver.job->ch_evalexpr(req, {timeout: timeout})
+    if lspserver.debug
+      lspserver.traceLog($'Sent shutdown request with {timeout}ms timeout')
+      lspserver.traceLog($'Got response {reply->json_encode()}')
+    endif
+  endif
+enddef
+
+# Send shutdown/exit to all the LSP servers (fast for vim exit)
 export def FastShutdownExitAllServers()
   for [ftype, lspservers] in ftypeServerMap->items()
     for lspserver in lspservers
       if lspserver.running
-	lspserver.shutdownServer()
+	FastShutdownServer(lspserver)
 	lspserver.exitServer()
 	lspserver.running = false
 	lspserver.ready = false
