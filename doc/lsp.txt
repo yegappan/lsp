@@ -340,6 +340,72 @@ Additionally the following configurations can be made:
 			encoded and decoded in every LSP message and will
 			incur some overhead.
 
+	languageId				*lsp-cfg-languageId*
+			(Optional) A possibility to override tha languageId
+			that is sent to the language server by specifying a
+			function or lambda for cases where the languageId is
+			not identical to the filetype. This could be useful
+			for server like:
+
+			https://github.com/docker/docker-language-server
+			https://github.com/alesbrelih/gitlab-ci-ls
+
+			Example:
+>
+		vim9script
+
+		augroup dockercompose-yaml
+		    autocmd!
+		    autocmd BufEnter,BufReadPre docker-compose.yaml,docker-compose.yml setfiletype dockercompose.yaml
+		augroup END
+
+		def GetLanguageId(): string
+		    if expand('%:t') =~# 'docker-compose' && &filetype =~# 'yaml'
+			return 'dockercompose'
+		    endif
+		    return &filetype
+		enddef
+
+		g:LspAddServer([{
+		    name: 'docker-language-server',
+		    path: 'docker-language-server',
+		    args: ['start', '--stdio'],
+		    filetype: ['dockerfile', 'dockercompose.yaml'],
+		    debug: v:true,
+		    languageId: GetLanguageId,
+		}])
+<
+			This ensures 
+
+			1. docker-language-server works with docker-compose.yaml
+			2. docker-language-server works with Dockerfile
+			3. docker-language-server doesn't start on any yaml
+
+			It is not strictly needed to take this approach, but
+			it helps to keep custom filetypes organized.
+
+			Another approach that would work for this case would be:
+>
+		augroup dockercompose
+		    autocmd!
+		    au BufEnter,BufRead docker-compose.yaml,docker-compose.yml set filetype=dockercompse
+		    au BufEnter,BufRead docker-compose.yaml,docker-compose.yml set syntax=yaml
+		augroup END
+
+		g:LspAddServer([{
+		    name: 'docker-language-server',
+		    path: 'docker-language-server',
+		    args: ['start', '--stdio'],
+		    filetype: ['dockerfile', 'dockercompose'],
+		    debug: v:true,
+		}])
+
+<
+			In both cases the yaml-language-server would have to be
+			activated for the new filetype as well. Nonethless the
+			languageId override function provides maximum
+			flexibility for the user to handle any similar case.
+
 						*lsp-cfg-omnicompl*
 	omnicompl	(Optional) a boolean value that enables (true)
 			or disables (false) omni-completion for these file
