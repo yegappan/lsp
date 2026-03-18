@@ -341,11 +341,11 @@ Additionally the following configurations can be made:
 			incur some overhead.
 
 	languageId				*lsp-cfg-languageId*
-			(Optional) A possibility to override tha languageId
+			(Optional) A possibility to override the languageId
 			that is sent to the language server by specifying a
 			function or lambda for cases where the languageId is
 			not identical to the filetype. This could be useful
-			for server like:
+			for servers like:
 
 			https://github.com/docker/docker-language-server
 			https://github.com/alesbrelih/gitlab-ci-ls
@@ -388,7 +388,7 @@ Additionally the following configurations can be made:
 >
 		augroup dockercompose
 		    autocmd!
-		    au BufEnter,BufRead docker-compose.yaml,docker-compose.yml set filetype=dockercompse
+		    au BufEnter,BufRead docker-compose.yaml,docker-compose.yml set filetype=dockercompose
 		    au BufEnter,BufRead docker-compose.yaml,docker-compose.yml set syntax=yaml
 		augroup END
 
@@ -399,10 +399,9 @@ Additionally the following configurations can be made:
 		    filetype: ['dockerfile', 'dockercompose'],
 		    debug: v:true,
 		}])
-
 <
 			In both cases the yaml-language-server would have to be
-			activated for the new filetype as well. Nonethless the
+			activated for the new filetype as well. Nonetheless the
 			languageId override function provides maximum
 			flexibility for the user to handle any similar case.
 
