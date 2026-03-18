@@ -410,8 +410,10 @@ def Rpc(lspserver: dict<any>, method: string, params: any, handleError: bool = t
   var reply = job->ch_evalexpr(req)
 
   if lspserver.debug
-    var logreq = {id: reply.id}->extend(req)
-    lspserver.traceLog($'Sent request {logreq->json_encode()}')
+    if reply->has_key('id')
+      req = {id: reply.id}->extend(req)
+    endif
+    lspserver.traceLog($'Sent request {req->json_encode()}')
     lspserver.traceLog($'Got response {reply->json_encode()}')
   endif
 
