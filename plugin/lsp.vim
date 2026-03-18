@@ -55,7 +55,7 @@ augroup LSPAutoCmds
   autocmd BufWinEnter * lsp.BufferLoadedInWin(expand('<abuf>')->str2nr())
 augroup END
 
-autocmd VimLeavePre * call lsp.FastShutdownExitAllServers()
+autocmd VimLeavePre * silent! lsp.FastShutdownExitAllServers()
 
 # LSP commands
 command! -nargs=? -bar -range LspCodeAction lsp.CodeAction(<line1>, <line2>, <q-args>)

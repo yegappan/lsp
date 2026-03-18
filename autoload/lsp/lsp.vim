@@ -656,7 +656,7 @@ enddef
 
 # Send shutdown/exit to all the LSP servers (fast for vim exit)
 export def FastShutdownExitAllServers()
-  for [ftype, lspservers] in ftypeServerMap->items()
+  for lspservers in ftypeServerMap->values()
     for lspserver in lspservers
       if lspserver.running
 	FastShutdownServer(lspserver)
