@@ -24,9 +24,6 @@ import './hover.vim'
 import './inlayhints.vim'
 import './semantichighlight.vim'
 
-# LSP server information
-var LSPServers: list<dict<any>> = []
-
 # filetype to LSP server map
 var ftypeServerMap: dict<list<dict<any>>> = {}
 
@@ -642,12 +639,32 @@ export def BufferLoadedInWin(bnr: number)
   endif
 enddef
 
-# Stop all the LSP servers
-export def StopAllServers()
-  for lspserver in LSPServers
-    if lspserver.running
-      lspserver.stopServer()
+# Send synchronous "shutdown" request to LSP server with a tiny timeout.
+# It's for vim exit. We're in a hurry and ain't waiting for slow servers.
+# Time out of slow responses within a split second (125 milliseconds).
+def FastShutdownServer(lspserver: dict<any>): void
+  if lspserver.job->job_status() == 'run'
+    var req = {method: 'shutdown', params: v:null}
+    var timeout = 125
+    var reply = lspserver.job->ch_evalexpr(req, {timeout: timeout})
+    if lspserver.debug
+      lspserver.traceLog($'Sent shutdown request with {timeout}ms timeout')
+      lspserver.traceLog($'Got response {reply->json_encode()}')
     endif
+  endif
+enddef
+
+# Send shutdown/exit to all the LSP servers (fast for vim exit)
+export def FastShutdownExitAllServers()
+  for lspservers in ftypeServerMap->values()
+    for lspserver in lspservers
+      if lspserver.running
+	FastShutdownServer(lspserver)
+	lspserver.exitServer()
+	lspserver.running = false
+	lspserver.ready = false
+      endif
+    endfor
   endfor
 enddef
 
