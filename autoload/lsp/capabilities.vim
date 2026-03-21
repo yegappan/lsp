@@ -614,5 +614,4 @@ export def GetClientCaps(): dict<any>
   return clientCaps
 enddef
 
-defcompile
 # vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab
