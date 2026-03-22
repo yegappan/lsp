@@ -1028,6 +1028,10 @@ the symbol under the cursor.
 			You can still invoke signatures manually with
 			|:LspShowSignature| command or custom mappings.
 
+			Show documentation together with the signature label: >
+
+			LspOptionsSet({'showSignatureDocs': true})
+<
 			Customize the signature popup appearance using
 			|lsp-opt-popup-SignatureHelp| options.
 
@@ -1739,6 +1743,9 @@ popupHighlightPeek			|String| option.
 			Override options for SignatureHelp popups displayed
 			during insert mode when typing function/method calls.
 			The active parameter is highlighted within the popup.
+			When |lsp-opt-showSignatureDocs| is enabled, the popup
+			may also include parameter and signature documentation
+			below the signature label.
 
 popupBorderSignatureHelp		|Boolean| option. Default: false
 			Draw a border around the signature popup.
@@ -1856,7 +1863,10 @@ showSignatureDocs	|Boolean| option.  Include parameter and
 			When disabled, signature help shows only the short
 			signature label while still highlighting the active
 			parameter.  This applies to both popup and
-			|lsp-opt-echoSignature| display modes.
+			|lsp-opt-echoSignature| display modes.  When enabled,
+			parameter documentation is shown for the currently
+			active parameter and signature-level documentation is
+			shown below it when provided by the language server.
 			By default this is set to false.
 
 						*lsp-opt-snippetSupport*

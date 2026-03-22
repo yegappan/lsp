@@ -54,6 +54,7 @@ def ResetSignatureTimerState()
   signature_timer_trigger_char = ''
 enddef
 
+# Timer callback that replays the deferred signature request safely.
 def LspShowSignatureCb(timer: number)
   if timer != signature_timer
     return
@@ -193,7 +194,7 @@ def GetCurrentSignatureHelpState(): dict<any>
   endif
 
   # LSP spec: activeParameter is uinteger | null. Map the internal -1 suppress
-  # sentinel back to v:null so the wire value is spec-compliant.
+  # sentinel back to null so the wire value is spec-compliant.
   var activeParam = GetCurrentActiveParameter()
   var wireParam: any = activeParam < 0 ? null : activeParam
 
