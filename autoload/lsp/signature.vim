@@ -415,18 +415,142 @@ def ShouldTreatAsRetrigger(lspserver: dict<any>): bool
   return SignatureSessionActive(lspserver) && SignatureUiActive(lspserver)
 enddef
 
+# -----------------------------------------------------------------------------
+# Rendering Pipeline
+# -----------------------------------------------------------------------------
+
+# Convert signature or parameter documentation to display lines and an
+# optional popup filetype.
+def GetSignatureDocumentation(lspserver: dict<any>, documentation: any): dict<any>
+  var doc = {
+    lines: [],
+    filetype: ''
+  }
+
+  var doc_type = documentation->type()
+  if doc_type == v:t_string
+    if !documentation->empty()
+      doc.lines = documentation->split("\n")
+    endif
+    return doc
+  endif
+
+  if doc_type != v:t_dict || !documentation->has_key('value')
+    return doc
+  endif
+
+  if documentation->has_key('kind')
+    if documentation.kind == 'markdown'
+      doc.filetype = 'lspgfm'
+    elseif documentation.kind != 'plaintext'
+      lspserver.errorLog(
+	$'{strftime("%m/%d/%y %T")}: Unsupported signature documentation kind ({documentation.kind})'
+      )
+      return doc
+    endif
+  endif
+
+  if documentation.value->type() == v:t_string && !documentation.value->empty()
+    doc.lines = documentation.value->split("\n")
+  endif
+  return doc
+enddef
+
+# Return docs attached to the currently active parameter, if present.
+def GetActiveParameterDocumentation(lspserver: dict<any>, sig: dict<any>,
+				    activeParam: number): dict<any>
+  var doc = {lines: [], filetype: ''}
+
+  # -1 is the suppress sentinel: no active parameter, so no parameter doc.
+  if activeParam < 0 || !sig->has_key('parameters') || activeParam >= sig.parameters->len()
+    return doc
+  endif
+
+  var paramInfo: dict<any> = sig.parameters[activeParam]
+  if !paramInfo->has_key('documentation')
+    return doc
+  endif
+
+  return GetSignatureDocumentation(lspserver, paramInfo.documentation)
+enddef
+
+# Build a short single-line summary for command-line echo mode.
+def GetEchoDocumentationSummary(doc: dict<any>): string
+  for line in doc.lines
+    var text = line->trim()
+    if text->empty() || text =~ '^```'
+      continue
+    endif
+
+    text = text->substitute('^#\+\s*', '', '')
+    text = text->substitute('\s\+', ' ', 'g')
+    if !text->empty()
+      return text
+    endif
+  endfor
+  return ''
+enddef
+
+# Append a titled documentation section to popup lines when non-empty.
+def AddSignatureDocSection(lines: list<string>, heading: string, doc: dict<any>)
+  if doc.lines->empty()
+    return
+  endif
+
+  if !lines->empty()
+    lines->add('')
+  endif
+  lines->add(heading)
+  lines->extend(doc.lines)
+enddef
+
+# Pick markdown highlighting for the popup when any attached documentation is
+# markdown.
+def GetSignatureDocFiletype(paramDoc: dict<any>, sigDoc: dict<any>): string
+  if paramDoc.filetype == 'lspgfm' || sigDoc.filetype == 'lspgfm'
+    return 'lspgfm'
+  endif
+  return ''
+enddef
+
+# Prefer parameter docs for the single-line echo summary, then fall back to the
+# signature-level documentation.
+def GetSignatureDocSummary(paramDoc: dict<any>, sigDoc: dict<any>): string
+  var docSummary = GetEchoDocumentationSummary(paramDoc)
+  if docSummary->empty()
+    docSummary = GetEchoDocumentationSummary(sigDoc)
+  endif
+  return docSummary
+enddef
+
 # Build unified display payload for popup and echo rendering paths.
-def GetSignatureDisplayInfo(lspserver: dict<any>, sig: dict<any>, sigidx: number,
-			     total: number, activeParam: number): dict<any>
+def GetSignatureDisplayInfo(lspserver: dict<any>, sig: dict<any>,
+			    sigidx: number, total: number,
+			    activeParam: number): dict<any>
   var text: string = FormatSignatureText(sig, sigidx, total)
+  var sigDoc = {lines: [], filetype: ''}
   var lines = [text]
+  var docSummary = ''
   var filetype = ''
 
+  if opt.lspOptions.showSignatureDocs
+    var paramDoc = GetActiveParameterDocumentation(lspserver, sig, activeParam)
+    if sig->has_key('documentation')
+      sigDoc = GetSignatureDocumentation(lspserver, sig.documentation)
+    endif
+
+    AddSignatureDocSection(lines, 'Parameter:', paramDoc)
+    AddSignatureDocSection(lines, 'Signature:', sigDoc)
+    filetype = GetSignatureDocFiletype(paramDoc, sigDoc)
+    docSummary = GetSignatureDocSummary(paramDoc, sigDoc)
+  endif
+
   return {
-	text: text,
-	lines: lines,
-	filetype: filetype,
-      }
+    text: text,
+    lines: lines,
+    filetype: filetype,
+    docSummary: docSummary
+  }
 enddef
 
 # Append a compact overload indicator so the user can see where they are while
@@ -532,7 +656,7 @@ def GetCurrentSignature(): dict<any>
 enddef
 
 # Render signature text in the command line with active-parameter highlight.
-def EchoSignature(text: string, hlinfo: dict<number>)
+def EchoSignature(text: string, hlinfo: dict<number>, docSummary: string)
   # Clear any leftover command-line text: "\r\r" moves to column 0 and the
   # empty echon flushes pending output before printing the new signature.
   :echon "\r\r"
@@ -542,8 +666,20 @@ def EchoSignature(text: string, hlinfo: dict<number>)
   :echon text->strpart(hlinfo.startcol, hlinfo.hllen)
   :echoh None
   :echon text->strpart(hlinfo.startcol + hlinfo.hllen)
+  if !docSummary->empty()
+    :echoh Comment
+    :echon '  ' .. docSummary
+    :echoh None
+  endif
 enddef
 
+# When lspgfm is applied to the popup buffer, markdown rendering can rewrite
+# line 1 content. Restore the raw signature text and clear markdown props so
+# parameter highlighting columns remain stable.
+def RestoreSignatureFirstLine(bnr: number, signatureText: string)
+  setbufline(bnr, 1, signatureText)
+  prop_clear(1, 1, {bufnr: bnr})
+enddef
 
 # Render signature help in a popup and apply active-parameter text property.
 def ShowPopupSignature(lspserver: dict<any>, lines: list<string>, hlinfo: dict<number>, total: number,
@@ -563,6 +699,7 @@ def ShowPopupSignature(lspserver: dict<any>, lines: list<string>, hlinfo: dict<n
   var bnr: number = popupID->winbufnr()
   if !filetype->empty()
     win_execute(popupID, $'setlocal ft={filetype}')
+    RestoreSignatureFirstLine(bnr, lines[0])
   endif
   prop_type_add('signature', {bufnr: bnr, highlight: 'LspSigActiveParameter'})
   if hlinfo.hllen > 0
@@ -587,7 +724,7 @@ def DisplayCurrentSignature(): void
   var hlinfo = GetParameterHighlight(sig, display.text, activeParam)
 
   if opt.lspOptions.echoSignature
-    EchoSignature(display.text, hlinfo)
+    EchoSignature(display.text, hlinfo, display.docSummary)
   else
     ShowPopupSignature(lspserver, display.lines, hlinfo, total, display.filetype)
   endif

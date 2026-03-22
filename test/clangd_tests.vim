@@ -1407,7 +1407,8 @@ enddef
 
 # Test for :LspShowSignature
 def g:Test_LspShowSignature()
-  g:LspOptionsSet({echoSignature: false})
+  g:LspOptionsSet({echoSignature: false, showSignatureDocs: false})
+
   silent! edit XLspShowSignature.c
   sleep 200m
   var lines: list<string> =<< trim END
@@ -1468,17 +1469,199 @@ def g:Test_LspShowSignature()
   popup_close(p[0])
 
   # Echo mode should avoid popup creation while still requesting signature help.
-  g:LspOptionsSet({echoSignature: true})
+  g:LspOptionsSet({echoSignature: true, showSignatureDocs: false})
   :LspShowSignature
   g:WaitForAssert(() => assert_equal([], popup_list()))
 
-  g:LspOptionsSet({echoSignature: false})
+  # Enabling docs should remain compatible with clangd replies.
+  g:LspOptionsSet({echoSignature: false, showSignatureDocs: true})
+  cursor(8, 13)
+  :LspShowSignature
+  g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
+  p = popup_list()
+  bnr = winbufnr(p[0])
+  assert_match('^MyFunc(int a, int b) -> int', getbufline(bnr, 1, 1)[0])
+  popup_close(p[0])
+
+  g:LspOptionsSet({echoSignature: false, showSignatureDocs: false})
+  :%bw!
+enddef
+
+# Additional signature-help coverage for behavior that is difficult to trigger
+# from clangd responses alone.
+def g:Test_LspShowSignature_SyntheticSession()
+  g:LspOptionsSet({echoSignature: false, showSignatureDocs: true})
+
+  silent! edit XLspShowSignatureSynthetic.c
+  setline(1, ['void f2(void) {', '  MyFunc(', '}'])
+  cursor(2, 9)
+
+  var lspserver = {
+    id: 4242,
+    signaturePopup: -1
+  }
+  var sighelp = {
+    signatures: [
+      {
+        label: 'MyFunc(int a, int b) -> int',
+        documentation: {
+          kind: 'markdown',
+          value: "Signature details\n\n```c\nMyFunc(1, 2)\n```"
+        },
+        parameters: [
+          {label: 'int a', documentation: 'first argument'},
+          {label: 'int b', documentation: 'second argument'}
+        ],
+        # Explicit null means suppress active-parameter highlight for this
+        # signature even when top-level activeParameter is present.
+        activeParameter: v:null
+      },
+      {
+        label: 'MyFunc(float a, float b) -> int',
+        parameters: [
+          {label: 'float a'},
+          {label: 'float b'}
+        ],
+        activeParameter: 1
+      }
+    ],
+    activeSignature: 0,
+    activeParameter: 1
+  }
+
+  signature.SignatureHelp(lspserver, sighelp)
+  g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
+
+  var popups = popup_list()
+  var bnr = winbufnr(popups[0])
+  assert_equal('lspgfm', getbufvar(bnr, '&filetype'))
+  assert_equal('MyFunc(int a, int b) -> int  (1/2)', getbufline(bnr, 1, 1)[0])
+
+  # activeParameter is null on the first signature: no highlight should be set.
+  assert_equal([], prop_list(1, {bufnr: bnr}))
+
+  # Empty signature-help result should close the popup and reset the session.
+  signature.SignatureHelp(lspserver, {})
+  assert_equal([], popup_list())
+
+  g:LspOptionsSet({echoSignature: false, showSignatureDocs: false})
+  :%bw!
+enddef
+
+# Test parameter documentation in signature help (string format)
+def g:Test_LspShowSignature_ParameterDocStringFormat()
+  g:LspOptionsSet({echoSignature: false, showSignatureDocs: true})
+
+  silent! edit XLspShowSignature_ParamDocString.c
+  setline(1, ['void f() {', '  Func(', '}'])
+  cursor(2, 8)
+
+  var lspserver = {
+    id: 5000,
+    signaturePopup: -1
+  }
+  var sighelp = {
+    signatures: [
+      {
+        label: 'Func(int x, int y)',
+        documentation: 'Main function',
+        parameters: [
+          {label: 'int x', documentation: 'first parameter (string doc)'},
+          {label: 'int y', documentation: 'second parameter (string doc)'}
+        ],
+        activeParameter: 0
+      }
+    ],
+    activeSignature: 0,
+    activeParameter: 0
+  }
+
+  signature.SignatureHelp(lspserver, sighelp)
+  g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
+  var popups = popup_list()
+  var bnr = winbufnr(popups[0])
+
+  # Verify signature label and parameter highlighting
+  var lines = getbufline(bnr, 1, '$')
+  assert_equal('Func(int x, int y)', lines[0])
+
+  # Verify text property for first parameter 'int x'
+  var props = prop_list(1, {bufnr: bnr})
+  assert_equal(1, props->len())
+  assert_equal('signature', props[0].type)
+  assert_equal(6, props[0].col)
+  assert_equal(5, props[0].length) # 'int x'
+
+  # Verify parameter doc is present
+  assert_match('first parameter', lines->join('\n'))
+
+  popup_close(popups[0])
+  g:LspOptionsSet({echoSignature: false, showSignatureDocs: false})
+  :%bw!
+enddef
+
+# Test parameter documentation in signature help (markdown format)
+def g:Test_LspShowSignature_ParameterDocMarkdown()
+  g:LspOptionsSet({echoSignature: false, showSignatureDocs: true})
+
+  silent! edit XLspShowSignature_ParamDocMarkdown.c
+  setline(1, ['void f() {', '  Process(', '}'])
+  cursor(2, 11)
+
+  var lspserver = {
+    id: 5001,
+    signaturePopup: -1
+  }
+  var sighelp = {
+    signatures: [
+      {
+        label: 'Process(const char* data, int count)',
+        documentation: {
+          kind: 'markdown',
+          value: '# Process Function\nProcesses the data buffer.'
+        },
+        parameters: [
+          {
+            label: 'const char* data',
+            documentation: {
+              kind: 'markdown',
+              value: '**Data buffer** - pointer to input data\n'
+            }
+          },
+          {
+            label: 'int count',
+            documentation: {kind: 'plaintext', value: 'Element count'}
+          }
+        ],
+        activeParameter: 0
+      }
+    ],
+    activeSignature: 0,
+    activeParameter: 0
+  }
+
+  signature.SignatureHelp(lspserver, sighelp)
+  g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
+  var popups = popup_list()
+  var bnr = winbufnr(popups[0])
+
+  # Markdown filetype should be set
+  assert_equal('lspgfm', getbufvar(bnr, '&filetype'))
+
+  var lines = getbufline(bnr, 1, '$')
+  assert_equal('Process(const char* data, int count)', lines[0])
+
+  # Verify markdown content is included
+  assert_match('Process Function', lines->join('\n'))
+
+  popup_close(popups[0])
+  g:LspOptionsSet({echoSignature: false, showSignatureDocs: false})
   :%bw!
 enddef
 
 # Test out-of-range active parameter falls back to last parameter (variadic)
 def g:Test_LspShowSignature_OutOfRangeActiveParam()
-  g:LspOptionsSet({echoSignature: false})
+  g:LspOptionsSet({echoSignature: false, showSignatureDocs: false})
 
   silent! edit XLspShowSignature_OutOfRange.c
   setline(1, ['void f() {', '  Printf(', '}'])
@@ -1522,7 +1705,7 @@ enddef
 
 # Test echo mode signature display
 def g:Test_LspShowSignature_EchoMode()
-  g:LspOptionsSet({echoSignature: true})
+  g:LspOptionsSet({echoSignature: true, showSignatureDocs: false})
 
   silent! edit XLspShowSignature_Echo.c
   setline(1, ['void f() {', '  Add(', '}'])
@@ -1553,13 +1736,13 @@ def g:Test_LspShowSignature_EchoMode()
   # Echo mode should NOT create any popups
   assert_equal([], popup_list())
 
-  g:LspOptionsSet({echoSignature: false})
+  g:LspOptionsSet({echoSignature: false, showSignatureDocs: false})
   :%bw!
 enddef
 
 # Test empty signature response closes popup
 def g:Test_LspShowSignature_EmptyResponse()
-  g:LspOptionsSet({echoSignature: false})
+  g:LspOptionsSet({echoSignature: false, showSignatureDocs: false})
 
   silent! edit XLspShowSignature_Empty.c
   setline(1, ['void f() {', '  Func(', '}'])
@@ -1595,7 +1778,7 @@ enddef
 
 # Test offset-based parameter label highlighting (UTF-16 encoding)
 def g:Test_LspShowSignature_OffsetLabelHighlight()
-  g:LspOptionsSet({echoSignature: false})
+  g:LspOptionsSet({echoSignature: false, showSignatureDocs: false})
 
   silent! edit XLspShowSignature_OffsetLabel.c
   setline(1, ['void f() {', '  Fn(', '}'])
@@ -1637,7 +1820,7 @@ enddef
 
 # Test multi-signature with only one parameter each
 def g:Test_LspShowSignature_SimpleOverloads()
-  g:LspOptionsSet({echoSignature: false})
+  g:LspOptionsSet({echoSignature: false, showSignatureDocs: false})
 
   silent! edit XLspShowSignature_SimpleOverloads.c
   setline(1, ['void f() {', '  Get(', '}'])
@@ -1683,7 +1866,7 @@ enddef
 
 # Test signature with no parameters
 def g:Test_LspShowSignature_NoParameters()
-  g:LspOptionsSet({echoSignature: false})
+  g:LspOptionsSet({echoSignature: false, showSignatureDocs: false})
 
   silent! edit XLspShowSignature_NoParams.c
   setline(1, ['void f() {', '  Init(', '}'])
@@ -1718,7 +1901,7 @@ enddef
 
 # Test context mismatch rejects stale replies
 def g:Test_LspShowSignature_ContextMatch()
-  g:LspOptionsSet({echoSignature: false})
+  g:LspOptionsSet({echoSignature: false, showSignatureDocs: false})
 
   silent! edit XLspShowSignature_Context.c
   setline(1, ['int x = 0;', 'void f() {', '  Call(', '}'])

@@ -1016,6 +1016,10 @@ the symbol under the cursor.
 			When echoing, the active parameter is highlighted in a
 			different color (|LspSigActiveParameter|).
 
+			By default, only the short signature label is shown.
+			Enable |lsp-opt-showSignatureDocs| to include
+			parameter and signature documentation in the popup or
+			echo output.
 
 			Disable automatic signature display: >
 
@@ -1845,6 +1849,15 @@ showSignature		|Boolean| option.  In insert mode, automatically show
 			Disable this to prevent automatic popups while still
 			allowing manual invocation with |:LspShowSignature|.
 			By default this is set to true.
+
+						*lsp-opt-showSignatureDocs*
+showSignatureDocs	|Boolean| option.  Include parameter and
+			signature documentation in signature help output.
+			When disabled, signature help shows only the short
+			signature label while still highlighting the active
+			parameter.  This applies to both popup and
+			|lsp-opt-echoSignature| display modes.
+			By default this is set to false.
 
 						*lsp-opt-snippetSupport*
 snippetSupport		|Boolean| option.  Enable snippet completion support.

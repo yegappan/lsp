@@ -154,6 +154,7 @@ call LspOptionsSet(#{
         \   showDiagWithVirtualText: v:false,
         \   showInlayHints: v:false,
         \   showSignature: v:true,
+        \   showSignatureDocs: v:false,
         \   snippetSupport: v:false,
         \   ultisnipsSupport: v:false,
         \   useBufferCompletion: v:false,

@@ -185,6 +185,9 @@ export var lspOptions: dict<any> = {
   # In insert mode, show the current symbol signature automatically
   showSignature: true,
 
+  # Show signature documentation in popup/echo signature help output
+  showSignatureDocs: false,
+
   # enable snippet completion support
   snippetSupport: false,
 
