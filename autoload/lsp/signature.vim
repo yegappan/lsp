@@ -42,12 +42,14 @@ enddef
 
 # Use a script-local timer instance that can be reused.
 var signature_timer = -1
+var signature_timer_bufnr = -1
 var signature_timer_trigger_kind = SIG_TRIGGER_KIND_INVOKED
 var signature_timer_trigger_char = ''
 
 # Clear pending timer metadata after execution or cancellation.
 def ResetSignatureTimerState()
   signature_timer = -1
+  signature_timer_bufnr = -1
   signature_timer_trigger_kind = SIG_TRIGGER_KIND_INVOKED
   signature_timer_trigger_char = ''
 enddef
@@ -57,12 +59,14 @@ def LspShowSignatureCb(timer: number)
     return
   endif
 
+  var timer_bnr = signature_timer_bufnr
   var triggerKind = signature_timer_trigger_kind
   var triggerChar = signature_timer_trigger_char
   ResetSignatureTimerState()
 
-  # Show signature only in insert mode
-  if mode() ==# 'i'
+  # Show signature only in insert mode and only for the buffer that scheduled
+  # the timer.
+  if mode() ==# 'i' && bufnr() == timer_bnr
     call g:LspShowSignature(triggerKind, triggerChar)
   endif
 enddef
@@ -75,6 +79,7 @@ def LspShowSignatureDelayed(triggerKind: number, triggerChar: string)
   endif
 
   # Delay signature requests so rapid insert-mode events are coalesced.
+  signature_timer_bufnr = bufnr()
   signature_timer_trigger_kind = triggerKind
   signature_timer_trigger_char = triggerChar
   signature_timer = timer_start(50, function('LspShowSignatureCb'))
