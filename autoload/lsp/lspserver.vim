@@ -941,7 +941,7 @@ enddef
 # get symbol signature help.
 # Request: "textDocument/signatureHelp"
 # Param: SignatureHelpParams
-def ShowSignature(lspserver: dict<any>): void
+def ShowSignature(lspserver: dict<any>, triggerKind_arg: number = 1, triggerChar: string = ''): void
   # Check whether LSP server supports signature help
   if !lspserver.isSignatureHelpProvider
     util.ErrMsg('LSP server does not support signature help')
@@ -951,8 +951,13 @@ def ShowSignature(lspserver: dict<any>): void
   # interface SignatureHelpParams
   #   interface TextDocumentPositionParams
   var params = lspserver.getTextDocPosition(false)
-  lspserver.rpc_a('textDocument/signatureHelp', params,
-			signature.SignatureHelp)
+  var reqctx = signature.SignatureRequestContextGet()
+  params.context = signature.GetSignatureHelpContext(lspserver,
+						     triggerKind_arg,
+						     triggerChar)
+  lspserver.rpc_a('textDocument/signatureHelp', params, (_, reply) => {
+		signature.SignatureHelp(lspserver, reply, reqctx)
+	})
 enddef
 
 # Send a file/document saved notification to the language server

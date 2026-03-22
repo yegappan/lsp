@@ -3,6 +3,7 @@ vim9script
 
 import '../autoload/lsp/hover.vim' as hover
 import '../autoload/lsp/buffer.vim' as buf
+import '../autoload/lsp/signature.vim' as signature
 
 source common.vim
 
@@ -1406,6 +1407,7 @@ enddef
 
 # Test for :LspShowSignature
 def g:Test_LspShowSignature()
+  g:LspOptionsSet({echoSignature: false})
   silent! edit XLspShowSignature.c
   sleep 200m
   var lines: list<string> =<< trim END
@@ -1421,29 +1423,354 @@ def g:Test_LspShowSignature()
   END
   setline(1, lines)
   g:WaitForServerFileLoad(2)
+
+  # Default output should be compact (label only) with highlighted active
+  # parameter for the first argument.
   cursor(8, 10)
   :LspShowSignature
+  g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
   var p: list<number> = popup_list()
   var bnr: number = winbufnr(p[0])
-  assert_equal(1, p->len())
   assert_equal(['MyFunc(int a, int b) -> int'], getbufline(bnr, 1, '$'))
   var expected: dict<any>
   expected = {id: 0, col: 8, end: 1, type: 'signature', length: 5, start: 1}
   expected.type_bufnr = bnr
   assert_equal([expected], prop_list(1, {bufnr: bnr}))
+
+  # Simulate a stale async reply: capture context at this position, move the
+  # cursor, then deliver an empty reply for the old context. The visible
+  # popup must remain unchanged.
+  var sigserver = buf.CurbufGetServerChecked('signatureHelp')
+  var reqctx = signature.SignatureRequestContextGet()
+  cursor(1, 1)
+  signature.SignatureHelp(sigserver, {}, reqctx)
+  assert_equal([p[0]], popup_list())
+
   popup_close(p[0])
 
-  setline(line('.'), '  MyFunc(10, ')
+  # Editing after the first argument should highlight the second parameter.
+  setline(8, '  MyFunc(10, ')
   cursor(8, 13)
   :LspShowSignature
+  g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
   p = popup_list()
   bnr = winbufnr(p[0])
-  assert_equal(1, p->len())
   assert_equal(['MyFunc(int a, int b) -> int'], getbufline(bnr, 1, '$'))
   expected = {id: 0, col: 15, end: 1, type: 'signature', length: 5, start: 1}
   expected.type_bufnr = bnr
   assert_equal([expected], prop_list(1, {bufnr: bnr}))
+
+  # Re-invoking should replace/update the popup, not accumulate popups.
+  :LspShowSignature
+  p = popup_list()
+  g:WaitForAssert(() => assert_equal(1, p->len()))
+
   popup_close(p[0])
+
+  # Echo mode should avoid popup creation while still requesting signature help.
+  g:LspOptionsSet({echoSignature: true})
+  :LspShowSignature
+  g:WaitForAssert(() => assert_equal([], popup_list()))
+
+  g:LspOptionsSet({echoSignature: false})
+  :%bw!
+enddef
+
+# Test out-of-range active parameter falls back to last parameter (variadic)
+def g:Test_LspShowSignature_OutOfRangeActiveParam()
+  g:LspOptionsSet({echoSignature: false})
+
+  silent! edit XLspShowSignature_OutOfRange.c
+  setline(1, ['void f() {', '  Printf(', '}'])
+  cursor(2, 10)
+
+  var lspserver = {
+    id: 5002,
+    signaturePopup: -1
+  }
+  # Signature has 3 parameters but activeParameter is 10 (out of range)
+  # Should fall back to the last parameter (index 2)
+  var sighelp = {
+    signatures: [
+      {
+        label: 'Printf(const char* fmt, ...)',
+        parameters: [
+          {label: 'const char* fmt'},
+          {label: '...'}
+        ]
+      }
+    ],
+    activeSignature: 0,
+    activeParameter: 10  # Out of range - should clamp to last param
+  }
+
+  signature.SignatureHelp(lspserver, sighelp)
+  g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
+  var popups = popup_list()
+  var bnr = winbufnr(popups[0])
+
+  # Highlight should be on the second parameter '...'
+  var props = prop_list(1, {bufnr: bnr})
+  assert_equal(1, props->len())
+  assert_equal('signature', props[0].type)
+  # The '...' should be highlighted
+  assert_equal(25, props[0].col) # Position of '...'
+
+  popup_close(popups[0])
+  :%bw!
+enddef
+
+# Test echo mode signature display
+def g:Test_LspShowSignature_EchoMode()
+  g:LspOptionsSet({echoSignature: true})
+
+  silent! edit XLspShowSignature_Echo.c
+  setline(1, ['void f() {', '  Add(', '}'])
+  cursor(2, 7)
+
+  var lspserver = {
+    id: 5003,
+    signaturePopup: -1
+  }
+  var sighelp = {
+    signatures: [
+      {
+        label: 'Add(int a, int b) -> int',
+        documentation: 'Adds two integers',
+        parameters: [
+          {label: 'int a'},
+          {label: 'int b'}
+        ],
+        activeParameter: 0
+      }
+    ],
+    activeSignature: 0,
+    activeParameter: 0
+  }
+
+  signature.SignatureHelp(lspserver, sighelp)
+
+  # Echo mode should NOT create any popups
+  assert_equal([], popup_list())
+
+  g:LspOptionsSet({echoSignature: false})
+  :%bw!
+enddef
+
+# Test empty signature response closes popup
+def g:Test_LspShowSignature_EmptyResponse()
+  g:LspOptionsSet({echoSignature: false})
+
+  silent! edit XLspShowSignature_Empty.c
+  setline(1, ['void f() {', '  Func(', '}'])
+  cursor(2, 9)
+
+  var lspserver = {
+    id: 5004,
+    signaturePopup: -1
+  }
+
+  # First, create a valid signature popup
+  var sighelp = {
+    signatures: [
+      {
+        label: 'Func(int x)',
+        parameters: [{label: 'int x'}],
+        activeParameter: 0
+      }
+    ],
+    activeSignature: 0,
+    activeParameter: 0
+  }
+
+  signature.SignatureHelp(lspserver, sighelp)
+  g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
+
+  # Now send an empty response
+  signature.SignatureHelp(lspserver, {})
+  assert_equal([], popup_list())
+
+  :%bw!
+enddef
+
+# Test offset-based parameter label highlighting (UTF-16 encoding)
+def g:Test_LspShowSignature_OffsetLabelHighlight()
+  g:LspOptionsSet({echoSignature: false})
+
+  silent! edit XLspShowSignature_OffsetLabel.c
+  setline(1, ['void f() {', '  Fn(', '}'])
+  cursor(2, 7)
+
+  var lspserver = {
+    id: 5005,
+    signaturePopup: -1
+  }
+  # Use array-format label for offset-based highlighting
+  var sighelp = {
+    signatures: [
+      {
+        label: 'Fn(int x, double y)',
+        parameters: [
+          {label: [0, 5]},  # 'Fn(in'
+          {label: [8, 14]}  # 'double'
+        ],
+        activeParameter: 1
+      }
+    ],
+    activeSignature: 0,
+    activeParameter: 1
+  }
+
+  signature.SignatureHelp(lspserver, sighelp)
+  g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
+  var popups = popup_list()
+  var bnr = winbufnr(popups[0])
+
+  # Verify text property exists for second parameter
+  var props = prop_list(1, {bufnr: bnr})
+  assert_equal(1, props->len())
+  assert_equal('signature', props[0].type)
+
+  popup_close(popups[0])
+  :%bw!
+enddef
+
+# Test multi-signature with only one parameter each
+def g:Test_LspShowSignature_SimpleOverloads()
+  g:LspOptionsSet({echoSignature: false})
+
+  silent! edit XLspShowSignature_SimpleOverloads.c
+  setline(1, ['void f() {', '  Get(', '}'])
+  cursor(2, 7)
+
+  var lspserver = {
+    id: 5006,
+    signaturePopup: -1
+  }
+  var sighelp = {
+    signatures: [
+      {
+        label: 'Get(int)',
+        parameters: [{label: 'int'}],
+        activeParameter: 0
+      },
+      {
+        label: 'Get(double)',
+        parameters: [{label: 'double'}],
+        activeParameter: 0
+      },
+      {
+        label: 'Get(void*)  -> void*',
+        parameters: [{label: 'void*'}],
+        activeParameter: 0
+      }
+    ],
+    activeSignature: 1,  # Start at second overload
+    activeParameter: 0
+  }
+
+  signature.SignatureHelp(lspserver, sighelp)
+  g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
+  var popups = popup_list()
+  var bnr = winbufnr(popups[0])
+
+  # Should display second overload with indicator
+  assert_equal('Get(double)  (2/3)', getbufline(bnr, 1, 1)[0])
+
+  popup_close(popup_list()[0])
+  :%bw!
+enddef
+
+# Test signature with no parameters
+def g:Test_LspShowSignature_NoParameters()
+  g:LspOptionsSet({echoSignature: false})
+
+  silent! edit XLspShowSignature_NoParams.c
+  setline(1, ['void f() {', '  Init(', '}'])
+  cursor(2, 9)
+
+  var lspserver = {
+    id: 5007,
+    signaturePopup: -1
+  }
+  var sighelp = {
+    signatures: [
+      {
+        label: 'Init()',
+      }
+    ],
+    activeSignature: 0,
+    activeParameter: null
+  }
+
+  signature.SignatureHelp(lspserver, sighelp)
+  g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
+  var popups = popup_list()
+  var bnr = winbufnr(popups[0])
+
+  # No parameters, so no highlighting
+  var props = prop_list(1, {bufnr: bnr})
+  assert_equal([], props)
+
+  popup_close(popups[0])
+  :%bw!
+enddef
+
+# Test context mismatch rejects stale replies
+def g:Test_LspShowSignature_ContextMatch()
+  g:LspOptionsSet({echoSignature: false})
+
+  silent! edit XLspShowSignature_Context.c
+  setline(1, ['int x = 0;', 'void f() {', '  Call(', '}'])
+  cursor(3, 8)
+
+  var lspserver = {
+    id: 5008,
+    signaturePopup: -1
+  }
+  var sighelp = {
+    signatures: [
+      {
+        label: 'Call(int arg)',
+        parameters: [{label: 'int arg'}],
+        activeParameter: 0
+      }
+    ],
+    activeSignature: 0,
+    activeParameter: 0
+  }
+
+  # Capture context at current position
+  var reqctx = signature.SignatureRequestContextGet()
+
+  # Display signature
+  signature.SignatureHelp(lspserver, sighelp, reqctx)
+  g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
+  var popups = popup_list()
+  var oldPopupId = popups[0]
+
+  # Move to a different position
+  cursor(1, 1)
+
+  # Send an old reply for the old context - should be rejected
+  var oldSighelp = {
+    signatures: [
+      {
+        label: 'OldCall(float)',
+        parameters: [{label: 'float'}],
+        activeParameter: 0
+      }
+    ],
+    activeSignature: 0,
+    activeParameter: 0
+  }
+  signature.SignatureHelp(lspserver, oldSighelp, reqctx)
+
+  # Popup should still show the original signature (stale reply was rejected)
+  popups = popup_list()
+  assert_equal([oldPopupId], popups)
+
+  popup_close(popups[0])
   :%bw!
 enddef
 

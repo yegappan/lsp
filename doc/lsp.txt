@@ -993,24 +993,39 @@ the symbol under the cursor.
 
 							*:LspShowSignature*
 :LspShowSignature	Displays the signature of the symbol (e.g. a function
-			or method) before the cursor in a popup.
+			or method) at the cursor, showing parameter information.
 
-			The popup is also automatically displayed in insert
-			mode after entering a symbol name followed by a
-			separator (e.g. a opening parenthesis). To disable
-			this, you can set the showSignature option to false in
-			your .vimrc file: >
+			When |lsp-opt-showSignature| is enabled (default is
+			true), the signature is automatically displayed in
+			insert mode when you type a trigger character (usually
+			'(' or ','). The signature popup appears with the
+			active parameter highlighted to help you see which
+			parameter you are currently typing.
 
-			LspOptionsSet({'showSignature': false})
-<
-			Default is true.
+			If a symbol has multiple signatures (overloads), the
+			plugin displays them with a count indicator like
+			"(1/3)" to show which overload you are viewing.
 
-			You can get the function signature echoed in cmdline
-			rather than displayed in popup if you use >
+			By default, the signature is displayed in a popup
+			window positioned near the cursor. You can change this
+			behavior to echo the signature in the command line
+			instead: >
 
 			LspOptionsSet({'echoSignature': true})
 <
-			Default is false.
+			When echoing, the active parameter is highlighted in a
+			different color (|LspSigActiveParameter|).
+
+
+			Disable automatic signature display: >
+
+			LspOptionsSet({'showSignature': false})
+<
+			You can still invoke signatures manually with
+			|:LspShowSignature| command or custom mappings.
+
+			Customize the signature popup appearance using
+			|lsp-opt-popup-SignatureHelp| options.
 
 ------------------------------------------------------------------------------
 							*lsp-editing-cmds*
@@ -1517,7 +1532,13 @@ diagVirtualTextWrap	|String| option.   Wrapping of diagnostics messages
 
 						*lsp-opt-echoSignature*
 echoSignature		|Boolean| option.  In insert mode, echo the current
-			symbol signature instead of showing it in a popup.
+			symbol signature in the command line instead of
+			displaying it in a popup window. This is useful if you
+			prefer a more minimal interface or want to avoid
+			overlapping popups.  Note: The 'showmode' option
+			should be disabled for the signature to be visible.
+			Also the 'c' flag should be added to the 'shortmess'
+			option to disable insert completion messages.
 			By default this is set to false.
 
 					*lsp-opt-hideDisabledCodeActions*
@@ -1711,10 +1732,19 @@ popupBorderHighlightPeek		|String| option.
 popupHighlightPeek			|String| option.
 
 						*lsp-opt-popup-SignatureHelp*
-			Override options for SignatureHelp popups:
+			Override options for SignatureHelp popups displayed
+			during insert mode when typing function/method calls.
+			The active parameter is highlighted within the popup.
+
 popupBorderSignatureHelp		|Boolean| option. Default: false
+			Draw a border around the signature popup.
+
 popupBorderHighlightSignatureHelp	|String| option.
+			Highlight group for the signature popup border.
+
 popupHighlightSignatureHelp		|String| option.
+			Highlight group for the signature popup background
+			and text.
 
 						*lsp-opt-popup-SymbolMenu*
 			Override options for SymbolMenu popups:
@@ -1808,7 +1838,12 @@ showInlayHints		|Boolean| option.  Show inlay hints from the language
 
 						*lsp-opt-showSignature*
 showSignature		|Boolean| option.  In insert mode, automatically show
-			the current symbol signature in a popup.
+			the current symbol signature (function or method
+			parameters) when triggered by a trigger character
+			(typically '(' or ','). The signature is displayed
+			in a popup with the active parameter highlighted.
+			Disable this to prevent automatic popups while still
+			allowing manual invocation with |:LspShowSignature|.
 			By default this is set to true.
 
 						*lsp-opt-snippetSupport*

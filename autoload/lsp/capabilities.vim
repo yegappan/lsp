@@ -542,9 +542,17 @@ export def GetClientCaps(): dict<any>
       },
       signatureHelp: {
 	dynamicRegistration: false,
+	contextSupport: true,
 	signatureInformation: {
 	  documentationFormat: opt.lspOptions.documentationFormat,
-	  activeParameterSupport: true
+	  parameterInformation: {
+	    labelOffsetSupport: true
+	  },
+	  activeParameterSupport: true,
+	  # Signals that the client handles activeParameter: null on a
+	  # SignatureInformation (meaning suppress highlight for that
+	  # signature).
+	  noActiveParameterSupport: true
 	}
       },
       semanticTokens: {
