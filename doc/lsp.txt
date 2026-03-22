@@ -1000,7 +1000,11 @@ the symbol under the cursor.
 			insert mode when you type a trigger character (usually
 			'(' or ','). The signature popup appears with the
 			active parameter highlighted to help you see which
-			parameter you are currently typing.
+			parameter you are currently typing.  While a signature
+			session is active, the plugin can retrigger signature
+			help on supported retrigger characters and on
+			insert-mode cursor/text changes so the displayed call
+			signature tracks the current editing position.
 
 			If a symbol has multiple signatures (overloads), the
 			plugin displays them with a count indicator like
@@ -1019,7 +1023,9 @@ the symbol under the cursor.
 			By default, only the short signature label is shown.
 			Enable |lsp-opt-showSignatureDocs| to include
 			parameter and signature documentation in the popup or
-			echo output.
+			echo output.  When documentation is enabled and the
+			server returns markdown content, the popup uses the
+			configured markdown rendering support.
 
 			Disable automatic signature display: >
 
@@ -1853,6 +1859,10 @@ showSignature		|Boolean| option.  In insert mode, automatically show
 			parameters) when triggered by a trigger character
 			(typically '(' or ','). The signature is displayed
 			in a popup with the active parameter highlighted.
+			While a signature session is active, the plugin can
+			also retrigger on supported retrigger characters and
+			on insert-mode cursor/text changes to keep the
+			displayed signature current.
 			Disable this to prevent automatic popups while still
 			allowing manual invocation with |:LspShowSignature|.
 			By default this is set to true.

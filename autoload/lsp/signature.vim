@@ -19,6 +19,8 @@ var sig_state = {
 const SIG_TRIGGER_KIND_INVOKED = 1
 const SIG_TRIGGER_KIND_TRIGGER_CHAR = 2
 const SIG_TRIGGER_KIND_CONTENT_CHANGE = 3
+const SIG_TRIGGER_DELAY_DEFAULT = 50          # ms: debounce for invoked/trigger-char events
+const SIG_TRIGGER_DELAY_CONTENT_CHANGE = 120  # ms: debounce for noisy cursor/text events
 const SIG_POPUP_CLOSE_INTERNAL = -7777        # internal close reason to skip close-callback cleanup
 
 # -----------------------------------------------------------------------------
@@ -45,6 +47,12 @@ var signature_timer = -1
 var signature_timer_bufnr = -1
 var signature_timer_trigger_kind = SIG_TRIGGER_KIND_INVOKED
 var signature_timer_trigger_char = ''
+var signature_contentchange_state = {
+  bnr: -1,
+  changedtick: -1,
+  lnum: -1,
+  col: -1
+}
 
 # Clear pending timer metadata after execution or cancellation.
 def ResetSignatureTimerState()
@@ -52,6 +60,48 @@ def ResetSignatureTimerState()
   signature_timer_bufnr = -1
   signature_timer_trigger_kind = SIG_TRIGGER_KIND_INVOKED
   signature_timer_trigger_char = ''
+enddef
+
+# Reset dedupe state for content-change based retriggers.
+def ResetSignatureContentChangeState()
+  signature_contentchange_state = {
+    bnr: -1,
+    changedtick: -1,
+    lnum: -1,
+    col: -1
+  }
+enddef
+
+# Capture a lightweight content-change fingerprint for dedupe.
+def GetContentChangeSnapshot(): dict<number>
+  var bnr = bufnr()
+  return {
+    bnr: bnr,
+    changedtick: bnr->getbufvar('changedtick', -1),
+    lnum: line('.'),
+    col: charcol('.')
+  }
+enddef
+
+# Check whether the latest event matches the previous processed snapshot.
+def IsDuplicateContentChange(snapshot: dict<number>): bool
+  return signature_contentchange_state.bnr == snapshot.bnr
+	&& signature_contentchange_state.changedtick == snapshot.changedtick
+	&& signature_contentchange_state.lnum == snapshot.lnum
+	&& signature_contentchange_state.col == snapshot.col
+enddef
+
+# Persist the last processed content-change snapshot.
+def SaveContentChangeSnapshot(snapshot: dict<number>)
+  signature_contentchange_state = snapshot
+enddef
+
+# Use a slightly longer delay for noisy content-change retriggers.
+def GetSignatureTriggerDelay(triggerKind: number): number
+  if triggerKind == SIG_TRIGGER_KIND_CONTENT_CHANGE
+    return SIG_TRIGGER_DELAY_CONTENT_CHANGE
+  endif
+  return SIG_TRIGGER_DELAY_DEFAULT
 enddef
 
 # Timer callback that replays the deferred signature request safely.
@@ -83,7 +133,7 @@ def LspShowSignatureDelayed(triggerKind: number, triggerChar: string)
   signature_timer_bufnr = bufnr()
   signature_timer_trigger_kind = triggerKind
   signature_timer_trigger_char = triggerChar
-  signature_timer = timer_start(50, function('LspShowSignatureCb'))
+  signature_timer = timer_start(GetSignatureTriggerDelay(triggerKind), function('LspShowSignatureCb'))
 enddef
 
 # -----------------------------------------------------------------------------
@@ -112,6 +162,7 @@ enddef
 #   >= 0 for a valid numeric value
 #    0 for missing or unsupported values
 def NormalizeOptionalActiveParameter(value: any): number
+  # Recognize null in a version-agnostic way so
   # SignatureInformation.activeParameter: null suppresses highlighting.
   if string(value) ==# 'null' || string(value) ==# 'v:none'
     return -1
@@ -262,11 +313,13 @@ enddef
 # Clear the active signature session when the popup goes away or a new session
 # starts. This also tears down any temporary navigation mappings.
 def ResetSignatureState()
+  DisableSignatureSessionAutocmds()
   sig_state.signatures = []
   sig_state.index = 0
   sig_state.activeParam = 0
   sig_state.lspserver = {}
   sig_state.bnr = -1
+  ResetSignatureContentChangeState()
 enddef
 
 # -----------------------------------------------------------------------------
@@ -348,6 +401,31 @@ def g:LspShowSignatureTriggerChar(ch: string): string
   endif
 
   return g:LspShowSignature(SIG_TRIGGER_KIND_TRIGGER_CHAR, ch)
+enddef
+
+# Retrigger on cursor/text changes while signature session is active.
+def g:LspHandleSignatureContentChange(): void
+  var lspserver: dict<any> = buf.CurbufGetServer('signatureHelp')
+  if lspserver->empty() || !SignatureSessionActive(lspserver)
+    return
+  endif
+
+  # Content-change retriggers are valid only while the signature popup is
+  # still visible. If the popup was closed out-of-band, clear stale session
+  # state and stop retriggering.
+  CleanupStaleSignatureSession(lspserver)
+  if !ShouldTreatAsRetrigger(lspserver)
+    return
+  endif
+
+  var snapshot = GetContentChangeSnapshot()
+  if IsDuplicateContentChange(snapshot)
+    return
+  endif
+
+  SaveContentChangeSnapshot(snapshot)
+
+  LspShowSignatureDelayed(SIG_TRIGGER_KIND_CONTENT_CHANGE, '')
 enddef
 
 # Merge trigger and retrigger characters into one deduplicated list.
@@ -707,6 +785,7 @@ def ShowPopupSignature(lspserver: dict<any>, lines: list<string>, hlinfo: dict<n
     prop_add(1, hlinfo.startcol + 1, {bufnr: bnr, length: hlinfo.hllen, type: 'signature'})
   endif
   lspserver.signaturePopup = popupID
+  EnableSignatureSessionAutocmds()
 enddef
 
 # Render the current signature session either in the command line or in a
@@ -742,6 +821,34 @@ def MapSignatureTriggerCharacter(ch: string)
     mapChar = '<Space>'
   endif
   exe $"inoremap <buffer> <silent> {mapChar} {mapChar}<C-R>=g:LspShowSignatureTriggerChar({string(ch)})<CR>"
+enddef
+
+# Add or replace a buffer-local signature autocmd in the shared group.
+def AddSignatureAutocmd(event: string, cmd: string)
+  autocmd_add([{bufnr: bufnr(),
+		group: 'LspSignatureHelp',
+		event: event,
+		replace: true,
+		cmd: cmd}])
+enddef
+
+# Register retrigger and teardown autocmds for an active popup session.
+def EnableSignatureSessionAutocmds()
+  AddSignatureAutocmd('CursorMovedI', 'g:LspHandleSignatureContentChange()')
+  AddSignatureAutocmd('TextChangedI', 'g:LspHandleSignatureContentChange()')
+  AddSignatureAutocmd('InsertLeave', 'CloseCurBufSignaturePopup()')
+enddef
+
+# Remove popup-session autocmds when the signature popup is no longer visible.
+def DisableSignatureSessionAutocmds()
+  var bnr = sig_state.bnr
+  if bnr < 0
+    bnr = bufnr()
+  endif
+  autocmd_delete([{bufnr: bnr, group: 'LspSignatureHelp', event: 'CursorMovedI'}])
+  autocmd_delete([{bufnr: bnr, group: 'LspSignatureHelp', event: 'TextChangedI'}])
+  # Close the signature popup when leaving insert mode
+  autocmd_delete([{bufnr: bnr, group: 'LspSignatureHelp', event: 'InsertLeave'}])
 enddef
 
 # Return true when server reply has at least one signature entry.
@@ -824,12 +931,6 @@ export def BufferInit(lspserver: dict<any>)
 		  cmd: $'if index({lspserver.caps.signatureHelpProvider.triggerCharacters}, v:char) != -1
 			\ | call LspShowSignatureDelayed(SIG_TRIGGER_KIND_TRIGGER_CHAR, v:char) | endif'}])
   endif
-
-  # close the signature popup when leaving insert mode
-  autocmd_add([{bufnr: bufnr(),
-		group: 'LspSignatureHelp',
-		event: 'InsertLeave',
-		cmd: 'CloseCurBufSignaturePopup()'}])
 enddef
 
 # process the 'textDocument/signatureHelp' reply from the LSP server and
