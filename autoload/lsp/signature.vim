@@ -403,6 +403,25 @@ def g:LspShowSignatureTriggerChar(ch: string): string
   return g:LspShowSignature(SIG_TRIGGER_KIND_TRIGGER_CHAR, ch)
 enddef
 
+# Autocmd path for typed trigger characters using KeyInputPre.
+def g:LspHandleSignatureTriggerChar(ch: string): void
+  var lspserver: dict<any> = buf.CurbufGetServer('signatureHelp')
+  if lspserver->empty()
+    return
+  endif
+
+  # Keep trigger-based retriggers consistent with actual signature UI
+  # visibility.
+  CleanupStaleSignatureSession(lspserver)
+
+  var triggerKind = GetSignatureTriggerKind(lspserver, ch)
+  if triggerKind < 0
+    return
+  endif
+
+  LspShowSignatureDelayed(triggerKind, ch)
+enddef
+
 # Retrigger on cursor/text changes while signature session is active.
 def g:LspHandleSignatureContentChange(): void
   var lspserver: dict<any> = buf.CurbufGetServer('signatureHelp')
@@ -815,6 +834,7 @@ enddef
 # -----------------------------------------------------------------------------
 
 # Register a per-buffer insert mapping for a trigger character.
+# Only used in older vim versions without the KeyInputPre autocmd support.
 def MapSignatureTriggerCharacter(ch: string)
   var mapChar = ch
   if ch =~ ' '
@@ -830,6 +850,31 @@ def AddSignatureAutocmd(event: string, cmd: string)
 		event: event,
 		replace: true,
 		cmd: cmd}])
+enddef
+
+# Vim 9.1.0563+ supports KeyInputPre for trigger-char detection.
+def HasKeyInputPreSupport(): bool
+  return v:version > 901 || (v:version == 901 && has('patch0563'))
+enddef
+
+# Configure initial trigger-character detection using mappings or KeyInputPre.
+def SetupSignatureTriggerChars(lspserver: dict<any>, autoTriggerChars: list<string>)
+  if !HasKeyInputPreSupport()
+    for ch in autoTriggerChars
+      MapSignatureTriggerCharacter(ch)
+    endfor
+    return
+  endif
+
+  if !autoTriggerChars->empty()
+    # detect the trigger chars and show the signature
+    var cmd =<< trim eval END
+      if index({lspserver.caps.signatureHelpProvider.triggerCharacters}, v:char) != -1
+        call g:LspHandleSignatureTriggerChar(v:char)
+      endif
+    END
+    AddSignatureAutocmd('KeyInputPre', cmd->join(' | '))
+  endif
 enddef
 
 # Register retrigger and teardown autocmds for an active popup session.
@@ -916,21 +961,7 @@ export def BufferInit(lspserver: dict<any>)
   endif
 
   var autoTriggerChars = GetAutoSignatureTriggerCharacters(lspserver)
-
-  # Use a mapping for versions that don't support KeyInputPre yet'
-  if v:version < 901 || (v:version == 901 && !has('patch0563'))
-    # map characters that trigger signature help
-    for ch in lspserver.caps.signatureHelpProvider.triggerCharacters
-      MapSignatureTriggerCharacter(ch)
-    endfor
-  else
-    # detect the trigger chars and show the signature
-    autocmd_add([{bufnr: bufnr(),
-		  group: 'LspSignatureHelp',
-		  event: 'KeyInputPre',
-		  cmd: $'if index({lspserver.caps.signatureHelpProvider.triggerCharacters}, v:char) != -1
-			\ | call LspShowSignatureDelayed(SIG_TRIGGER_KIND_TRIGGER_CHAR, v:char) | endif'}])
-  endif
+  SetupSignatureTriggerChars(lspserver, autoTriggerChars)
 enddef
 
 # process the 'textDocument/signatureHelp' reply from the LSP server and
