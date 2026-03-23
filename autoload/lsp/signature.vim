@@ -48,7 +48,7 @@ var signature_timer = -1
 var signature_timer_bufnr = -1
 var signature_timer_trigger_kind = SIG_TRIGGER_KIND_INVOKED
 var signature_timer_trigger_char = ''
-var signature_contentchange_state = {
+var signature_contentchange_state: dict<number> = {
   bnr: -1,
   changedtick: -1,
   lnum: -1,
@@ -152,11 +152,9 @@ enddef
 
 # Return the number of parameters declared by a signature.
 def GetSignatureParameterCount(sig: dict<any>): number
-  if !sig->has_key('parameters') || sig.parameters->empty()
-    return 0
-  endif
+  var params = sig->get('parameters', [])
 
-  return sig.parameters->len()
+  return params->len()
 enddef
 
 # Normalize an optional LSP activeParameter value.
@@ -262,16 +260,16 @@ enddef
 
 # Return true when an async signature-help reply still matches the editor
 # state that triggered the request.
-def SignatureRequestContextMatches(reqctx: dict<any>): bool
+def SignatureRequestContextMatches(reqctx: dict<number>): bool
   return reqctx.bnr == bufnr()
-    && reqctx.changedtick == reqctx.bnr->getbufvar('changedtick', -1)
-    && reqctx.lnum == line('.')
-    && reqctx.col == charcol('.')
+         && reqctx.changedtick == reqctx.bnr->getbufvar('changedtick', -1)
+         && reqctx.lnum == line('.')
+         && reqctx.col == charcol('.')
 enddef
 
 # Snapshot the current editor state so stale async signature replies can be
 # discarded when the user moves or edits before the server responds.
-export def SignatureRequestContextGet(): dict<any>
+export def SignatureRequestContextGet(): dict<number>
   var bnr = bufnr()
   return {
     bnr: bnr,
@@ -467,7 +465,7 @@ def IsSignatureRetriggerCharacter(lspserver: dict<any>, ch: string): bool
   var triggerConfig = GetSignatureTriggerConfig(lspserver)
 
   return triggerConfig.triggerLookup->has_key(ch)
-	|| triggerConfig.retriggerLookup->has_key(ch)
+	 || triggerConfig.retriggerLookup->has_key(ch)
 enddef
 
 # Permit retrigger characters only while an active signature UI is present.
@@ -495,7 +493,7 @@ def SignaturePopupVisible(lspserver: dict<any>): bool
   endif
 
   return lspserver.signaturePopup != -1
-	&& popup_list()->index(lspserver.signaturePopup) != -1
+	 && popup_list()->index(lspserver.signaturePopup) != -1
 enddef
 
 # Determine whether signature UI is currently visible to the user.
@@ -579,13 +577,16 @@ enddef
 
 # Build a short single-line summary for command-line echo mode.
 def GetEchoDocumentationSummary(doc: dict<any>): string
+  const RE_CODE_BLOCK = '^```'
+  const RE_HEADER = '^#\+\s*'
+
   for line in doc.lines
     var text = line->trim()
-    if text->empty() || text =~ '^```'
+    if text->empty() || text =~ RE_CODE_BLOCK
       continue
     endif
 
-    text = text->substitute('^#\+\s*', '', '')
+    text = text->substitute(RE_HEADER, '', '')
     text = text->substitute('\s\+', ' ', 'g')
     if !text->empty()
       return text
@@ -686,13 +687,36 @@ def GetStringLabelHighlight(text: string, label: string): dict<number>
   return result
 enddef
 
+# Helper function to convert LSP UTF-16 offsets to Vim byte indices.
+def GetByteOffsets(text: string, start_utf16: number, end_utf16: number): dict<number>
+  var result = {start: 0, len: 0}
+
+  if v:version >= 901 || has('patch-9.0.1629')
+    # Modern Vim: Use native UTF-16 aware byteidx
+    var start_byte = text->byteidx(start_utf16, true)
+    var end_byte = text->byteidx(end_utf16, true)
+
+    if start_byte >= 0 && end_byte > start_byte
+      result.start = start_byte
+      result.len = end_byte - start_byte
+    endif
+  else
+    # Legacy/Compatibility: Fallback to raw offsets as byte positions
+    # Note: This may misalign on non-ASCII characters in older versions
+    result.start = start_utf16
+    result.len = end_utf16 - start_utf16
+  endif
+
+  return result
+enddef
+
 # Convert a UTF-16 label-offset pair into a Vim byte-range highlight.
 def GetOffsetLabelHighlight(text: string, labelOffset: list<any>): dict<number>
   var result = {hllen: 0, startcol: 0}
-  if labelOffset->len() < 2
-    return result
-  endif
-  if labelOffset[0]->type() != v:t_number || labelOffset[1]->type() != v:t_number
+
+  if labelOffset->len() < 2 ||
+      labelOffset[0]->type() != v:t_number ||
+      labelOffset[1]->type() != v:t_number
     return result
   endif
 
@@ -702,23 +726,9 @@ def GetOffsetLabelHighlight(text: string, labelOffset: list<any>): dict<number>
     return result
   endif
 
-  if has('patch-9.0.1629')
-    # Convert UTF-16 offsets.
-    var startcol: number = text->byteidx(start_offset, true)
-    var endcol: number = text->byteidx(end_offset, true)
-    if startcol < 0 || endcol < 0 || endcol <= startcol
-      return result
-    endif
-    result.startcol = startcol
-    result.hllen = endcol - startcol
-  else
-    # byteidx(..., true) requires Vim 9.0.1629+. On older versions the raw
-    # offset values are used directly as byte positions. This is correct for
-    # ASCII-only signature labels; non-ASCII text will produce a misaligned
-    # highlight on affected Vim versions.
-    result.startcol = start_offset
-    result.hllen = end_offset - start_offset
-  endif
+  var offsets = GetByteOffsets(text, start_offset, end_offset)
+  result.startcol = offsets.start
+  result.hllen = offsets.len
 
   return result
 enddef
@@ -948,7 +958,7 @@ enddef
 
 # Replace current signature session state from server reply.
 def UpdateSignatureStateFromReply(lspserver: dict<any>, sighelp: any,
-				  reqctx: dict<any> = {})
+				  reqctx: dict<number> = {})
   sig_state.signatures = sighelp.signatures
   sig_state.lspserver = lspserver
   sig_state.bnr = reqctx->empty() ? bufnr() : reqctx.bnr
@@ -982,7 +992,7 @@ enddef
 # display the symbol signature help.
 # Result: SignatureHelp | null
 export def SignatureHelp(lspserver: dict<any>, sighelp: any,
-			 reqctx: dict<any> = {}): void
+			 reqctx: dict<number> = {}): void
   if !reqctx->empty() && !SignatureRequestContextMatches(reqctx)
     return
   endif

@@ -951,7 +951,7 @@ def ShowSignature(lspserver: dict<any>, triggerKind_arg: number = 1, triggerChar
   # interface SignatureHelpParams
   #   interface TextDocumentPositionParams
   var params = lspserver.getTextDocPosition(false)
-  var reqctx = signature.SignatureRequestContextGet()
+  var reqctx: dict<number> = signature.SignatureRequestContextGet()
   params.context = signature.GetSignatureHelpContext(lspserver,
 						     triggerKind_arg,
 						     triggerChar)
