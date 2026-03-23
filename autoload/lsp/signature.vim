@@ -691,7 +691,7 @@ enddef
 def GetByteOffsets(text: string, start_utf16: number, end_utf16: number): dict<number>
   var result = {start: 0, len: 0}
 
-  if v:version >= 901 || has('patch-9.0.1629')
+  if has('patch-9.0.1629')
     # Modern Vim: Use native UTF-16 aware byteidx
     var start_byte = text->byteidx(start_utf16, true)
     var end_byte = text->byteidx(end_utf16, true)
