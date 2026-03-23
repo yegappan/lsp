@@ -39,6 +39,7 @@ def g:LspShowSignature(triggerKind: number = SIG_TRIGGER_KIND_INVOKED,
   # First send all the changes in the current buffer to the LSP server.
   listener_flush()
   lspserver.showSignature(triggerKind, triggerChar)
+
   return ''
 enddef
 
@@ -85,10 +86,10 @@ enddef
 
 # Check whether the latest event matches the previous processed snapshot.
 def IsDuplicateContentChange(snapshot: dict<number>): bool
-  return signature_contentchange_state.bnr == snapshot.bnr
-	&& signature_contentchange_state.changedtick == snapshot.changedtick
-	&& signature_contentchange_state.lnum == snapshot.lnum
-	&& signature_contentchange_state.col == snapshot.col
+  return signature_contentchange_state.changedtick == snapshot.changedtick
+    && signature_contentchange_state.lnum == snapshot.lnum
+    && signature_contentchange_state.col == snapshot.col
+    && signature_contentchange_state.bnr == snapshot.bnr
 enddef
 
 # Persist the last processed content-change snapshot.
@@ -101,6 +102,7 @@ def GetSignatureTriggerDelay(triggerKind: number): number
   if triggerKind == SIG_TRIGGER_KIND_CONTENT_CHANGE
     return SIG_TRIGGER_DELAY_CONTENT_CHANGE
   endif
+
   return SIG_TRIGGER_DELAY_DEFAULT
 enddef
 
@@ -153,6 +155,7 @@ def GetSignatureParameterCount(sig: dict<any>): number
   if !sig->has_key('parameters') || sig.parameters->empty()
     return 0
   endif
+
   return sig.parameters->len()
 enddef
 
@@ -171,6 +174,7 @@ def NormalizeOptionalActiveParameter(value: any): number
   if value->type() == v:t_number && value >= 0
     return value
   endif
+
   return 0
 enddef
 
@@ -357,10 +361,11 @@ def GetSignatureTriggerConfig(lspserver: dict<any>): dict<any>
   AddSignatureChars(retriggerChars, retriggerLookup, autoChars)
 
   lspserver.signatureTriggerConfig = {
-	triggerLookup: triggerLookup,
-	retriggerLookup: retriggerLookup,
-	autoChars: autoChars
-      }
+    triggerLookup: triggerLookup,
+    retriggerLookup: retriggerLookup,
+    autoChars: autoChars
+  }
+
   return lspserver.signatureTriggerConfig
 enddef
 
@@ -370,9 +375,9 @@ export def GetSignatureHelpContext(lspserver: dict<any>, triggerKind: number,
   CleanupStaleSignatureSession(lspserver)
   var isRetrigger = ShouldTreatAsRetrigger(lspserver)
   var context = {
-	triggerKind: triggerKind,
-	isRetrigger: isRetrigger
-      }
+    triggerKind: triggerKind,
+    isRetrigger: isRetrigger
+  }
 
   if triggerKind == SIG_TRIGGER_KIND_TRIGGER_CHAR && !triggerChar->empty()
     context.triggerCharacter = triggerChar
@@ -460,6 +465,7 @@ enddef
 # True when character should trigger or retrigger signature help.
 def IsSignatureRetriggerCharacter(lspserver: dict<any>, ch: string): bool
   var triggerConfig = GetSignatureTriggerConfig(lspserver)
+
   return triggerConfig.triggerLookup->has_key(ch)
 	|| triggerConfig.retriggerLookup->has_key(ch)
 enddef
@@ -469,6 +475,7 @@ def ShouldTriggerSignature(lspserver: dict<any>, ch: string): bool
   if IsSignatureTriggerCharacter(lspserver, ch)
     return true
   endif
+
   return ShouldTreatAsRetrigger(lspserver) && IsSignatureRetriggerCharacter(lspserver, ch)
 enddef
 
@@ -477,6 +484,7 @@ def GetSignatureTriggerKind(lspserver: dict<any>, ch: string): number
   if ShouldTriggerSignature(lspserver, ch)
     return SIG_TRIGGER_KIND_TRIGGER_CHAR
   endif
+
   return -1
 enddef
 
@@ -520,10 +528,7 @@ enddef
 # Convert signature or parameter documentation to display lines and an
 # optional popup filetype.
 def GetSignatureDocumentation(lspserver: dict<any>, documentation: any): dict<any>
-  var doc = {
-    lines: [],
-    filetype: ''
-  }
+  var doc = {lines: [], filetype: ''}
 
   var doc_type = documentation->type()
   if doc_type == v:t_string
@@ -537,20 +542,20 @@ def GetSignatureDocumentation(lspserver: dict<any>, documentation: any): dict<an
     return doc
   endif
 
-  if documentation->has_key('kind')
-    if documentation.kind == 'markdown'
-      doc.filetype = 'lspgfm'
-    elseif documentation.kind != 'plaintext'
-      lspserver.errorLog(
-	$'{strftime("%m/%d/%y %T")}: Unsupported signature documentation kind ({documentation.kind})'
+  var doc_kind: string = documentation->get('kind', 'plaintext')
+  if doc_kind ==# 'markdown'
+    doc.filetype = 'lspgfm'
+  elseif doc_kind !=# 'plaintext'
+    lspserver.errorLog(
+	$'{strftime("%m/%d/%y %T")}: Unsupported signature documentation kind ({doc_kind})'
       )
-      return doc
-    endif
+    return doc
   endif
 
   if documentation.value->type() == v:t_string && !documentation.value->empty()
     doc.lines = documentation.value->split("\n")
   endif
+
   return doc
 enddef
 
@@ -586,6 +591,7 @@ def GetEchoDocumentationSummary(doc: dict<any>): string
       return text
     endif
   endfor
+
   return ''
 enddef
 
@@ -605,9 +611,10 @@ enddef
 # Pick markdown highlighting for the popup when any attached documentation is
 # markdown.
 def GetSignatureDocFiletype(paramDoc: dict<any>, sigDoc: dict<any>): string
-  if paramDoc.filetype == 'lspgfm' || sigDoc.filetype == 'lspgfm'
+  if paramDoc.filetype ==# 'lspgfm' || sigDoc.filetype ==# 'lspgfm'
     return 'lspgfm'
   endif
+
   return ''
 enddef
 
@@ -618,6 +625,7 @@ def GetSignatureDocSummary(paramDoc: dict<any>, sigDoc: dict<any>): string
   if docSummary->empty()
     docSummary = GetEchoDocumentationSummary(sigDoc)
   endif
+
   return docSummary
 enddef
 
@@ -656,8 +664,10 @@ enddef
 def FormatSignatureText(sig: dict<any>, sigidx: number, total: number): string
   var text: string = sig.label
   if total > 1
-    text = text .. $"  ({sigidx + 1}/{total})"
+    text = text->trim('', 2)
+    text ..= $"  ({sigidx + 1}/{total})"
   endif
+
   return text
 enddef
 
@@ -750,6 +760,7 @@ def GetCurrentSignature(): dict<any>
   if sig_state.signatures->empty() || sig_state.index >= sig_state.signatures->len()
     return {}
   endif
+
   return sig_state.signatures[sig_state.index]
 enddef
 
@@ -901,6 +912,7 @@ def HasValidSignatureHelpReply(sighelp: any): bool
   if sighelp->empty() || !sighelp->has_key('signatures')
     return false
   endif
+
   return sighelp.signatures->len() > 0
 enddef
 
@@ -919,6 +931,7 @@ def GetReplySignatureIndex(sighelp: any, total: number): number
   if idx > total - 1
     idx = 0
   endif
+
   return idx
 enddef
 
@@ -929,6 +942,7 @@ def GetReplyActiveParameter(sighelp: any): number
   if sighelp->has_key('activeParameter')
     return NormalizeOptionalActiveParameter(sighelp.activeParameter)
   endif
+
   return 0
 enddef
 
