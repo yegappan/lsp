@@ -59,6 +59,8 @@ autocmd VimLeavePre * silent! lsp.FastShutdownExitAllServers()
 
 # LSP commands
 command! -nargs=? -bar -range LspCodeAction lsp.CodeAction(<line1>, <line2>, <q-args>)
+command! -nargs=? -bar LspFixAll lsp.SourceCodeAction('source.fixAll', <q-args>)
+command! -nargs=? -bar LspOrganizeImports lsp.SourceCodeAction('source.organizeImports', <q-args>)
 command! -nargs=0 -bar LspCodeLens lsp.CodeLens()
 command! -nargs=+ -bar -bang -count -complete=customlist,lsp.LspDiagComplete LspDiag lsp.LspDiagCmd(<q-args>, <count>, <bang>false)
 command! -nargs=0 -bar -bang LspDiagCurrent lsp.LspShowCurrentDiag(<bang>false)

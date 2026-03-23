@@ -1211,6 +1211,23 @@ export def CodeAction(line1: number, line2: number, query: string)
   lspserver.codeAction(fname, line1, line2, query)
 enddef
 
+# Perform a source code action for the whole file.
+export def SourceCodeAction(kind: string, queryArg: string)
+  var lspserver: dict<any> = buf.CurbufGetServerChecked('codeAction')
+  if lspserver->empty()
+    return
+  endif
+
+  var query = $'only:{kind}'
+  var selector = queryArg->trim()
+  if selector == ''
+    selector = '1'
+  endif
+  query ..= $'#{selector}'
+
+  lspserver.codeAction(@%, 1, line('$'), query)
+enddef
+
 # Code lens
 # Uses LSP "textDocument/codeLens" request
 export def CodeLens()

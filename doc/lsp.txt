@@ -3,7 +3,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: March 14 2026
+Last change: March 23 2026
 
 ==============================================================================
 CONTENTS                                                     *lsp-contents*
@@ -1082,6 +1082,31 @@ Commands to modify, rename, or format your code using the language server.
 
 			CodeAction edits are applied before any associated
 			command is executed.
+
+			Use |:LspFixAll| and |:LspOrganizeImports| for
+			dedicated source actions over the current file.
+
+							*:LspFixAll*
+:LspFixAll [query]	Request code actions with only:source.fixAll for the
+			current file and apply one action directly.
+
+			If [query] is omitted, the first matching action is
+			applied (equivalent to "only:source.fixAll#1").
+
+			If [query] is provided, it is used as the selector for
+			the filtered actions (for example, "/fix" or "2").
+
+						*:LspOrganizeImports*
+:LspOrganizeImports [query]
+			Request code actions with only:source.organizeImports
+			for the current file and apply one action directly.
+
+			If [query] is omitted, the first matching action is
+			applied (equivalent to
+			"only:source.organizeImports#1").
+
+			If [query] is provided, it is used as the selector for
+			the filtered actions.
 
 							*:LspCodeLens*
 :LspCodeLens		Display a list of code lens commands available for the

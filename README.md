@@ -191,6 +191,8 @@ The following commands are provided to use the LSP features.
 Command|Description
 -------|-----------
 `:LspCodeAction`|Apply the code action supplied by the language server to the diagnostic in the current line.
+`:LspFixAll`|Apply the first source.fixAll code action supplied by the language server to all the diagnostics in the current file.
+`:LspOrganizeImports`|Apply the source.organizeImports code action supplied by the language server to the current file.
 `:LspCodeLens`|Display a list of code lens commands and apply a selected code lens command to the current file.
 `:LspDiag current`|Display the diagnostic message for the current line.
 `:LspDiag first`|Jump to the first diagnostic message for the current buffer.

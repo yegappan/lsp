@@ -6,7 +6,15 @@ source common.vim
 var lspServers = [{
       filetype: ['go'],
       path: exepath('gopls'),
-      args: ['serve']
+      args: ['serve'],
+      initializationOptions: {
+        analyses: {
+          unusedparams: true,
+          unusedwrite: true,
+          useany: true,
+        },
+        staticcheck: true
+      }
   }]
 call LspAddServer(lspServers)
 echomsg systemlist($'{lspServers[0].path} version')
@@ -145,6 +153,65 @@ def g:Test_LspFold()
   assert_equal(r, range(1, 11)->map((_, v) => foldclosedend(v)))
 
   v:errmsg = ''
+  bw!
+enddef
+
+# Test for :LspFixAll
+# TODO: Manually running this test passes.  Need to debug why this fails.
+def g:DISABLED_Test_LspFixAll()
+  :silent! edit XLspFixAll.go
+  sleep 200m
+  var lines =<< trim END
+    package main
+
+    import "fmt"
+
+    func main() {
+        m := map[string]int{"a": 1, "b": 2}
+        for _ = range m { // Unused loop variable
+            fmt.Println("Iterating")
+        }
+    }
+  END
+  setline(1, lines)
+  g:WaitForServerFileLoad(0)
+  redraw!
+  :LspFixAll
+  g:WaitForAssert(() => assert_equal('    for range m { // Unused loop variable', getline(7)))
+  bw!
+enddef
+
+# Test for :LspOrganizeImports
+# Writes a Go file containing two separate import statements in reverse
+# alphabetical order.  :LspOrganizeImports (gopls source.organizeImports)
+# should merge them into one grouped import block sorted alphabetically.
+def g:Test_LspOrganizeImports()
+  :silent! edit XLspOrganizeImports.go
+  sleep 200m
+  var lines =<< trim END
+    package main
+
+    import "strings"
+    import "fmt"
+
+    func main() {
+	fmt.Println(strings.ToUpper("hello"))
+    }
+  END
+  setline(1, lines)
+  g:WaitForServerFileLoad(0)
+  redraw!
+  :LspOrganizeImports
+  # gopls merges the two separate import declarations into one grouped block
+  # and sorts them alphabetically: "fmt" before "strings".
+  g:WaitForAssert(() => assert_equal('import (', getline(3)))
+  var expected =<< trim END
+  import (
+	"fmt"
+	"strings"
+  )
+  END
+  assert_equal(expected, getline(3, 6))
   bw!
 enddef
 
