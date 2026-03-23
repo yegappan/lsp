@@ -1062,6 +1062,18 @@ Commands to modify, rename, or format your code using the language server.
 			- digits (for example, "2") select by 1-based index,
 			- text starting with "/" is treated as a regexp,
 			- other text matches an action title prefix.
+			- text starting with "only:" or "kind:" filters
+			  actions on the server side using
+			  CodeActionContext.only.
+
+			For request-side filtering, use one of: >
+
+				only:<kind[,kind...]>
+				kind:<kind[,kind...]>
+<
+			You can append "#<selector>" to select directly from
+			the filtered result (for example,
+			"only:quickfix#1" or "kind:source.fixAll#/fix").
 			Leading and trailing whitespace in [query] is ignored.
 
 			When [query] is not given, you are prompted to select

@@ -1540,6 +1540,50 @@ def DecodeCodeAction(lspserver: dict<any>, actionList: list<dict<any>>)
     })
 enddef
 
+# Parse a code action query for request-side filtering.
+#
+# Supported query syntax:
+#   only:<kind[,kind...]>
+#   kind:<kind[,kind...]>
+# Optional selector:
+#   ...#<selector>
+#
+# Example:
+#   only:quickfix#1
+def ParseCodeActionQuery(query: string): dict<any>
+  var q = query->trim()
+  var result = {only: [], query: query}
+
+  if q !~? '^\%(only\|kind\):'
+    return result
+  endif
+
+  var payload = q->substitute('^\c\%(only\|kind\):', '', '')
+  var selector = ''
+  var hashIdx = payload->stridx('#')
+  if hashIdx >= 0
+    selector = payload[hashIdx + 1 : ]
+    payload = payload[0 : hashIdx - 1]
+  endif
+
+  var onlyKinds = payload->split(',')
+  onlyKinds->map((_, kind) => kind->trim())
+  onlyKinds->filter((_, kind) => kind != '')
+  if onlyKinds->empty()
+    return result
+  endif
+
+  for kind in onlyKinds
+    if kind !~ '^[A-Za-z][A-Za-z0-9_.-]*$'
+      return result
+    endif
+  endfor
+
+  result.only = onlyKinds
+  result.query = selector
+  return result
+enddef
+
 # Request: "textDocument/codeAction"
 # Param: CodeActionParams
 def CodeAction(lspserver: dict<any>, fname_arg: string, line1: number,
@@ -1579,6 +1623,11 @@ def CodeAction(lspserver: dict<any>, fname_arg: string, line1: number,
   endfor
   params->extend({context: {diagnostics: d, triggerKind: 1}})
 
+  var queryInfo = ParseCodeActionQuery(query)
+  if !queryInfo.only->empty()
+    params.context.only = queryInfo.only
+  endif
+
   var reply = lspserver.rpc('textDocument/codeAction', params)
 
   # Result: (Command | CodeAction)[] | null
@@ -1590,7 +1639,7 @@ def CodeAction(lspserver: dict<any>, fname_arg: string, line1: number,
 
   DecodeCodeAction(lspserver, reply.result)
 
-  codeaction.ApplyCodeAction(lspserver, reply.result, query)
+  codeaction.ApplyCodeAction(lspserver, reply.result, queryInfo.query)
 enddef
 
 # Request: "textDocument/codeLens"

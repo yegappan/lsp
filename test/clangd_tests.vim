@@ -894,6 +894,10 @@ def g:Test_LspCodeAction()
   cursor(4, 1)
   :LspCodeAction /NON_EXISTING_REGEX
   assert_equal("\tif (count = 1) {", getline(4))
+
+  cursor(4, 1)
+  :LspCodeAction only:quickfix#2
+  assert_equal("\tif (count == 1) {", getline(4))
   bw!
 
   # empty file
