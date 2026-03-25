@@ -644,13 +644,7 @@ enddef
 # Time out of slow responses within a split second (125 milliseconds).
 def FastShutdownServer(lspserver: dict<any>): void
   if lspserver.job->job_status() == 'run'
-    var req = {method: 'shutdown', params: v:null}
-    var timeout = 125
-    var reply = lspserver.job->ch_evalexpr(req, {timeout: timeout})
-    if lspserver.debug
-      lspserver.traceLog($'Sent shutdown request with {timeout}ms timeout')
-      lspserver.traceLog($'Got response {reply->json_encode()}')
-    endif
+    lspserver.shutdownServer(125)     # 125 msec timeout
   endif
 enddef
 

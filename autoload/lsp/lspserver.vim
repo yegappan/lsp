@@ -222,8 +222,15 @@ enddef
 
 # Request: shutdown
 # Param: void
-def ShutdownServer(lspserver: dict<any>): void
-  lspserver.rpc('shutdown', v:null)
+def ShutdownServer(lspserver: dict<any>, resp_timeout: number = -1): void
+  var opts = {}
+  if resp_timeout != -1
+    opts.timeout = resp_timeout
+  endif
+  lspserver.rpc('shutdown', v:null, opts)
+  if lspserver.debug
+    lspserver.traceLog($'Sent shutdown request with {resp_timeout}ms timeout')
+  endif
 enddef
 
 # Send a 'exit' notification to the language server
@@ -394,7 +401,7 @@ enddef
 
 # Send a sync RPC request message to the LSP server and return the received
 # reply.  In case of an error, an empty Dict is returned.
-def Rpc(lspserver: dict<any>, method: string, params: any, handleError: bool = true): dict<any>
+def Rpc(lspserver: dict<any>, method: string, params: any, opts: dict<any> = {}): dict<any>
   var req = {
     method: method,
     params: params
@@ -406,8 +413,14 @@ def Rpc(lspserver: dict<any>, method: string, params: any, handleError: bool = t
     return {}
   endif
 
+  var ch_opts = {}
+  var timeout: number = opts->get('timeout', -1)
+  if timeout != -1
+    ch_opts.timeout = timeout
+  endif
+
   # Do the synchronous RPC call
-  var reply = job->ch_evalexpr(req)
+  var reply = job->ch_evalexpr(req, ch_opts)
 
   if lspserver.debug
     if reply->has_key('id')
@@ -421,6 +434,8 @@ def Rpc(lspserver: dict<any>, method: string, params: any, handleError: bool = t
     # successful reply
     return reply
   endif
+
+  var handleError: bool = opts->get('handleError', true)
 
   if reply->has_key('error') && handleError
     # request failed
@@ -779,7 +794,7 @@ enddef
 # Result: Location | Location[] | LocationLink[] | null
 def GotoSymbolLoc(lspserver: dict<any>, msg: string, peekSymbol: bool,
 		  cmdmods: string, count: number)
-  var reply = lspserver.rpc(msg, lspserver.getTextDocPosition(true), false)
+  var reply = lspserver.rpc(msg, lspserver.getTextDocPosition(true), {handleError: false})
   if reply->empty() || reply.result->empty()
     var emsg: string
     if msg == 'textDocument/declaration'
@@ -2013,7 +2028,7 @@ def TagFunc(lspserver: dict<any>, pat: string, flags: string, info: dict<any>): 
       return null
     endif
 
-    var wsReply = lspserver.rpc('workspace/symbol', {query: pat}, false)
+    var wsReply = lspserver.rpc('workspace/symbol', {query: pat}, {handleError: false})
     if wsReply->empty() || wsReply.result->empty()
       return null
     endif

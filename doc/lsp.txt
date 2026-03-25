@@ -2746,7 +2746,7 @@ The returned dict has the following methods:
 		Returns true when the lspserver has feature enabled. By
 		default, all the features of a lsp server are enabled.
 
-	rpc(method: string, params: any, handleError: bool = true): dict<any>
+	rpc(method: string, params: any, opts: dict<any> = {}): dict<any>
 		Send a sync RPC request message to the LSP server and return
 		the received reply. In case of an error, an empty Dict is
 		returned.
