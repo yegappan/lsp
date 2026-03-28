@@ -26,44 +26,47 @@ def OutlineJumpToSymbol(stayInOutline: bool = false)
   # disable the outline window refresh
   skipRefresh = true
 
-  # If the file is already opened in a window, jump to it. Otherwise open it
-  # in another window
-  var wid: number = fname->bufwinid()
-  if wid == -1
-    # Find a window showing a normal buffer and use it
-    for w in getwininfo()
-      if w.winid->getwinvar('&buftype')->empty()
-	wid = w.winid
-	wid->win_gotoid()
-	break
-      endif
-    endfor
+  try
+    # If the file is already opened in a window, jump to it. Otherwise open it
+    # in another window
+    var wid: number = fname->bufwinid()
     if wid == -1
-      var symWinid: number = win_getid()
-      :rightbelow vnew
-      # retain the fixed symbol window width
-      win_execute(symWinid, 'vertical resize 20')
+      # Find a window showing a normal buffer and use it
+      for w in getwininfo()
+	if w.winid->getwinvar('&buftype')->empty()
+	  wid = w.winid
+	  wid->win_gotoid()
+	  break
+	endif
+      endfor
+      if wid == -1
+	var symWinid: number = win_getid()
+	:rightbelow vnew
+	# retain the fixed symbol window width
+	var winsz = opt.lspOptions.outlineWinSize
+	win_execute(symWinid, $'vertical resize {winsz}')
+      endif
+
+      exe $'edit {fname}'
+    else
+      wid->win_gotoid()
     endif
 
-    exe $'edit {fname}'
-  else
-    wid->win_gotoid()
-  endif
+    # Set the previous cursor location mark. Instead of using setpos(), m' is
+    # used so that the current location is added to the jump list.
+    :normal m'
 
-  # Set the previous cursor location mark. Instead of using setpos(), m' is
-  # used so that the current location is added to the jump list.
-  :normal m'
+    # Jump to the symbol position
+    [slnum, scol]->cursor()
 
-  # Jump to the symbol position
-  [slnum, scol]->cursor()
-
-  # If in preview mode, jump back to the outline window
-  if stayInOutline
-    normal! zz
-    win_gotoid(outlineWinid)
-  endif
-
-  skipRefresh = false
+    # If in preview mode, jump back to the outline window
+    if stayInOutline
+      normal! zz
+      win_gotoid(outlineWinid)
+    endif
+  finally
+    skipRefresh = false
+  endtry
 enddef
 
 # Skip refreshing the outline window. Used to prevent recursive updates to the
@@ -134,7 +137,7 @@ export def UpdateOutlineWindow(fname: string,
   endif
 
   :setlocal modifiable
-  :silent! :%d _
+  deletebufline('', 1, '$')
   setline(1, ['# LSP Outline View',
 		$'# {fname->fnamemodify(":t")} ({fname->fnamemodify(":h")})'])
 
@@ -298,7 +301,7 @@ def Open(cmdmods: string, winsize: number)
   execute $'silent {mods} :{size}new LSP-Outline'
   :setlocal modifiable
   :setlocal noreadonly
-  :silent! :%d _
+  deletebufline('', 1, '$')
   :setlocal buftype=nofile
   :setlocal bufhidden=delete
   :setlocal noswapfile nobuflisted
@@ -326,7 +329,11 @@ def Open(cmdmods: string, winsize: number)
     :highlight default link LSPTitleAt Ignore
   endif
 
-  prop_type_add('LspOutlineHighlight', {bufnr: bufnr(), highlight: 'Search', override: true})
+  prop_type_add('LspOutlineHighlight', {
+    bufnr: bufnr(),
+    highlight: 'Search',
+    override: true
+  })
 
   try
     autocmd_delete([{group: 'LSPOutline', event: '*'}])
@@ -338,18 +345,21 @@ def Open(cmdmods: string, winsize: number)
   acmds->add({event: 'BufEnter',
 	      group: 'LSPOutline',
 	      pattern: '*',
+	      replace: true,
 	      cmd: 'call g:LspRequestDocSymbols()'})
 
   # when the outline window is closed, do the cleanup
   acmds->add({event: 'BufUnload',
 	      group: 'LSPOutline',
 	      pattern: 'LSP-Outline',
+	      replace: true,
 	      cmd: 'OutlineCleanup()'})
 
   # Highlight the current symbol when the cursor is not moved for sometime
   acmds->add({event: 'CursorHold',
 	      group: 'LSPOutline',
 	      pattern: '*',
+	      replace: true,
 	      cmd: 'OutlineHighlightCurrentSymbol()'})
 
   autocmd_add(acmds)
