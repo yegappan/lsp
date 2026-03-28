@@ -101,10 +101,13 @@ def AddSymbolText(bnr: number,
     for s in symbols
       text->add(prefix .. s.name)
       # remember the line number for the symbol
-      var s_start = s.range.start
+      var s_start = s.selectionRange.start
       var start_col: number = util.GetLineByteFromPos(bnr, s_start) + 1
-      lnumMap->add({name: s.name, lnum: s_start.line + 1,
-			col: start_col})
+      lnumMap->add({
+	name: s.name,
+	lnum: s_start.line + 1,
+	col: start_col
+      })
       s.outlineLine = lnumMap->len()
       if s->has_key('children') && !s.children->empty()
 	AddSymbolText(bnr, s.children, prefix, text, lnumMap, true)
@@ -146,8 +149,11 @@ export def UpdateOutlineWindow(fname: string,
   var text: list<string> = []
   AddSymbolText(fname->bufnr(), symbolTypeTable, '', text, lnumMap, false)
   text->append('$')
-  w:lspSymbols = {filename: fname, lnumTable: lnumMap,
-				symbolsByLine: symbolLineTable}
+  w:lspSymbols = {
+    filename: fname,
+    lnumTable: lnumMap,
+    symbolsByLine: symbolLineTable
+  }
   :setlocal nomodifiable
 
   if !saveCursor->empty()
@@ -298,7 +304,7 @@ def Open(cmdmods: string, winsize: number)
     size = opt.lspOptions.outlineWinSize
   endif
 
-  execute $'silent {mods} :{size}new LSP-Outline'
+  silent execute $'{mods} :{size}new LSP-Outline'
   :setlocal modifiable
   :setlocal noreadonly
   deletebufline('', 1, '$')

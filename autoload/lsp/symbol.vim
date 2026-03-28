@@ -615,7 +615,8 @@ def ProcessDocSymbolTable(lspserver: dict<any>,
 			  symbolLineTable: list<dict<any>>)
   var symbolType: string
   var name: string
-  var r: dict<dict<number>>
+  var range: dict<dict<number>>
+  var selectionRange: dict<dict<number>>
   var symInfo: dict<any>
   var symbolDetail: string
   var childSymbols: dict<list<dict<any>>>
@@ -623,8 +624,10 @@ def ProcessDocSymbolTable(lspserver: dict<any>,
   for syminfo in docSymbolTable
     name = syminfo.name
     symbolType = SymbolKindToName(syminfo.kind)
-    r = syminfo.range
-    lspserver.decodeRange(bnr, r)
+    range = syminfo.range
+    lspserver.decodeRange(bnr, range)
+    selectionRange = syminfo.selectionRange
+    lspserver.decodeRange(bnr, selectionRange)
     symbolDetail = syminfo->get('detail', '')
     if !symbolTypeTable->has_key(symbolType)
       symbolTypeTable[symbolType] = []
@@ -634,8 +637,13 @@ def ProcessDocSymbolTable(lspserver: dict<any>,
       ProcessDocSymbolTable(lspserver, bnr, syminfo.children, childSymbols,
 			    symbolLineTable)
     endif
-    symInfo = {name: name, range: r, detail: symbolDetail,
-						children: childSymbols}
+    symInfo = {
+      name: name,
+      range: range,
+      selectionRange: selectionRange,
+      detail: symbolDetail,
+      children: childSymbols
+    }
     symbolTypeTable[symbolType]->add(symInfo)
     symbolLineTable->add(symInfo)
   endfor
