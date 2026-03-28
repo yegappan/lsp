@@ -273,6 +273,8 @@ def OutlineShowSymbolDetail(lnum: number)
   var idx = util.Indexof(symbolTable, (_, v) => v.outlineLine == lnum)
   if idx != -1
     echo $'{symbolTable[idx].name}: {symbolTable[idx].detail}'
+  else
+    echo ''
   endif
 enddef
 
@@ -337,7 +339,7 @@ def SetOutlineBufferOptions()
   :setlocal undolevels=-1
   :setlocal shiftwidth=2
   :setlocal foldenable
-  :setlocal foldcolumn=4
+  :setlocal foldcolumn=1
   :setlocal foldlevel=4
   :setlocal foldmethod=indent
 enddef
