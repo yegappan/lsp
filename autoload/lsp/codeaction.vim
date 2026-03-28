@@ -63,6 +63,41 @@ export def HandleCodeAction(lspserver: dict<any>, selAction: dict<any>)
   endif
 enddef
 
+def SortCodeActions(actions: list<dict<any>>): list<dict<any>>
+  var ranked: list<dict<any>> = []
+
+  for i in actions->len()->range()
+    ranked->add({
+	index: i,
+	preferredRank: actions[i]->get('isPreferred', false) ? 0 : 1,
+	action: actions[i],
+      })
+  endfor
+
+  ranked->sort((a, b) => a.preferredRank == b.preferredRank
+	? a.index - b.index
+	: a.preferredRank - b.preferredRank)
+
+  return ranked->map((_, item) => item.action)
+enddef
+
+def ActionMenuText(act: dict<any>): string
+  var prefix: string = ''
+
+  if act->get('isPreferred', false)
+    prefix = '*'
+  endif
+  var kind: string = act->get('kind', '')
+  if kind != ''
+    prefix ..= $'[{kind}] '
+  endif
+
+  var title = act.title->substitute('\r\n', '\\r\\n', 'g')
+  title = title->substitute('\n', '\\n', 'g')
+
+  return $'{prefix}{title}'
+enddef
+
 # Process the list of code actions returned by the LSP server, ask the user to
 # choose one action from the list and then apply it.
 # If "query" is a number, then apply the corresponding action in the list.
@@ -79,6 +114,7 @@ export def ApplyCodeAction(lspserver: dict<any>, actionlist: list<dict<any>>, qu
   if opt.lspOptions.hideDisabledCodeActions
     actions = actions->filter((ix, act) => !act->has_key('disabled'))
   endif
+  actions = SortCodeActions(actions)
 
   if actions->empty()
     # no action can be performed
@@ -90,8 +126,7 @@ export def ApplyCodeAction(lspserver: dict<any>, actionlist: list<dict<any>>, qu
   var act: dict<any>
   for i in actions->len()->range()
     act = actions[i]
-    var t: string = act.title->substitute('\r\n', '\\r\\n', 'g')
-    t = t->substitute('\n', '\\n', 'g')
+    var t = ActionMenuText(act)
     text->add(printf(" %d. %s ", i + 1, t))
   endfor
 

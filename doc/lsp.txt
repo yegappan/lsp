@@ -513,6 +513,10 @@ these commands is provided later in this section.
 
 :LspCodeAction		Apply the code action supplied by the language server
 			to the diagnostic in the current line.
+:LspFixAll [query]	Apply source.fixAll code actions for the current file.
+:LspOrganizeImports [query]
+			Apply source.organizeImports code actions for the
+			current file.
 :LspCodeLens		Display all the code lens commands available for the
 			current file and apply the selected command.
 :LspDiag current	Display the diagnostic message for the current line.
@@ -1079,6 +1083,10 @@ Commands to modify, rename, or format your code using the language server.
 			When [query] is not given, you are prompted to select
 			an action (popup menu or |inputlist()| depending on
 			|lsp-opt-usePopupInCodeAction|).
+
+			Preferred actions are shown first.  Preferred actions
+			are prefixed with a "*".  The menu item includes the
+			action kind.
 
 			CodeAction edits are applied before any associated
 			command is executed.
