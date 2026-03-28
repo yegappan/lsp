@@ -287,6 +287,23 @@ export def CloseOutlineWindow()
   endif
 enddef
 
+# Outline window zoom (maximize or minimize)
+def ToggleOutlineZoom()
+  # Use the user-defined option or the current width as the 'normal' size
+  var normalWidth = opt.lspOptions.outlineWinSize
+  var currentWidth = winwidth(0)
+
+  # If currently at normal size (or smaller), zoom to max
+  if currentWidth <= normalWidth
+    w:lspOutlineWinWidth = currentWidth
+    vertical resize
+  else
+    # If already zoomed, restore to original or default size
+    var target = get(w:, 'lspOutlineWinWidth', normalWidth)
+    exe $'vertical resize {target}'
+  endif
+enddef
+
 def Open(cmdmods: string, winsize: number)
   var prevWinID: number = win_getid()
 
@@ -323,6 +340,7 @@ def Open(cmdmods: string, winsize: number)
   :nnoremap <silent> <buffer> <CR> <scriptcmd>OutlineJumpToSymbol()<CR>
   :nnoremap <silent> <buffer> p <scriptcmd>OutlineJumpToSymbol(true)<CR>
   :nnoremap <silent> <buffer> K <scriptcmd>OutlineShowSymbolDetail(line('.'))<CR>
+  :nnoremap <silent> <buffer> Z <scriptcmd>ToggleOutlineZoom()<CR>
   :setlocal nomodifiable
 
   # highlight all the symbol types

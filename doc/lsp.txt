@@ -3,7 +3,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: March 23 2026
+Last change: March 28 2026
 
 ==============================================================================
 CONTENTS                                                     *lsp-contents*
@@ -820,6 +820,8 @@ entire workspace.
 				  file window but keep the cursor in the
 				  outline window.
 			K	  show the details of the symbol under cursor
+			Z	  maximize or minimize (toggle) the outline
+				  window size.
 			q	  Close the outline window.
 
 			The current symbol is highlighted using the |Search|
