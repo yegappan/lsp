@@ -4,6 +4,7 @@ vim9script
 import '../autoload/lsp/hover.vim' as hover
 import '../autoload/lsp/buffer.vim' as buf
 import '../autoload/lsp/signature.vim' as signature
+import '../autoload/lsp/codeaction.vim' as codeaction
 
 source common.vim
 
@@ -913,6 +914,38 @@ def g:Test_LspCodeAction()
 	       execute('LspOrganizeImports')->split("\n")[0])
 
   :%bw!
+enddef
+
+# Test that code action menus display metadata badges and rank preferred
+# actions first.
+def g:Test_CodeActionMenuMetadata()
+  g:LspOptionsSet({usePopupInCodeAction: true})
+
+  var lspserver = {}
+  var actions = [
+    {
+      title: 'Apply fallback fix',
+      kind: 'quickfix',
+    },
+    {
+      title: 'Apply preferred fix',
+      kind: 'source.fixAll',
+      isPreferred: true,
+    }
+  ]
+
+  codeaction.ApplyCodeAction(lspserver, actions, '')
+
+  var popups = popup_list()
+  assert_equal(1, popups->len())
+  var bnr = winbufnr(popups[0])
+  assert_equal([
+    ' 1. *[source.fixAll] Apply preferred fix ',
+    ' 2. [quickfix] Apply fallback fix '
+  ], getbufline(bnr, 1, '$'))
+
+  popup_close(popups[0])
+  g:LspOptionsSet({usePopupInCodeAction: false})
 enddef
 
 # Test for :LspRename
