@@ -623,7 +623,7 @@ def ProcessDocSymbolTable(lspserver: dict<any>,
   for syminfo in docSymbolTable
     name = syminfo.name
     symbolType = SymbolKindToName(syminfo.kind)
-    r = syminfo.selectionRange
+    r = syminfo.range
     lspserver.decodeRange(bnr, r)
     symbolDetail = syminfo->get('detail', '')
     if !symbolTypeTable->has_key(symbolType)
