@@ -4,21 +4,24 @@ import './util.vim'
 import './options.vim' as opt
 
 # jump to a symbol selected in the outline window
-def OutlineJumpToSymbol()
+def OutlineJumpToSymbol(stayInOutline: bool = false)
   var lnum: number = line('.') - 1
-  if w:lspSymbols.lnumTable[lnum]->empty()
+
+  var entry = w:lspSymbols.lnumTable->get(lnum, {})
+  if entry->empty()
     return
   endif
 
-  var slnum: number = w:lspSymbols.lnumTable[lnum].lnum
-  var scol: number = w:lspSymbols.lnumTable[lnum].col
+  var slnum: number = entry.lnum
+  var scol: number = entry.col
   var fname: string = w:lspSymbols.filename
+  var outlineWinid = win_getid()
 
   # Highlight the selected symbol
   prop_remove({type: 'LspOutlineHighlight'})
   var col: number = getline('.')->match('\S') + 1
   prop_add(line('.'), col, {type: 'LspOutlineHighlight',
-			length: w:lspSymbols.lnumTable[lnum].name->len()})
+			length: entry.name->len()})
 
   # disable the outline window refresh
   skipRefresh = true
@@ -46,7 +49,20 @@ def OutlineJumpToSymbol()
   else
     wid->win_gotoid()
   endif
+
+  # Set the previous cursor location mark. Instead of using setpos(), m' is
+  # used so that the current location is added to the jump list.
+  :normal m'
+
+  # Jump to the symbol position
   [slnum, scol]->cursor()
+
+  # If in preview mode, jump back to the outline window
+  if stayInOutline
+    normal! zz
+    win_gotoid(outlineWinid)
+  endif
+
   skipRefresh = false
 enddef
 
@@ -266,7 +282,7 @@ def Open(cmdmods: string, winsize: number)
     size = opt.lspOptions.outlineWinSize
   endif
 
-  execute $'{mods} :{size}new LSP-Outline'
+  execute $'silent {mods} :{size}new LSP-Outline'
   :setlocal modifiable
   :setlocal noreadonly
   :silent! :%d _
@@ -274,6 +290,7 @@ def Open(cmdmods: string, winsize: number)
   :setlocal bufhidden=delete
   :setlocal noswapfile nobuflisted
   :setlocal nonumber norelativenumber fdc=0 nowrap winfixheight winfixwidth
+  :setlocal undolevels=-1
   :setlocal shiftwidth=2
   :setlocal foldenable
   :setlocal foldcolumn=4
@@ -281,7 +298,8 @@ def Open(cmdmods: string, winsize: number)
   :setlocal foldmethod=indent
   setline(1, ['# File Outline'])
   :nnoremap <silent> <buffer> q :quit<CR>
-  :nnoremap <silent> <buffer> <CR> :call <SID>OutlineJumpToSymbol()<CR>
+  :nnoremap <silent> <buffer> <CR> <scriptcmd>OutlineJumpToSymbol()<CR>
+  :nnoremap <silent> <buffer> p <scriptcmd>OutlineJumpToSymbol(true)<CR>
   :setlocal nomodifiable
 
   # highlight all the symbol types

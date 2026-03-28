@@ -816,6 +816,9 @@ entire workspace.
 				  window, that window is reused; otherwise the
 				  file is opened in the nearest normal buffer
 				  window, or a new split is created.
+			p	  Center the symbol (preview) in the source
+				  file window but keep the cursor in the
+				  outline window.
 			q	  Close the outline window.
 
 			The current symbol is highlighted using the |Search|
