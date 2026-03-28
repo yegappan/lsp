@@ -3,6 +3,36 @@ vim9script
 import './util.vim'
 import './options.vim' as opt
 
+# Open file "fname" in a suitable window.  If a window is already present, then
+# jump to it.  Otherwise open a new one.
+def OpenFileInWindow(fname: string)
+  # If the file is already opened in a window, jump to it. Otherwise open it
+  # in another window
+  var wid: number = fname->bufwinid()
+  if wid == -1
+    # Find a window showing a normal buffer and use it
+    for w in getwininfo()
+      if w.winid->getwinvar('&buftype')->empty()
+	wid = w.winid
+	wid->win_gotoid()
+	break
+      endif
+    endfor
+    if wid == -1
+      var symWinid: number = win_getid()
+      :rightbelow vnew
+      # retain the fixed symbol window width
+      var winsz = opt.lspOptions.outlineWinSize
+      win_execute(symWinid, $'vertical resize {winsz}')
+    endif
+
+    exe $'edit {fname}'
+  else
+    # Window already exists, just switch focus
+    wid->win_gotoid()
+  endif
+enddef
+
 # jump to a symbol selected in the outline window
 def OutlineJumpToSymbol(stayInOutline: bool = false)
   var lnum: number = line('.') - 1
@@ -27,31 +57,8 @@ def OutlineJumpToSymbol(stayInOutline: bool = false)
   skipRefresh = true
 
   try
-    # If the file is already opened in a window, jump to it. Otherwise open it
-    # in another window
-    var wid: number = fname->bufwinid()
-    if wid == -1
-      # Find a window showing a normal buffer and use it
-      for w in getwininfo()
-	if w.winid->getwinvar('&buftype')->empty()
-	  wid = w.winid
-	  wid->win_gotoid()
-	  break
-	endif
-      endfor
-      if wid == -1
-	var symWinid: number = win_getid()
-	:rightbelow vnew
-	# retain the fixed symbol window width
-	var winsz = opt.lspOptions.outlineWinSize
-	win_execute(symWinid, $'vertical resize {winsz}')
-      endif
-
-      exe $'edit {fname}'
-    else
-      # Window already exists, just switch focus
-      wid->win_gotoid()
-    endif
+    # Open the file
+    OpenFileInWindow(fname)
 
     # Set the previous cursor location mark. Instead of using setpos(), m' is
     # used so that the current location is added to the jump list.
@@ -174,6 +181,36 @@ export def UpdateOutlineWindow(fname: string,
   skipRefresh = false
 enddef
 
+# Search for the symbol corresponding to the line 'lnum' in the symbol table.
+# A symbol (e.g. a function) spans multiple lines.
+def FindSymbolForLine(symbolTable: list<dict<any>>, lnum: number): number
+  var left = 0
+  var right = symbolTable->len() - 1
+  var mid: number
+
+  # binary search
+  while left <= right
+    mid = (left + right) / 2
+    var r = symbolTable[mid].range
+    if lnum >= (r.start.line + 1) && lnum <= (r.end.line + 1)
+      # symbol found
+      return mid
+    endif
+    if lnum > (r.start.line + 1)
+      left = mid + 1
+    else
+      right = mid - 1
+    endif
+  endwhile
+
+  # symbol not found
+  if left > right
+    return -1
+  else
+    return mid
+  endif
+enddef
+
 def OutlineHighlightCurrentSymbol()
   var fname: string = expand('%')->fnamemodify(':p')
   if fname->empty() || &filetype->empty()
@@ -197,45 +234,31 @@ def OutlineHighlightCurrentSymbol()
   # line number to locate the symbol
   var lnum: number = line('.')
 
-  # Find the symbol for the current line number (binary search)
-  var left: number = 0
-  var right: number = symbolTable->len() - 1
-  var mid: number
-  while left <= right
-    mid = (left + right) / 2
-    var r = symbolTable[mid].range
-    if lnum >= (r.start.line + 1) && lnum <= (r.end.line + 1)
-      break
-    endif
-    if lnum > (r.start.line + 1)
-      left = mid + 1
-    else
-      right = mid - 1
-    endif
-  endwhile
+  # Find the symbol for the current line number
+  var symIdx: number = FindSymbolForLine(symbolTable, lnum)
 
   # clear the highlighting in the outline window
   var bnr: number = wid->winbufnr()
   prop_remove({bufnr: bnr, type: 'LspOutlineHighlight'})
 
-  if left > right
+  if symIdx == -1
     # symbol not found
     return
   endif
 
   # Highlight the selected symbol
+  var symbol: dict<any> = symbolTable[symIdx]
   var col: number =
-    bnr->getbufline(symbolTable[mid].outlineLine)->get(0, '')->match('\S') + 1
-  prop_add(symbolTable[mid].outlineLine, col,
-			{bufnr: bnr, type: 'LspOutlineHighlight',
-			length: symbolTable[mid].name->len()})
+    bnr->getbufline(symbol.outlineLine)->get(0, '')->match('\S') + 1
+  prop_add(symbol.outlineLine, col, {bufnr: bnr, type: 'LspOutlineHighlight',
+	   length: symbol.name->len()})
 
   # if the line is not visible, then scroll the outline window to make the
   # line visible
   var wininfo = wid->getwininfo()
-  if symbolTable[mid].outlineLine < wininfo[0].topline
-			|| symbolTable[mid].outlineLine > wininfo[0].botline
-    var cmd: string = $'call cursor({symbolTable[mid].outlineLine}, 1) | normal! z.'
+  if symbol.outlineLine < wininfo[0].topline
+      || symbol.outlineLine > wininfo[0].botline
+    var cmd: string = $'call cursor({symbol.outlineLine}, 1) | normal! z.'
     win_execute(wid, cmd)
   endif
 enddef
@@ -305,27 +328,8 @@ def ToggleOutlineZoom()
   endif
 enddef
 
-def Open(cmdmods: string, winsize: number)
-  var prevWinID: number = win_getid()
-
-  var mods = cmdmods
-  if mods->empty()
-    if opt.lspOptions.outlineOnRight
-      mods = ':vert :botright'
-    else
-      mods = ':vert :topleft'
-    endif
-  endif
-
-  var size = winsize
-  if size == 0
-    size = opt.lspOptions.outlineWinSize
-  endif
-
-  silent execute $'{mods} :{size}new LSP-Outline'
-  :setlocal modifiable
-  :setlocal noreadonly
-  deletebufline('', 1, '$')
+# Set options to make the outline buffer as a scratch buffer
+def SetOutlineBufferOptions()
   :setlocal buftype=nofile
   :setlocal bufhidden=delete
   :setlocal noswapfile nobuflisted
@@ -336,14 +340,19 @@ def Open(cmdmods: string, winsize: number)
   :setlocal foldcolumn=4
   :setlocal foldlevel=4
   :setlocal foldmethod=indent
-  setline(1, ['# File Outline'])
+enddef
+
+# Map keys usable in the outline buffer
+def SetupOutlineBufferMappings()
   :nnoremap <silent> <buffer> q :quit<CR>
   :nnoremap <silent> <buffer> <CR> <scriptcmd>OutlineJumpToSymbol()<CR>
   :nnoremap <silent> <buffer> p <scriptcmd>OutlineJumpToSymbol(true)<CR>
   :nnoremap <silent> <buffer> K <scriptcmd>OutlineShowSymbolDetail(line('.'))<CR>
   :nnoremap <silent> <buffer> Z <scriptcmd>ToggleOutlineZoom()<CR>
-  :setlocal nomodifiable
+enddef
 
+# Setup syntax and text properties in the outline buffer
+def SetupOutlineBufferSyntax()
   # highlight all the symbol types
   :syntax match LSPTitle  "^\s*[a-zA-Z]\+@$" contains=LSPTitleAt
   :execute ':syntax match LSPTitleAt contained "@"' .. (has('conceal') ? ' conceal' : '')
@@ -359,7 +368,10 @@ def Open(cmdmods: string, winsize: number)
     highlight: 'Search',
     override: true
   })
+enddef
 
+# Setup outline autocmds
+def SetupOutlineAutocmds()
   try
     autocmd_delete([{group: 'LSPOutline', event: '*'}])
   catch /E367:/
@@ -388,6 +400,39 @@ def Open(cmdmods: string, winsize: number)
 	      cmd: 'OutlineHighlightCurrentSymbol()'})
 
   autocmd_add(acmds)
+enddef
+
+def Open(cmdmods: string, winsize: number)
+  var prevWinID: number = win_getid()
+
+  var mods = cmdmods
+  if mods->empty()
+    if opt.lspOptions.outlineOnRight
+      mods = ':vert :botright'
+    else
+      mods = ':vert :topleft'
+    endif
+  endif
+
+  var size = winsize
+  if size == 0
+    size = opt.lspOptions.outlineWinSize
+  endif
+
+  silent execute $'{mods} :{size}new LSP-Outline'
+  :setlocal modifiable
+  :setlocal noreadonly
+  deletebufline('', 1, '$')
+
+  SetOutlineBufferOptions()
+  SetupOutlineBufferMappings()
+
+  setline(1, ['# File Outline'])
+  :setlocal nomodifiable
+
+  SetupOutlineBufferSyntax()
+
+  SetupOutlineAutocmds()
 
   if exists('#User#LspOutlineSetup')
     :doautocmd <nomodeline> User LspOutlineSetup
