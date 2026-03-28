@@ -230,6 +230,19 @@ def OutlineHighlightCurrentSymbol()
   endif
 enddef
 
+# Show the details of a symbol in the current line in the outline window
+def OutlineShowSymbolDetail(lnum: number)
+  var symbolTable: list<dict<any>> = w:lspSymbols.symbolsByLine
+  if symbolTable->empty()
+    return
+  endif
+
+  var idx = util.Indexof(symbolTable, (_, v) => v.outlineLine == lnum)
+  if idx != -1
+    echo $'{symbolTable[idx].name}: {symbolTable[idx].detail}'
+  endif
+enddef
+
 # when the outline window is closed, do the cleanup
 def OutlineCleanup()
   # Remove the outline autocommands
@@ -300,6 +313,7 @@ def Open(cmdmods: string, winsize: number)
   :nnoremap <silent> <buffer> q :quit<CR>
   :nnoremap <silent> <buffer> <CR> <scriptcmd>OutlineJumpToSymbol()<CR>
   :nnoremap <silent> <buffer> p <scriptcmd>OutlineJumpToSymbol(true)<CR>
+  :nnoremap <silent> <buffer> K <scriptcmd>OutlineShowSymbolDetail(line('.'))<CR>
   :setlocal nomodifiable
 
   # highlight all the symbol types

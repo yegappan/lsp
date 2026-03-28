@@ -819,6 +819,7 @@ entire workspace.
 			p	  Center the symbol (preview) in the source
 				  file window but keep the cursor in the
 				  outline window.
+			K	  show the details of the symbol under cursor
 			q	  Close the outline window.
 
 			The current symbol is highlighted using the |Search|
