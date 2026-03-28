@@ -26,7 +26,7 @@ export def BufLspServerRemove(bnr: number, lspserver: dict<any>)
   endif
 
   var servers: list<dict<any>> = bufnrToServers[bnr]
-  servers = servers->filter((key, srv) => srv.id != lspserver.id)
+  servers = servers->filter((_, srv) => srv.id != lspserver.id)
 
   if servers->empty()
     bufnrToServers->remove(bnr)
@@ -167,25 +167,26 @@ enddef
 # Returns an empty dict if the server is not found or is not ready.
 export def CurbufGetServerChecked(feature: string = null_string): dict<any>
   var fname: string = @%
-  if fname->empty() || &filetype->empty()
+  var ft = &filetype
+  if fname->empty() || ft->empty()
     return {}
   endif
 
   var lspserver: dict<any> = CurbufGetServer(feature)
   if lspserver->empty()
     if feature == null_string
-      util.ErrMsg($'Language server for "{&filetype}" file type is not found')
+      util.ErrMsg($'Language server for "{ft}" file type is not found')
     else
-      util.ErrMsg($'Language server for "{&filetype}" file type supporting "{feature}" feature is not found')
+      util.ErrMsg($'Language server for "{ft}" file type supporting "{feature}" feature is not found')
     endif
     return {}
   endif
   if !lspserver.running
-    util.ErrMsg($'Language server for "{&filetype}" file type is not running')
+    util.ErrMsg($'Language server for "{ft}" file type is not running')
     return {}
   endif
   if !lspserver.ready
-    util.ErrMsg($'Language server for "{&filetype}" file type is not ready')
+    util.ErrMsg($'Language server for "{ft}" file type is not ready')
     return {}
   endif
 
