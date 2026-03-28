@@ -49,12 +49,13 @@ def OutlineJumpToSymbol(stayInOutline: bool = false)
 
       exe $'edit {fname}'
     else
+      # Window already exists, just switch focus
       wid->win_gotoid()
     endif
 
     # Set the previous cursor location mark. Instead of using setpos(), m' is
     # used so that the current location is added to the jump list.
-    :normal m'
+    :normal! m'
 
     # Jump to the symbol position
     [slnum, scol]->cursor()
@@ -234,7 +235,7 @@ def OutlineHighlightCurrentSymbol()
   var wininfo = wid->getwininfo()
   if symbolTable[mid].outlineLine < wininfo[0].topline
 			|| symbolTable[mid].outlineLine > wininfo[0].botline
-    var cmd: string = $'call cursor({symbolTable[mid].outlineLine}, 1) | normal z.'
+    var cmd: string = $'call cursor({symbolTable[mid].outlineLine}, 1) | normal! z.'
     win_execute(wid, cmd)
   endif
 enddef
