@@ -465,12 +465,12 @@ def g:Test_LspTypeHier_multibyte()
   cursor(7, 42)
   :LspSuperTypeHierarchy
   call feedkeys("\<Down>\<CR>", 'xt')
-  assert_equal([4, 36], [line('.'), col('.')])
+  assert_equal([4, 42], [line('.'), col('.')])
 
   cursor(7, 42)
   :LspSuperTypeHierarchy
   call feedkeys("\<Down>\<Down>\<CR>", 'xt')
-  assert_equal([1, 36], [line('.'), col('.')])
+  assert_equal([1, 42], [line('.'), col('.')])
 
   :%bw!
 enddef

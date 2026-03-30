@@ -1425,6 +1425,7 @@ def InlayHintsShow(lspserver: dict<any>, bnr: number)
   })
 enddef
 
+# Recursively decode the parent/children type hierarchy items.
 def DecodeTypeHierarchy(lspserver: dict<any>, isSuper: bool, typeHier: dict<any>)
   if !lspserver.needOffsetEncoding
     return
@@ -1447,6 +1448,35 @@ def DecodeTypeHierarchy(lspserver: dict<any>, isSuper: bool, typeHier: dict<any>
   endif
 enddef
 
+# Recursively get all the parent/children type items of "typeHierItem" from
+# the language server.
+def GetTypeHierarchy(lspserver: dict<any>, typeHierItem: dict<any>, isSuper: bool)
+  var msg = ''
+  if isSuper
+    msg = 'typeHierarchy/supertypes'
+  else
+    msg = 'typeHierarchy/subtypes'
+  endif
+
+  var param: dict<any> = {}
+  param.item = typeHierItem
+
+  var reply = lspserver.rpc(msg, param)
+  if reply->empty() || reply.result->empty() || reply.result->type() != v:t_list
+    return
+  endif
+
+  if isSuper
+    typeHierItem.parents = reply.result
+  else
+    typeHierItem.children = reply.result
+  endif
+
+  for item in reply.result
+    GetTypeHierarchy(lspserver, item, isSuper)
+  endfor
+enddef
+
 # Request: "textDocument/typehierarchy"
 # Support the clangd version of type hierarchy retrieval method.
 # The method described in the LSP 3.17.0 standard is not supported as clangd
@@ -1458,24 +1488,37 @@ def TypeHierarchy(lspserver: dict<any>, direction: number)
     return
   endif
 
-  # interface TypeHierarchy
+  # interface TypeHierarchyPrepareParams
   #   interface TextDocumentPositionParams
   var param: dict<any>
   param = lspserver.getTextDocPosition(false)
-  # 0: children, 1: parent, 2: both
-  param.direction = direction
-  param.resolve = 5
-  var reply = lspserver.rpc('textDocument/typeHierarchy', param)
+  var reply = lspserver.rpc('textDocument/prepareTypeHierarchy', param)
   if reply->empty() || reply.result->empty()
     util.WarnMsg('No type hierarchy available')
     return
   endif
 
-  var isSuper = (direction == 1)
+  if reply.result->type() != v:t_list
+    util.ErrMsg('prepareTypeHierarchy response from the language server is not a List')
+    return
+  endif
 
-  DecodeTypeHierarchy(lspserver, isSuper, reply.result)
+  var typeHierItem = reply.result[0]
+  var isSuper: bool = (direction == 1)
 
-  typehier.ShowTypeHierarchy(lspserver, isSuper, reply.result)
+  GetTypeHierarchy(lspserver, typeHierItem, isSuper)
+
+  if isSuper && !typeHierItem->has_key('parents')
+    util.WarnMsg('No supertype hierarchy available')
+    return
+  elseif !isSuper && !typeHierItem->has_key('children')
+    util.WarnMsg('No subtype hierarchy available')
+    return
+  endif
+
+  DecodeTypeHierarchy(lspserver, isSuper, typeHierItem)
+
+  typehier.ShowTypeHierarchy(lspserver, isSuper, typeHierItem)
 enddef
 
 # Decode the ranges in "WorkspaceEdit"
