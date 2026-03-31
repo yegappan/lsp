@@ -216,7 +216,7 @@ enddef
 # interface TextDocumentEdit
 def ApplyTextDocumentEdit(textDocEdit: dict<any>)
   var bnr: number = util.LspUriToBufnr(textDocEdit.textDocument.uri)
-  if bnr == -1
+  if bnr <= 0
     util.ErrMsg($'Text Document edit, buffer {textDocEdit.textDocument.uri} is not found')
     return
   endif
