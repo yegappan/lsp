@@ -249,7 +249,7 @@ def FileDelete(deleteFile: dict<any>)
   var recursive: bool = opts->get('recursive', false)
   var ignoreIfNotExists: bool = opts->get('ignoreIfNotExists', true)
 
-  if !fname->filereadable() && ignoreIfNotExists
+  if !fname->filereadable() && !fname->isdirectory() && ignoreIfNotExists
     return
   endif
 
