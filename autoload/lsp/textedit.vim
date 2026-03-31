@@ -279,7 +279,8 @@ def FileRename(renameFile: dict<any>)
   var ignoreIfExists: bool = opts->get('ignoreIfExists', true)
 
   # LSP Spec: Overwrite wins over `ignoreIfExists`
-  if new_fname->filereadable() && ignoreIfExists && !overwrite
+  if (new_fname->filereadable() || new_fname->isdirectory()) &&
+      ignoreIfExists && !overwrite
     return
   endif
 
