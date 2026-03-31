@@ -231,6 +231,15 @@ def FileCreate(createFile: dict<any>)
   var ignoreIfExists: bool = opts->get('ignoreIfExists', true)
   var overwrite: bool = opts->get('overwrite', false)
 
+  # A file cannot be created at a path that is already a directory.
+  if fname->isdirectory()
+    if ignoreIfExists && !overwrite
+      return
+    endif
+    util.ErrMsg($'File create failed, {fname} is a directory')
+    return
+  endif
+
   # LSP Spec: Overwrite wins over `ignoreIfExists`
   if (fname->filereadable() || fname->isdirectory()) && ignoreIfExists && !overwrite
     return
@@ -272,8 +281,8 @@ def FileDelete(deleteFile: dict<any>)
   var status: number = fname->delete(flags)
   if status != 0
     util.ErrMsg($'File delete failed for {fname}')
-    return
   endif
+
   exe $'{bnr}bwipe!'
 enddef
 
@@ -293,7 +302,10 @@ def FileRename(renameFile: dict<any>)
     return
   endif
 
-  old_fname->rename(new_fname)
+  var status: number = old_fname->rename(new_fname)
+  if status != 0
+    util.ErrMsg($'File rename failed, {old_fname} to {new_fname}')
+  endif
 enddef
 
 # interface WorkspaceEdit
@@ -325,6 +337,7 @@ export def ApplyWorkspaceEdit(workspaceEdit: dict<any>)
     var bnr: number = util.LspUriToBufnr(uri)
     if bnr == 0
       # file is not present
+      util.ErrMsg($'Text edit, buffer {uri} is not found')
       continue
     endif
 
