@@ -232,7 +232,7 @@ def FileCreate(createFile: dict<any>)
   var overwrite: bool = opts->get('overwrite', false)
 
   # LSP Spec: Overwrite wins over `ignoreIfExists`
-  if fname->filereadable() && ignoreIfExists && !overwrite
+  if (fname->filereadable() || fname->isdirectory()) && ignoreIfExists && !overwrite
     return
   endif
 
