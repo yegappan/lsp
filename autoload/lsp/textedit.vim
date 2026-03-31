@@ -241,7 +241,7 @@ def FileCreate(createFile: dict<any>)
   endif
 
   # LSP Spec: Overwrite wins over `ignoreIfExists`
-  if (fname->filereadable() || fname->isdirectory()) && ignoreIfExists && !overwrite
+  if fname->filereadable() && ignoreIfExists && !overwrite
     return
   endif
 
