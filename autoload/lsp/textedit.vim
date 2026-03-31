@@ -248,8 +248,13 @@ def FileDelete(deleteFile: dict<any>)
   var opts: dict<bool> = deleteFile->get('options', {})
   var recursive: bool = opts->get('recursive', false)
   var ignoreIfNotExists: bool = opts->get('ignoreIfNotExists', true)
+  var fileExists: bool = fname->filereadable() || fname->isdirectory()
 
-  if !fname->filereadable() && !fname->isdirectory() && ignoreIfNotExists
+  if !fileExists
+    if ignoreIfNotExists
+      return
+    endif
+    util.ErrMsg($'File delete failed, {fname} does not exist')
     return
   endif
 
@@ -264,7 +269,11 @@ def FileDelete(deleteFile: dict<any>)
     flags = 'd'
   endif
   var bnr: number = fname->bufadd()
-  fname->delete(flags)
+  var status: number = fname->delete(flags)
+  if status != 0
+    util.ErrMsg($'File delete failed for {fname}')
+    return
+  endif
   exe $'{bnr}bwipe!'
 enddef
 
