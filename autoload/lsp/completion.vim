@@ -701,7 +701,10 @@ def LspCompleteDone(bnr: number)
     # Some language servers (e.g. typescript) delay the computation of the
     # additional text edits.  So try to resolve the completion item now to get
     # the text edits.
-    completionData = lspserver.resolveCompletion(completionData, true)
+    var resolvedData = lspserver.resolveCompletion(completionData, true)
+    if resolvedData->type() == v:t_dict
+      completionData = resolvedData
+    endif
   endif
   if !completionData->get('additionalTextEdits', {})->empty()
     textedit.ApplyTextEdits(bnr, completionData.additionalTextEdits)
