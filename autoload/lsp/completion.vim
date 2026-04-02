@@ -374,14 +374,22 @@ def CheckCompletionItemSel(label: string): bool
   if cInfo->empty() || !cInfo.pum_visible || cInfo.selected == -1
     return false
   endif
-  var selItem = cInfo.items->get(cInfo.selected, {})
-  if selItem->empty()
-      || selItem->type() != v:t_dict
-      || selItem.user_data->type() != v:t_dict
-      || selItem.user_data.label != label
+
+  if cInfo.selected >= cInfo.items->len()
     return false
   endif
-  return true
+
+  var selItem = cInfo.items[cInfo.selected]
+  if selItem->type() != v:t_dict
+    return false
+  endif
+
+  var userData = selItem->get('user_data', v:none)
+  if userData->type() != v:t_dict
+    return false
+  endif
+
+  return userData->get('label', '') ==# label
 enddef
 
 # Process the completion documentation
