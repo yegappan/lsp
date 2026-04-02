@@ -201,25 +201,37 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     if item->has_key('textEdit') &&
 	lspOpts.completionMatcherValue != opt.COMPLETIONMATCHER_FUZZY
       var start_charcol: number
+
       if !prefix->empty()
 	start_charcol = charidx(starttext, start_idx) + 1
       else
 	start_charcol = chcol
       endif
+
       var textEdit = item.textEdit
       var textEditRange: dict<any> = {}
-      if textEdit->has_key('range')
-	textEditRange = textEdit.range
-      elseif textEdit->has_key('insert')
-	textEditRange = textEdit.insert
+
+      if textEdit->type() == v:t_dict
+	if textEdit->has_key('range') && textEdit.range->type() == v:t_dict
+	  textEditRange = textEdit.range
+	elseif textEdit->has_key('insert') && textEdit.insert->type() == v:t_dict
+	  textEditRange = textEdit.insert
+	endif
       endif
-      var textEditStartCol =
-		util.GetCharIdxWithoutCompChar(bufnr(), textEditRange.start)
-      if textEditStartCol != start_charcol
-	var offset = start_charcol - textEditStartCol - 1
-	d.word = textEdit.newText[offset : ]
+
+      if textEdit->type() == v:t_dict
+	  && textEdit->has_key('newText')
+	  && textEditRange->has_key('start')
+	var textEditStartCol =
+	  util.GetCharIdxWithoutCompChar(bufnr(), textEditRange.start)
+	if textEditStartCol != start_charcol
+	  var offset = max([0, start_charcol - textEditStartCol - 1])
+	  d.word = textEdit.newText[offset : ]
+	else
+	  d.word = textEdit.newText
+	endif
       else
-	d.word = textEdit.newText
+	d.word = item->get('insertText', item.label)
       endif
     elseif item->has_key('insertText')
       d.word = item.insertText
