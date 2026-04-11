@@ -158,6 +158,39 @@ def AdjustCompletionTextIndent(text: string): string
   return lines->join("\n")
 enddef
 
+# Apply CompletionItem.labelDetails to popup fields.
+def ApplyCompletionItemLabelDetails(item: dict<any>, d: dict<any>)
+  var labelDetails = item->get('labelDetails', {})
+  if labelDetails->type() != v:t_dict || labelDetails->empty()
+    return
+  endif
+
+  var detailText = labelDetails->get('detail', v:none)
+  if detailText->type() == v:t_string
+    var detailLine = detailText->split("\n")[0]
+    if !detailLine->empty()
+      d.abbr ..= detailLine
+    endif
+  endif
+
+  var descText = labelDetails->get('description', v:none)
+  if descText->type() != v:t_string
+    return
+  endif
+
+  var descLine = descText->split("\n")[0]
+  if descLine->empty()
+    return
+  endif
+
+  var existingMenu = d->get('menu', v:none)
+  if existingMenu->type() == v:t_string && !existingMenu->empty()
+    d.menu = descLine .. ' | ' .. existingMenu
+  else
+    d.menu = descLine
+  endif
+enddef
+
 # Apply CompletionList.itemDefaults to a completion item.
 def ApplyCompletionItemDefaults(cItem: dict<any>, itemDefaults: dict<any>): dict<any>
   if itemDefaults->empty()
@@ -491,6 +524,8 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
 	endif
       endif
     endif
+
+    ApplyCompletionItemLabelDetails(item, d)
 
     # Score is used for sorting.
     d.score = item->get('sortText')

@@ -116,6 +116,43 @@ def g:Test_Completion_InsertTextMode_AsIs()
   :%bw!
 enddef
 
+# Regression test for CompletionItem.labelDetails rendering.
+def g:Test_Completion_LabelDetails_Rendering()
+  g:LspOptionsSet({condensedCompletionMenu: false})
+
+  silent! edit XCompletionLabelDetails.vim
+  setline(1, ['fo'])
+  cursor(1, 3)
+
+  var lspserver = {
+    name: 'test',
+    omniCompletePending: true,
+    completionLazyDoc: false,
+    completeItems: [],
+    completeItemsIsIncomplete: false,
+  }
+
+  var cItems = [{
+    label: 'foo',
+    labelDetails: {
+      detail: '(x: number)',
+      description: 'pkg.module',
+    },
+    detail: 'legacy detail',
+  }]
+
+  completion.CompletionReply(lspserver, cItems)
+
+  assert_false(lspserver.omniCompletePending)
+  assert_equal(1, lspserver.completeItems->len())
+
+  var item = lspserver.completeItems[0]
+  assert_equal('foo(x: number)', item.abbr)
+  assert_equal('pkg.module | legacy detail', item.menu)
+
+  :%bw!
+enddef
+
 # Only here to because the test runner needs it
 def g:StartLangServer(): bool
   return true
