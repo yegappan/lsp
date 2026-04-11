@@ -368,7 +368,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     items = cItems.items
     items = ApplyCompletionListItemDefaults(cItems, items)
     if opt.lspOptions.ignoreCompleteItemsIsIncomplete->index(lspserver.name) >= 0
-      lspserver.completeItemsIsIncomplete = v:false
+      lspserver.completeItemsIsIncomplete = false
     else
       lspserver.completeItemsIsIncomplete = cItems->get('isIncomplete', false)
     endif
@@ -736,6 +736,15 @@ def GetTriggerAttributes(lspserver: dict<any>): list<any>
   return [triggerKind, triggerChar]
 enddef
 
+# Retrigger completion for incomplete lists (CompletionTriggerKind = 3).
+def AdjustCompletionTriggerAttributes(lspserver: dict<any>, triggerKind: number,
+                                     triggerChar: string): list<any>
+  if triggerKind == 1 && lspserver->get('completeItemsIsIncomplete', false)
+    return [3, '']
+  endif
+
+  return [triggerKind, triggerChar]
+enddef
 
 # omni complete handler
 def g:LspOmniFunc(findstart: number, base: string): any
@@ -756,6 +765,9 @@ def g:LspOmniFunc(findstart: number, base: string): any
       # Override triggerKind if we want to complete anyway.
       triggerKind = 1
     endif
+
+    [triggerKind, triggerChar] =
+      AdjustCompletionTriggerAttributes(lspserver, triggerKind, triggerChar)
 
     # first send all the changes in the current buffer to the LSP server
     listener_flush()
@@ -827,6 +839,9 @@ export def LspComplete(force: bool = false)
   if triggerKind < 0 && !force
     return
   endif
+
+  [triggerKind, triggerChar] =
+    AdjustCompletionTriggerAttributes(lspserver, triggerKind, triggerChar)
 
   # first send all the changes in the current buffer to the LSP server
   listener_flush()

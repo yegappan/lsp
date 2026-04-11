@@ -2,6 +2,7 @@ vim9script
 # Unit tests for Vim Language Server Protocol (LSP) for various functionality 
 
 import '../autoload/lsp/completion.vim' as completion
+import '../autoload/lsp/buffer.vim' as buf
 
 # Test for no duplicates in helptags
 def g:Test_Helptags()
@@ -150,6 +151,65 @@ def g:Test_Completion_LabelDetails_Rendering()
   assert_equal('foo(x: number)', item.abbr)
   assert_equal('pkg.module | legacy detail', item.menu)
 
+  :%bw!
+enddef
+
+# Regression test for CompletionTriggerKind=3 retrigger on incomplete lists.
+def g:Test_Completion_RetriggerKind_IncompleteList()
+  silent! edit XCompletionRetriggerKind.vim
+  setline(1, ['foo'])
+  cursor(1, 4)
+
+  var calls: list<list<any>> = []
+  var lspserver = {
+    id: 9001,
+    name: 'test',
+    running: true,
+    ready: true,
+    isCompletionProvider: true,
+    completeItemsIsIncomplete: true,
+    features: {completion: true},
+    featureEnabled: (_) => true,
+    getCompletion: (kind: number, ch: string) => calls->add([kind, ch]),
+  }
+
+  buf.BufLspServerSet(bufnr(), lspserver)
+  completion.LspComplete()
+
+  assert_equal(1, calls->len())
+  assert_equal(3, calls[0][0])
+  assert_equal('', calls[0][1])
+
+  buf.BufLspServerRemove(bufnr(), lspserver)
+  :%bw!
+enddef
+
+def g:Test_Completion_TriggerKind_Initial()
+  silent! edit XCompletionTriggerKindInitial.vim
+  setline(1, ['foo'])
+  cursor(1, 4)
+
+  var calls: list<list<any>> = []
+  var lspserver = {
+    id: 9002,
+    name: 'test',
+    running: true,
+    ready: true,
+    isCompletionProvider: true,
+    completeItemsIsIncomplete: false,
+    features: {completion: true},
+    featureEnabled: (_) => true,
+    getCompletion: (kind: number, ch: string) => calls->add([kind, ch]),
+  }
+
+  buf.BufLspServerSet(bufnr(), lspserver)
+  completion.LspComplete()
+
+  assert_equal(1, calls->len())
+  assert_equal(1, calls[0][0])
+  assert_equal('', calls[0][1])
+
+  buf.BufLspServerRemove(bufnr(), lspserver)
   :%bw!
 enddef
 

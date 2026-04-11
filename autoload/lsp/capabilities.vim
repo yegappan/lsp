@@ -175,7 +175,7 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
   if lspserver.caps->has_key('codeActionProvider')
     if lspserver.caps.codeActionProvider->type() == v:t_bool
       lspserver.isCodeActionProvider = lspserver.caps.codeActionProvider
-      lspserver.isCodeActionResolveProvider = v:false
+      lspserver.isCodeActionResolveProvider = false
     else
       lspserver.isCodeActionProvider = true
       if lspserver.caps.codeActionProvider->type() == v:t_dict &&
@@ -186,7 +186,7 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
     endif
   else
     lspserver.isCodeActionProvider = false
-    lspserver.isCodeActionResolveProvider = v:false
+    lspserver.isCodeActionResolveProvider = false
   endif
 
   # codeLensProvider
