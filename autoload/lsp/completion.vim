@@ -185,7 +185,7 @@ def ApplyCompletionItemLabelDetails(item: dict<any>, d: dict<any>)
 
   var existingMenu = d->get('menu', v:none)
   if existingMenu->type() == v:t_string && !existingMenu->empty()
-    d.menu = descLine .. ' | ' .. existingMenu
+    d.menu = $'{descLine} | {existingMenu}'
   else
     d.menu = descLine
   endif
@@ -349,10 +349,261 @@ def CompletionFromBuffer(items: list<dict<any>>)
   endfor
 enddef
 
+# Honor CompletionItem.preselect by promoting the first matching item to the
+# front while preserving relative order for the rest.
+def PromotePreselectedCompletionItem(completeItems: list<dict<any>>)
+  if completeItems->len() <= 1
+    return
+  endif
+
+  var preselIdx = -1
+  for idx in range(completeItems->len())
+    var citem = completeItems[idx]
+    if !citem->has_key('user_data')
+      continue
+    endif
+
+    var userData = citem.user_data
+    if userData->type() == v:t_dict && userData->get('preselect', false)
+      preselIdx = idx
+      break
+    endif
+  endfor
+
+  if preselIdx > 0
+    completeItems->insert(completeItems->remove(preselIdx), 0)
+  endif
+enddef
+
+# Derive completion insert word and InsertReplace tail-delete length.
+def GetCompletionWordAndTailDelete(item: dict<any>, matcher: number,
+                                  prefix: string, starttext: string,
+                                  start_idx: number, chcol: number,
+                                  curLine: number): list<any>
+  var word = item->get('insertText', item->get('label', ''))
+  var tailDeleteChars = 0
+
+  # TODO: Add proper support for item.textEdit.newText and item.textEdit.range.
+  # Keep in mind that item.textEdit.range can start way before the typed
+  # keyword.
+  if !item->has_key('textEdit') || matcher == opt.COMPLETIONMATCHER_FUZZY
+    return [word, tailDeleteChars]
+  endif
+
+  var start_charcol: number
+  if !prefix->empty()
+    start_charcol = charidx(starttext, start_idx) + 1
+  else
+    start_charcol = chcol
+  endif
+
+  var textEdit = item.textEdit
+  if textEdit->type() != v:t_dict
+    return [word, tailDeleteChars]
+  endif
+
+  var textEditRange: dict<any> = {}
+  if textEdit->has_key('range') && textEdit.range->type() == v:t_dict
+    textEditRange = textEdit.range
+  elseif textEdit->has_key('insert') && textEdit.insert->type() == v:t_dict
+    textEditRange = textEdit.insert
+  endif
+
+  # For InsertReplaceEdit, remove the replace-only tail after accepting the
+  # completion item.
+  tailDeleteChars = GetInsertReplaceTailDeleteChars(bufnr(), item, curLine)
+
+  if textEdit->has_key('newText') && textEditRange->has_key('start')
+    var textEditStartCol =
+      util.GetCharIdxWithoutCompChar(bufnr(), textEditRange.start)
+    if textEditStartCol != start_charcol
+      var offset = max([0, start_charcol - textEditStartCol - 1])
+      word = textEdit.newText[offset : ]
+    else
+      word = textEdit.newText
+    endif
+  endif
+
+  return [word, tailDeleteChars]
+enddef
+
+# Return true when item passes prefix filtering for the configured matcher.
+def CompletionItemPrefixMatched(item: dict<any>, word: string, prefix: string,
+                               matcher: number): bool
+  if prefix->empty()
+    return true
+  endif
+
+  var filterText: string = item->get('filterText', word)
+  if matcher == opt.COMPLETIONMATCHER_ICASE
+    return filterText->tolower()->stridx(prefix) == 0
+  elseif matcher == opt.COMPLETIONMATCHER_FUZZY
+    return !matchfuzzy([filterText], prefix)->empty()
+  endif
+
+  return filterText->stridx(prefix) == 0
+enddef
+
+# Build one completion menu item. Returns {} when the item should be skipped.
+def BuildCompletionMenuItem(item: dict<any>, lspserver: dict<any>,
+                           lspOpts: dict<any>, matcher: number,
+                           shouldFilterByPrefix: bool, prefix: string,
+                           starttext: string, start_idx: number,
+                           chcol: number, curLine: number): dict<any>
+  var d: dict<any> = {}
+
+  var [word, insertReplaceTailDeleteChars] =
+    GetCompletionWordAndTailDelete(item, matcher, prefix, starttext,
+                                   start_idx, chcol, curLine)
+  d.word = word
+
+  var insertTextFormat = item->get('insertTextFormat', 1)
+  var insertTextMode = item->get('insertTextMode', 1)
+
+  if insertTextMode == 2 && insertTextFormat != 2
+    d.word = AdjustCompletionTextIndent(d.word)
+  endif
+
+  if insertTextFormat == 2
+    # snippet completion. Needs a snippet plugin to expand the snippet.
+    d.word = MakeValidWord(d.word)
+  elseif shouldFilterByPrefix
+    # Filter only for complete lists or when buffer completion is enabled.
+    if !CompletionItemPrefixMatched(item, d.word, prefix, matcher)
+      return {}
+    endif
+  endif
+
+  d.abbr = item.label
+  d.dup = 1
+
+  if matcher == opt.COMPLETIONMATCHER_ICASE
+    d.icase = 1
+  endif
+
+  if item->has_key('kind') && item.kind != null
+    # namespace CompletionItemKind
+    # map LSP kind to complete-item-kind
+    d.kind = LspCompleteItemKindChar(item.kind)
+  endif
+
+  if lspserver.completionLazyDoc
+    d.info = 'Lazy doc'
+  else
+    if item->has_key('detail') && !item.detail->empty()
+      # Solve a issue where if a server send a detail field with a "\n", on
+      # the menu will be everything joined with a "^@" separating it.
+      d.menu = item.detail->split("\n")[0]
+    endif
+    if item->has_key('documentation')
+      var itemDoc = item.documentation
+      if itemDoc->type() == v:t_string && !itemDoc->empty()
+        d.info = itemDoc
+      elseif itemDoc->type() == v:t_dict
+          && itemDoc.value->type() == v:t_string
+        d.info = itemDoc.value
+      endif
+    endif
+  endif
+
+  ApplyCompletionItemLabelDetails(item, d)
+
+  # Score is used for sorting.
+  d.score = item->get('sortText')
+  if d.score->empty()
+    d.score = item->get('label', '')
+  endif
+
+  d.user_data = item
+  if insertReplaceTailDeleteChars > 0
+    d.lsp_insertReplaceTailDeleteChars = insertReplaceTailDeleteChars
+  endif
+
+  # Condense completion menu items to single words (plus kind)
+  # Move all additional details to the info popup
+  # Caveat: LazyDoc will override moved details!
+  if lspOpts.condensedCompletionMenu
+    const SEP = (s) => empty(s) ? "" : "\n- - -\n"
+    var infoText = ''
+    if d->has_key('abbr') && len(d.abbr) > len(d.word)
+      infoText ..= SEP(infoText) .. '    ' .. d.abbr
+      d.abbr = d.word
+    endif
+    if d->has_key('menu') && !empty(d.menu)
+      infoText ..= SEP(infoText) .. '    ' .. d.menu
+      d.menu = ''
+    endif
+    if !lspserver.completionLazyDoc && !empty(infoText)
+      d.info = infoText .. (d->has_key('info') ? SEP(infoText) .. d.info : '')
+    endif
+  endif
+
+  return d
+enddef
+
+# Normalize completion response payload to a completion-item list and update
+# the server incomplete-list state.
+def GetCompletionSourceItems(lspserver: dict<any>, cItems: any): list<dict<any>>
+  lspserver.completeItemsIsIncomplete = false
+
+  if cItems->type() == v:t_list
+    return cItems
+  endif
+
+  var items = ApplyCompletionListItemDefaults(cItems, cItems.items)
+  if opt.lspOptions.ignoreCompleteItemsIsIncomplete->index(lspserver.name) >= 0
+    lspserver.completeItemsIsIncomplete = false
+  else
+    lspserver.completeItemsIsIncomplete = cItems->get('isIncomplete', false)
+  endif
+
+  return items
+enddef
+
+# Sort and apply server preselect hint.
+def FinalizeCompletionItems(completeItems: list<dict<any>>, matcher: number)
+  if matcher != opt.COMPLETIONMATCHER_FUZZY
+    # Lexographical sort (case-insensitive).
+    completeItems->sort((a, b) =>
+      a.score == b.score ? 0 : a.score >? b.score ? 1 : -1)
+  endif
+
+  PromotePreselectedCompletionItem(completeItems)
+enddef
+
+# Send completion items either directly to popup (autoComplete) or to omnifunc
+# state cache.
+def DispatchCompletionItems(lspserver: dict<any>, completeItems: list<dict<any>>,
+                           start_col: number, autoComplete: bool)
+  if autoComplete && !lspserver.omniCompletePending
+    if completeItems->empty()
+      # no matches
+      return
+    endif
+
+    var m = mode()
+    if m != 'i' && m != 'R' && m != 'Rv'
+      # If not in insert or replace mode, then don't start the completion
+      return
+    endif
+
+    if completeItems->len() == 1
+	&& getline('.')->matchstr($'\C{completeItems[0].word}\>') != ''
+      # only one complete match. No need to show the completion popup
+      return
+    endif
+
+    completeItems->complete(start_col)
+    return
+  endif
+
+  lspserver.completeItems = completeItems
+  lspserver.omniCompletePending = false
+enddef
+
 # process the 'textDocument/completion' reply from the LSP server
 # Result: CompletionItem[] | CompletionList | null
 export def CompletionReply(lspserver: dict<any>, cItems: any)
-  lspserver.completeItemsIsIncomplete = false
   if cItems->empty()
     if lspserver.omniCompletePending
       lspserver.completeItems = []
@@ -361,18 +612,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     return
   endif
 
-  var items: list<dict<any>>
-  if cItems->type() == v:t_list
-    items = cItems
-  else
-    items = cItems.items
-    items = ApplyCompletionListItemDefaults(cItems, items)
-    if opt.lspOptions.ignoreCompleteItemsIsIncomplete->index(lspserver.name) >= 0
-      lspserver.completeItemsIsIncomplete = false
-    else
-      lspserver.completeItemsIsIncomplete = cItems->get('isIncomplete', false)
-    endif
-  endif
+  var items = GetCompletionSourceItems(lspserver, cItems)
 
   var lspOpts = opt.lspOptions
 
@@ -396,227 +636,41 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     CompletionFromBuffer(items)
   endif
 
+  var matcher = lspOpts.completionMatcherValue
+  var shouldFilterByPrefix =
+    !lspserver.completeItemsIsIncomplete || lspOpts.useBufferCompletion
+
   var completeItems: list<dict<any>> = []
-  var itemsUsed: list<string> = []
+  var seenItemKeys: dict<bool> = {}
   var curLine = line('.') - 1
   for item in items
-    var d: dict<any> = {}
-    var insertReplaceTailDeleteChars = 0
-
-    # TODO: Add proper support for item.textEdit.newText and
-    # item.textEdit.range.  Keep in mind that item.textEdit.range can start
-    # way before the typed keyword.
-    if item->has_key('textEdit') &&
-	lspOpts.completionMatcherValue != opt.COMPLETIONMATCHER_FUZZY
-      var start_charcol: number
-
-      if !prefix->empty()
-	start_charcol = charidx(starttext, start_idx) + 1
-      else
-	start_charcol = chcol
-      endif
-
-      var textEdit = item.textEdit
-      var textEditRange: dict<any> = {}
-
-      if textEdit->type() == v:t_dict
-	if textEdit->has_key('range') && textEdit.range->type() == v:t_dict
-	  textEditRange = textEdit.range
-	elseif textEdit->has_key('insert') && textEdit.insert->type() == v:t_dict
-	  textEditRange = textEdit.insert
-	endif
-
-	# For InsertReplaceEdit, remove the replace-only tail after accepting
-	# the completion item.
-	insertReplaceTailDeleteChars =
-	  GetInsertReplaceTailDeleteChars(bufnr(), item, curLine)
-      endif
-
-      if textEdit->type() == v:t_dict
-	  && textEdit->has_key('newText')
-	  && textEditRange->has_key('start')
-	var textEditStartCol =
-	  util.GetCharIdxWithoutCompChar(bufnr(), textEditRange.start)
-	if textEditStartCol != start_charcol
-	  var offset = max([0, start_charcol - textEditStartCol - 1])
-	  d.word = textEdit.newText[offset : ]
-	else
-	  d.word = textEdit.newText
-	endif
-      else
-	d.word = item->get('insertText', item.label)
-      endif
-    elseif item->has_key('insertText')
-      d.word = item.insertText
-    else
-      d.word = item.label
-    endif
-
-    var insertTextFormat = item->get('insertTextFormat', 1)
-    var insertTextMode = item->get('insertTextMode', 1)
-
-    if insertTextMode == 2 && insertTextFormat != 2
-      d.word = AdjustCompletionTextIndent(d.word)
-    endif
-
-    if insertTextFormat == 2
-      # snippet completion.  Needs a snippet plugin to expand the snippet.
-      # Remove all the snippet placeholders
-      d.word = MakeValidWord(d.word)
-    elseif !lspserver.completeItemsIsIncomplete || lspOpts.useBufferCompletion
-      # Filter items only when "isIncomplete" is set (otherwise server would
-      #   have done the filtering) or when buffer completion is enabled
-
-      # plain text completion
-      if !prefix->empty()
-	# If the completion item text doesn't start with the current (case
-	# ignored) keyword prefix, skip it.
-	var filterText: string = item->get('filterText', d.word)
-	if lspOpts.completionMatcherValue == opt.COMPLETIONMATCHER_ICASE
-	  if filterText->tolower()->stridx(prefix) != 0
-	    continue
-	  endif
-	# If the completion item text doesn't fuzzy match with the current
-	# keyword prefix, skip it.
-	elseif lspOpts.completionMatcherValue == opt.COMPLETIONMATCHER_FUZZY
-	  if matchfuzzy([filterText], prefix)->empty()
-	    continue
-	  endif
-	# If the completion item text doesn't start with the current keyword
-	# prefix, skip it.
-	else
-	  if filterText->stridx(prefix) != 0
-	    continue
-	  endif
-	endif
-      endif
-    endif
-
-    d.abbr = item.label
-    d.dup = 1
-
-    if lspOpts.completionMatcherValue == opt.COMPLETIONMATCHER_ICASE
-      d.icase = 1
-    endif
-
-    if item->has_key('kind') && item.kind != null
-      # namespace CompletionItemKind
-      # map LSP kind to complete-item-kind
-      d.kind = LspCompleteItemKindChar(item.kind)
-    endif
-
-    if lspserver.completionLazyDoc
-      d.info = 'Lazy doc'
-    else
-      if item->has_key('detail') && !item.detail->empty()
-	# Solve a issue where if a server send a detail field
-	# with a "\n", on the menu will be everything joined with
-	# a "^@" separating it. (example: clangd)
-	d.menu = item.detail->split("\n")[0]
-      endif
-      if item->has_key('documentation')
-	var itemDoc = item.documentation
-	if itemDoc->type() == v:t_string && !itemDoc->empty()
-	  d.info = itemDoc
-	elseif itemDoc->type() == v:t_dict
-	    && itemDoc.value->type() == v:t_string
-	  d.info = itemDoc.value
-	endif
-      endif
-    endif
-
-    ApplyCompletionItemLabelDetails(item, d)
-
-    # Score is used for sorting.
-    d.score = item->get('sortText')
-    if d.score->empty()
-      d.score = item->get('label', '')
+    var d = BuildCompletionMenuItem(item, lspserver, lspOpts, matcher,
+                                    shouldFilterByPrefix, prefix,
+                                    starttext, start_idx, chcol, curLine)
+    if d->empty()
+      continue
     endif
 
     # Dont include duplicate items
-    if lspOpts.filterCompletionDuplicates       
+    if lspOpts.filterCompletionDuplicates
       var key = d->get('word', '') ..
                 d->get('info', '') ..
                 d->get('kind', '') ..
                 d->get('score', '') ..
                 d->get('abbr', '') ..
                 d->get('dup', '')
-      if index(itemsUsed, key) != -1            
-        continue                                                                          
-      endif                                                                      
-      add(itemsUsed, key)                       
-    endif  
-
-    d.user_data = item
-    if insertReplaceTailDeleteChars > 0
-      d.lsp_insertReplaceTailDeleteChars = insertReplaceTailDeleteChars
-    endif
-
-    # Condense completion menu items to single words (plus kind)
-    # Move all additional details to the info popup
-    # Caveat: LazyDoc will override moved details!
-    if lspOpts.condensedCompletionMenu
-      const SEP = (s) => empty(s) ? "" : "\n- - -\n"
-      var infoText = ''
-      if d->has_key('abbr') && len(d.abbr) > len(d.word)
-        infoText ..= SEP(infoText) .. '    ' .. d.abbr
-        d.abbr = d.word
+      if seenItemKeys->has_key(key)
+        continue
       endif
-      if d->has_key('menu') && !empty(d.menu)
-        infoText ..= SEP(infoText) .. '    ' .. d.menu
-        d.menu = ''
-      endif
-      if !lspserver.completionLazyDoc && !empty(infoText)
-        d.info = infoText .. (d->has_key('info') ? SEP(infoText) .. d.info : '')
-      endif
+      seenItemKeys[key] = true
     endif
 
     completeItems->add(d)
   endfor
 
-  if lspOpts.completionMatcherValue != opt.COMPLETIONMATCHER_FUZZY
-    # Lexographical sort (case-insensitive).
-    completeItems->sort((a, b) =>
-      a.score == b.score ? 0 : a.score >? b.score ? 1 : -1)
-  endif
-
-  # Honor server preselect hint: move the preselected item to the front so it
-  # becomes the initial selection when completeopt does not include "noselect".
-  var preselIdx = -1
-  for idx in range(completeItems->len())
-    if completeItems[idx].user_data->type() == v:t_dict
-        && completeItems[idx].user_data->get('preselect', false)
-      preselIdx = idx
-      break
-    endif
-  endfor
-  if preselIdx > 0
-    completeItems->insert(completeItems->remove(preselIdx), 0)
-  endif
-
-  if lspOpts.autoComplete && !lspserver.omniCompletePending
-    if completeItems->empty()
-      # no matches
-      return
-    endif
-
-    var m = mode()
-    if m != 'i' && m != 'R' && m != 'Rv'
-      # If not in insert or replace mode, then don't start the completion
-      return
-    endif
-
-    if completeItems->len() == 1
-	&& getline('.')->matchstr($'\C{completeItems[0].word}\>') != ''
-      # only one complete match. No need to show the completion popup
-      return
-    endif
-
-    completeItems->complete(start_col)
-  else
-    lspserver.completeItems = completeItems
-    lspserver.omniCompletePending = false
-  endif
+  FinalizeCompletionItems(completeItems, matcher)
+  DispatchCompletionItems(lspserver, completeItems, start_col,
+                          lspOpts.autoComplete)
 enddef
 
 # Check if completion item is selected
