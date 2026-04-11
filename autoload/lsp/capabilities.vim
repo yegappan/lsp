@@ -471,7 +471,7 @@ export def GetClientCaps(): dict<any>
 	    properties: ['additionalTextEdits', 'detail', 'documentation']
 	  },
 	  snippetSupport: opt.lspOptions.snippetSupport,
-	  insertReplaceSupport: false
+	  insertReplaceSupport: true
 	},
 	completionItemKind: {
 	  valueSet: range(1, 25)

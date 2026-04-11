@@ -115,6 +115,73 @@ def MakeValidWord(str_arg: string): string
   return valid
 enddef
 
+# For InsertReplaceEdit, compute the replace-only tail length that should be
+# deleted after accepting the completion item.
+def GetInsertReplaceTailDeleteChars(bnr: number, cItem: dict<any>, curLine: number): number
+  if !cItem->has_key('textEdit') || cItem.textEdit->type() != v:t_dict
+    return 0
+  endif
+
+  var textEdit = cItem.textEdit
+  var insert = textEdit->get('insert', {})
+  var replace = textEdit->get('replace', {})
+
+  # Validate structure of insert and replace edit objects
+  if insert->type() != v:t_dict || replace->type() != v:t_dict
+    return 0
+  endif
+
+  var insertEnd = insert->get('end', {})
+  var replaceEnd = replace->get('end', {})
+
+  if insertEnd->type() != v:t_dict || replaceEnd->type() != v:t_dict
+    return 0
+  endif
+
+  # Validate that both edits are on the same line as the cursor
+  if insertEnd->get('line', -1) != curLine || replaceEnd->get('line', -1) != curLine
+    return 0
+  endif
+
+  var insertEndCol = util.GetCharIdxWithoutCompChar(bnr, insertEnd)
+  var replaceEndCol = util.GetCharIdxWithoutCompChar(bnr, replaceEnd)
+  return max([0, replaceEndCol - insertEndCol])
+enddef
+
+# Apply the replace-only tail deletion for an InsertReplaceEdit completion.
+def ApplyInsertReplaceTailDelete(bnr: number, tailDeleteChars: number)
+  if tailDeleteChars <= 0
+    return
+  endif
+
+  var ltext = getline('.')
+  var lnum = line('.') - 1
+  var curCharCol = charcol('.') - 1
+
+  # Only delete identifier tail chars. Do not remove punctuation or
+  # following text (for example: ': 0,').
+  var substr = ltext->strcharpart(curCharCol)
+  var identTailLen = max([0, matchend(substr, '^\k\+')])
+  var deleteLen = min([tailDeleteChars, identTailLen])
+  if deleteLen <= 0
+    return
+  endif
+
+  var endCharCol = min([ltext->strcharlen(), curCharCol + deleteLen])
+  var startChar = util.GetCharIdxWithCompChar(ltext, curCharCol)
+  var endChar = util.GetCharIdxWithCompChar(ltext, endCharCol)
+
+  var editRange = {
+    start: {line: lnum, character: startChar},
+    end: {line: lnum, character: endChar},
+  }
+
+  textedit.ApplyTextEdits(bnr, [{
+    range: editRange,
+    newText: '',
+  }])
+enddef
+
 # add completion from current buf
 def CompletionFromBuffer(items: list<dict<any>>)
   var words = {}
@@ -192,8 +259,10 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
 
   var completeItems: list<dict<any>> = []
   var itemsUsed: list<string> = []
+  var curLine = line('.') - 1
   for item in items
     var d: dict<any> = {}
+    var insertReplaceTailDeleteChars = 0
 
     # TODO: Add proper support for item.textEdit.newText and
     # item.textEdit.range.  Keep in mind that item.textEdit.range can start
@@ -217,6 +286,11 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
 	elseif textEdit->has_key('insert') && textEdit.insert->type() == v:t_dict
 	  textEditRange = textEdit.insert
 	endif
+
+	# For InsertReplaceEdit, remove the replace-only tail after accepting
+	# the completion item.
+	insertReplaceTailDeleteChars =
+	  GetInsertReplaceTailDeleteChars(bufnr(), item, curLine)
       endif
 
       if textEdit->type() == v:t_dict
@@ -326,6 +400,9 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     endif  
 
     d.user_data = item
+    if insertReplaceTailDeleteChars > 0
+      d.lsp_insertReplaceTailDeleteChars = insertReplaceTailDeleteChars
+    endif
 
     # Condense completion menu items to single words (plus kind)
     # Move all additional details to the info popup
@@ -718,6 +795,14 @@ def LspCompleteDone(bnr: number)
       completionData = resolvedData
     endif
   endif
+
+  var tailDeleteChars = v:completed_item->get('lsp_insertReplaceTailDeleteChars', 0)
+  if tailDeleteChars <= 0
+    tailDeleteChars =
+      GetInsertReplaceTailDeleteChars(bnr, completionData, line('.') - 1)
+  endif
+  ApplyInsertReplaceTailDelete(bnr, tailDeleteChars)
+
   if !completionData->get('additionalTextEdits', {})->empty()
     textedit.ApplyTextEdits(bnr, completionData.additionalTextEdits)
   endif

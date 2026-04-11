@@ -5,6 +5,9 @@ source common.vim
 source term_util.vim
 source screendump.vim
 
+var lspOpts = {autoComplete: false}
+g:LspOptionsSet(lspOpts)
+
 var lspServers = [{
       filetype: ['rust'],
       path: exepath('rust-analyzer'),
@@ -111,6 +114,44 @@ def g:Test_LspCodeAction_RenameFile()
     assert_true(filereadable('foobaz.rs'))
     :%bw!
     delete('foobaz.rs')
+  finally
+    :cd ../..
+  endtry
+enddef
+
+# Test for omni completion with replace-insert-edit field
+# This tests the handling of InsertReplaceEdit where the replace range
+# is larger than the insert range
+def g:Test_OmniComplete_ReplaceInsertEdit()
+  :cd xrust_tests/src
+  try
+    silent! edit ./main.rs
+    deletebufline('%', 1, '$')
+    g:WaitForServerFileLoad(0)
+    var lines: list<string> =<< trim END
+      struct TestData {
+          field_name: i32,
+          another_field: String,
+      }
+
+      fn main() {
+          let data = TestData {
+              field: 0,
+              another_field: String::new(),
+          };
+      }
+    END
+    setline(1, lines)
+    g:WaitForServerFileLoad(2)
+    redraw!
+
+    # Position cursor at "field:" on line 10 and trigger completion
+    cursor(8, 10)
+    feedkeys("a\<C-X>\<C-O>", 'xt')
+    # After completion, should have "field_name:" which demonstrates the
+    # replace-insert-edit handling
+    g:WaitForAssert(() => assert_match('^\s\+field_name: 0,', getline(8)))
+    :%bw!
   finally
     :cd ../..
   endtry
