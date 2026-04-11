@@ -57,6 +57,65 @@ def g:Test_CompletionList_ItemDefaults_EditRange()
   :%bw!
 enddef
 
+# Regression test for CompletionItem.insertTextMode handling.
+def g:Test_Completion_InsertTextMode_AdjustIndentation()
+  silent! edit XCompletionInsertTextMode.vim
+  setline(1, ['    f'])
+  cursor(1, 6)
+
+  var lspserver = {
+    name: 'test',
+    omniCompletePending: true,
+    completionLazyDoc: false,
+    completeItems: [],
+    completeItemsIsIncomplete: false,
+  }
+
+  var cItems = [{
+    label: 'foo',
+    insertText: "foo\n  bar",
+    insertTextFormat: 1,
+    insertTextMode: 2,
+  }]
+
+  completion.CompletionReply(lspserver, cItems)
+
+  assert_false(lspserver.omniCompletePending)
+  assert_equal(1, lspserver.completeItems->len())
+  assert_equal("foo\n    bar", lspserver.completeItems[0].word)
+
+  :%bw!
+enddef
+
+def g:Test_Completion_InsertTextMode_AsIs()
+  silent! edit XCompletionInsertTextModeAsIs.vim
+  setline(1, ['    f'])
+  cursor(1, 6)
+
+  var lspserver = {
+    name: 'test',
+    omniCompletePending: true,
+    completionLazyDoc: false,
+    completeItems: [],
+    completeItemsIsIncomplete: false,
+  }
+
+  var cItems = [{
+    label: 'foo',
+    insertText: "foo\n  bar",
+    insertTextFormat: 1,
+    insertTextMode: 1,
+  }]
+
+  completion.CompletionReply(lspserver, cItems)
+
+  assert_false(lspserver.omniCompletePending)
+  assert_equal(1, lspserver.completeItems->len())
+  assert_equal("foo\n  bar", lspserver.completeItems[0].word)
+
+  :%bw!
+enddef
+
 # Only here to because the test runner needs it
 def g:StartLangServer(): bool
   return true

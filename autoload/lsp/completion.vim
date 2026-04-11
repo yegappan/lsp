@@ -115,6 +115,49 @@ def MakeValidWord(str_arg: string): string
   return valid
 enddef
 
+# Apply InsertTextMode.adjustIndentation (2) for plain-text completion text.
+def AdjustCompletionTextIndent(text: string): string
+  if text->stridx("\n") < 0
+    return text
+  endif
+
+  var lines = text->split("\n", true)
+  var lastIdx = lines->len() - 1
+  if lastIdx <= 0
+    return text
+  endif
+
+  var baseIndent = getline('.')->matchstr('^\s*')
+  var commonIndentLen = -1
+
+  # Compute common indentation for all non-empty lines after the first line.
+  for idx in range(1, lastIdx)
+    var lineText = lines[idx]
+    if lineText->empty()
+      continue
+    endif
+
+    var indentLen = lineText->matchstr('^\s*')->len()
+    if commonIndentLen < 0 || indentLen < commonIndentLen
+      commonIndentLen = indentLen
+    endif
+  endfor
+
+  if commonIndentLen < 0
+    commonIndentLen = 0
+  endif
+
+  for idx in range(1, lastIdx)
+    var lineText = lines[idx]
+    if lineText->empty()
+      continue
+    endif
+    lines[idx] = baseIndent .. lineText[commonIndentLen : ]
+  endfor
+
+  return lines->join("\n")
+enddef
+
 # Apply CompletionList.itemDefaults to a completion item.
 def ApplyCompletionItemDefaults(cItem: dict<any>, itemDefaults: dict<any>): dict<any>
   if itemDefaults->empty()
@@ -376,7 +419,14 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
       d.word = item.label
     endif
 
-    if item->get('insertTextFormat', 1) == 2
+    var insertTextFormat = item->get('insertTextFormat', 1)
+    var insertTextMode = item->get('insertTextMode', 1)
+
+    if insertTextMode == 2 && insertTextFormat != 2
+      d.word = AdjustCompletionTextIndent(d.word)
+    endif
+
+    if insertTextFormat == 2
       # snippet completion.  Needs a snippet plugin to expand the snippet.
       # Remove all the snippet placeholders
       d.word = MakeValidWord(d.word)
