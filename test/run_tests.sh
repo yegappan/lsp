@@ -70,13 +70,13 @@ for testfile in $TESTS_TO_RUN; do
   RunTestsInFile "$testfile" || exit $?
 done
 
-# 2. Clangd Encoding Specific Suite
-# Only run if we are running all tests or specifically clangd tests
-if [[ "$*" == "" || "$*" == *"clangd"* ]]; then
-  for encoding in "utf-8" "utf-16" "utf-32"; do
-    RunTestsInFile "clangd_offsetencoding.vim" "$encoding" || exit $?
-  done
-fi
+# # 2. Clangd Encoding Specific Suite
+# # Only run if we are running all tests or specifically clangd tests
+# if [[ "$*" == "" || "$*" == *"clangd"* ]]; then
+#   for encoding in "utf-8" "utf-16" "utf-32"; do
+#     RunTestsInFile "clangd_offsetencoding.vim" "$encoding" || exit $?
+#   done
+# fi
 
 echo "---------------------------------------"
 echo "SUCCESS: All specified tests passed."

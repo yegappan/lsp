@@ -115,6 +115,68 @@ def MakeValidWord(str_arg: string): string
   return valid
 enddef
 
+# Apply CompletionList.itemDefaults to a completion item.
+def ApplyCompletionItemDefaults(cItem: dict<any>, itemDefaults: dict<any>): dict<any>
+  if itemDefaults->empty()
+    return cItem
+  endif
+
+  var item = cItem->copy()
+  for [key, val] in itemDefaults->items()
+    if key == 'editRange'
+      # Skip if item already has textEdit or editRange is invalid
+      if item->has_key('textEdit') || val->type() != v:t_dict
+        continue
+      endif
+
+      # Extract insertion text from item (prefer insertText, fallback to
+      # label)
+      var newText = item->get('insertText', item->get('label', ''))
+      if newText->type() != v:t_string
+        continue
+      endif
+
+      # Materialize textEdit from editRange (supports Range or
+      # InsertReplaceEdit)
+      if val->has_key('start') && val->has_key('end')
+        item.textEdit = {newText: newText, range: val}
+      elseif val->has_key('insert') && val->has_key('replace')
+        item.textEdit = {
+          newText: newText,
+          insert: val.insert,
+          replace: val.replace,
+        }
+      endif
+      continue
+    endif
+
+    # Apply default field if item doesn't already define it
+    if !item->has_key(key)
+      item[key] = val
+    endif
+  endfor
+
+  return item
+enddef
+
+# Apply CompletionList.itemDefaults to all completion items.
+def ApplyCompletionListItemDefaults(cItems: any, items: list<dict<any>>): list<dict<any>>
+  # Validate cItems is a dict with itemDefaults key
+  if cItems->type() != v:t_dict || !cItems->has_key('itemDefaults')
+    return items
+  endif
+
+  var itemDefaults = cItems.itemDefaults
+
+  # Skip if itemDefaults is invalid or empty
+  if itemDefaults->type() != v:t_dict || itemDefaults->empty()
+    return items
+  endif
+
+  # Apply defaults to each item using functional map
+  return items->map((_, item) => ApplyCompletionItemDefaults(item, itemDefaults))
+enddef
+
 # For InsertReplaceEdit, compute the replace-only tail length that should be
 # deleted after accepting the completion item.
 def GetInsertReplaceTailDeleteChars(bnr: number, cItem: dict<any>, curLine: number): number
@@ -228,6 +290,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
     items = cItems
   else
     items = cItems.items
+    items = ApplyCompletionListItemDefaults(cItems, items)
     if opt.lspOptions.ignoreCompleteItemsIsIncomplete->index(lspserver.name) >= 0
       lspserver.completeItemsIsIncomplete = v:false
     else

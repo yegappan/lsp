@@ -468,14 +468,27 @@ export def GetClientCaps(): dict<any>
 	completionItem: {
 	  documentationFormat: opt.lspOptions.documentationFormat,
 	  resolveSupport: {
-	    properties: ['additionalTextEdits', 'detail', 'documentation']
+	    properties: [
+	      'additionalTextEdits',
+	      'command',
+	      'detail',
+	      'documentation'
+	    ]
 	  },
 	  snippetSupport: opt.lspOptions.snippetSupport,
 	  insertReplaceSupport: true
 	},
 	completionItemKind: {
 	  valueSet: range(1, 25)
-	}
+	},
+	completionList: {
+	  itemDefaults: [
+	    'editRange',
+	    'insertTextFormat',
+	    'insertTextMode',
+	    'data'
+	  ],
+	},
       },
       declaration: {
 	dynamicRegistration: false,
