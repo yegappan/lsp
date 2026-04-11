@@ -213,6 +213,79 @@ def g:Test_Completion_TriggerKind_Initial()
   :%bw!
 enddef
 
+
+# Regression test for CompletionItem.preselect ordering.
+def g:Test_Completion_Preselect_ItemFirst()
+  silent! edit XCompletionPreselect.vim
+  setline(1, ['f'])
+  cursor(1, 2)
+
+  var lspserver = {
+    name: 'test',
+    omniCompletePending: true,
+    completionLazyDoc: false,
+    completeItems: [],
+    completeItemsIsIncomplete: false,
+  }
+
+  var cItems = [{
+    label: 'alpha',
+    sortText: 'a',
+  }, {
+    label: 'beta',
+    sortText: 'b',
+  }, {
+    label: 'gamma',
+    sortText: 'c',
+    preselect: true,
+  }]
+
+  completion.CompletionReply(lspserver, cItems)
+
+  assert_false(lspserver.omniCompletePending)
+  assert_equal(3, lspserver.completeItems->len())
+  assert_equal('gamma', lspserver.completeItems[0].word)
+  assert_equal('alpha', lspserver.completeItems[1].word)
+  assert_equal('beta', lspserver.completeItems[2].word)
+
+  :%bw!
+enddef
+
+def g:Test_Completion_Preselect_NoopWithoutPreselect()
+  silent! edit XCompletionPreselectNoop.vim
+  setline(1, ['f'])
+  cursor(1, 2)
+
+  var lspserver = {
+    name: 'test',
+    omniCompletePending: true,
+    completionLazyDoc: false,
+    completeItems: [],
+    completeItemsIsIncomplete: false,
+  }
+
+  var cItems = [{
+    label: 'alpha',
+    sortText: 'a',
+  }, {
+    label: 'beta',
+    sortText: 'b',
+  }, {
+    label: 'gamma',
+    sortText: 'c',
+  }]
+
+  completion.CompletionReply(lspserver, cItems)
+
+  assert_false(lspserver.omniCompletePending)
+  assert_equal(3, lspserver.completeItems->len())
+  assert_equal('alpha', lspserver.completeItems[0].word)
+  assert_equal('beta', lspserver.completeItems[1].word)
+  assert_equal('gamma', lspserver.completeItems[2].word)
+
+  :%bw!
+enddef
+
 # Only here to because the test runner needs it
 def g:StartLangServer(): bool
   return true

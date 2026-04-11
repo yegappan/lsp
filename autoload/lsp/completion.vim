@@ -580,6 +580,20 @@ export def CompletionReply(lspserver: dict<any>, cItems: any)
       a.score == b.score ? 0 : a.score >? b.score ? 1 : -1)
   endif
 
+  # Honor server preselect hint: move the preselected item to the front so it
+  # becomes the initial selection when completeopt does not include "noselect".
+  var preselIdx = -1
+  for idx in range(completeItems->len())
+    if completeItems[idx].user_data->type() == v:t_dict
+        && completeItems[idx].user_data->get('preselect', false)
+      preselIdx = idx
+      break
+    endif
+  endfor
+  if preselIdx > 0
+    completeItems->insert(completeItems->remove(preselIdx), 0)
+  endif
+
   if lspOpts.autoComplete && !lspserver.omniCompletePending
     if completeItems->empty()
       # no matches

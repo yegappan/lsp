@@ -477,6 +477,7 @@ export def GetClientCaps(): dict<any>
 	  },
 	  snippetSupport: opt.lspOptions.snippetSupport,
 	  insertReplaceSupport: true,
+	  preselectSupport: true,
 	  labelDetailsSupport: true,
 	  insertTextModeSupport: {
 	    valueSet: [1, 2]
