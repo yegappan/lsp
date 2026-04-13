@@ -21,6 +21,7 @@ Additional entries include
 [Angular Language Server](#angular-language-server)<br>
 [AWK Language Server](#awk-language-server)<br>
 [Bash Language Server](#bash-language-server)<br>
+[Biome Language Server](#biome-language-server)<br>
 [Bitbake Language Server](#bitbake-language-server)<br>
 [CSpell LSP](#cspell-lsp)<br>
 [Clangd](#clangd)<br>
@@ -46,6 +47,7 @@ Additional entries include
 [Rust-analyzer](#rust-analyzer)<br>
 [Ruff Server](#ruff-server)<br>
 [Solargraph](#solargraph)<br>
+[Svelte Language Server](#swelte-language-server)<br>
 [Swift Language Server](#swift-language-server)<br>
 [Typescript/Javascript Language Server](#typescript-language-server)<br>
 [Vala Language Server](#vala-language-server)<br>
@@ -115,6 +117,22 @@ call LspAddServer([#{name: 'bashls',
                  \ }])
 ```
 
+<a name="biome-language-server"/></a>
+## Biome Language Server
+**Languages**: [Javascript, Typescript, JSON, HTML, CSS, GraphQL](https://biomejs.dev/internals/language-support/)
+
+**Home Page**: [https://github.com/biomejs/biome](https://github.com/biomejs/biome)
+
+Sample code to add the biome language server to the LSP plugin:
+```
+" Biome
+call LspAddServer([#{name: 'biome',
+                 \   filetype: ['javascript', 'javascriptreact', 'typescript', 'typescriptreact'],
+                 \   path: '/usr/local/bin/biome',
+                 \   args: ['lsp-proxy']
+                 \ }])
+```
+
 <a name="bitbake-language-server"/></a>
 ## Bitbake Language Server
 **Language**: [Bitbake scripts](https://en.wikipedia.org/wiki/BitBake)
@@ -181,7 +199,7 @@ Optionally add an [autocommand](https://gist.github.com/Konfekt/2d951b9e07831878
 ## CSS Language Server
 **Language**: CSS
 
-**Home Page**: [https://github.com/vscode-langservers/vscode-css-languageserver-bin](https://github.com/vscode-langservers/vscode-css-languageserver-bin)
+**Home Page**: [https://github.com/Microsoft/vscode-css-languageservice](https://github.com/Microsoft/vscode-css-languageservice)
 
 Sample code to add the CSS language server to the LSP plugin:
 ```vim
@@ -655,6 +673,20 @@ call LspAddServer([#{name: 'solargraph',
 ```
 
 _Note_: Solargraph does not support range formatting, but the current file can be formatted using `:LspFormat`
+
+<a name="swelte-language-server"/></a>
+**Language**: [Svelte](https://svelte.dev)
+
+**Home Page**: [https://github.com/sveltejs/language-tools](https://github.com/sveltejs/language-tools)
+
+Sample code to add the svelte language server to the LSP plugin:
+```
+call LspAddServer([#{name: 'svelte'
+                 \   filetype: ['svelte'],
+                 \   path: '/usr/local/node_modules/.bin/svelteserver',
+                 \   args: ['--stdio']
+                 \ }])
+```
 
 <a name="swift-language-server"/></a>
 ## Swift Language Server
