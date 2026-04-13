@@ -50,7 +50,7 @@ If your preferred server is not listed below, you can adapt the configurations f
 [Rust-analyzer](#rust-analyzer)<br>
 [Ruff Server](#ruff-server)<br>
 [Solargraph](#solargraph)<br>
-[Svelte Language Server](#swelte-language-server)<br>
+[Svelte Language Server](#svelte-language-server)<br>
 [Swift Language Server](#swift-language-server)<br>
 [Typescript/Javascript Language Server](#typescript-language-server)<br>
 [Vala Language Server](#vala-language-server)<br>
@@ -677,7 +677,7 @@ call LspAddServer([#{name: 'solargraph',
 
 _Note_: Solargraph does not support range formatting, but the current file can be formatted using `:LspFormat`
 
-<a name="swelte-language-server"/></a>
+<a name="svelte-language-server"/></a>
 **Language**: [Svelte](https://svelte.dev)
 
 **Home Page**: [https://github.com/sveltejs/language-tools](https://github.com/sveltejs/language-tools)
