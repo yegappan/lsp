@@ -1,21 +1,24 @@
-# Language Server Specific Configuration
+# Language Server Configurations
 
-Information about using various language servers with the LSP plugin is below.
-A sample VimScript code snippet is given for each language server to register the server with the LSP plugin.
-A sample absolute path to the language server executable is used in these examples.
-You may need to modify the path to match where the language server is installed in your system.
-In some cases, it may be simpler to add the language server path to the PATH environment variable.
+This section provides registration snippets for various language servers. Each entry includes a link to the server's home page, supported languages, and a sample configuration.
 
-If your preferred LSP is not found, then possibly it is listed at [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md) where its `Default config` section can be transferred by setting
+> [!TIP]
+> **Path Resolution:** The examples below often use absolute paths. If a language server is already in your system `PATH`, you can simply use the executable name (e.g., `path: 'clangd'`) instead of the full directory string.
 
-- `filetype:` here to the array of values of `Filetypes` there,
-- `path` here to the first entry of `cmd`, and
-- `args` here to the subsequent entries of `cmd`.
+---
 
-Additional entries include 
+### Using `nvim-lspconfig` as a Reference
+If your preferred server is not listed below, you can adapt the configurations found in [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md). Use the table below to map their `Default config` values to this plugin's settings:
 
-- `rootSearch` here to the array of values `root_markers` there where each directory path needs to end with a slash, and
-- `settings` *there* to `initializationOptions.settings` here.
+| nvim-lspconfig Key | Vim9 LSP Key | Translation Notes |
+| :--- | :--- | :--- |
+| `Filetypes` | `filetype` | Transfer the array of values exactly. |
+| `cmd` (1st entry) | `path` | Use the first entry of the command list. |
+| `cmd` (subsequent) | `args` | Use all following entries as an array. |
+| `root_markers` | `rootSearch` | **Note:** Each directory path must end with a `/`. |
+| `settings` | `initializationOptions.settings` | Map the remote `settings` object to this local key. |
+
+---
 
 ## Overview
 [Angular Language Server](#angular-language-server)<br>
