@@ -1963,7 +1963,7 @@ useBufferCompletion     |Boolean| option. If enabled, the words from the
 			current buffer are added to the auto completion list.
 			By default this is set to false.
 
-						*lsp-opt-bufferCompletionTimeout*
+					*lsp-opt-bufferCompletionTimeout*
 bufferCompletionTimeout |Number| option. Specifies how long (in milliseconds)
 			to wait while processing current buffer for
 			autocompletion words.  If set too high Vim performance
@@ -1973,18 +1973,18 @@ bufferCompletionTimeout |Number| option. Specifies how long (in milliseconds)
 			regard to timeout.
 			By default this is set to 100 ms.
 
-						*lsp-opt-filterCompletionDuplicates*
+					*lsp-opt-filterCompletionDuplicates*
 filterCompletionDuplicates |Boolean| option. If enabled, duplicate completion
 			items sent from the server will be filtered to only
 			include one instance of the duplicates.
 
-						*lsp-opt-condensedCompletionMenu*
+					*lsp-opt-condensedCompletionMenu*
 condensedCompletionMenu |Boolean| option. If enabled, minimizes completion
 			menu items to single (key-) words (plus kind).
 			Moves all additional details to info popup.
 			Caveat: LazyDoc will override moved details!
 
-					*lsp-opt-ignoreCompleteItemsIsIncomplete*
+				*lsp-opt-ignoreCompleteItemsIsIncomplete*
 ignoreCompleteItemsIsIncomplete |List| of strings option.
 			Optional list of LSP server names for which
 			'IsIncomplete' messages should be ignored and

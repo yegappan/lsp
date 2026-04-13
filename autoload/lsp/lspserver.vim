@@ -1994,7 +1994,11 @@ enddef
 def ExecuteCommand(lspserver: dict<any>, cmd: dict<any>)
   # Need to check for lspserver.caps.executeCommandProvider?
   var params: dict<any> = {}
-  params.command = cmd.command
+  params.command = cmd->get('command', '')
+  if params.command->empty()
+    # No specific command to execute received from the server
+    return
+  endif
   if cmd->has_key('arguments')
     params.arguments = cmd.arguments
   endif
