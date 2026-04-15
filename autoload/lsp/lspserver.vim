@@ -2066,7 +2066,10 @@ enddef
 
 # Store a log or trace message received from the language server.
 def AddMessage(lspserver: dict<any>, msgType: string, newMsg: string)
-  # A single message may contain multiple lines separate by newline
+  # A single message may contain multiple lines separated by newline
+  if newMsg == ''
+    return
+  endif
   var msgs = newMsg->split("\n")
   lspserver.messages->add($'{strftime("%m/%d/%y %T")}: [{msgType}]: {msgs[0]}')
   lspserver.messages->extend(msgs[1 : ])
