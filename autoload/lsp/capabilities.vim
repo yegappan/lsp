@@ -44,8 +44,10 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
       # Backward-compat mode: treat a boolean as open/close support only.
       lspserver.supportsDidOpenClose = lspserver.caps.textDocumentSync
     elseif lspserver.caps.textDocumentSync->type() == v:t_number
-      # TextDocumentSyncKind controls only didChange payload style.
+      # Old short-form: a non-zero TextDocumentSyncKind implies open/close
+      # support (that was the contract before TextDocumentSyncOptions existed).
       lspserver.textDocumentSync = lspserver.caps.textDocumentSync
+      lspserver.supportsDidOpenClose = lspserver.caps.textDocumentSync != 0
     elseif lspserver.caps.textDocumentSync->type() == v:t_dict
       # "openClose"
       if lspserver.caps.textDocumentSync->has_key('openClose')

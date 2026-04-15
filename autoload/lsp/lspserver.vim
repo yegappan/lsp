@@ -2191,6 +2191,7 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     peekSymbolPopup: -1,
     processDiagHandler: serverParams.processDiagHandler,
     supportsDidOpenClose: false,
+    supportsDidSave: false,
     rootSearchFiles: serverParams.rootSearch->deepcopy(),
     runIfSearchFiles: serverParams.runIfSearch->deepcopy(),
     runUnlessSearchFiles: serverParams.runUnlessSearch->deepcopy(),
