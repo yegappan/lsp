@@ -582,9 +582,29 @@ def SendWorkspaceConfig(lspserver: dict<any>)
   lspserver.sendNotification('workspace/didChangeConfiguration', params)
 enddef
 
+def LinesText(lines: list<string>, hasEol: bool): string
+  var text = lines->join("\n")
+  if hasEol
+    text ..= "\n"
+  endif
+  return text
+enddef
+
 def BufferText(bnr: number): string
-  var text = bnr->getbufline(1, '$')->join("\n")
-  if bnr->getbufvar('&eol')
+  return LinesText(bnr->getbufline(1, '$'), bnr->getbufvar('&eol'))
+enddef
+
+def HunkText(newBufLines: list<string>, hunk: dict<number>, hasEol: bool): string
+  if hunk.to_count == 0
+    return ''
+  endif
+
+  var lastIdx = hunk.to_idx + hunk.to_count - 1
+  var text = newBufLines[hunk.to_idx : lastIdx]->join("\n")
+  # Append a newline when there is more buffer content after this hunk (so
+  # the replaced range boundary falls between lines), or when the buffer has
+  # a trailing end-of-line and this hunk reaches the last line.
+  if lastIdx < newBufLines->len() - 1 || hasEol
     text ..= "\n"
   endif
   return text
@@ -604,13 +624,20 @@ def TextdocDidOpen(lspserver: dict<any>, bnr: number, ftype: string): void
     endtry
   endif
 
+  var newBufLines = bnr->getbufline(1, '$')
+  lspserver.cachedBufferContent[bnr] = newBufLines
+
+  if !lspserver.supportsDidOpenClose
+    return
+  endif
+
   var params = {
     textDocument: {
       uri: util.LspBufnrToUri(bnr),
       languageId: languageId,
       # Use Vim 'changedtick' as the LSP document version number
       version: bnr->getbufvar('changedtick'),
-      text: BufferText(bnr)
+      text: LinesText(newBufLines, bnr->getbufvar('&eol'))
     }
   }
   lspserver.sendNotification('textDocument/didOpen', params)
@@ -620,59 +647,65 @@ enddef
 def TextdocDidClose(lspserver: dict<any>, bnr: number): void
   # Notification: 'textDocument/didClose'
   # Params: DidCloseTextDocumentParams
+
   var params = {
     textDocument: {
       uri: util.LspBufnrToUri(bnr)
     }
   }
-  lspserver.sendNotification('textDocument/didClose', params)
+  if lspserver.supportsDidOpenClose
+    lspserver.sendNotification('textDocument/didClose', params)
+  endif
+  if lspserver.cachedBufferContent->has_key(bnr)
+    lspserver.cachedBufferContent->remove(bnr)
+  endif
 enddef
 
 # Send a file/document change notification to the language server.
 # Params: DidChangeTextDocumentParams
-def TextdocDidChange(lspserver: dict<any>, bnr: number, start: number,
-			end: number, added: number,
-			changes: list<dict<number>>): void
+def TextdocDidChange(lspserver: dict<any>, bnr: number): void
   # Notification: 'textDocument/didChange'
   # Params: DidChangeTextDocumentParams
 
-  # var changeset: list<dict<any>>
+  # Nothing to do when the server doesn't want change notifications.
+  if lspserver.textDocumentSync == 0
+    return
+  endif
 
-  ##### FIXME: Sending specific buffer changes to the LSP server doesn't
-  ##### work properly as the computed line range numbers is not correct.
-  ##### For now, send the entire buffer content to LSP server.
-  # #     Range
-  # for change in changes
-  #   var lines: string
-  #   var start_lnum: number
-  #   var end_lnum: number
-  #   var start_col: number
-  #   var end_col: number
-  #   if change.added == 0
-  #     # lines changed
-  #     start_lnum =  change.lnum - 1
-  #     end_lnum = change.end - 1
-  #     lines = getbufline(bnr, change.lnum, change.end - 1)->join("\n") .. "\n"
-  #     start_col = 0
-  #     end_col = 0
-  #   elseif change.added > 0
-  #     # lines added
-  #     start_lnum = change.lnum - 1
-  #     end_lnum = change.lnum - 1
-  #     start_col = 0
-  #     end_col = 0
-  #     lines = getbufline(bnr, change.lnum, change.lnum + change.added - 1)->join("\n") .. "\n"
-  #   else
-  #     # lines removed
-  #     start_lnum = change.lnum - 1
-  #     end_lnum = change.lnum + (-change.added) - 1
-  #     start_col = 0
-  #     end_col = 0
-  #     lines = ''
-  #   endif
-  #   var range: dict<dict<number>> = {'start': {'line': start_lnum, 'character': start_col}, 'end': {'line': end_lnum, 'character': end_col}}
-  #   changeset->add({'range': range, 'text': lines})
-  # endfor
+  var contentChanges: list<dict<any>>
+
+  if lspserver.textDocumentSync == 1 || !opt.lspOptions.incrementalSync
+    # TextDocumentSyncKind: Full — send the entire buffer on every change.
+    contentChanges = [{text: BufferText(bnr)}]
+  elseif exists_compiled('*diff')
+    # TextDocumentSyncKind: Incremental — send only the changed lines.
+    var newBufLines = bnr->getbufline(1, '$')
+    var hasEol = bnr->getbufvar('&eol')
+    if lspserver.cachedBufferContent->has_key(bnr)
+      # Compute line-level diffs against the last snapshot and convert each
+      # hunk into an LSP TextDocumentContentChangeEvent.
+      contentChanges = []
+      var diffs = diff(lspserver.cachedBufferContent[bnr], newBufLines,
+		       {output: 'indices'})
+      for hunk in diffs
+	contentChanges->add({
+	  range: {
+	    start: {line: hunk.from_idx, character: 0},
+	    end:   {line: hunk.from_idx + hunk.from_count, character: 0}
+	  },
+	  text: HunkText(newBufLines, hunk, hasEol)
+	})
+      endfor
+    else
+      # No cached snapshot available; fall back to a full-text change.
+      contentChanges = [{text: LinesText(newBufLines, hasEol)}]
+    endif
+    lspserver.cachedBufferContent[bnr] = newBufLines
+  endif
+
+  if contentChanges->empty()
+    return
+  endif
 
   var params = {
     textDocument: {
@@ -680,9 +713,7 @@ def TextdocDidChange(lspserver: dict<any>, bnr: number, start: number,
       # Use Vim 'changedtick' as the LSP document version number
       version: bnr->getbufvar('changedtick')
     },
-    contentChanges: [
-      {text: BufferText(bnr)}
-    ]
+    contentChanges: contentChanges
   }
   lspserver.sendNotification('textDocument/didChange', params)
 enddef
@@ -2159,11 +2190,13 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     peekSymbolFilePopup: -1,
     peekSymbolPopup: -1,
     processDiagHandler: serverParams.processDiagHandler,
+    supportsDidOpenClose: false,
     rootSearchFiles: serverParams.rootSearch->deepcopy(),
     runIfSearchFiles: serverParams.runIfSearch->deepcopy(),
     runUnlessSearchFiles: serverParams.runUnlessSearch->deepcopy(),
     selection: {},
     signaturePopup: -1,
+    cachedBufferContent: {},
     syncInit: serverParams.syncInit,
     traceLevel: serverParams.traceLevel,
     typeHierFilePopup: -1,

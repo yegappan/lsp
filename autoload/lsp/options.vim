@@ -228,6 +228,9 @@ export var lspOptions: dict<any> = {
 
   # Text format for documentation and hovers.
   documentationFormat: ['markdown', 'plaintext'],
+
+  # incremental text document sync with the server
+  incrementalSync: false
 }
 
 # set the LSP plugin options from the user provided option values
@@ -238,6 +241,10 @@ export def OptionsSet(opts: dict<any>)
   endif
   if !has('patch-9.0.1157')
     lspOptions.showDiagWithVirtualText = false
+  endif
+  if !exists('*diff')
+    # incremental text document sync needs the diff() function
+    lspOptions.incrementalSync = false
   endif
 
   # For faster comparison, convert the 'completionMatcher' option value from a

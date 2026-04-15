@@ -3,7 +3,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: March 28 2026
+Last change: April 14 2026
 
 ==============================================================================
 CONTENTS                                                     *lsp-contents*
@@ -1997,6 +1997,21 @@ ignoreCompleteItemsIsIncomplete |List| of strings option.
 documentationFormat |List| of strings option.
 			DocumentationFormat to tell the LSP we want, in order
 			of preference.
+
+						*lsp-opt-incrementalSync*
+incrementalSync		|Boolean| option.  Specifies the method used to
+			synchronize buffer changes with the language server.
+
+			- If |true|, only the modified portions of the buffer
+			  are sent (incremental sync). This is more efficient
+			  for large files and reduces network/CPU overhead.
+			  Note: This needs the support for the |diff()|
+			  function which was introduced in patch 9.1.0099.
+			- If |false|, the entire buffer content is sent on
+			  every change (full sync). This is more robust but
+			  can cause lag in very large documents.
+
+			Default: |false|
 
 For example, to disable the automatic placement of signs for the LSP
 diagnostic messages, you can add the following line to your .vimrc file: >

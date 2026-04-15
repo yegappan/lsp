@@ -36,14 +36,21 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
 
   # textDocumentSync capabilities
   lspserver.supportsDidSave = false
+  lspserver.supportsDidOpenClose = false
   # Default to TextDocumentSyncKind.None
   lspserver.textDocumentSync = 0
   if lspserver.caps->has_key('textDocumentSync')
     if lspserver.caps.textDocumentSync->type() == v:t_bool
-	|| lspserver.caps.textDocumentSync->type() == v:t_number
-      lspserver.supportsDidSave = lspserver.caps.textDocumentSync
+      # Backward-compat mode: treat a boolean as open/close support only.
+      lspserver.supportsDidOpenClose = lspserver.caps.textDocumentSync
+    elseif lspserver.caps.textDocumentSync->type() == v:t_number
+      # TextDocumentSyncKind controls only didChange payload style.
       lspserver.textDocumentSync = lspserver.caps.textDocumentSync
     elseif lspserver.caps.textDocumentSync->type() == v:t_dict
+      # "openClose"
+      if lspserver.caps.textDocumentSync->has_key('openClose')
+	lspserver.supportsDidOpenClose = lspserver.caps.textDocumentSync.openClose
+      endif
       # "save"
       if lspserver.caps.textDocumentSync->has_key('save')
 	if lspserver.caps.textDocumentSync.save->type() == v:t_bool
@@ -58,6 +65,11 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
 	lspserver.textDocumentSync = lspserver.caps.textDocumentSync.change
       endif
     endif
+  endif
+  if lspserver.textDocumentSync == 2 && !exists('*diff')
+    # Incremental sync needs the diff() function.  If it is not supported,
+    # then fallback to full sync.
+    lspserver.textDocumentSync = 1
   endif
 
   # completionProvider
@@ -602,7 +614,7 @@ export def GetClientCaps(): dict<any>
 	dynamicRegistration: false,
 	didSave: true,
 	willSave: false,
-	WillSaveWaitUntil: false
+	willSaveWaitUntil: false
       },
       typeDefinition: {
 	dynamicRegistration: false,

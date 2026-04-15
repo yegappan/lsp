@@ -488,7 +488,7 @@ def BufferInit(lspserverId: number, bnr: number): void
 
   # add a listener to track changes to this buffer
   listener_add((_bnr: number, start: number, end: number, added: number, changes: list<dict<number>>) => {
-    lspserver.textdocDidChange(bnr, start, end, added, changes)
+    lspserver.textdocDidChange(bnr)
   }, bnr)
 
   AddBufLocalAutocmds(lspserver, bnr)
@@ -610,8 +610,7 @@ export def RemoveFile(bnr: number): void
   endfor
 enddef
 
-# Buffer 'bnr' is loaded in a window, send the latest buffer contents to the
-# language servers.
+# Buffer 'bnr' is loaded in a window, refresh visuals and UI state.
 export def BufferLoadedInWin(bnr: number)
   var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)
   if lspservers->empty()
@@ -620,7 +619,7 @@ export def BufferLoadedInWin(bnr: number)
   endif
   for lspserver in lspservers
     if !lspserver->empty() && lspserver.ready
-      lspserver.textdocDidChange(bnr, 0, 0, 0, [])
+      lspserver.textdocDidChange(bnr)
     endif
   endfor
   # Refresh the displayed diags visuals
