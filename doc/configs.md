@@ -41,6 +41,7 @@ If your preferred server is not listed below, you can adapt the configurations f
 [JETLS.jl](#jetls)<br>
 [Language Server Bitbake](#language-server-bitbake)<br>
 [Lua Language Server](#lua-language-server)<br>
+[Marksman Language Server](#marksman-language-server)<br>
 [Omnisharp Language Server](#omnisharp-language-server)<br>
 [Perl Navigator](#perl-navigator)<br>
 [PHP Intelephense](#php-intelephense)<br>
@@ -65,32 +66,45 @@ If your preferred server is not listed below, you can adapt the configurations f
 [VSCode Markdown Language Server](#vscode-markdown-lsp)<br>
 [YAML Language Server](#yaml-language-server)<br>
 
-<a name="angular-language-server"/></a>
-## Angular Language Server 
-**Language**: [Angular Templates](https://en.wikipedia.org/wiki/Angular_(web_framework))
+<a name="angular-language-server"></a>
+## Angular Language Server
+**Language:** Angular Templates | **Home Page:** [GitHub](https://github.com/angular/vscode-ng-language-service)
 
-**Home Page**: [https://github.com/angular/vscode-ng-language-service](https://github.com/angular/vscode-ng-language-service)
-
-Sample code to add the angular language server to the LSP plugin:
-```vim
-call LspAddServer([#{name: 'angular',
-                 \   filetype: 'html',
-                 \   path: '/usr/local/bin/ngserver.cmd',
-                 \   args: ['--stdio', '--ngProbeLocations', '/usr/local/bin/@angular/language-service', '--tsProbeLocations', '/usr/local/bin/typescript']
-                 \ }])
-```
-
-Command to install the angular language server on Linux:
+#### Installation
+Install the server, service, and TypeScript globally via npm:
 ```sh
 npm install -g @angular/language-server @angular/language-service typescript
 ```
 
+#### Registration
+Sample code to add the Angular language server to the LSP plugin:
+```vim
+call LspAddServer([#{
+    \   name: 'angular',
+    \   filetype: 'html',
+    \   path: 'ngserver',
+    \   args: [
+    \     '--stdio',
+    \     '--ngProbeLocations', '/usr/local/lib/node_modules/@angular/language-service',
+    \     '--tsProbeLocations', '/usr/local/lib/node_modules/typescript'
+    \   ]
+    \ }])
+```
+
+> [!NOTE]
+> The `--ngProbeLocations` and `--tsProbeLocations` must point to your global `node_modules` folder. The paths above are common defaults; adjust them if your environment uses a different location (e.g., NVM or a custom npm prefix).
+
 <a name="awk-language-server"/></a>
 ## AWK Language Server
-**Language**: [AWK scripts](https://en.wikipedia.org/wiki/AWK)
+**Language**: [AWK scripts](https://en.wikipedia.org/wiki/AWK) | **Home Page**: [https://github.com/Beaglefoot/awk-language-server](https://github.com/Beaglefoot/awk-language-server)
 
-**Home Page**: [https://github.com/Beaglefoot/awk-language-server](https://github.com/Beaglefoot/awk-language-server)
+#### Installation
+Install the awk language server on Linux via npm:
+```sh
+npm install -g awk-language-server
+```
 
+#### Registration
 Sample code to add the awk language server to the LSP plugin:
 ```vim
 call LspAddServer([#{name: 'awkls',
@@ -98,11 +112,6 @@ call LspAddServer([#{name: 'awkls',
                  \   path: '/usr/local/bin/awk-language-server',
                  \   args: []
                  \ }])
-```
-
-Command to install the awk language server on Linux:
-```sh
-npm install -g awk-language-server
 ```
 
 <a name="bash-language-server"/></a>
@@ -493,6 +502,24 @@ To enable the inlay hint support, include the following in the above code to add
     \       }
     \     }
     \   }
+```
+
+<a name="marksman-language-server"/></a>
+## Marksman Language Server
+**Language**: markdown | **Home Page**: [https://github.com/OmniSharp/omnisharp-roslyn](https://github.com/OmniSharp/omnisharp-roslyn)
+
+#### Installation
+Install the marksman language server using the instructions in
+https://github.com/artempyanykh/marksman/blob/main/docs/install.md.
+
+#### Registration
+Sample code to add the marksman language server to the LSP plugin:
+```vim
+call LspAddServer([#{name: 'marksman',
+                 \   filetype: 'md',
+                 \   path: 'marksman-linux-x64',
+                 \   args: ['server'],
+                 \ }])
 ```
 
 <a name="omnisharp-language-server"/></a>
