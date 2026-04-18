@@ -550,6 +550,14 @@ def GetCompletionSourceItems(lspserver: dict<any>, cItems: any): list<dict<any>>
     return cItems
   endif
 
+  if cItems->type() != v:t_dict || !cItems->has_key('items')
+    return []
+  endif
+
+  if cItems.items->type() != v:t_list
+    return []
+  endif
+
   var items = ApplyCompletionListItemDefaults(cItems, cItems.items)
   if opt.lspOptions.ignoreCompleteItemsIsIncomplete->index(lspserver.name) >= 0
     lspserver.completeItemsIsIncomplete = false
@@ -863,6 +871,8 @@ def g:LspOmniFunc(findstart: number, base: string): any
     endwhile
 
     if lspserver.omniCompletePending
+      lspserver.omniCompletePending = false
+      lspserver.completeItems = []
       return v:none
     endif
 
