@@ -23,10 +23,26 @@ enddef
 
 # Lsp server trace log directory
 var lsp_log_dir: string
+
 if has('unix')
-  lsp_log_dir = (exists('$TMPDIR') && !empty($TMPDIR) ? $TMPDIR : '/tmp')->fnamemodify(':p')
+  # Try /tmp first
+  if isdirectory('/tmp') && filewritable('/tmp') == 2
+    lsp_log_dir = '/tmp'
+  # Fallback to $TMPDIR
+  elseif exists('$TMPDIR') && isdirectory($TMPDIR) &&
+						filewritable($TMPDIR) == 2
+    lsp_log_dir = $TMPDIR
+  else
+    # Last resort: current directory
+    lsp_log_dir = expand('.')
+  endif
+
+  # Ensure a trailing slash
+  lsp_log_dir = lsp_log_dir->fnamemodify(':p')
 else
-  lsp_log_dir = $TEMP .. '\\'
+  # Windows fallback logic
+  var win_base = !empty($TEMP) ? $TEMP : $TMP
+  lsp_log_dir = (!empty(win_base) ? win_base : 'C:\Temp')->fnamemodify(':p')
 endif
 
 # Log a message from the LSP server. stderr is true for logging messages

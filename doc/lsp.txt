@@ -2684,9 +2684,12 @@ using the |LspAddServer()| function.
 
 The messages printed by the language server to stdout are logged to the
 lsp-<server-name>.log file and the messages printed to stderr are logged to
-the lsp-<server-name>.err file.  On Unix-like systems, these files are created
-in the /tmp directory.  On MS-Windows, these files are created in the %TEMP%
-directory.
+the lsp-<server-name>.err file.  The directory used for these files is
+determined as follows:
+
+  Linux/macOS: Logs are stored in /tmp. If /tmp is missing or not
+               writable, the directory in $TMPDIR is used.
+  MS-Windows: Logs are stored in the directory specified by %TEMP%.
 
 The following command opens the file containing the messages printed by the
 language server to stdout: >
