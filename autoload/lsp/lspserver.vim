@@ -2190,6 +2190,7 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     messages: [],
     needOffsetEncoding: false,
     omniCompletePending: false,
+    completeItemsIsIncomplete: false,
     peekSymbolFilePopup: -1,
     peekSymbolPopup: -1,
     processDiagHandler: serverParams.processDiagHandler,
