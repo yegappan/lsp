@@ -506,7 +506,7 @@ To enable the inlay hint support, include the following in the above code to add
 
 <a name="marksman-language-server"/></a>
 ## Marksman Language Server
-**Language**: markdown | **Home Page**: [https://github.com/artempyanykh/marksman/tree/main](https://github.com/OmniSharp/omnisharp-roslyn)
+**Language**: markdown | **Home Page**: [https://github.com/artempyanykh/marksman/tree/main](https://github.com/artempyanykh/marksman/tree/main)
 
 #### Installation
 Install the marksman language server using these [instructions](https://github.com/artempyanykh/marksman/blob/main/docs/install.md).
