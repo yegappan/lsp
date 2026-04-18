@@ -451,26 +451,20 @@ def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel,
     lspserver.traceLog($'Got response {reply->json_encode()}')
   endif
 
-  if reply->empty()
-    return
+  var result: any = {}
+
+  if !reply->empty()
+    if reply->has_key('error')
+      # request failed
+      ProcessLspServerError(method, reply.error)
+    elseif !reply->has_key('result')
+      util.ErrMsg($'request {method} failed (no result)')
+    elseif reply.result != v:null
+      result = reply.result
+    endif
   endif
 
-  if reply->has_key('error')
-    # request failed
-    ProcessLspServerError(method, reply.error)
-    return
-  endif
-
-  if !reply->has_key('result')
-    util.ErrMsg($'request {method} failed (no result)')
-    return
-  endif
-
-  if reply.result == v:null
-    reply.result = {}
-  endif
-
-  RpcCb(lspserver, reply.result)
+  RpcCb(lspserver, result)
 enddef
 
 # Send an async RPC request message to the LSP server with a callback function.
