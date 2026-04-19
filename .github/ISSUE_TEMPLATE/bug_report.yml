@@ -1,0 +1,116 @@
+name: Bug Report
+description: File a report to help us improve the LSP plugin
+title: "[Bug]: "
+labels: ["bug"]
+
+body:
+    - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug!
+
+        Please ensure:
+        - You are using Vim 9.0+ (with Vim9script support)
+        - You have tested with a minimal configuration
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of what the problem is.
+    validations:
+      required: true
+
+  - type: input
+    id: vim_version
+    attributes:
+      label: Vim Version
+      description: Output of `:version` (or `vim --version`)
+      placeholder: e.g. Vim 9.1.1700
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating System
+      description: Include version if relevant
+      placeholder: e.g. macOS 14.4, Ubuntu 22.04, Windows 11
+    validations:
+      required: true
+
+  - type: input
+    id: plugin_version
+    attributes:
+      label: Plugin Commit Hash
+      description: Git commit hash
+      placeholder: e.g. commit hash
+
+  - type: input
+    id: lsp_server
+    attributes:
+      label: Language Server
+      description: Which LSP server were you using? (e.g. gopls, rust-analyzer, clangd)
+    validations:
+      required: true
+
+  - type: input
+    id: lsp_server_version
+    attributes:
+      label: LSP Server Version
+      placeholder: e.g. 1.0.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description:
+        Provide a minimal Vim9script configuration or steps to reproduce the issue.
+        Tip: Try reproducing with:
+          vim -Nu NONE -c "set rtp+=/path/to/plugin"
+      placeholder: |
+        1. vim -u min_init.vim
+        2. ...
+      render: vim
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected Behavior
+      description: A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual_behavior
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Include relevant output from:
+        - :messages
+        - LSP logs (if available)
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Verification
+      options:
+        - label: I have verified this issue persists with a minimal configuration.
+          required: true
+        - label: I am using the latest version of the plugin.
+          required: true
+        - label: I am using a supported Vim version (9.0+).
+          required: true
