@@ -1277,9 +1277,7 @@ def TextDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
 
   # interface TextEdit
   # Apply each of the text edit operations
-  var save_cursor: list<number> = getcurpos()
   textedit.ApplyTextEdits(bnr, reply.result)
-  save_cursor->setpos('.')
 enddef
 
 def DecodeCallHierarchyItem(lspserver: dict<any>, item: dict<any>)
