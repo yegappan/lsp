@@ -488,7 +488,7 @@ def BuildCompletionMenuItem(item: dict<any>, lspserver: dict<any>,
   endif
 
   if lspserver.completionLazyDoc
-    d.info = 'Lazy doc'
+    d.info = 'Resolving completion...'
   else
     if item->has_key('detail') && !item.detail->empty()
       # Solve a issue where if a server send a detail field with a "\n", on
@@ -705,14 +705,33 @@ def CheckCompletionItemSel(label: string): bool
   return userData->get('label', '') ==# label
 enddef
 
+# Clear the preview window contents.  This is needed only when 'completeopt'
+# contains 'preview'.
+def ClearCompletionPreviewContents()
+  if &completeopt !~ '\<preview\>'
+    return
+  endif
+
+  try
+    :wincmd P
+    :setlocal modifiable
+    bufnr()->deletebufline(1, '$')
+    :setlocal nomodifiable
+    :wincmd p
+  catch /E441/ # No preview window
+  endtry
+enddef
+
 # Process the completion documentation
 def ShowCompletionDocumentation(cItem: any)
   if cItem->empty() || cItem->type() != v:t_dict
+    ClearCompletionPreviewContents()
     return
   endif
 
   # check if completion item is still selected
   if !CheckCompletionItemSel(cItem.label)
+    ClearCompletionPreviewContents()
     return
   endif
 
@@ -741,17 +760,20 @@ def ShowCompletionDocumentation(cItem: any)
 	infoKind = 'lspgfm'
       else
 	util.ErrMsg($'Unsupported documentation type ({cItemDoc.kind})')
+	ClearCompletionPreviewContents()
 	return
       endif
     elseif cItemDoc->type() == v:t_string
       infoText->extend(cItemDoc->split("\n"))
     else
       util.ErrMsg($'Unsupported documentation ({cItemDoc->string()})')
+      ClearCompletionPreviewContents()
       return
     endif
   endif
 
   if infoText->empty()
+    ClearCompletionPreviewContents()
     return
   endif
 
