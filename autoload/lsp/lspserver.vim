@@ -772,7 +772,10 @@ def GetCompletion(lspserver: dict<any>, triggerKind_arg: number, triggerChar: st
   #   interface TextDocumentPositionParams
   var params = lspserver.getTextDocPosition(false)
   #   interface CompletionContext
-  params.context = {triggerKind: triggerKind_arg, triggerCharacter: triggerChar}
+  params.context = {triggerKind: triggerKind_arg}
+  if triggerKind_arg == 2 && !triggerChar->empty()
+    params.context.triggerCharacter = triggerChar
+  endif
 
   lspserver.rpc_a('textDocument/completion', params,
 			completion.CompletionReply)
