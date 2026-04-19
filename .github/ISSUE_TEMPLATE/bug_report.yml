@@ -4,7 +4,7 @@ title: "[Bug]: "
 labels: ["bug"]
 
 body:
-    - type: markdown
+  - type: markdown
     attributes:
       value: |
         Thanks for taking the time to report a bug!
@@ -68,8 +68,6 @@ body:
       label: Steps to Reproduce
       description:
         Provide a minimal Vim9script configuration or steps to reproduce the issue.
-        Tip: Try reproducing with:
-          vim -Nu NONE -c "set rtp+=/path/to/plugin"
       placeholder: |
         1. vim -u min_init.vim
         2. ...
