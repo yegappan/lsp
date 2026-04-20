@@ -10,11 +10,16 @@ body:
       value: |
         Thanks for suggesting a feature!
 
+        Please provide as much detail as possible so we can evaluate your request.
+
   - type: textarea
     id: problem
     attributes:
       label: Problem description
       description: What problem are you trying to solve?
+      placeholder: |
+        Example:
+        - "The plugin does not support X, which makes Y workflow difficult."
     validations:
       required: true
 
@@ -23,6 +28,8 @@ body:
     attributes:
       label: Proposed solution
       description: What would you like to happen?
+      placeholder: |
+        Describe the ideal behavior or feature.
     validations:
       required: true
 
@@ -31,19 +38,41 @@ body:
     attributes:
       label: Alternatives considered
       description: Other approaches or workarounds you've tried.
+      placeholder: |
+        Example:
+        - "I tried using X but it doesn't support Y."
+      render: text
 
   - type: textarea
     id: example
     attributes:
       label: Example usage (Vim9script)
-      render: vim
-      value: |
+      description: Show how this feature might be used.
+      placeholder: |
         vim9script
+        # Example usage here
+      render: vim
 
-        # example usage here
+  - type: textarea
+    id: related
+    attributes:
+      label: Related Issues or Discussions
+      description: Link to any related issues, PRs, or discussions.
+      placeholder: |
+        - #123
+        - https://github.com/...
 
   - type: textarea
     id: additional
     attributes:
       label: Additional context
       description: Anything else that might help.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Final Checklist
+      options:
+        - label: I have searched existing issues to avoid duplicates.
+        - label: I have explained why this feature is important.
+        - label: I have provided enough detail for maintainers to evaluate the request.

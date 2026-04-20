@@ -9,15 +9,16 @@ body:
       value: |
         Thanks for taking the time to report a bug!
 
-        Please ensure:
-        - You are using Vim 9.0+ (with Vim9script support)
+        Before submitting, please ensure:
+        - You are using **Vim 9.0+** (with Vim9script support)
         - You have tested with a minimal configuration
+        - You have reproduced the issue with the **latest plugin commit**
 
   - type: textarea
     id: description
     attributes:
       label: Description
-      description: A clear and concise description of what the problem is.
+      description: A clear and concise description of the problem.
     validations:
       required: true
 
@@ -43,8 +44,8 @@ body:
     id: plugin_version
     attributes:
       label: Plugin Commit Hash
-      description: Git commit hash
-      placeholder: e.g. commit hash
+      description: Git commit hash of the plugin version you are using.
+      placeholder: e.g. 4f2a1c9
 
   - type: input
     id: lsp_server
@@ -57,21 +58,37 @@ body:
   - type: input
     id: lsp_server_version
     attributes:
-      label: LSP Server Version
+      label: Language Server Version
+      description: Version of the LSP server.
       placeholder: e.g. 1.0.0
     validations:
       required: true
 
   - type: textarea
+    id: minimal_config
+    attributes:
+      label: Minimal Vim Configuration
+      description: Provide the smallest possible Vim9script config that reproduces the issue.
+      placeholder: |
+        vim9script
+        syntax on
+        filetype plugin indent on
+        set packpath+=~/.vim
+        packadd lsp
+        # your minimal settings here
+      render: vim
+
+  - type: textarea
     id: reproduction
     attributes:
       label: Steps to Reproduce
-      description:
-        Provide a minimal Vim9script configuration or steps to reproduce the issue.
+      description: Provide exact steps to reproduce the issue.
       placeholder: |
         1. vim -u min_init.vim
-        2. ...
-      render: vim
+        2. Open file...
+        3. Trigger LSP action...
+        4. ...
+      render: text
     validations:
       required: true
 
@@ -79,7 +96,7 @@ body:
     id: expected_behavior
     attributes:
       label: Expected Behavior
-      description: A clear and concise description of what you expected to happen.
+      description: What did you expect to happen?
     validations:
       required: true
 
@@ -99,16 +116,14 @@ body:
         Include relevant output from:
         - :messages
         - LSP logs (if available)
+        - Any error messages
       render: shell
 
   - type: checkboxes
-    id: checks
+    id: checklist
     attributes:
-      label: Verification
+      label: Final Checklist
       options:
         - label: I have verified this issue persists with a minimal configuration.
-          required: true
         - label: I am using the latest version of the plugin.
-          required: true
         - label: I am using a supported Vim version (9.0+).
-          required: true
