@@ -1524,7 +1524,22 @@ def g:Test_LspShowSignature()
   assert_match('^MyFunc(int a, int b) -> int', getbufline(bnr, 1, 1)[0])
   popup_close(p[0])
 
-  g:LspOptionsSet({echoSignature: false, showSignatureDocs: false})
+  # Disable auto show signature and display the signature using a command
+  g:LspOptionsSet({showSignature: false, echoSignature: false})
+  cursor(8, 10)
+  :LspShowSignature
+  g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
+  p = popup_list()
+  bnr = winbufnr(p[0])
+  assert_equal(['MyFunc(int a, int b) -> int'], getbufline(bnr, 1, '$'))
+  popup_close(p[0])
+
+  # Invoking show signature where there is no signature should not cause an
+  # error
+  cursor(1, 1)
+  :LspShowSignature
+
+  g:LspOptionsSet({showSignature: true, echoSignature: false, showSignatureDocs: false})
   :%bw!
 enddef
 

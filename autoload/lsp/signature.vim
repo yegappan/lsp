@@ -900,8 +900,11 @@ enddef
 
 # Register retrigger and teardown autocmds for an active popup session.
 def EnableSignatureSessionAutocmds()
+  # Update the current parameter in the signature popup when the cursor is
+  # moved in insert mode or the text is changed.
   AddSignatureAutocmd('CursorMovedI', 'g:LspHandleSignatureContentChange()')
   AddSignatureAutocmd('TextChangedI', 'g:LspHandleSignatureContentChange()')
+  # Close the signature popup when leaving insert mode
   AddSignatureAutocmd('InsertLeave', 'CloseCurBufSignaturePopup()')
 enddef
 
@@ -913,7 +916,6 @@ def DisableSignatureSessionAutocmds()
   endif
   autocmd_delete([{bufnr: bnr, group: 'LspSignatureHelp', event: 'CursorMovedI'}])
   autocmd_delete([{bufnr: bnr, group: 'LspSignatureHelp', event: 'TextChangedI'}])
-  # Close the signature popup when leaving insert mode
   autocmd_delete([{bufnr: bnr, group: 'LspSignatureHelp', event: 'InsertLeave'}])
 enddef
 
@@ -968,6 +970,9 @@ enddef
 
 # Initialize one-time highlight groups used by signature rendering.
 export def InitOnce()
+  # Add an empty autocmd group for signature autocmds.  The specific
+  # per-buffer events are added later.
+  autocmd_add([{group: 'LspSignatureHelp'}])
   hlset([{name: 'LspSigActiveParameter', default: true, linksto: 'LineNr'}])
 enddef
 
