@@ -215,10 +215,17 @@ enddef
 # Param: ApplyWorkspaceEditParams
 def ProcessApplyEditReq(lspserver: dict<any>, request: dict<any>)
   # interface ApplyWorkspaceEditParams
-  if !request->has_key('params')
+  if !ValidateObjectParams(lspserver, request, 'workspace/applyEdit')
     return
   endif
+
   var workspaceEditParams: dict<any> = request.params
+  if !workspaceEditParams->has_key('edit')
+    SendInvalidParamsError(lspserver, request,
+      'workspace/applyEdit params.edit is required')
+    return
+  endif
+
   if workspaceEditParams->has_key('label')
     util.InfoMsg($'Workspace edit {workspaceEditParams.label}')
   endif
@@ -231,6 +238,10 @@ enddef
 # Request: "workspace/workspaceFolders"
 # Param: none
 def ProcessWorkspaceFoldersReq(lspserver: dict<any>, request: dict<any>)
+  if !ValidateNoParams(lspserver, request, 'workspace/workspaceFolders')
+    return
+  endif
+
   if !lspserver->has_key('workspaceFolders')
     lspserver.sendResponse(request, null, {})
     return
@@ -248,6 +259,21 @@ enddef
 # Request: "workspace/configuration"
 # Param: ConfigurationParams
 def ProcessWorkspaceConfiguration(lspserver: dict<any>, request: dict<any>)
+  if !ValidateObjectParams(lspserver, request, 'workspace/configuration')
+    return
+  endif
+
+  if !request.params->has_key('items')
+    SendInvalidParamsError(lspserver, request,
+      'workspace/configuration params.items is required')
+    return
+  endif
+  if request.params.items->type() != v:t_list
+    SendInvalidParamsError(lspserver, request,
+      'workspace/configuration params.items must be an array')
+    return
+  endif
+
   var items = request.params.items
   var response = items->map((_, item) => lspserver.workspaceConfigGet(item))
 
@@ -265,6 +291,16 @@ enddef
 # Request: "window/workDoneProgress/create"
 # Param: none
 def ProcessWorkDoneProgressCreate(lspserver: dict<any>, request: dict<any>)
+  if !ValidateObjectParams(lspserver, request, 'window/workDoneProgress/create')
+    return
+  endif
+
+  if !request.params->has_key('token')
+    SendInvalidParamsError(lspserver, request,
+      'window/workDoneProgress/create params.token is required')
+    return
+  endif
+
   lspserver.supportsWorkDoneProgress = true
   lspserver.sendResponse(request, null, {})
 enddef
@@ -273,8 +309,29 @@ enddef
 # Request: "window/showMessageRequest"
 # Param: ShowMessageRequestParams
 def ProcessShowMessageRequest(lspserver: dict<any>, req: dict<any>)
+  if !ValidateObjectParams(lspserver, req, 'window/showMessageRequest')
+    return
+  endif
+
   var params: dict<any> = req.params
+  if !params->has_key('message')
+    SendInvalidParamsError(lspserver, req,
+      'window/showMessageRequest params.message is required')
+    return
+  endif
+  if params.message->type() != v:t_string
+    SendInvalidParamsError(lspserver, req,
+      'window/showMessageRequest params.message must be a string')
+    return
+  endif
+
   if params->has_key('actions')
+    if params.actions->type() != v:t_list
+      SendInvalidParamsError(lspserver, req,
+        'window/showMessageRequest params.actions must be an array')
+      return
+    endif
+
     var actions: list<dict<any>> = params.actions
     if actions->empty()
       util.WarnMsg($'Empty actions in showMessage request {params.message}')
@@ -287,6 +344,16 @@ def ProcessShowMessageRequest(lspserver: dict<any>, req: dict<any>)
     var act: dict<any>
     for i in actions->len()->range()
       act = actions[i]
+      if act->type() != v:t_dict || !act->has_key('title')
+        SendInvalidParamsError(lspserver, req,
+          'window/showMessageRequest action must contain title')
+        return
+      endif
+      if act.title->type() != v:t_string
+        SendInvalidParamsError(lspserver, req,
+          'window/showMessageRequest action title must be a string')
+        return
+      endif
       var t: string = act.title->substitute('\r\n', '\\r\\n', 'g')
       t = t->substitute('\n', '\\n', 'g')
       text->add(printf(" %d. %s ", i + 1, t))
@@ -314,6 +381,10 @@ enddef
 # Param: none
 # Re-pull diagnostics for all open buffers served by this server.
 def ProcessDiagnosticRefreshReq(lspserver: dict<any>, request: dict<any>)
+  if !ValidateNoParams(lspserver, request, 'workspace/diagnostic/refresh')
+    return
+  endif
+
   lspserver.sendResponse(request, null, {})
   for bnr in buf.BufGetServerBufnrs(lspserver)
     lspserver.pullDiagnostics(bnr)
@@ -324,6 +395,21 @@ enddef
 # Request: "client/registerCapability"
 # Param: RegistrationParams
 def ProcessClientRegisterCap(lspserver: dict<any>, request: dict<any>)
+  if !ValidateObjectParams(lspserver, request, 'client/registerCapability')
+    return
+  endif
+
+  if !request.params->has_key('registrations')
+    SendInvalidParamsError(lspserver, request,
+      'client/registerCapability params.registrations is required')
+    return
+  endif
+  if request.params.registrations->type() != v:t_list
+    SendInvalidParamsError(lspserver, request,
+      'client/registerCapability params.registrations must be an array')
+    return
+  endif
+
   lspserver.sendResponse(request, null, {})
 enddef
 
@@ -331,6 +417,21 @@ enddef
 # Request: "client/unregisterCapability"
 # Param: UnregistrationParams
 def ProcessClientUnregisterCap(lspserver: dict<any>, request: dict<any>)
+  if !ValidateObjectParams(lspserver, request, 'client/unregisterCapability')
+    return
+  endif
+
+  if !request.params->has_key('unregisterations')
+    SendInvalidParamsError(lspserver, request,
+      'client/unregisterCapability params.unregisterations is required')
+    return
+  endif
+  if request.params.unregisterations->type() != v:t_list
+    SendInvalidParamsError(lspserver, request,
+      'client/unregisterCapability params.unregisterations must be an array')
+    return
+  endif
+
   lspserver.sendResponse(request, null, {})
 enddef
 
@@ -339,6 +440,54 @@ def SendMethodNotFoundError(lspserver: dict<any>, request: dict<any>)
   var errmsg = $'Unsupported request method: {request.method}'
   lspserver.sendResponse(request, null,
     {code: -32601, message: 'Method not found', data: errmsg})
+enddef
+
+# Send a JSON-RPC InvalidRequest error for malformed request objects.
+def SendInvalidRequestError(lspserver: dict<any>, request: dict<any>, errmsg: string)
+  lspserver.sendResponse(request, null,
+    {code: -32600, message: 'Invalid request', data: errmsg})
+enddef
+
+# Send a JSON-RPC InvalidParams error for malformed method parameters.
+def SendInvalidParamsError(lspserver: dict<any>, request: dict<any>, errmsg: string)
+  lspserver.sendResponse(request, null,
+    {code: -32602, message: 'Invalid params', data: errmsg})
+enddef
+
+# Validate a request that must not include parameters.
+def ValidateNoParams(lspserver: dict<any>, request: dict<any>, method: string): bool
+  if !request->has_key('params')
+    return true
+  endif
+
+  # Accept null or empty object for methods without params.
+  if request.params == v:null
+    return true
+  endif
+  if request.params->type() == v:t_dict && request.params->empty()
+    return true
+  endif
+
+  SendInvalidParamsError(lspserver, request,
+    $'{method} does not accept params')
+  return false
+enddef
+
+# Validate a request that requires params to be an object.
+def ValidateObjectParams(lspserver: dict<any>, request: dict<any>, method: string): bool
+  if !request->has_key('params')
+    SendInvalidRequestError(lspserver, request,
+      $'{method} request is missing params')
+    return false
+  endif
+
+  if request.params->type() != v:t_dict
+    SendInvalidParamsError(lspserver, request,
+      $'{method} params must be an object')
+    return false
+  endif
+
+  return true
 enddef
 
 # process a request message from the server

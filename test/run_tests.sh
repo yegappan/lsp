@@ -19,9 +19,10 @@ ALL_TESTS=(
   "clangd_tests.vim"
   "tsserver_tests.vim"
   "gopls_tests.vim"
+  "rust_tests.vim"
+  "stub_lspserver_tests.vim"
   "not_lspserver_related_tests.vim"
   "markdown_tests.vim"
-  "rust_tests.vim"
 )
 TESTS_TO_RUN="${@:-${ALL_TESTS[@]}}"
 
