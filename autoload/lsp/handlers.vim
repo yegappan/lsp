@@ -532,6 +532,22 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
   endif
 enddef
 
+# Validate that a message conforms to JSON-RPC 2.0 envelope requirements.
+def ValidateMessageEnvelope(lspserver: dict<any>, msg: dict<any>): bool
+  var rpcversion: string = msg->get('jsonrpc', '')
+  if rpcversion == ''
+    lspserver.traceLog($'Dropping message missing jsonrpc field: {msg->string()}')
+    return false
+  endif
+
+  if rpcversion != '2.0'
+    lspserver.traceLog($'Dropping message with invalid jsonrpc version: {msg.jsonrpc}')
+    return false
+  endif
+
+  return true
+enddef
+
 # process one or more LSP server messages
 export def ProcessMessages(lspserver: dict<any>): void
   var idx: number
@@ -541,6 +557,12 @@ export def ProcessMessages(lspserver: dict<any>): void
   var req: dict<any>
 
   msg = lspserver.data
+
+  # Validate JSON-RPC 2.0 envelope before processing.
+  if !ValidateMessageEnvelope(lspserver, msg)
+    return
+  endif
+
   if msg->has_key('result') || msg->has_key('error')
     # A response with an unknown id can happen for canceled or timed-out
     # requests. Ignore it and only trace for debugging.

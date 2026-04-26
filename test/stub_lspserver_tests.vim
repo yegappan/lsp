@@ -167,6 +167,65 @@ def g:Test_ProcessMessages_IgnoreUnknownResponseId_Error()
     }, unknownId)
 enddef
 
+def g:Test_ProcessMessages_RejectsMessageMissingJsonRpc()
+  var lspserver = MakeTestLspServer([])
+  var traceMsgs: list<string> = []
+  lspserver.traceLog = (msg) => traceMsgs->add(msg)
+  lspserver.processRequest = (_, _) => assert_report('unexpected request dispatch')
+  lspserver.processNotif = (_, _) => assert_report('unexpected notification dispatch')
+
+  # Message without jsonrpc field should be dropped
+  lspserver.data = {
+    id: 1,
+    method: 'test/method'
+  }
+  lspserver.processMessages()
+
+  assert_equal(1, traceMsgs->len())
+  assert_match('Dropping message missing jsonrpc field:', traceMsgs[0])
+enddef
+
+def g:Test_ProcessMessages_RejectsMessageWithInvalidJsonRpcVersion()
+  var lspserver = MakeTestLspServer([])
+  var traceMsgs: list<string> = []
+  lspserver.traceLog = (msg) => traceMsgs->add(msg)
+  lspserver.processRequest = (_, _) => assert_report('unexpected request dispatch')
+  lspserver.processNotif = (_, _) => assert_report('unexpected notification dispatch')
+
+  # Message with wrong jsonrpc version should be dropped
+  lspserver.data = {
+    jsonrpc: '1.0',
+    id: 1,
+    method: 'test/method'
+  }
+  lspserver.processMessages()
+
+  assert_equal(1, traceMsgs->len())
+  assert_match('Dropping message with invalid jsonrpc version: 1.0', traceMsgs[0])
+enddef
+
+def g:Test_ProcessMessages_AcceptsValidJsonRpcVersion()
+  var lspserver = MakeTestLspServer([])
+  var traceMsgs: list<string> = []
+  var requestsProcessed: number = 0
+  lspserver.traceLog = (msg) => traceMsgs->add(msg)
+  lspserver.processRequest = (_) => {
+    requestsProcessed += 1
+  }
+  lspserver.processNotif = (_, _) => assert_report('unexpected notification dispatch')
+
+  # Message with correct jsonrpc version should be processed
+  lspserver.data = {
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'test/method'
+  }
+  lspserver.processMessages()
+
+  assert_equal(1, requestsProcessed)
+  assert_equal(0, traceMsgs->len())
+enddef
+
 # Only here to because the test runner needs it
 def g:StartLangServer(): bool
   return true
