@@ -46,13 +46,9 @@ def CaptureResponse(responses: list<dict<any>>, request: dict<any>,
   responses->add({id: request.id, result: result, error: error->deepcopy()})
 enddef
 
-def StubTraceLog(lspserver: dict<any>, msg: string)
-enddef
-
 def MakeRequestTestLspServer(responses: list<dict<any>>): dict<any>
   var lspserver = MakeTestLspServer([])
   lspserver.sendResponse = function(CaptureResponse, [responses])
-  lspserver.traceLog = function(StubTraceLog, [lspserver])
   return lspserver
 enddef
 
@@ -126,6 +122,49 @@ def g:Test_RequestValidation_InvalidParamsAndMethodNotFound()
   # Unknown method should return MethodNotFound.
   AssertRequestError(lspserver, responses,
     {id: 26, method: 'workspace/notARealMethod', params: {}}, -32601)
+enddef
+
+def AssertIgnoredUnknownResponse(lspserver: dict<any>, payload: dict<any>, id: string)
+  var traceMsgs: list<string> = []
+  lspserver.traceLog = (msg) => traceMsgs->add(msg)
+  lspserver.processRequest = (_, _) => assert_report('unexpected request dispatch')
+  lspserver.processNotif = (_, _) => assert_report('unexpected notification dispatch')
+
+  var beforeMessages = execute('messages')
+  lspserver.data = payload
+  lspserver.processMessages()
+
+  assert_equal(1, traceMsgs->len())
+  assert_match('Ignored response with unknown id from LSP server:', traceMsgs[0])
+
+  var afterMessages = execute('messages')
+  assert_equal(-1, afterMessages->stridx($'Unrecognized id in reponse received from LSP server: {id}'))
+  assert_equal(beforeMessages, afterMessages)
+enddef
+
+def g:Test_ProcessMessages_IgnoreUnknownResponseId_Result()
+  var lspserver = MakeTestLspServer([])
+  var unknownId = 'X-unknown-response-id-result'
+  AssertIgnoredUnknownResponse(lspserver,
+    {
+      jsonrpc: '2.0',
+      id: unknownId,
+      result: {}
+    }, unknownId)
+enddef
+
+def g:Test_ProcessMessages_IgnoreUnknownResponseId_Error()
+  var lspserver = MakeTestLspServer([])
+  var unknownId = 'X-unknown-response-id-error'
+  AssertIgnoredUnknownResponse(lspserver,
+    {
+      jsonrpc: '2.0',
+      id: unknownId,
+      error: {
+        code: -32601,
+        message: 'Method not found'
+      }
+    }, unknownId)
 enddef
 
 # Only here to because the test runner needs it

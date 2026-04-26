@@ -542,8 +542,9 @@ export def ProcessMessages(lspserver: dict<any>): void
 
   msg = lspserver.data
   if msg->has_key('result') || msg->has_key('error')
-    # response message from the server not handled by vim channel job in LSP mode
-    util.ErrMsg($'Unrecognized id in reponse received from LSP server: {msg.id}')
+    # A response with an unknown id can happen for canceled or timed-out
+    # requests. Ignore it and only trace for debugging.
+    lspserver.traceLog($'Ignored response with unknown id from LSP server: {msg->string()}')
   elseif msg->has_key('id') && msg->has_key('method')
     # request message from the server
     lspserver.processRequest(msg)
