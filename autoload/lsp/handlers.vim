@@ -334,6 +334,13 @@ def ProcessClientUnregisterCap(lspserver: dict<any>, request: dict<any>)
   lspserver.sendResponse(request, null, {})
 enddef
 
+# Send a JSON-RPC MethodNotFound error for unsupported server requests.
+def SendMethodNotFoundError(lspserver: dict<any>, request: dict<any>)
+  var errmsg = $'Unsupported request method: {request.method}'
+  lspserver.sendResponse(request, null,
+    {code: -32601, message: 'Method not found', data: errmsg})
+enddef
+
 # process a request message from the server
 export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
   var lspRequestHandlers: dict<func> =
@@ -368,8 +375,11 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
     lspRequestHandlers[request.method](lspserver, request)
   elseif lspserver.customRequestHandlers->has_key(request.method)
     lspserver.customRequestHandlers[request.method](lspserver, request)
-  elseif lspIgnoredRequestHandlers->index(request.method) == -1
-    lspserver.traceLog($'Error: Unsupported request message received: {request->string()}')
+  else
+    SendMethodNotFoundError(lspserver, request)
+    if lspIgnoredRequestHandlers->index(request.method) == -1
+      lspserver.traceLog($'Error: Unsupported request message received: {request->string()}')
+    endif
   endif
 enddef
 
