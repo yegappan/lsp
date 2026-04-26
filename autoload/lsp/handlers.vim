@@ -37,7 +37,7 @@ enddef
 # Notification: window/showMessage
 # Param: ShowMessageParams
 def ProcessShowMsgNotif(lspserver: dict<any>, reply: dict<any>)
-  var msgType = reply.params.type
+  var msgType = reply.params->get('type', 4)
   if msgType >= 4
     # ignore log messages from the LSP server (too chatty)
     # TODO: Add a configuration to control the message level that will be
@@ -229,9 +229,15 @@ def ProcessApplyEditReq(lspserver: dict<any>, request: dict<any>)
   if workspaceEditParams->has_key('label')
     util.InfoMsg($'Workspace edit {workspaceEditParams.label}')
   endif
-  textedit.ApplyWorkspaceEdit(workspaceEditParams.edit)
-  # TODO: Need to return the proper result of the edit operation
-  lspserver.sendResponse(request, {applied: true}, {})
+
+  try
+    textedit.ApplyWorkspaceEdit(workspaceEditParams.edit)
+    # TODO: Need to return the proper result of the edit operation
+    lspserver.sendResponse(request, {applied: true}, {})
+  catch
+    SendInternalError(lspserver, request,
+      $'Failed to apply workspace edit: {v:exception}')
+  endtry
 enddef
 
 # process the workspace/workspaceFolders LSP server request
@@ -334,8 +340,8 @@ def ProcessShowMessageRequest(lspserver: dict<any>, req: dict<any>)
 
     var actions: list<dict<any>> = params.actions
     if actions->empty()
-      util.WarnMsg($'Empty actions in showMessage request {params.message}')
-      lspserver.sendResponse(req, null, {})
+      SendInvalidParamsError(lspserver, req,
+        'window/showMessageRequest params.actions must not be empty')
       return
     endif
 
@@ -452,6 +458,12 @@ enddef
 def SendInvalidParamsError(lspserver: dict<any>, request: dict<any>, errmsg: string)
   lspserver.sendResponse(request, null,
     {code: -32602, message: 'Invalid params', data: errmsg})
+enddef
+
+# Send a JSON-RPC InternalError for runtime failures during request processing.
+def SendInternalError(lspserver: dict<any>, request: dict<any>, errmsg: string)
+  lspserver.sendResponse(request, null,
+    {code: -32603, message: 'Internal error', data: errmsg})
 enddef
 
 # Validate a request that must not include parameters.

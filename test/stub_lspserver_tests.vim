@@ -226,6 +226,79 @@ def g:Test_ProcessMessages_AcceptsValidJsonRpcVersion()
   assert_equal(0, traceMsgs->len())
 enddef
 
+def g:Test_ProcessApplyEditReq_SuccesssfulEdit()
+  var lspserver = MakeTestLspServer([])
+  var responses: list<dict<any>> = []
+  lspserver.sendResponse = (request, result, error) => CaptureResponse(responses, request, result, error)
+
+  lspserver.data = {
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'workspace/applyEdit',
+    params: {
+      edit: {}
+    }
+  }
+  lspserver.processMessages()
+
+  assert_equal(1, responses->len())
+  assert_equal({applied: true}, responses[0].result)
+  assert_equal(1, responses[0].error->empty())
+enddef
+
+def g:Test_ProcessApplyEditReq_MissingEdit()
+  var lspserver = MakeTestLspServer([])
+  var responses: list<dict<any>> = []
+  lspserver.sendResponse = (request, result, error) => CaptureResponse(responses, request, result, error)
+
+  var request = {
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'workspace/applyEdit',
+    params: {}
+  }
+
+  AssertRequestError(lspserver, responses, request, -32602)
+enddef
+
+def g:Test_ProcessShowMessageRequest_EmptyActions()
+  var lspserver = MakeTestLspServer([])
+  var responses: list<dict<any>> = []
+  lspserver.sendResponse = (request, result, error) => CaptureResponse(responses, request, result, error)
+
+  var request = {
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'window/showMessageRequest',
+    params: {
+      message: 'Test message',
+      actions: []
+    }
+  }
+
+  AssertRequestError(lspserver, responses, request, -32602)
+enddef
+
+def g:Test_ProcessShowMessageRequest_ValidMessage()
+  var lspserver = MakeTestLspServer([])
+  var responses: list<dict<any>> = []
+  lspserver.sendResponse = (request, result, error) => CaptureResponse(responses, request, result, error)
+
+  lspserver.data = {
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'window/showMessageRequest',
+    params: {
+      message: 'Test message'
+    }
+  }
+  lspserver.processMessages()
+
+  assert_equal(1, responses->len())
+  assert_equal(null, responses[0].result)
+  assert_equal(1, responses[0].error->empty())
+enddef
+
 # Only here to because the test runner needs it
 def g:StartLangServer(): bool
   return true
