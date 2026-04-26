@@ -7,11 +7,18 @@ vim9script
 import './util.vim'
 import './diag.vim'
 import './textedit.vim'
+import './buffer.vim' as buf
 
 # process a diagnostic notification message from the LSP server
 # Notification: textDocument/publishDiagnostics
 # Param: PublishDiagnosticsParams
 def ProcessDiagNotif(lspserver: dict<any>, reply: dict<any>): void
+  # For pull-capable servers, diagnostics come from textDocument/diagnostic.
+  # Ignore push notifications from such servers.
+  if lspserver.isDiagnosticsProvider
+    return
+  endif
+
   var params = reply.params
   diag.DiagNotification(lspserver, params.uri, params.diagnostics)
 enddef
@@ -89,9 +96,13 @@ endif
 def ProcessProgressNotif(lspserver: dict<any>, reply: dict<any>)
   var params = reply.params
   var token = params.token
+  var tokenKey = token->string()
   var value = params.value
 
+  lspserver.supportsWorkDoneProgress = true
+
   if value.kind == 'begin'
+    lspserver.workDoneProgressTokens[tokenKey] = true
     g:LspProgress[token] = {
       title: value->get('title', ''),
       message: value->get('message', ''),
@@ -108,9 +119,17 @@ def ProcessProgressNotif(lspserver: dict<any>, reply: dict<any>)
       endif
     endif
   elseif value.kind == 'end'
+    lspserver.sawWorkDoneProgressEnd = true
+    if lspserver.workDoneProgressTokens->has_key(tokenKey)
+      lspserver.workDoneProgressTokens->remove(tokenKey)
+    endif
     if g:LspProgress->has_key(token)
       g:LspProgress->remove(token)
     endif
+  endif
+
+  if lspserver.isDiagnosticsProvider
+    lspserver.queuePullDiagnosticsAllBuffers()
   endif
 
   # Trigger statusline refresh
@@ -246,6 +265,7 @@ enddef
 # Request: "window/workDoneProgress/create"
 # Param: none
 def ProcessWorkDoneProgressCreate(lspserver: dict<any>, request: dict<any>)
+  lspserver.supportsWorkDoneProgress = true
   lspserver.sendResponse(request, null, {})
 enddef
 
@@ -289,6 +309,20 @@ enddef
 # process the client/registerCapability LSP server request
 # Request: "client/registerCapability"
 # Param: RegistrationParams
+# process the workspace/diagnostic/refresh LSP server request
+# Request: "workspace/diagnostic/refresh"
+# Param: none
+# Re-pull diagnostics for all open buffers served by this server.
+def ProcessDiagnosticRefreshReq(lspserver: dict<any>, request: dict<any>)
+  lspserver.sendResponse(request, null, {})
+  for bnr in buf.BufGetServerBufnrs(lspserver)
+    lspserver.pullDiagnostics(bnr)
+  endfor
+enddef
+
+# process the client/registerCapability LSP server request
+# Request: "client/registerCapability"
+# Param: RegistrationParams
 def ProcessClientRegisterCap(lspserver: dict<any>, request: dict<any>)
   lspserver.sendResponse(request, null, {})
 enddef
@@ -310,10 +344,10 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
       'window/showMessageRequest': ProcessShowMessageRequest,
       'workspace/applyEdit': ProcessApplyEditReq,
       'workspace/configuration': ProcessWorkspaceConfiguration,
+      'workspace/diagnostic/refresh': ProcessDiagnosticRefreshReq,
       'workspace/workspaceFolders': ProcessWorkspaceFoldersReq
       # TODO: Handle the following requests from the server:
       #     workspace/codeLens/refresh
-      #     workspace/diagnostic/refresh
       #     workspace/inlayHint/refresh
       #     workspace/inlineValue/refresh
       #     workspace/semanticTokens/refresh

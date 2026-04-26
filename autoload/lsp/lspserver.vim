@@ -28,6 +28,8 @@ import './inlayhints.vim'
 import './semantichighlight.vim'
 import './buffer.vim' as buf
 
+const DIAG_PULL_DEBOUNCE_MSEC = 200
+
 # LSP server standard output handler
 # LSP responses from server handled by channel job in LSP mode
 def Output_cb(lspserver: dict<any>, chan: channel, msg: any): void
@@ -50,6 +52,11 @@ enddef
 # LSP server exit callback
 def Exit_cb(lspserver: dict<any>, job: job, status: number): void
   util.WarnMsg($'{strftime("%m/%d/%y %T")}: LSP server ({lspserver.name}) exited with status {status}')
+  if lspserver.diagnosticPullTimer != -1
+    timer_stop(lspserver.diagnosticPullTimer)
+    lspserver.diagnosticPullTimer = -1
+  endif
+  lspserver.pendingPullBufnrs = {}
   lspserver.running = false
   lspserver.ready = false
 enddef
@@ -79,6 +86,11 @@ def StartServer(lspserver: dict<any>, bnr: number): number
   lspserver.completionLazyDoc = false
   lspserver.completionTriggerChars = []
   lspserver.signaturePopup = -1
+  lspserver.supportsWorkDoneProgress = false
+  lspserver.sawWorkDoneProgressEnd = false
+  lspserver.workDoneProgressTokens = {}
+  lspserver.pendingPullBufnrs = {}
+  lspserver.diagnosticPullTimer = -1
 
   var job = cmd->job_start(opts)
   if job->job_status() == 'fail'
@@ -264,6 +276,11 @@ def StopServer(lspserver: dict<any>): number
   if lspserver.job->job_status() == 'run'
     lspserver.job->job_stop()
   endif
+  if lspserver.diagnosticPullTimer != -1
+    timer_stop(lspserver.diagnosticPullTimer)
+    lspserver.diagnosticPullTimer = -1
+  endif
+  lspserver.pendingPullBufnrs = {}
   lspserver.running = false
   lspserver.ready = false
   return 0
@@ -652,6 +669,124 @@ def TextdocDidClose(lspserver: dict<any>, bnr: number): void
   endif
   if lspserver.cachedBufferContent->has_key(bnr)
     lspserver.cachedBufferContent->remove(bnr)
+  endif
+  if lspserver.diagnosticResultIds->has_key(bnr)
+    lspserver.diagnosticResultIds->remove(bnr)
+  endif
+  if lspserver.pendingPullBufnrs->has_key(bnr)
+    lspserver.pendingPullBufnrs->remove(bnr)
+  endif
+enddef
+
+def RestartDiagnosticPullTimer(lspserver: dict<any>)
+  if lspserver.diagnosticPullTimer != -1
+    timer_stop(lspserver.diagnosticPullTimer)
+  endif
+  lspserver.diagnosticPullTimer = timer_start(
+    DIAG_PULL_DEBOUNCE_MSEC,
+    function(FlushQueuedDiagnosticsPull, [lspserver])
+  )
+enddef
+
+def QueuePullDiagnostics(lspserver: dict<any>, bnr: number)
+  if !lspserver.running || !lspserver.ready || !lspserver.isDiagnosticsProvider
+    return
+  endif
+
+  if bnr->bufloaded() == 0 || buf.BufLspServerGetById(bnr, lspserver.id)->empty()
+    return
+  endif
+
+  lspserver.pendingPullBufnrs[bnr] = true
+  RestartDiagnosticPullTimer(lspserver)
+enddef
+
+def QueuePullDiagnosticsAllBuffers(lspserver: dict<any>)
+  if !lspserver.running || !lspserver.ready || !lspserver.isDiagnosticsProvider
+    return
+  endif
+
+  for bnr in buf.BufGetServerBufnrs(lspserver)
+    if bnr->bufloaded() == 1
+      lspserver.pendingPullBufnrs[bnr] = true
+    endif
+  endfor
+
+  if lspserver.pendingPullBufnrs->empty()
+    return
+  endif
+
+  RestartDiagnosticPullTimer(lspserver)
+enddef
+
+def FlushQueuedDiagnosticsPull(lspserver: dict<any>, _timerid: number)
+  lspserver.diagnosticPullTimer = -1
+  if !lspserver.running || !lspserver.ready || !lspserver.isDiagnosticsProvider
+    lspserver.pendingPullBufnrs = {}
+    return
+  endif
+
+  var bufs = lspserver.pendingPullBufnrs->keys()->map((_, k) => str2nr(k))
+  lspserver.pendingPullBufnrs = {}
+
+  for bnr in bufs
+    if bnr->bufloaded() == 0 || buf.BufLspServerGetById(bnr, lspserver.id)->empty()
+      continue
+    endif
+    lspserver.pullDiagnostics(bnr)
+  endfor
+enddef
+
+# Pull diagnostics for a document.
+# Request: "textDocument/diagnostic"
+# Param: DocumentDiagnosticParams
+def PullDiagnostics(lspserver: dict<any>, bnr: number)
+  if !lspserver.isDiagnosticsProvider
+    util.ErrMsg('LSP server does not support pull diagnostics')
+    return
+  endif
+
+  # Send any pending changes before asking for diagnostics.
+  bnr->listener_flush()
+
+  var uri = util.LspBufnrToUri(bnr)
+  var params: dict<any> = {
+    textDocument: {
+      uri: uri
+    }
+  }
+
+  var prevResultId = lspserver.diagnosticResultIds->get(bnr, '')
+  if prevResultId != ''
+    params.previousResultId = prevResultId
+  endif
+
+  var reply = lspserver.rpc('textDocument/diagnostic', params)
+
+  # Result: DocumentDiagnosticReport | null
+  if reply->empty() || reply.result == v:null || reply.result->empty()
+    return
+  endif
+
+  var report: dict<any> = reply.result
+  var reportKind = report->get('kind', '')
+
+  if reportKind == 'full'
+    var items = report->get('items', [])
+    var waitForInitialProgress = lspserver.supportsWorkDoneProgress
+      && !lspserver.sawWorkDoneProgressEnd
+    if items->empty() && waitForInitialProgress
+      return
+    endif
+    diag.DiagNotification(lspserver, uri, items)
+  elseif reportKind != 'unchanged'
+    util.WarnMsg($'Unsupported diagnostic report kind "{reportKind}"')
+  endif
+
+  if report->has_key('resultId')
+    lspserver.diagnosticResultIds[bnr] = report.resultId
+  elseif reportKind == 'full' && lspserver.diagnosticResultIds->has_key(bnr)
+    lspserver.diagnosticResultIds->remove(bnr)
   endif
 enddef
 
@@ -2189,8 +2324,14 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     peekSymbolFilePopup: -1,
     peekSymbolPopup: -1,
     processDiagHandler: serverParams.processDiagHandler,
+    diagnosticResultIds: {},
+    diagnosticPullTimer: -1,
+    pendingPullBufnrs: {},
     supportsDidOpenClose: false,
     supportsDidSave: false,
+    supportsWorkDoneProgress: false,
+    sawWorkDoneProgressEnd: false,
+    workDoneProgressTokens: {},
     rootSearchFiles: serverParams.rootSearch->deepcopy(),
     runIfSearchFiles: serverParams.runIfSearch->deepcopy(),
     runUnlessSearchFiles: serverParams.runUnlessSearch->deepcopy(),
@@ -2266,6 +2407,9 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     typeHierarchy: function(TypeHierarchy, [lspserver]),
     renameSymbol: function(RenameSymbol, [lspserver]),
     codeAction: function(CodeAction, [lspserver]),
+    pullDiagnostics: function(PullDiagnostics, [lspserver]),
+    queuePullDiagnostics: function(QueuePullDiagnostics, [lspserver]),
+    queuePullDiagnosticsAllBuffers: function(QueuePullDiagnosticsAllBuffers, [lspserver]),
     codeLens: function(CodeLens, [lspserver]),
     resolveCodeAction: function(ResolveCodeAction, [lspserver]),
     resolveCodeLens: function(ResolveCodeLens, [lspserver]),

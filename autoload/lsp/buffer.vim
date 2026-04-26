@@ -41,6 +41,7 @@ var SupportedCheckFns = {
   codeLens: (lspserver) => lspserver.isCodeLensProvider,
   completion: (lspserver) => lspserver.isCompletionProvider,
   declaration: (lspserver) => lspserver.isDeclarationProvider,
+  diagnostics: (lspserver) => lspserver.isDiagnosticsProvider,
   definition: (lspserver) => lspserver.isDefinitionProvider,
   documentFormatting: (lspserver) => lspserver.isDocumentFormattingProvider,
   documentRangeFormatting: (lspserver) => lspserver.isDocumentRangeFormattingProvider,
@@ -142,6 +143,14 @@ export def BufLspServersGet(bnr: number): list<dict<any>>
   endif
 
   return bufnrToServers[bnr]
+enddef
+
+# Returns all buffer numbers that have "lspserver" attached.
+export def BufGetServerBufnrs(lspserver: dict<any>): list<number>
+  return bufnrToServers->keys()
+    ->map((_, k) => str2nr(k))
+    ->filter((_, bnr) => bufnrToServers[bnr]
+      ->util.Indexof((_, srv) => srv.id == lspserver.id) >= 0)
 enddef
 
 # Returns the LSP server for the current buffer with the optionally "feature".

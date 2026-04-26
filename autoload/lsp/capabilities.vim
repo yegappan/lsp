@@ -513,6 +513,10 @@ export def GetClientCaps(): dict<any>
 	dynamicRegistration: false,
 	linkSupport: true
       },
+      diagnostic: {
+	dynamicRegistration: false,
+	relatedDocumentSupport: false
+      },
       definition: {
 	dynamicRegistration: false,
 	linkSupport: true

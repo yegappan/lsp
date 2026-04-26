@@ -397,7 +397,9 @@ enddef
 
 # A buffer is saved. Send the "textDocument/didSave" LSP notification
 def LspSavedFile(bnr: number)
-  var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)->filter(
+  var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)->copy()
+
+  lspservers = lspservers->filter(
     (key, lspsrv) => !lspsrv->empty() && lspsrv.running
   )
 
@@ -412,6 +414,16 @@ enddef
 
 # Called after leaving insert mode. Used to process diag messages (if any)
 def LspLeftInsertMode(bnr: number)
+  var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)->copy()
+
+  lspservers = lspservers->filter(
+    (key, lspsrv) => !lspsrv->empty() && lspsrv.running
+      && lspsrv.ready && lspsrv.isDiagnosticsProvider
+  )
+  for lspserver in lspservers
+    lspserver.queuePullDiagnostics(bnr)
+  endfor
+
   var updatePending: bool = bnr->getbufvar('LspDiagsUpdatePending', false)
   if !updatePending
     return
@@ -483,11 +495,18 @@ def BufferInit(lspserverId: number, bnr: number): void
   # add a listener to track changes to this buffer
   listener_add((_bnr: number, start: number, end: number, added: number, changes: list<dict<number>>) => {
     lspserver.textdocDidChange(bnr)
+    if lspserver.isDiagnosticsProvider
+      lspserver.queuePullDiagnostics(bnr)
+    endif
   }, bnr)
 
   AddBufLocalAutocmds(lspserver, bnr)
 
   diag.BufferInit(lspserver, bnr)
+
+  if lspserver.isDiagnosticsProvider
+    lspserver.pullDiagnostics(bnr)
+  endif
 
   var allServersReady = true
   var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)
