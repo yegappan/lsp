@@ -53,6 +53,8 @@ augroup LSPAutoCmds
   # from the buffer getting wiped out.
   autocmd BufWipeOut * lsp.RemoveFile(expand('<abuf>')->str2nr())
   autocmd BufWinEnter * lsp.BufferLoadedInWin(expand('<abuf>')->str2nr())
+  # Pull fresh diagnostics when a file is modified outside Vim and reloaded
+  autocmd FileChangedShellPost * lsp.BufferExternallyChanged(expand('<abuf>')->str2nr())
 augroup END
 
 autocmd VimLeavePre * silent! lsp.FastShutdownExitAllServers()

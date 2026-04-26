@@ -651,6 +651,25 @@ export def BufferLoadedInWin(bnr: number)
   endif
 enddef
 
+# File was modified outside of Vim and reloaded. Refresh diagnostics.
+export def BufferExternallyChanged(bnr: number): void
+  var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)
+  if lspservers->empty()
+    return
+  endif
+
+  for lspserver in lspservers
+    if !lspserver->empty() && lspserver.running && lspserver.ready
+      # Notify server of the change to trigger re-analysis
+      lspserver.textdocDidChange(bnr)
+      if lspserver.isDiagnosticsProvider
+        # For pull-based diagnostics, explicitly request fresh diagnostics
+        lspserver.queuePullDiagnostics(bnr)
+      endif
+    endif
+  endfor
+enddef
+
 # Send synchronous "shutdown" request to LSP server with a tiny timeout.
 # It's for vim exit. We're in a hurry and ain't waiting for slow servers.
 # Time out of slow responses within a split second (125 milliseconds).
