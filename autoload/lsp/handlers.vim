@@ -138,69 +138,69 @@ def ProcessProgressNotif(lspserver: dict<any>, reply: dict<any>)
   endif
 enddef
 
+const lsp_notif_handlers: dict<func> =
+  {
+    'window/showMessage': ProcessShowMsgNotif,
+    'window/logMessage': ProcessLogMsgNotif,
+    'textDocument/publishDiagnostics': ProcessDiagNotif,
+    '$/logTrace': ProcessLogTraceNotif,
+    'telemetry/event': ProcessUnsupportedNotifOnce,
+    '$/progress': ProcessProgressNotif,
+  }
+
+# Explicitly ignored notification messages (many of them are specific to a
+# particular language server)
+const lsp_ignored_notif_handlers: list<string> =
+  [
+    '$/status/report',
+    '$/status/show',
+    # PHP intelephense server sends the "indexingStarted" and
+    # "indexingEnded" notifications which is not in the LSP specification.
+    'indexingStarted',
+    'indexingEnded',
+    # Java language server sends the 'language/status' notification which is
+    # not in the LSP specification.
+    'language/status',
+    # Typescript language server sends the '$/typescriptVersion'
+    # notification which is not in the LSP specification.
+    '$/typescriptVersion',
+    # Dart language server sends the '$/analyzerStatus' notification which
+    # is not in the LSP specification.
+    '$/analyzerStatus',
+    # pyright language server notifications
+    'pyright/beginProgress',
+    'pyright/reportProgress',
+    'pyright/endProgress',
+    'eslint/status',
+    'taplo/didChangeSchemaAssociation',
+    'sqlLanguageServer.finishSetup',
+    # ccls language server notifications
+    '$ccls/publishSkippedRanges',
+    '$ccls/publishSemanticHighlight',
+    # omnisharp language server notifications
+    'o#/backgrounddiagnosticstatus',
+    'o#/msbuildprojectdiagnostics',
+    'o#/projectadded',
+    'o#/projectchanged',
+    'o#/projectconfiguration',
+    'o#/projectdiagnosticstatus',
+    'o#/unresolveddependencies',
+    '@/tailwindCSS/projectInitialized',
+    # lua-language-server sends a "hello world" message on start-up.
+    '$/hello',
+    # bitbake language server notifications
+    'bitbake/EmbeddedLanguageDocs',
+    # devicetree language server notifications
+    'devicetree/activeContextStableNotification',
+    'devicetree/contextCreated',
+    'devicetree/contextDeleted',
+    'devicetree/contextStableNotification',
+    'devicetree/newActiveContext',
+    'devicetree/settingsChanged',
+  ]
+
 # process notification messages from the LSP server
 export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
-  var lsp_notif_handlers: dict<func> =
-    {
-      'window/showMessage': ProcessShowMsgNotif,
-      'window/logMessage': ProcessLogMsgNotif,
-      'textDocument/publishDiagnostics': ProcessDiagNotif,
-      '$/logTrace': ProcessLogTraceNotif,
-      'telemetry/event': ProcessUnsupportedNotifOnce,
-      '$/progress': ProcessProgressNotif,
-    }
-
-  # Explicitly ignored notification messages (many of them are specific to a
-  # particular language server)
-  var lsp_ignored_notif_handlers: list<string> =
-    [
-      '$/status/report',
-      '$/status/show',
-      # PHP intelephense server sends the "indexingStarted" and
-      # "indexingEnded" notifications which is not in the LSP specification.
-      'indexingStarted',
-      'indexingEnded',
-      # Java language server sends the 'language/status' notification which is
-      # not in the LSP specification.
-      'language/status',
-      # Typescript language server sends the '$/typescriptVersion'
-      # notification which is not in the LSP specification.
-      '$/typescriptVersion',
-      # Dart language server sends the '$/analyzerStatus' notification which
-      # is not in the LSP specification.
-      '$/analyzerStatus',
-      # pyright language server notifications
-      'pyright/beginProgress',
-      'pyright/reportProgress',
-      'pyright/endProgress',
-      'eslint/status',
-      'taplo/didChangeSchemaAssociation',
-      'sqlLanguageServer.finishSetup',
-      # ccls language server notifications
-      '$ccls/publishSkippedRanges',
-      '$ccls/publishSemanticHighlight',
-      # omnisharp language server notifications
-      'o#/backgrounddiagnosticstatus',
-      'o#/msbuildprojectdiagnostics',
-      'o#/projectadded',
-      'o#/projectchanged',
-      'o#/projectconfiguration',
-      'o#/projectdiagnosticstatus',
-      'o#/unresolveddependencies',
-      '@/tailwindCSS/projectInitialized',
-      # lua-language-server sends a "hello world" message on start-up.
-      '$/hello',
-      # bitbake language server notifications
-      'bitbake/EmbeddedLanguageDocs',
-      # devicetree language server notifications
-      'devicetree/activeContextStableNotification',
-      'devicetree/contextCreated',
-      'devicetree/contextDeleted',
-      'devicetree/contextStableNotification',
-      'devicetree/newActiveContext',
-      'devicetree/settingsChanged',
-    ]
-
   if lsp_notif_handlers->has_key(reply.method)
     lsp_notif_handlers[reply.method](lspserver, reply)
   elseif lspserver.customNotificationHandlers->has_key(reply.method)
@@ -502,43 +502,43 @@ def ValidateObjectParams(lspserver: dict<any>, request: dict<any>, method: strin
   return true
 enddef
 
+const lsp_request_handlers: dict<func> =
+  {
+    'client/registerCapability': ProcessClientRegisterCap,
+    'client/unregisterCapability': ProcessClientUnregisterCap,
+    'window/workDoneProgress/create': ProcessWorkDoneProgressCreate,
+    'window/showMessageRequest': ProcessShowMessageRequest,
+    'workspace/applyEdit': ProcessApplyEditReq,
+    'workspace/configuration': ProcessWorkspaceConfiguration,
+    'workspace/diagnostic/refresh': ProcessDiagnosticRefreshReq,
+    'workspace/workspaceFolders': ProcessWorkspaceFoldersReq
+    # TODO: Handle the following requests from the server:
+    #     workspace/codeLens/refresh
+    #     workspace/inlayHint/refresh
+    #     workspace/inlineValue/refresh
+    #     workspace/semanticTokens/refresh
+  }
+
+# Explicitly ignored requests
+const lsp_ignored_request_handlers: list<string> =
+  [
+    # Eclipse java language server sends the
+    # 'workspace/executeClientCommand' request (to reload bundles) which is
+    # not in the LSP specification.
+    'workspace/executeClientCommand',
+    # bitbake language server messages
+    'bitbake/getRecipeLocalFiles'
+  ]
+
 # process a request message from the server
 export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
-  var lspRequestHandlers: dict<func> =
-    {
-      'client/registerCapability': ProcessClientRegisterCap,
-      'client/unregisterCapability': ProcessClientUnregisterCap,
-      'window/workDoneProgress/create': ProcessWorkDoneProgressCreate,
-      'window/showMessageRequest': ProcessShowMessageRequest,
-      'workspace/applyEdit': ProcessApplyEditReq,
-      'workspace/configuration': ProcessWorkspaceConfiguration,
-      'workspace/diagnostic/refresh': ProcessDiagnosticRefreshReq,
-      'workspace/workspaceFolders': ProcessWorkspaceFoldersReq
-      # TODO: Handle the following requests from the server:
-      #     workspace/codeLens/refresh
-      #     workspace/inlayHint/refresh
-      #     workspace/inlineValue/refresh
-      #     workspace/semanticTokens/refresh
-    }
-
-  # Explicitly ignored requests
-  var lspIgnoredRequestHandlers: list<string> =
-    [
-      # Eclipse java language server sends the
-      # 'workspace/executeClientCommand' request (to reload bundles) which is
-      # not in the LSP specification.
-      'workspace/executeClientCommand',
-      # bitbake language server messages
-      'bitbake/getRecipeLocalFiles'
-    ]
-
-  if lspRequestHandlers->has_key(request.method)
-    lspRequestHandlers[request.method](lspserver, request)
+  if lsp_request_handlers->has_key(request.method)
+    lsp_request_handlers[request.method](lspserver, request)
   elseif lspserver.customRequestHandlers->has_key(request.method)
     lspserver.customRequestHandlers[request.method](lspserver, request)
   else
     SendMethodNotFoundError(lspserver, request)
-    if lspIgnoredRequestHandlers->index(request.method) == -1
+    if lsp_ignored_request_handlers->index(request.method) == -1
       lspserver.traceLog($'Error: Unsupported request message received: {request->string()}')
     endif
   endif

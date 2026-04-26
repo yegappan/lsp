@@ -380,23 +380,23 @@ enddef
 
 const LSP_ERROR_REQUEST_CANCELLED = -32800
 
+const lsp_errmsg_map: dict<string> = {
+  -32001: 'UnknownErrorCode',
+  -32002: 'ServerNotInitialized',
+  -32600: 'InvalidRequest',
+  -32601: 'MethodNotFound',
+  -32602: 'InvalidParams',
+  -32603: 'InternalError',
+  -32700: 'ParseError',
+  -32800: 'RequestCancelled',
+  -32801: 'ContentModified',
+  -32802: 'ServerCancelled',
+  -32803: 'RequestFailed'
+}
+
 # Translate an LSP error code into a readable string
 def LspGetErrorMessage(errcode: number): string
-  var errmap = {
-    -32001: 'UnknownErrorCode',
-    -32002: 'ServerNotInitialized',
-    -32600: 'InvalidRequest',
-    -32601: 'MethodNotFound',
-    -32602: 'InvalidParams',
-    -32603: 'InternalError',
-    -32700: 'ParseError',
-    -32800: 'RequestCancelled',
-    -32801: 'ContentModified',
-    -32802: 'ServerCancelled',
-    -32803: 'RequestFailed'
-  }
-
-  return errmap->get(errcode, errcode->string())
+  return lsp_errmsg_map->get(errcode, errcode->string())
 enddef
 
 # Process a LSP server response error and display an error message.
