@@ -268,13 +268,14 @@ def StopServer(lspserver: dict<any>): number
   # Wait for the server to process the exit notification and exit for a
   # maximum of 2 seconds.
   var maxCount: number = 1000
-  while lspserver.job->job_status() == 'run' && maxCount > 0
+  var job = lspserver.job
+  while job->job_status() == 'run' && maxCount > 0
     sleep 2m
     maxCount -= 1
   endwhile
 
-  if lspserver.job->job_status() == 'run'
-    lspserver.job->job_stop()
+  if job->job_status() == 'run'
+    job->job_stop()
   endif
   if lspserver.diagnosticPullTimer != -1
     timer_stop(lspserver.diagnosticPullTimer)
@@ -331,15 +332,17 @@ enddef
 
 # send a response message to the server
 def SendResponse(lspserver: dict<any>, request: dict<any>, result: any, error: dict<any>)
-  if request.id->type() != v:t_string && request.id->type() != v:t_number
-    util.ErrMsg('request.id of response to LSP server must be a number or a string')
+  var reqid = request.id
+  var idType = reqid->type()
+  if idType != v:t_string && idType != v:t_number
+    util.ErrMsg($'request.id ({reqid->string()}) of response to LSP server must be a number or a string')
     return
   endif
-  var resp: dict<any> = lspserver.createResponse(request.id)
+  var resp: dict<any> = lspserver.createResponse(reqid)
   if error->empty()
-    resp->extend({result: result})
+    resp.result = result
   else
-    resp->extend({error: error})
+    resp.error = error
   endif
   lspserver.sendMessage(resp)
 enddef
