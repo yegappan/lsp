@@ -39,7 +39,7 @@ def g:Test_CompletionList_ItemDefaults_EditRange()
     }],
   }
 
-  completion.CompletionReply(lspserver, cItems)
+  completion.CompletionReply(lspserver, cItems, {})
 
   assert_false(lspserver.omniCompletePending)
   assert_equal(1, lspserver.completeItems->len())
@@ -79,7 +79,7 @@ def g:Test_Completion_InsertTextMode_AdjustIndentation()
     insertTextMode: 2,
   }]
 
-  completion.CompletionReply(lspserver, cItems)
+  completion.CompletionReply(lspserver, cItems, {})
 
   assert_false(lspserver.omniCompletePending)
   assert_equal(1, lspserver.completeItems->len())
@@ -108,7 +108,7 @@ def g:Test_Completion_InsertTextMode_AsIs()
     insertTextMode: 1,
   }]
 
-  completion.CompletionReply(lspserver, cItems)
+  completion.CompletionReply(lspserver, cItems, {})
 
   assert_false(lspserver.omniCompletePending)
   assert_equal(1, lspserver.completeItems->len())
@@ -142,7 +142,7 @@ def g:Test_Completion_LabelDetails_Rendering()
     detail: 'legacy detail',
   }]
 
-  completion.CompletionReply(lspserver, cItems)
+  completion.CompletionReply(lspserver, cItems, {})
 
   assert_false(lspserver.omniCompletePending)
   assert_equal(1, lspserver.completeItems->len())
@@ -240,7 +240,7 @@ def g:Test_Completion_Preselect_ItemFirst()
     preselect: true,
   }]
 
-  completion.CompletionReply(lspserver, cItems)
+  completion.CompletionReply(lspserver, cItems, {})
 
   assert_false(lspserver.omniCompletePending)
   assert_equal(3, lspserver.completeItems->len())
@@ -275,7 +275,7 @@ def g:Test_Completion_Preselect_NoopWithoutPreselect()
     sortText: 'c',
   }]
 
-  completion.CompletionReply(lspserver, cItems)
+  completion.CompletionReply(lspserver, cItems, {})
 
   assert_false(lspserver.omniCompletePending)
   assert_equal(3, lspserver.completeItems->len())
