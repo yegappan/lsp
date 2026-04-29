@@ -1367,7 +1367,7 @@ def g:Test_LspHover()
   #   2) the hover buffer filetype is set to "text".
   hover.HoverReply(hoverServer,
     {contents: {kind: 'plaintext', value: "line one\nline two"}},
-    'silent')
+    {}, 'silent')
   p = popup_list()
   assert_equal(1, p->len())
   assert_equal(['line one', 'line two'], getbufline(winbufnr(p[0]), 1, '$'))
@@ -1407,7 +1407,7 @@ def g:Test_LspHover()
   cursor(8, 4)
   reqctx = hover.HoverRequestContextGet(hoverServer)
   cursor(9, 9)
-  hover.HoverReply(hoverServer, {contents: 'stale hover result'}, 'silent', reqctx)
+  hover.HoverReply(hoverServer, {contents: 'stale hover result'}, {}, 'silent', reqctx)
   assert_equal([], popup_list())
   cursor(8, 4)
   assert_equal(false, hover.HoverShowCached(reqctx, hoverServer, 'silent'))
@@ -1485,7 +1485,7 @@ def g:Test_LspShowSignature()
   var sigserver = buf.CurbufGetServerChecked('signatureHelp')
   var reqctx = signature.SignatureRequestContextGet()
   cursor(1, 1)
-  signature.SignatureHelp(sigserver, {}, reqctx)
+  signature.SignatureHelp(sigserver, {}, {}, reqctx)
   assert_equal([p[0]], popup_list())
 
   popup_close(p[0])
@@ -1585,7 +1585,7 @@ def g:Test_LspShowSignature_SyntheticSession()
     activeParameter: 1
   }
 
-  signature.SignatureHelp(lspserver, sighelp)
+  signature.SignatureHelp(lspserver, sighelp, {})
   g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
 
   var popups = popup_list()
@@ -1597,7 +1597,7 @@ def g:Test_LspShowSignature_SyntheticSession()
   assert_equal([], prop_list(1, {bufnr: bnr}))
 
   # Empty signature-help result should close the popup and reset the session.
-  signature.SignatureHelp(lspserver, {})
+  signature.SignatureHelp(lspserver, {}, {})
   assert_equal([], popup_list())
 
   g:LspOptionsSet({echoSignature: false, showSignatureDocs: false})
@@ -1632,7 +1632,7 @@ def g:Test_LspShowSignature_ParameterDocStringFormat()
     activeParameter: 0
   }
 
-  signature.SignatureHelp(lspserver, sighelp)
+  signature.SignatureHelp(lspserver, sighelp, {})
   g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
   var popups = popup_list()
   var bnr = winbufnr(popups[0])
@@ -1696,7 +1696,7 @@ def g:Test_LspShowSignature_ParameterDocMarkdown()
     activeParameter: 0
   }
 
-  signature.SignatureHelp(lspserver, sighelp)
+  signature.SignatureHelp(lspserver, sighelp, {})
   g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
   var popups = popup_list()
   var bnr = winbufnr(popups[0])
@@ -1743,7 +1743,7 @@ def g:Test_LspShowSignature_OutOfRangeActiveParam()
     activeParameter: 10  # Out of range - should clamp to last param
   }
 
-  signature.SignatureHelp(lspserver, sighelp)
+  signature.SignatureHelp(lspserver, sighelp, {})
   g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
   var popups = popup_list()
   var bnr = winbufnr(popups[0])
@@ -1787,7 +1787,7 @@ def g:Test_LspShowSignature_EchoMode()
     activeParameter: 0
   }
 
-  signature.SignatureHelp(lspserver, sighelp)
+  signature.SignatureHelp(lspserver, sighelp, {})
 
   # Echo mode should NOT create any popups
   assert_equal([], popup_list())
@@ -1822,11 +1822,11 @@ def g:Test_LspShowSignature_EmptyResponse()
     activeParameter: 0
   }
 
-  signature.SignatureHelp(lspserver, sighelp)
+  signature.SignatureHelp(lspserver, sighelp, {})
   g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
 
   # Now send an empty response
-  signature.SignatureHelp(lspserver, {})
+  signature.SignatureHelp(lspserver, {}, {})
   assert_equal([], popup_list())
 
   :%bw!
@@ -1860,7 +1860,7 @@ def g:Test_LspShowSignature_OffsetLabelHighlight()
     activeParameter: 1
   }
 
-  signature.SignatureHelp(lspserver, sighelp)
+  signature.SignatureHelp(lspserver, sighelp, {})
   g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
   var popups = popup_list()
   var bnr = winbufnr(popups[0])
@@ -1908,7 +1908,7 @@ def g:Test_LspShowSignature_SimpleOverloads()
     activeParameter: 0
   }
 
-  signature.SignatureHelp(lspserver, sighelp)
+  signature.SignatureHelp(lspserver, sighelp, {})
   g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
   var popups = popup_list()
   var bnr = winbufnr(popups[0])
@@ -1942,7 +1942,7 @@ def g:Test_LspShowSignature_NoParameters()
     activeParameter: null
   }
 
-  signature.SignatureHelp(lspserver, sighelp)
+  signature.SignatureHelp(lspserver, sighelp, {})
   g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
   var popups = popup_list()
   var bnr = winbufnr(popups[0])
@@ -1983,7 +1983,7 @@ def g:Test_LspShowSignature_ContextMatch()
   var reqctx = signature.SignatureRequestContextGet()
 
   # Display signature
-  signature.SignatureHelp(lspserver, sighelp, reqctx)
+  signature.SignatureHelp(lspserver, sighelp, {}, reqctx)
   g:WaitForAssert(() => assert_equal(1, popup_list()->len()))
   var popups = popup_list()
   var oldPopupId = popups[0]
@@ -2003,7 +2003,7 @@ def g:Test_LspShowSignature_ContextMatch()
     activeSignature: 0,
     activeParameter: 0
   }
-  signature.SignatureHelp(lspserver, oldSighelp, reqctx)
+  signature.SignatureHelp(lspserver, oldSighelp, {}, reqctx)
 
   # Popup should still show the original signature (stale reply was rejected)
   popups = popup_list()

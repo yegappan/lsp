@@ -29,7 +29,14 @@ def InlayHintsClear(bnr: number)
 enddef
 
 # LSP inlay hints reply message handler
-export def InlayHintsReply(lspserver: dict<any>, bnr: number, inlayHints: any)
+export def InlayHintsReply(lspserver: dict<any>, inlayHints: any,
+                           inlayHintsError: dict<any>, bnr: number)
+  # Handle inlay hints error
+  if !inlayHintsError->empty()
+    lspserver.traceLog($'Inlay hints failed: {inlayHintsError.message}')
+    return
+  endif
+
   if inlayHints->empty()
     return
   endif

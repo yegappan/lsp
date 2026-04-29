@@ -3,6 +3,7 @@ vim9script
 # Functions related to handling LSP symbol signature help.
 
 import './options.vim' as opt
+import './util.vim' as util
 import './buffer.vim' as buf
 
 # Keep the current signature help session in one place so overload
@@ -997,7 +998,15 @@ enddef
 # display the symbol signature help.
 # Result: SignatureHelp | null
 export def SignatureHelp(lspserver: dict<any>, sighelp: any,
-			 reqctx: dict<number> = {}): void
+                         sighelpError: dict<any>,
+                         reqctx: dict<number> = {}): void
+  # Handle signature help error
+  if !sighelpError->empty()
+    util.ErrMsg($'Signature help failed: {sighelpError.message}')
+    CloseSignaturePopup(lspserver)
+    return
+  endif
+
   if !reqctx->empty() && !SignatureRequestContextMatches(reqctx)
     return
   endif

@@ -652,7 +652,14 @@ enddef
 # process the 'textDocument/documentSymbol' reply from the LSP server
 # Open a symbols window and display the symbols as a tree
 # Result: DocumentSymbol[] | SymbolInformation[] | null
-export def DocSymbolOutline(lspserver: dict<any>, docSymbol: any, fname: string)
+export def DocSymbolOutline(lspserver: dict<any>, docSymbol: any,
+                            docSymbolError: dict<any>, fname: string)
+  # Handle document symbol error
+  if !docSymbolError->empty()
+    util.ErrMsg($'Document symbols failed: {docSymbolError.message}')
+    return
+  endif
+
   var bnr = fname->bufnr()
   var symbolTypeTable: dict<list<dict<any>>> = {}
   var symbolLineTable: list<dict<any>> = []
@@ -1022,7 +1029,14 @@ enddef
 # process the 'textDocument/documentSymbol' reply from the LSP server
 # Result: DocumentSymbol[] | SymbolInformation[] | null
 # Display the symbols in a popup window and jump to the selected symbol
-export def DocSymbolPopup(lspserver: dict<any>, docSymbol: any, fname: string)
+export def DocSymbolPopup(lspserver: dict<any>, docSymbol: any,
+                          docSymbolError: dict<any>, fname: string)
+  # Handle document symbol error
+  if !docSymbolError->empty()
+    util.ErrMsg($'Document symbols failed: {docSymbolError.message}')
+    return
+  endif
+
   var symList: list<dict<any>> = []
 
   if docSymbol->empty()

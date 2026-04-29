@@ -255,7 +255,8 @@ enddef
 
 # For InsertReplaceEdit, compute the replace-only tail length that should be
 # deleted after accepting the completion item.
-def GetInsertReplaceTailDeleteChars(bnr: number, cItem: dict<any>, curLine: number): number
+def GetInsertReplaceTailDeleteChars(bnr: number, cItem: dict<any>,
+                                    curLine: number): number
   if !cItem->has_key('textEdit') || cItem.textEdit->type() != v:t_dict
     return 0
   endif
@@ -581,8 +582,9 @@ enddef
 
 # Send completion items either directly to popup (autoComplete) or to omnifunc
 # state cache.
-def DispatchCompletionItems(lspserver: dict<any>, completeItems: list<dict<any>>,
-                           start_col: number, autoComplete: bool)
+def DispatchCompletionItems(lspserver: dict<any>,
+                            completeItems: list<dict<any>>,
+                            start_col: number, autoComplete: bool)
   if autoComplete && !lspserver.omniCompletePending
     if completeItems->empty()
       # no matches
@@ -611,7 +613,18 @@ enddef
 
 # process the 'textDocument/completion' reply from the LSP server
 # Result: CompletionItem[] | CompletionList | null
-export def CompletionReply(lspserver: dict<any>, cItems: any)
+export def CompletionReply(lspserver: dict<any>, cItems: any,
+                           completionError: dict<any>)
+  # Handle completion error
+  if !completionError->empty()
+    util.ErrMsg($'Completion failed: {completionError.message}')
+    if lspserver.omniCompletePending
+      lspserver.completeItems = []
+      lspserver.omniCompletePending = false
+    endif
+    return
+  endif
+
   if cItems->empty()
     if lspserver.omniCompletePending
       lspserver.completeItems = []
@@ -808,7 +821,14 @@ enddef
 
 # process the 'completionItem/resolve' reply from the LSP server
 # Result: CompletionItem
-export def CompletionResolveReply(lspserver: dict<any>, cItem: any)
+export def CompletionResolveReply(lspserver: dict<any>, cItem: any,
+                                  resolveError: dict<any>)
+  # Handle completion resolve error
+  if !resolveError->empty()
+    lspserver.traceLog($'Completion resolve failed: {resolveError.message}')
+    return
+  endif
+
   ShowCompletionDocumentation(cItem)
 enddef
 
@@ -855,8 +875,8 @@ def g:LspOmniFunc(findstart: number, base: string): any
 
     var [triggerKind, triggerChar] = GetTriggerAttributes(lspserver)
     if triggerKind < 0
-      # previous character is not a keyword character or a trigger character, so
-      # cancel omni completion.
+      # previous character is not a keyword character or a trigger character,
+      # so cancel omni completion.
       if !opt.lspOptions.omniCompleteAllowBare
         return -2
       endif

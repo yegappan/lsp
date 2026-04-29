@@ -348,8 +348,17 @@ enddef
 # state: if the cursor has moved or the buffer has changed since the request
 # was sent the reply is silently discarded.  Otherwise the result is stored in
 # the hover cache and rendered via ShowHover.
-export def HoverReply(lspserver: dict<any>, hoverResult: any, cmdmods: string,
+export def HoverReply(lspserver: dict<any>, hoverResult: any,
+                      hoverError: dict<any>, cmdmods: string = '',
                       reqctx: dict<any> = {}): void
+  # Handle hover error
+  if !hoverError->empty()
+    if cmdmods !~ 'silent'
+      util.ErrMsg($'Hover failed: {hoverError.message}')
+    endif
+    return
+  endif
+
   if !reqctx->empty() && !HoverRequestContextMatches(reqctx)
     return
   endif

@@ -111,7 +111,14 @@ enddef
 
 # process the "initialize" method reply from the LSP server
 # Result: InitializeResult
-def ServerInitReply(lspserver: dict<any>, initResult: dict<any>): void
+def ServerInitReply(lspserver: dict<any>, initResult: dict<any>,
+                    initError: dict<any>): void
+  # Handle initialization error
+  if !initError->empty()
+    util.ErrMsg($'LSP server initialization failed: {initError.message}')
+    return
+  endif
+
   if initResult->empty()
     return
   endif
@@ -471,20 +478,34 @@ def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel,
     lspserver.traceLog($'Got response {reply->json_encode()}')
   endif
 
-  var result: any = {}
+  var result: any = v:null
+  var error: dict<any> = {}
 
   if !reply->empty()
     if reply->has_key('error')
-      # request failed
-      ProcessLspServerError(method, reply.error)
+      # Capture error details
+      error = reply.error
+      ProcessLspServerError(method, error)
     elseif !reply->has_key('result')
+      # No result and no error is itself an error
+      error = {
+        code: -32603,
+        message: 'Internal error',
+        data: $'request {method} failed (no result)'
+      }
       util.ErrMsg($'request {method} failed (no result)')
     elseif reply.result != v:null
+      # Success case
       result = reply.result
     endif
   endif
 
-  RpcCb(lspserver, result)
+  # Pass both result AND error to callback
+  try
+    RpcCb(lspserver, result, error)
+  catch
+    lspserver.errorLog($'Callback for {method} raised exception: {v:exception}')
+  endtry
 enddef
 
 # Send an async RPC request message to the LSP server with a callback function.
@@ -583,8 +604,8 @@ def SemanticHighlightUpdate(lspserver: dict<any>, bnr: number)
     endif
   endif
 
-  lspserver.rpc_a(method, params, (_, reply) => {
-    semantichighlight.UpdateTokens(lspserver, bnr, reply, requestTick)
+  lspserver.rpc_a(method, params, (_, reply, error) => {
+    semantichighlight.UpdateTokens(lspserver, reply, error, bnr, requestTick)
   })
 enddef
 
@@ -916,7 +937,7 @@ def GetCompletion(lspserver: dict<any>, triggerKind_arg: number, triggerChar: st
   endif
 
   lspserver.rpc_a('textDocument/completion', params,
-			completion.CompletionReply)
+			(_, reply, error) => completion.CompletionReply(lspserver, reply, error))
 enddef
 
 # Get lazy properties for a completion item.
@@ -936,7 +957,7 @@ def ResolveCompletion(lspserver: dict<any>, item: dict<any>, sync: bool = false)
     endif
   else
     lspserver.rpc_a('completionItem/resolve', item,
-			  completion.CompletionResolveReply)
+			  (_, reply, error) => completion.CompletionResolveReply(lspserver, reply, error))
   endif
   return {}
 enddef
@@ -1136,8 +1157,8 @@ def ShowSignature(lspserver: dict<any>, triggerKind_arg: number = 1, triggerChar
   params.context = signature.GetSignatureHelpContext(lspserver,
 						     triggerKind_arg,
 						     triggerChar)
-  lspserver.rpc_a('textDocument/signatureHelp', params, (_, reply) => {
-		signature.SignatureHelp(lspserver, reply, reqctx)
+  lspserver.rpc_a('textDocument/signatureHelp', params, (_, reply, error) => {
+		signature.SignatureHelp(lspserver, reply, error, reqctx)
 	})
 enddef
 
@@ -1183,8 +1204,8 @@ def ShowHoverInfo(lspserver: dict<any>, cmdmods: string): void
   # interface HoverParams
   #   interface TextDocumentPositionParams
   var params = lspserver.getTextDocPosition(false)
-  lspserver.rpc_a('textDocument/hover', params, (_, reply) => {
-    hover.HoverReply(lspserver, reply, cmdmods, reqctx)
+  lspserver.rpc_a('textDocument/hover', params, (_, reply, error) => {
+    hover.HoverReply(lspserver, reply, error, cmdmods, reqctx)
   })
 enddef
 
@@ -1254,14 +1275,23 @@ def g:LspRequestCustom(name: string, msg: string, params: any): string
     return ''
   endif
 
-  lspserver.rpc_a(msg, params, WorkspaceExecuteReply)
+  lspserver.rpc_a(msg, params, (_, reply, error) => WorkspaceExecuteReply(lspserver, reply, error))
   return ''
 enddef
 
 # process the 'textDocument/documentHighlight' reply from the LSP server
 # Result: DocumentHighlight[] | null
 def DocHighlightReply(lspserver: dict<any>, docHighlightReply: any,
-                      bnr: number, cmdmods: string): void
+                      docHighlightError: dict<any>, bnr: number,
+                      cmdmods: string): void
+  # Handle document highlight error
+  if !docHighlightError->empty()
+    if cmdmods !~ 'silent'
+      util.ErrMsg($'Document highlight failed: {docHighlightError.message}')
+    endif
+    return
+  endif
+
   if docHighlightReply->empty()
     if cmdmods !~ 'silent'
       util.WarnMsg($'No highlight for the current position')
@@ -1316,8 +1346,8 @@ def DocHighlight(lspserver: dict<any>, bnr: number, cmdmods: string): void
   # interface DocumentHighlightParams
   #   interface TextDocumentPositionParams
   var params = lspserver.getTextDocPosition(false)
-  lspserver.rpc_a('textDocument/documentHighlight', params, (_, reply) => {
-    DocHighlightReply(lspserver, reply, bnr, cmdmods)
+  lspserver.rpc_a('textDocument/documentHighlight', params, (_, reply, error) => {
+    DocHighlightReply(lspserver, reply, error, bnr, cmdmods)
   })
 enddef
 
@@ -1333,11 +1363,11 @@ def GetDocSymbols(lspserver: dict<any>, fname: string, showOutline: bool): void
   # interface DocumentSymbolParams
   # interface TextDocumentIdentifier
   var params = {textDocument: {uri: util.LspFileToUri(fname)}}
-  lspserver.rpc_a('textDocument/documentSymbol', params, (_, reply) => {
+  lspserver.rpc_a('textDocument/documentSymbol', params, (_, reply, error) => {
     if showOutline
-      symbol.DocSymbolOutline(lspserver, reply, fname)
+      symbol.DocSymbolOutline(lspserver, reply, error, fname)
     else
-      symbol.DocSymbolPopup(lspserver, reply, fname)
+      symbol.DocSymbolPopup(lspserver, reply, error, fname)
     endif
   })
 enddef
@@ -1584,8 +1614,8 @@ def InlayHintsShow(lspserver: dict<any>, bnr: number)
   else
     msg = 'textDocument/inlayHint'
   endif
-  var reply = lspserver.rpc_a(msg, param, (_, reply) => {
-    inlayhints.InlayHintsReply(lspserver, bnr, reply)
+  var reply = lspserver.rpc_a(msg, param, (_, reply, error) => {
+    inlayhints.InlayHintsReply(lspserver, reply, error, bnr)
   })
 enddef
 
@@ -2148,7 +2178,14 @@ enddef
 
 # process the 'workspace/executeCommand' reply from the LSP server
 # Result: any | null
-def WorkspaceExecuteReply(lspserver: dict<any>, execReply: any)
+def WorkspaceExecuteReply(lspserver: dict<any>, execReply: any,
+                          execError: dict<any>)
+  # Handle workspace execute command error
+  if !execError->empty()
+    lspserver.traceLog($'Execute command failed: {execError.message}')
+    return
+  endif
+
   # Nothing to do for the reply
 enddef
 
@@ -2167,7 +2204,7 @@ def ExecuteCommand(lspserver: dict<any>, cmd: dict<any>)
     params.arguments = cmd.arguments
   endif
 
-  lspserver.rpc_a('workspace/executeCommand', params, WorkspaceExecuteReply)
+  lspserver.rpc_a('workspace/executeCommand', params, (_, reply, error) => WorkspaceExecuteReply(lspserver, reply, error))
 enddef
 
 # Display the LSP server capabilities (received during the initialization
