@@ -29,6 +29,7 @@ import './semantichighlight.vim'
 import './buffer.vim' as buf
 
 const DIAG_PULL_DEBOUNCE_MSEC = 200
+const LSP_ERROR_SERVER_CANCELLED = -32802
 
 # LSP server standard output handler
 # LSP responses from server handled by channel job in LSP mode
@@ -785,7 +786,23 @@ def PullDiagnostics(lspserver: dict<any>, bnr: number)
     params.previousResultId = prevResultId
   endif
 
-  var reply = lspserver.rpc('textDocument/diagnostic', params)
+  var reply = lspserver.rpc('textDocument/diagnostic', params,
+                            {handleError: false})
+
+  # If the language server cancels the pull diagnostic request and asks for a
+  # retrigger, then send the pull diagnostic request again.
+  if reply->has_key('error')
+    var responseError: dict<any> = reply.error
+    var errorData = responseError->get('data', {})
+    if responseError.code == LSP_ERROR_SERVER_CANCELLED
+        && errorData->type() == v:t_dict
+        && errorData->get('retriggerRequest', false)
+      lspserver.queuePullDiagnostics(bnr)
+    else
+      ProcessLspServerError('textDocument/diagnostic', responseError)
+    endif
+    return
+  endif
 
   # Result: DocumentDiagnosticReport | null
   if reply->empty() || reply.result == v:null || reply.result->empty()

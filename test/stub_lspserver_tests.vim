@@ -243,6 +243,45 @@ def g:Test_ProcessMessages_AcceptsValidJsonRpcVersion()
   assert_equal(0, traceMsgs->len())
 enddef
 
+def g:Test_PullDiagnostics_RetriggersServerCancelledRequest()
+  silent! edit XPullDiagnosticsRetrigger.rs
+  setline(1, ['fn main() {}'])
+
+  var queued: list<number> = []
+  var rpcOpts: list<dict<any>> = []
+  def MockDiagnosticRpc(_method: string, _params: any,
+                        opts: dict<any> = {}): dict<any>
+    rpcOpts->add(opts->deepcopy())
+    return {
+      error: {
+        code: -32802,
+        message: 'server cancelled the request',
+        data: {
+          retriggerRequest: true
+        }
+      }
+    }
+  enddef
+
+  var lspserver = MakeTestLspServer([])
+  lspserver.running = true
+  lspserver.ready = true
+  lspserver.isDiagnosticsProvider = true
+  lspserver.features = {diagnostics: true}
+  lspserver.featureEnabled = (_) => true
+  lspserver.queuePullDiagnostics = (bnr: number) => queued->add(bnr)
+  lspserver.rpc = MockDiagnosticRpc
+
+  buf.BufLspServerSet(bufnr(), lspserver)
+  lspserver.pullDiagnostics(bufnr())
+
+  assert_equal([{handleError: false}], rpcOpts)
+  assert_equal([bufnr()], queued)
+
+  buf.BufLspServerRemove(bufnr(), lspserver)
+  :%bw!
+enddef
+
 def g:Test_ProcessMessages_InvalidRequest_NonStringMethod_WithId()
   var lspserver = MakeTestLspServer([])
   var outMessages: list<dict<any>> = []

@@ -91,7 +91,8 @@ def FilterSymbols(lspserver: dict<any>, popupID: number, key: string): bool
 enddef
 
 # Jump to the location of a symbol selected in the popup menu
-def JumpToWorkspaceSymbol(lspserver: dict<any>, cmdmods: string, popupID: number, result: number): void
+def JumpToWorkspaceSymbol(lspserver: dict<any>, cmdmods: string,
+                          popupID: number, result: number): void
   # clear the message displayed at the command-line
   :echo ''
 

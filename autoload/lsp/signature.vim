@@ -331,7 +331,8 @@ enddef
 
 # Add unseen trigger characters to both the merged auto-trigger list and the
 # lookup table used by the insert-mode hot path.
-def AddSignatureChars(chars: list<string>, lookup: dict<bool>, merged: list<string>)
+def AddSignatureChars(chars: list<string>, lookup: dict<bool>,
+                      merged: list<string>)
   for ch in chars
     if lookup->has_key(ch)
       continue
@@ -802,7 +803,8 @@ def RestoreSignatureFirstLine(bnr: number, signatureText: string)
 enddef
 
 # Render signature help in a popup and apply active-parameter text property.
-def ShowPopupSignature(lspserver: dict<any>, lines: list<string>, hlinfo: dict<number>, total: number,
+def ShowPopupSignature(lspserver: dict<any>, lines: list<string>,
+                       hlinfo: dict<number>, total: number,
 		       filetype: string)
   # Close the previous signature popup and open a new one
   if lspserver.signaturePopup != -1
@@ -880,7 +882,8 @@ def HasKeyInputPreSupport(): bool
 enddef
 
 # Configure initial trigger-character detection using mappings or KeyInputPre.
-def SetupSignatureTriggerChars(lspserver: dict<any>, autoTriggerChars: list<string>)
+def SetupSignatureTriggerChars(lspserver: dict<any>,
+                               autoTriggerChars: list<string>)
   if !HasKeyInputPreSupport()
     for ch in autoTriggerChars
       MapSignatureTriggerCharacter(ch)
