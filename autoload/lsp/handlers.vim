@@ -150,54 +150,54 @@ const lsp_notif_handlers: dict<func> =
 
 # Explicitly ignored notification messages (many of them are specific to a
 # particular language server)
-const lsp_ignored_notif_handlers: list<string> =
-  [
-    '$/status/report',
-    '$/status/show',
+const lsp_ignored_notif_handlers: dict<bool> =
+  {
+    '$/status/report': true,
+    '$/status/show': true,
     # PHP intelephense server sends the "indexingStarted" and
     # "indexingEnded" notifications which is not in the LSP specification.
-    'indexingStarted',
-    'indexingEnded',
+    'indexingStarted': true,
+    'indexingEnded': true,
     # Java language server sends the 'language/status' notification which is
     # not in the LSP specification.
-    'language/status',
+    'language/status': true,
     # Typescript language server sends the '$/typescriptVersion'
     # notification which is not in the LSP specification.
-    '$/typescriptVersion',
+    '$/typescriptVersion': true,
     # Dart language server sends the '$/analyzerStatus' notification which
     # is not in the LSP specification.
-    '$/analyzerStatus',
+    '$/analyzerStatus': true,
     # pyright language server notifications
-    'pyright/beginProgress',
-    'pyright/reportProgress',
-    'pyright/endProgress',
-    'eslint/status',
-    'taplo/didChangeSchemaAssociation',
-    'sqlLanguageServer.finishSetup',
+    'pyright/beginProgress': true,
+    'pyright/reportProgress': true,
+    'pyright/endProgress': true,
+    'eslint/status': true,
+    'taplo/didChangeSchemaAssociation': true,
+    'sqlLanguageServer.finishSetup': true,
     # ccls language server notifications
-    '$ccls/publishSkippedRanges',
-    '$ccls/publishSemanticHighlight',
+    '$ccls/publishSkippedRanges': true,
+    '$ccls/publishSemanticHighlight': true,
     # omnisharp language server notifications
-    'o#/backgrounddiagnosticstatus',
-    'o#/msbuildprojectdiagnostics',
-    'o#/projectadded',
-    'o#/projectchanged',
-    'o#/projectconfiguration',
-    'o#/projectdiagnosticstatus',
-    'o#/unresolveddependencies',
-    '@/tailwindCSS/projectInitialized',
+    'o#/backgrounddiagnosticstatus': true,
+    'o#/msbuildprojectdiagnostics': true,
+    'o#/projectadded': true,
+    'o#/projectchanged': true,
+    'o#/projectconfiguration': true,
+    'o#/projectdiagnosticstatus': true,
+    'o#/unresolveddependencies': true,
+    '@/tailwindCSS/projectInitialized': true,
     # lua-language-server sends a "hello world" message on start-up.
-    '$/hello',
+    '$/hello': true,
     # bitbake language server notifications
-    'bitbake/EmbeddedLanguageDocs',
+    'bitbake/EmbeddedLanguageDocs': true,
     # devicetree language server notifications
-    'devicetree/activeContextStableNotification',
-    'devicetree/contextCreated',
-    'devicetree/contextDeleted',
-    'devicetree/contextStableNotification',
-    'devicetree/newActiveContext',
-    'devicetree/settingsChanged',
-  ]
+    'devicetree/activeContextStableNotification': true,
+    'devicetree/contextCreated': true,
+    'devicetree/contextDeleted': true,
+    'devicetree/contextStableNotification': true,
+    'devicetree/newActiveContext': true,
+    'devicetree/settingsChanged': true,
+  }
 
 # process notification messages from the LSP server
 export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
@@ -205,7 +205,7 @@ export def ProcessNotif(lspserver: dict<any>, reply: dict<any>): void
     lsp_notif_handlers[reply.method](lspserver, reply)
   elseif lspserver.customNotificationHandlers->has_key(reply.method)
     lspserver.customNotificationHandlers[reply.method](lspserver, reply)
-  elseif lsp_ignored_notif_handlers->index(reply.method) == -1
+  elseif !lsp_ignored_notif_handlers->has_key(reply.method)
     ProcessUnsupportedNotif(lspserver, reply)
   endif
 enddef
@@ -520,15 +520,15 @@ const lsp_request_handlers: dict<func> =
   }
 
 # Explicitly ignored requests
-const lsp_ignored_request_handlers: list<string> =
-  [
+const lsp_ignored_request_handlers: dict<bool> =
+  {
     # Eclipse java language server sends the
     # 'workspace/executeClientCommand' request (to reload bundles) which is
     # not in the LSP specification.
-    'workspace/executeClientCommand',
+    'workspace/executeClientCommand': true,
     # bitbake language server messages
-    'bitbake/getRecipeLocalFiles'
-  ]
+    'bitbake/getRecipeLocalFiles': true
+  }
 
 # process a request message from the server
 export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
@@ -538,7 +538,7 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
     lspserver.customRequestHandlers[request.method](lspserver, request)
   else
     SendMethodNotFoundError(lspserver, request)
-    if lsp_ignored_request_handlers->index(request.method) == -1
+    if !lsp_ignored_request_handlers->has_key(request.method)
       lspserver.traceLog($'Error: Unsupported request message received: {request->string()}')
     endif
   endif
@@ -587,11 +587,24 @@ def ValidateAndClassifyMessage(lspserver: dict<any>, msg: dict<any>): string
   var hasResult = msg->has_key('result')
   var hasError = msg->has_key('error')
 
+  var isResponse = hasResult || hasError
+  var isRequest = hasMethod && hasId
+  var isNotification = hasMethod && !hasId
+
   # Response: must have id and exactly one of result/error.
-  if hasResult || hasError
+  if isResponse
     if hasMethod || !hasId || (hasResult && hasError)
       lspserver.traceLog($'Dropping malformed response message: {msg->string()}')
       return 'invalid'
+    endif
+
+    # Response id can be string, number, or null in JSON-RPC 2.0.
+    if msg.id != null
+      var responseIdType = msg.id->type()
+      if responseIdType != v:t_string && responseIdType != v:t_number
+        lspserver.traceLog($'Dropping malformed response with invalid id type: {msg->string()}')
+        return 'invalid'
+      endif
     endif
     return 'response'
   endif
@@ -616,8 +629,14 @@ def ValidateAndClassifyMessage(lspserver: dict<any>, msg: dict<any>): string
   endif
 
   # Notification: method and no id.
-  if !hasId
+  if isNotification
     return 'notification'
+  endif
+
+  # Guardrail: methods without request/notification shape are malformed.
+  if !isRequest
+    lspserver.traceLog($'Dropping malformed message shape: {msg->string()}')
+    return 'invalid'
   endif
 
   # LSP request id must be a number or string.
