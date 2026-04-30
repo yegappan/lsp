@@ -1279,11 +1279,6 @@ class and interface hierarchies.
 			|tagstack| so you can return with CTRL-T).  Press Esc
 			to close the popup without jumping.
 
-			Note: type hierarchy uses the clangd-specific
-			"textDocument/typeHierarchy" protocol.  This differs
-			from the method defined in LSP version 3.17 and will
-			not work with servers that only support the standard.
-
 			See also |:LspSubTypeHierarchy|.
 
 ------------------------------------------------------------------------------
