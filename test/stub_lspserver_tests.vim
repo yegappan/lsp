@@ -128,6 +128,19 @@ def g:Test_RequestValidation_InvalidParamsAndMethodNotFound()
     {id: 26, method: 'workspace/notARealMethod', params: {}}, -32601)
 enddef
 
+def g:Test_ProcessRequest_CustomHandlerException_ReturnsInternalError()
+  var responses: list<dict<any>> = []
+  var lspserver = MakeRequestTestLspServer(responses)
+  lspserver.customRequestHandlers = {
+    'custom/fail': (_, _) => {
+      throw 'forced failure'
+    }
+  }
+
+  AssertRequestError(lspserver, responses,
+    {id: 27, method: 'custom/fail', params: {}}, -32603)
+enddef
+
 def AssertIgnoredUnknownResponse(lspserver: dict<any>, payload: dict<any>, id: string)
   var traceMsgs: list<string> = []
   lspserver.traceLog = (msg) => traceMsgs->add(msg)

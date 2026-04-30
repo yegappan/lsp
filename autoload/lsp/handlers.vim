@@ -535,7 +535,13 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
   if lsp_request_handlers->has_key(request.method)
     lsp_request_handlers[request.method](lspserver, request)
   elseif lspserver.customRequestHandlers->has_key(request.method)
-    lspserver.customRequestHandlers[request.method](lspserver, request)
+    try
+      lspserver.customRequestHandlers[request.method](lspserver, request)
+    catch
+      SendInternalError(lspserver, request,
+        $'custom request handler failed for {request.method}: {v:exception}')
+      lspserver.traceLog($'Error: Custom request handler exception: {v:exception}')
+    endtry
   else
     SendMethodNotFoundError(lspserver, request)
     if !lsp_ignored_request_handlers->has_key(request.method)
