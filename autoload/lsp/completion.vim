@@ -614,7 +614,7 @@ enddef
 # process the 'textDocument/completion' reply from the LSP server
 # Result: CompletionItem[] | CompletionList | null
 export def CompletionReply(lspserver: dict<any>, cItems: any,
-                           completionError: dict<any>)
+                           completionError: dict<any> = {})
   # Handle completion error
   if !completionError->empty()
     util.ErrMsg($'Completion failed: {completionError.message}')
@@ -822,7 +822,7 @@ enddef
 # process the 'completionItem/resolve' reply from the LSP server
 # Result: CompletionItem
 export def CompletionResolveReply(lspserver: dict<any>, cItem: any,
-                                  resolveError: dict<any>)
+                                  resolveError: dict<any> = {})
   # Handle completion resolve error
   if !resolveError->empty()
     lspserver.traceLog($'Completion resolve failed: {resolveError.message}')

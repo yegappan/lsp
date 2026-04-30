@@ -41,7 +41,7 @@ def Output_cb(lspserver: dict<any>, chan: channel, msg: any): void
     endif
   endif
   lspserver.data = msg
-  lspserver.processMessages()
+  lspserver.processMessage()
 enddef
 
 # LSP server error output handler
@@ -2179,7 +2179,7 @@ enddef
 # process the 'workspace/executeCommand' reply from the LSP server
 # Result: any | null
 def WorkspaceExecuteReply(lspserver: dict<any>, execReply: any,
-                          execError: dict<any>)
+                          execError: dict<any> = {})
   # Handle workspace execute command error
   if !execError->empty()
     lspserver.traceLog($'Execute command failed: {execError.message}')
@@ -2407,7 +2407,7 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     rpc_a: function(AsyncRpc, [lspserver]),
     processNotif: function(handlers.ProcessNotif, [lspserver]),
     processRequest: function(handlers.ProcessRequest, [lspserver]),
-    processMessages: function(handlers.ProcessMessages, [lspserver]),
+    processMessage: function(handlers.ProcessMessage, [lspserver]),
     encodePosition: function(offset.EncodePosition, [lspserver]),
     decodePosition: function(offset.DecodePosition, [lspserver]),
     encodeRange: function(offset.EncodeRange, [lspserver]),

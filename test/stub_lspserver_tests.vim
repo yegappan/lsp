@@ -46,6 +46,10 @@ def CaptureResponse(responses: list<dict<any>>, request: dict<any>,
   responses->add({id: request.id, result: result, error: error->deepcopy()})
 enddef
 
+def CaptureMessage(messages: list<dict<any>>, msg: dict<any>): void
+  messages->add(msg->deepcopy())
+enddef
+
 def MakeRequestTestLspServer(responses: list<dict<any>>): dict<any>
   var lspserver = MakeTestLspServer([])
   lspserver.sendResponse = function(CaptureResponse, [responses])
@@ -132,7 +136,7 @@ def AssertIgnoredUnknownResponse(lspserver: dict<any>, payload: dict<any>, id: s
 
   var beforeMessages = execute('messages')
   lspserver.data = payload
-  lspserver.processMessages()
+  lspserver.processMessage()
 
   assert_equal(1, traceMsgs->len())
   assert_match('Ignored response with unknown id from LSP server:', traceMsgs[0])
@@ -179,7 +183,7 @@ def g:Test_ProcessMessages_RejectsMessageMissingJsonRpc()
     id: 1,
     method: 'test/method'
   }
-  lspserver.processMessages()
+  lspserver.processMessage()
 
   assert_equal(1, traceMsgs->len())
   assert_match('Dropping message missing jsonrpc field:', traceMsgs[0])
@@ -198,7 +202,7 @@ def g:Test_ProcessMessages_RejectsMessageWithInvalidJsonRpcVersion()
     id: 1,
     method: 'test/method'
   }
-  lspserver.processMessages()
+  lspserver.processMessage()
 
   assert_equal(1, traceMsgs->len())
   assert_match('Dropping message with invalid jsonrpc version: 1.0', traceMsgs[0])
@@ -220,10 +224,115 @@ def g:Test_ProcessMessages_AcceptsValidJsonRpcVersion()
     id: 1,
     method: 'test/method'
   }
-  lspserver.processMessages()
+  lspserver.processMessage()
 
   assert_equal(1, requestsProcessed)
   assert_equal(0, traceMsgs->len())
+enddef
+
+def g:Test_ProcessMessages_InvalidRequest_NonStringMethod_WithId()
+  var lspserver = MakeTestLspServer([])
+  var outMessages: list<dict<any>> = []
+  var traceMsgs: list<string> = []
+  lspserver.sendMessage = (msg) => CaptureMessage(outMessages, msg)
+  lspserver.traceLog = (msg) => traceMsgs->add(msg)
+  lspserver.processRequest = (_, _) => assert_report('unexpected request dispatch')
+  lspserver.processNotif = (_, _) => assert_report('unexpected notification dispatch')
+
+  lspserver.data = {
+    jsonrpc: '2.0',
+    id: 99,
+    method: 1
+  }
+  lspserver.processMessage()
+
+  assert_equal(1, outMessages->len())
+  assert_equal('2.0', outMessages[0].jsonrpc)
+  assert_equal(99, outMessages[0].id)
+  assert_equal(-32600, outMessages[0].error.code)
+  assert_equal('Invalid request', outMessages[0].error.message)
+  assert_match('Dropping malformed message with non-string method:', traceMsgs[0])
+enddef
+
+def g:Test_ProcessMessages_InvalidRequest_InvalidIdType_RespondsWithNullId()
+  var lspserver = MakeTestLspServer([])
+  var outMessages: list<dict<any>> = []
+  var traceMsgs: list<string> = []
+  lspserver.sendMessage = (msg) => CaptureMessage(outMessages, msg)
+  lspserver.traceLog = (msg) => traceMsgs->add(msg)
+  lspserver.processRequest = (_, _) => assert_report('unexpected request dispatch')
+  lspserver.processNotif = (_, _) => assert_report('unexpected notification dispatch')
+
+  lspserver.data = {
+    jsonrpc: '2.0',
+    id: {},
+    method: 'workspace/configuration'
+  }
+  lspserver.processMessage()
+
+  assert_equal(1, outMessages->len())
+  assert_equal(null, outMessages[0].id)
+  assert_equal(-32600, outMessages[0].error.code)
+  assert_match('Dropping malformed request with invalid id type:', traceMsgs[0])
+enddef
+
+def g:Test_ProcessMessages_InvalidRequest_MissingMethod_WithId()
+  var lspserver = MakeTestLspServer([])
+  var outMessages: list<dict<any>> = []
+  var traceMsgs: list<string> = []
+  lspserver.sendMessage = (msg) => CaptureMessage(outMessages, msg)
+  lspserver.traceLog = (msg) => traceMsgs->add(msg)
+  lspserver.processRequest = (_, _) => assert_report('unexpected request dispatch')
+  lspserver.processNotif = (_, _) => assert_report('unexpected notification dispatch')
+
+  lspserver.data = {
+    jsonrpc: '2.0',
+    id: 'abc'
+  }
+  lspserver.processMessage()
+
+  assert_equal(1, outMessages->len())
+  assert_equal('abc', outMessages[0].id)
+  assert_equal(-32600, outMessages[0].error.code)
+  assert_match('Dropping malformed message missing method:', traceMsgs[0])
+enddef
+
+def g:Test_ProcessMessages_MalformedNotification_NoResponseSent()
+  var lspserver = MakeTestLspServer([])
+  var outMessages: list<dict<any>> = []
+  var traceMsgs: list<string> = []
+  lspserver.sendMessage = (msg) => CaptureMessage(outMessages, msg)
+  lspserver.traceLog = (msg) => traceMsgs->add(msg)
+  lspserver.processRequest = (_, _) => assert_report('unexpected request dispatch')
+  lspserver.processNotif = (_, _) => assert_report('unexpected notification dispatch')
+
+  lspserver.data = {
+    jsonrpc: '2.0',
+    method: {}
+  }
+  lspserver.processMessage()
+
+  assert_equal(0, outMessages->len())
+  assert_match('Dropping malformed message with non-string method:', traceMsgs[0])
+enddef
+
+def g:Test_ProcessMessages_MalformedResponse_BothResultAndError_Dropped()
+  var lspserver = MakeTestLspServer([])
+  var traceMsgs: list<string> = []
+  lspserver.traceLog = (msg) => traceMsgs->add(msg)
+  lspserver.processRequest = (_, _) => assert_report('unexpected request dispatch')
+  lspserver.processNotif = (_, _) => assert_report('unexpected notification dispatch')
+
+  lspserver.data = {
+    jsonrpc: '2.0',
+    id: 1,
+    result: {},
+    error: {code: -32603, message: 'Internal error'}
+  }
+  lspserver.processMessage()
+
+  assert_equal(1, traceMsgs->len())
+  assert_match('Dropping malformed response message:', traceMsgs[0])
 enddef
 
 def g:Test_ProcessApplyEditReq_SuccesssfulEdit()
@@ -239,7 +348,7 @@ def g:Test_ProcessApplyEditReq_SuccesssfulEdit()
       edit: {}
     }
   }
-  lspserver.processMessages()
+  lspserver.processMessage()
 
   assert_equal(1, responses->len())
   assert_equal({applied: true}, responses[0].result)
@@ -292,7 +401,7 @@ def g:Test_ProcessShowMessageRequest_ValidMessage()
       message: 'Test message'
     }
   }
-  lspserver.processMessages()
+  lspserver.processMessage()
 
   assert_equal(1, responses->len())
   assert_equal(null, responses[0].result)

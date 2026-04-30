@@ -545,48 +545,116 @@ export def ProcessRequest(lspserver: dict<any>, request: dict<any>)
 enddef
 
 # Validate that a message conforms to JSON-RPC 2.0 envelope requirements.
-def ValidateMessageEnvelope(lspserver: dict<any>, msg: dict<any>): bool
-  var rpcversion: string = msg->get('jsonrpc', '')
-  if rpcversion == ''
+# Reply to malformed request objects using JSON-RPC InvalidRequest (-32600).
+def SendInvalidRequestMessage(lspserver: dict<any>, msg: dict<any>,
+                              errmsg: string)
+  var respId: any = null
+  if msg->has_key('id')
+    var idType = msg.id->type()
+    if idType == v:t_string || idType == v:t_number
+      respId = msg.id
+    endif
+  endif
+
+  var response: dict<any> = {
+    jsonrpc: '2.0',
+    id: respId,
+    error: {
+      code: -32600,
+      message: 'Invalid request',
+      data: errmsg
+    }
+  }
+  lspserver.sendMessage(response)
+enddef
+
+# Validate and classify a JSON-RPC message.
+# Returns one of: "response", "request", "notification", "invalid".
+def ValidateAndClassifyMessage(lspserver: dict<any>, msg: dict<any>): string
+  var rpcversion = msg->get('jsonrpc', '')
+  if rpcversion->type() != v:t_string || rpcversion == ''
     lspserver.traceLog($'Dropping message missing jsonrpc field: {msg->string()}')
-    return false
+    return 'invalid'
   endif
 
   if rpcversion != '2.0'
     lspserver.traceLog($'Dropping message with invalid jsonrpc version: {msg.jsonrpc}')
-    return false
+    return 'invalid'
   endif
 
-  return true
+  var hasMethod = msg->has_key('method')
+  var hasId = msg->has_key('id')
+  var hasResult = msg->has_key('result')
+  var hasError = msg->has_key('error')
+
+  # Response: must have id and exactly one of result/error.
+  if hasResult || hasError
+    if hasMethod || !hasId || (hasResult && hasError)
+      lspserver.traceLog($'Dropping malformed response message: {msg->string()}')
+      return 'invalid'
+    endif
+    return 'response'
+  endif
+
+  # Request/Notification: method must be a string.
+  if !hasMethod
+    if hasId
+      SendInvalidRequestMessage(lspserver, msg,
+        'Request object must contain a string method field')
+    endif
+    lspserver.traceLog($'Dropping malformed message missing method: {msg->string()}')
+    return 'invalid'
+  endif
+
+  if msg.method->type() != v:t_string || msg.method == ''
+    if hasId
+      SendInvalidRequestMessage(lspserver, msg,
+        'Request method must be a non-empty string')
+    endif
+    lspserver.traceLog($'Dropping malformed message with non-string method: {msg->string()}')
+    return 'invalid'
+  endif
+
+  # Notification: method and no id.
+  if !hasId
+    return 'notification'
+  endif
+
+  # LSP request id must be a number or string.
+  var idType = msg.id->type()
+  if idType != v:t_string && idType != v:t_number
+    SendInvalidRequestMessage(lspserver, msg,
+      'Request id must be a string or number')
+    lspserver.traceLog($'Dropping malformed request with invalid id type: {msg->string()}')
+    return 'invalid'
+  endif
+
+  return 'request'
 enddef
 
-# process one or more LSP server messages
-export def ProcessMessages(lspserver: dict<any>): void
-  var idx: number
-  var len: number
-  var content: string
-  var msg: dict<any>
-  var req: dict<any>
-
-  msg = lspserver.data
-
-  # Validate JSON-RPC 2.0 envelope before processing.
-  if !ValidateMessageEnvelope(lspserver, msg)
+# process a LSP server message
+export def ProcessMessage(lspserver: dict<any>): void
+  if lspserver.data->type() != v:t_dict
+    lspserver.traceLog($'Dropping malformed non-object message: {lspserver.data->string()}')
     return
   endif
 
-  if msg->has_key('result') || msg->has_key('error')
+  var msg: dict<any> = lspserver.data
+  var msgKind = ValidateAndClassifyMessage(lspserver, msg)
+  if msgKind == 'invalid'
+    return
+  endif
+
+  if msgKind == 'response'
     # A response with an unknown id can happen for canceled or timed-out
     # requests. Ignore it and only trace for debugging.
     lspserver.traceLog($'Ignored response with unknown id from LSP server: {msg->string()}')
-  elseif msg->has_key('id') && msg->has_key('method')
+  elseif msgKind == 'request'
     # request message from the server
     lspserver.processRequest(msg)
-  elseif msg->has_key('method')
+  elseif msgKind == 'notification'
     # notification message from the server
     lspserver.processNotif(msg)
-  else
-    util.ErrMsg($'Unsupported message ({msg->string()})')
   endif
 enddef
 
