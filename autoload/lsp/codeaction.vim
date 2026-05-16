@@ -15,6 +15,9 @@ enddef
 
 export def DoCommand(lspserver: dict<any>, cmd: dict<any>)
   if cmd->has_key('command') && CommandHandlers->has_key(cmd.command)
+    # Prefer client-side handlers for known commands (for example custom
+    # integrations). Unknown commands are delegated back to the originating
+    # server via workspace/executeCommand.
     var CmdHandler: func = CommandHandlers[cmd.command]
     try
       call CmdHandler(cmd)
@@ -75,6 +78,8 @@ def SortCodeActions(actions: list<dict<any>>): list<dict<any>>
       })
   endfor
 
+  # Stable preferred-first ordering: rank by isPreferred, then preserve
+  # original server-provided order within the same rank.
   ranked->sort((a, b) => a.preferredRank == b.preferredRank
 	? a.index - b.index
 	: a.preferredRank - b.preferredRank)
@@ -96,6 +101,7 @@ def ActionMenuText(act: dict<any>): string
   var title = act.title->substitute('\r\n', '\\r\\n', 'g')
   title = title->substitute('\n', '\\n', 'g')
 
+  # Normalize newlines so each action remains a single menu row.
   return $'{prefix}{title}'
 enddef
 
@@ -165,6 +171,7 @@ export def ApplyCodeAction(lspserver: dict<any>, actionlist: list<dict<any>>, qu
   var actions = actionlist
 
   if opt.lspOptions.hideDisabledCodeActions
+    # Disabled actions are often explanatory-only placeholders.
     actions = actions->filter((ix, act) => !act->has_key('disabled'))
   endif
   actions = SortCodeActions(actions)
@@ -212,6 +219,7 @@ export def ApplyCodeAction(lspserver: dict<any>, actionlist: list<dict<any>>, qu
 	  return
 	endif
 
+  # Selection precedence: numeric index, regexp, literal prefix, then UI.
   # Resolve the source server at selection-time in case servers changed
   # between request and user choice.
   var action = actions[result - 1]
