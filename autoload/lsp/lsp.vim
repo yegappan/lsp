@@ -30,6 +30,7 @@ var ftypeServerMap: dict<list<dict<any>>> = {}
 var lspInitializedOnce = false
 
 def LspInitOnce()
+  # Define all plugin highlights/proptypes once per Vim session.
   hlset([
     {name: 'LspPopup', default: true, linksto: 'Pmenu'},
     {name: 'LspPopupBorder', default: true, linksto: 'Pmenu'},
@@ -91,6 +92,7 @@ enddef
 # Add a LSP server for a filetype
 def LspAddServer(ftype: string, lspsrv: dict<any>)
   var lspsrvlst = ftypeServerMap->has_key(ftype) ? ftypeServerMap[ftype] : []
+  # Prevent duplicate registration of the same server name per filetype.
   if util.Indexof(lspsrvlst, (_, v) => v.name == lspsrv.name) != -1
       # LSP server already added for this file type
       return
@@ -252,6 +254,8 @@ def ShowServer(arg: string)
     return
   endif
 
+  # Multi-line output is shown in a scratch window; single-line status is
+  # echoed directly to avoid opening a window for trivial output.
   if lines->len() > 1
     OpenScratchWindow(windowName)
     setline(1, lines)
@@ -399,6 +403,7 @@ enddef
 def LspSavedFile(bnr: number)
   var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)->copy()
 
+  # Copy + filter keeps iteration safe and skips detached/non-running entries.
   lspservers = lspservers->filter(
     (key, lspsrv) => !lspsrv->empty() && lspsrv.running
   )
@@ -492,7 +497,8 @@ def BufferInit(lspserverId: number, bnr: number): void
   var ftype: string = bnr->getbufvar('&filetype')
   lspserver.textdocDidOpen(bnr, ftype)
 
-  # add a listener to track changes to this buffer
+  # Add a per-buffer listener so incremental text changes are pushed to the
+  # server and pull diagnostics are debounced from edits.
   listener_add((_bnr: number, start: number, end: number, added: number, changes: list<dict<number>>) => {
     lspserver.textdocDidChange(bnr)
     if lspserver.isDiagnosticsProvider
@@ -508,6 +514,8 @@ def BufferInit(lspserverId: number, bnr: number): void
     lspserver.pullDiagnostics(bnr)
   endif
 
+  # Delay feature-specific initialization until all attached servers are ready,
+  # so feature-provider selection uses finalized capabilities.
   var allServersReady = true
   var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)
   for lspsrv in lspservers
@@ -567,7 +575,7 @@ export def AddFile(bnr: number): void
     return
   endif
 
-  # Skip popup buffers (maybe just skip all special buffers?)
+  # Skip popup buffers (special UI buffers should not attach language servers).
   var buftype: string = bnr->getbufvar('&buftype')
   if buftype ==# 'popup'
     return
@@ -599,6 +607,8 @@ export def AddFile(bnr: number): void
     else
       # Lsp server is not ready yet.  Initialize the lsp state for this buffer
       # when the server is ready.
+      # The user event is server-id scoped, so each delayed init is tied to the
+      # exact server instance attached to this buffer.
       autocmd_add([{group: 'LSPBufferAutocmds',
                    event: 'User',
                    pattern: $'LspServerReady_{lspserver.id}',
@@ -611,6 +621,7 @@ enddef
 # Notify LSP server to remove a file
 export def RemoveFile(bnr: number): void
   var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)
+  # Iterate over a copy because BufLspServerRemove mutates the underlying list.
   for lspserver in lspservers->copy()
     if lspserver->empty()
       continue
@@ -752,7 +763,8 @@ export def AddServer(serverList: list<dict<any>>)
       util.ErrMsg('LSP server information is missing filetype or path')
       continue
     endif
-    # Enable omni-completion by default
+    # Enable omni-completion by default when auto-complete is disabled, unless
+    # the user explicitly overrides this per server.
     var omnicompl_def: bool = false
     if opt.lspOptions.omniComplete == true
 	|| (opt.lspOptions.omniComplete == null
@@ -763,6 +775,7 @@ export def AddServer(serverList: list<dict<any>>)
 
     server.path = expandcmd(server.path)
 
+    # Skip missing executables unless user opted into silent ignore.
     if !server.path->executable()
       if !opt.lspOptions.ignoreMissingServer
         util.ErrMsg($'LSP server {server.path} is not found')
@@ -778,6 +791,7 @@ export def AddServer(serverList: list<dict<any>>)
       server.args = []
     endif
 
+    # Normalize optional fields to canonical types expected by NewLspServer().
     if !server->has_key('initializationOptions')
 	|| server.initializationOptions->type() != v:t_dict
       server.initializationOptions = {}
@@ -865,6 +879,7 @@ export def AddServer(serverList: list<dict<any>>)
       server.languageId = v:none
     endif
 
+    # Freeze normalized config into a concrete server instance.
     var lspserver: dict<any> = lserver.NewLspServer(server)
 
     var ftypes = server.filetype
@@ -1244,12 +1259,14 @@ def CurbufGetCodeActionServersChecked(): list<dict<any>>
   endif
 
   lspservers = lspservers->filter((_, lspserver) => lspserver.running)
+  # Keep existing command-level UX: fail early when all candidates are down.
   if lspservers->empty()
     util.ErrMsg($'Language server for "{ft}" file type is not running')
     return []
   endif
 
   lspservers = lspservers->filter((_, lspserver) => lspserver.ready)
+  # As above, mirror single-server readiness checks for user-facing errors.
   if lspservers->empty()
     util.ErrMsg($'Language server for "{ft}" file type is not ready')
     return []
@@ -1267,6 +1284,8 @@ def CodeActionReply(state: dict<any>, lspserver: dict<any>,
     state.selectorQuery = selectorQuery
   endif
 
+  # Aggregate partial success: an error from one server must not hide actions
+  # returned by other servers.
   if rpcError->empty() && !actionlist->empty()
     for act in actionlist
       var action = act->deepcopy()
@@ -1284,6 +1303,7 @@ def CodeActionReply(state: dict<any>, lspserver: dict<any>,
     return
   endif
 
+  # Use {} here because each action carries its own source-server metadata.
   codeaction.ApplyCodeAction({}, state.actions, state.selectorQuery)
 enddef
 
@@ -1302,6 +1322,7 @@ export def CodeAction(line1: number, line2: number, query: string)
   }
 
   for lspserver in lspservers
+    # Fan out requests in parallel; callback merges replies into shared state.
     lspserver.codeActionAsync(fname, line1, line2, query,
 	function(CodeActionReply, [state]))
   endfor
@@ -1309,9 +1330,12 @@ enddef
 
 # Perform a source code action for the whole file.
 export def SourceCodeAction(kind: string, queryArg: string)
+  # Reuse the generic selector syntax so this command stays aligned with
+  # :LspCodeAction filtering semantics.
   var query = $'only:{kind}'
   var selector = queryArg->trim()
   if selector == ''
+    # Match historical behavior: default to the first filtered action.
     selector = '1'
   endif
   query ..= $'#{selector}'
@@ -1486,7 +1510,8 @@ def LspSubCmdComplete(cmds: list<string>, arglead: string, cmdline: string, curs
     return cmds
   endif
 
-  # Make sure there are no additional sub-commands
+  # Make sure there are no additional sub-commands. This keeps completion
+  # strict for one-level command grammars such as ":LspServer show ...".
   var wordEnd = cmdline->stridx(' ', wordBegin)
   if wordEnd == -1
     return cmds->filter((_, val) => val =~ $'^{arglead}')
@@ -1529,6 +1554,7 @@ enddef
 
 # ":LspDiag" command handler
 export def LspDiagCmd(args: string, cmdCount: number, force: bool)
+  # Keep explicit string dispatch for predictable CLI behavior and messages.
   if args->stridx('highlight') == 0
     if args[9] == ' '
       var subcmd = args[10 : ]->trim()
