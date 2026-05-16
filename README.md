@@ -190,9 +190,9 @@ The following commands are provided to use the LSP features.
 
 Command|Description
 -------|-----------
-`:LspCodeAction`|Apply the code action supplied by the language server to the diagnostic in the current line.
-`:LspFixAll`|Apply the first source.fixAll code action supplied by the language server to all the diagnostics in the current file.
-`:LspOrganizeImports`|Apply the source.organizeImports code action supplied by the language server to the current file.
+`:LspCodeAction`|Request code actions from all eligible language servers attached to the current buffer, then apply the selected action for the current line.
+`:LspFixAll`|Request source.fixAll code actions for the current file from all eligible language servers, then apply the selected action.
+`:LspOrganizeImports`|Request source.organizeImports code actions for the current file from all eligible language servers, then apply the selected action.
 `:LspCodeLens`|Display a list of code lens commands and apply a selected code lens command to the current file.
 `:LspDiag current`|Display the diagnostic message for the current line.
 `:LspDiag first`|Jump to the first diagnostic message for the current buffer.
@@ -236,6 +236,8 @@ Command|Description
 `:LspWorkspaceAddFolder {folder}`| Add a folder to the workspace.
 `:LspWorkspaceListFolders`|Show the list of folders in the workspace.
 `:LspWorkspaceRemoveFolder {folder}`|Remove a folder from the workspace.
+
+For code actions, when multiple servers return actions, the menu shows one merged list. If duplicate action titles exist, the source server label is shown only for those duplicate-title entries. The selected action is resolved/executed by the server that provided it.
 
 ## Similar Vim LSP Plugins
 
