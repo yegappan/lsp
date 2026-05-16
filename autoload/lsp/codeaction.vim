@@ -5,6 +5,7 @@ vim9script
 import './util.vim'
 import './textedit.vim'
 import './options.vim' as opt
+import './buffer.vim' as buf
 
 var CommandHandlers: dict<func>
 
@@ -98,6 +99,58 @@ def ActionMenuText(act: dict<any>): string
   return $'{prefix}{title}'
 enddef
 
+def GetDuplicateActionTitles(actions: list<dict<any>>): dict<bool>
+  # Server labels are shown only for duplicate titles to avoid noisy menus.
+  var titleCount: dict<number> = {}
+
+  for act in actions
+    var title = act->get('title', '')
+    titleCount[title] = titleCount->get(title, 0) + 1
+  endfor
+
+  var duplicateTitles: dict<bool> = {}
+  for [title, count] in titleCount->items()
+    if count > 1
+      duplicateTitles[title] = true
+    endif
+  endfor
+
+  return duplicateTitles
+enddef
+
+def ResolveActionServer(defaultServer: dict<any>, action: dict<any>): dict<any>
+  var lspserver = defaultServer
+
+  # Multi-server actions include source metadata injected at aggregation time.
+  # Look up the live server by id so resolve/executeCommand is routed correctly.
+  if action->has_key('__lsp_server_id')
+    lspserver = buf.BufLspServerGetById(bufnr(), action.__lsp_server_id)
+    if lspserver->empty() || !lspserver.running || !lspserver.ready
+      util.WarnMsg('Code action source LSP server is no longer available')
+      return {}
+    endif
+  endif
+
+  if lspserver->empty()
+    util.WarnMsg('No language server is available to execute code action')
+    return {}
+  endif
+
+  return lspserver
+enddef
+
+def ActionMenuTextWithServerLabel(act: dict<any>, duplicateTitles: dict<bool>): string
+  var text = ActionMenuText(act)
+
+  # Only duplicate titles get source labels, keeping unique entries concise.
+  if duplicateTitles->has_key(act->get('title', ''))
+      && act->has_key('__lsp_server_name')
+    return $'{text} [{act.__lsp_server_name}]'
+  endif
+
+  return text
+enddef
+
 # Process the list of code actions returned by the LSP server, ask the user to
 # choose one action from the list and then apply it.
 # If "query" is a number, then apply the corresponding action in the list.
@@ -122,11 +175,14 @@ export def ApplyCodeAction(lspserver: dict<any>, actionlist: list<dict<any>>, qu
     return
   endif
 
+  # Compute once for the current menu render.
+  var duplicateTitles = GetDuplicateActionTitles(actions)
+
   var text: list<string> = []
   var act: dict<any>
   for i in actions->len()->range()
     act = actions[i]
-    var t = ActionMenuText(act)
+    var t = ActionMenuTextWithServerLabel(act, duplicateTitles)
     text->add(printf(" %d. %s ", i + 1, t))
   endfor
 
@@ -156,8 +212,14 @@ export def ApplyCodeAction(lspserver: dict<any>, actionlist: list<dict<any>>, qu
 	  return
 	endif
 
-	# Do the code action
-	HandleCodeAction(lspserver, actions[result - 1])
+  # Resolve the source server at selection-time in case servers changed
+  # between request and user choice.
+  var action = actions[result - 1]
+  var actionServer = ResolveActionServer(lspserver, action)
+  if actionServer->empty()
+    return
+  endif
+  HandleCodeAction(actionServer, action)
       },
       filter: (winid, key) => {
 	if key == 'h' || key == 'l'
@@ -180,7 +242,14 @@ export def ApplyCodeAction(lspserver: dict<any>, actionlist: list<dict<any>>, qu
     return
   endif
 
-  HandleCodeAction(lspserver, actions[choice - 1])
+  var action = actions[choice - 1]
+  # Route execution to the server that supplied this action.
+  var actionServer = ResolveActionServer(lspserver, action)
+  if actionServer->empty()
+    return
+  endif
+
+  HandleCodeAction(actionServer, action)
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab

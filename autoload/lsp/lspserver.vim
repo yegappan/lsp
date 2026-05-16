@@ -1853,24 +1853,19 @@ def ParseCodeActionQuery(query: string): dict<any>
   return result
 enddef
 
-# Request: "textDocument/codeAction"
-# Param: CodeActionParams
-def CodeAction(lspserver: dict<any>, fname_arg: string, line1: number,
-		line2: number, query: string)
-  # Check whether LSP server supports code action operation
-  if !lspserver.isCodeActionProvider
-    util.ErrMsg('LSP server does not support code action operation')
-    return
-  endif
-
-  # interface CodeActionParams
+def GetCodeActionParams(lspserver: dict<any>, fname_arg: string, line1: number,
+			line2: number, query: string): dict<any>
+  # Keep request construction in one place so sync/async code action paths
+  # stay behaviorally identical.
   var params: dict<any> = {}
   var fname: string = fname_arg->fnamemodify(':p')
   var bnr: number = fname_arg->bufnr()
   var r: dict<dict<number>> = {
     start: {
       line: line1 - 1,
-      character: line1 == line2 ? util.GetCharIdxWithCompChar(getline('.'), charcol('.') - 1) : 0
+      character: line1 == line2
+	? util.GetCharIdxWithCompChar(getline('.'), charcol('.') - 1)
+	: 0
     },
     end: {
       line: line2 - 1,
@@ -1879,6 +1874,9 @@ def CodeAction(lspserver: dict<any>, fname_arg: string, line1: number,
   }
   lspserver.encodeRange(bnr, r)
   params->extend({textDocument: {uri: util.LspFileToUri(fname)}, range: r})
+
+  # Diagnostics are scoped per-server so each provider gets context that
+  # matches its own diagnostic namespace and offset encoding.
   var d: list<dict<any>> = []
   for lnum in range(line1, line2)
     var diagsInfo: list<dict<any>> = diag.GetDiagsByLine(bnr, lnum, lspserver)->deepcopy()
@@ -1897,6 +1895,26 @@ def CodeAction(lspserver: dict<any>, fname_arg: string, line1: number,
     params.context.only = queryInfo.only
   endif
 
+  # Return both params and post-filter selector (text after '#') used by UI.
+  return {
+    params: params,
+    selectorQuery: queryInfo.query
+  }
+enddef
+
+# Request: "textDocument/codeAction"
+# Param: CodeActionParams
+def CodeAction(lspserver: dict<any>, fname_arg: string, line1: number,
+		line2: number, query: string)
+  # Check whether LSP server supports code action operation
+  if !lspserver.isCodeActionProvider
+    util.ErrMsg('LSP server does not support code action operation')
+    return
+  endif
+
+  var reqInfo = GetCodeActionParams(lspserver, fname_arg, line1, line2, query)
+  var params = reqInfo.params
+
   var reply = lspserver.rpc('textDocument/codeAction', params)
 
   # Result: (Command | CodeAction)[] | null
@@ -1908,7 +1926,42 @@ def CodeAction(lspserver: dict<any>, fname_arg: string, line1: number,
 
   DecodeCodeAction(lspserver, reply.result)
 
-  codeaction.ApplyCodeAction(lspserver, reply.result, queryInfo.query)
+  codeaction.ApplyCodeAction(lspserver, reply.result, reqInfo.selectorQuery)
+enddef
+
+def CodeActionAsync(lspserver: dict<any>, fname_arg: string, line1: number,
+		    line2: number, query: string, Cbfunc: func)
+  # Mirror sync semantics for unsupported providers: callback still fires so
+  # fan-out aggregators can deterministically count completions.
+  if !lspserver.isCodeActionProvider
+    Cbfunc(lspserver, [], query, {})
+    return
+  endif
+
+  var reqInfo = GetCodeActionParams(lspserver, fname_arg, line1, line2, query)
+  var params = reqInfo.params
+
+  var reqid = lspserver.rpc_a('textDocument/codeAction', params,
+	(_, result, rpcError) => {
+	  var actionList: list<dict<any>> = []
+    # Decode edits here so downstream UI/execution uses buffer coordinates.
+	  if rpcError->empty() && result->type() == v:t_list
+	    actionList = result
+	    if !actionList->empty()
+	      DecodeCodeAction(lspserver, actionList)
+	    endif
+	  endif
+
+	  Cbfunc(lspserver, actionList, reqInfo.selectorQuery, rpcError)
+	})
+
+  if reqid < 0
+    # Normalize send failures into callback error flow for one-path handling.
+    Cbfunc(lspserver, [], reqInfo.selectorQuery, {
+	code: -32603,
+	message: 'Failed to send code action request'
+	})
+  endif
 enddef
 
 # Request: "textDocument/codeLens"
@@ -2464,6 +2517,7 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     typeHierarchy: function(TypeHierarchy, [lspserver]),
     renameSymbol: function(RenameSymbol, [lspserver]),
     codeAction: function(CodeAction, [lspserver]),
+    codeActionAsync: function(CodeActionAsync, [lspserver]),
     pullDiagnostics: function(PullDiagnostics, [lspserver]),
     queuePullDiagnostics: function(QueuePullDiagnostics, [lspserver]),
     queuePullDiagnosticsAllBuffers: function(QueuePullDiagnosticsAllBuffers, [lspserver]),

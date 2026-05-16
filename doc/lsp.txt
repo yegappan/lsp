@@ -3,7 +3,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: April 14 2026
+Last change: May 16 2026
 
 ==============================================================================
 CONTENTS                                                     *lsp-contents*
@@ -511,12 +511,16 @@ language servers registered for {filetype} are currently running.
 The following commands are provided by this plugin.  A detailed description of
 these commands is provided later in this section.
 
-:LspCodeAction		Apply the code action supplied by the language server
-			to the diagnostic in the current line.
-:LspFixAll [query]	Apply source.fixAll code actions for the current file.
+:LspCodeAction		Request code actions from all eligible language
+			servers attached to the current buffer and apply
+			the selected action for the current line.
+:LspFixAll [query]	Request source.fixAll code actions for the current
+			file from all eligible language servers and apply
+			the selected action.
 :LspOrganizeImports [query]
-			Apply source.organizeImports code actions for the
-			current file.
+			Request source.organizeImports code actions for the
+			current file from all eligible language servers and
+			apply the selected action.
 :LspCodeLens		Display all the code lens commands available for the
 			current file and apply the selected command.
 :LspDiag current	Display the diagnostic message for the current line.
@@ -1058,10 +1062,11 @@ the symbol under the cursor.
 Commands to modify, rename, or format your code using the language server.
 
 							*:LspCodeAction*
-:LspCodeAction [query]	Apply the code action supplied by the language server
-			for the current line.  If invoked with a range (for
-			example from visual mode), code actions are requested
-			for that line range.
+:LspCodeAction [query]	Request code actions from all eligible language
+			servers attached to the current buffer for the
+			current line.  If invoked with a range (for example
+			from visual mode), code actions are requested for
+			that line range.
 
 			Diagnostics from the selected line/range are sent in
 			the code action context.  Actions are still available
@@ -1088,21 +1093,30 @@ Commands to modify, rename, or format your code using the language server.
 
 			When [query] is not given, you are prompted to select
 			an action (popup menu or |inputlist()| depending on
-			|lsp-opt-usePopupInCodeAction|).
+			|lsp-opt-usePopupInCodeAction|).  Actions from all
+			eligible language servers are shown in one merged
+			list.
 
 			Preferred actions are shown first.  Preferred actions
 			are prefixed with a "*".  The menu item includes the
 			action kind.
 
+			If two or more actions have the same title, then the
+			source server name is appended to those menu entries
+			to disambiguate them.
+
 			CodeAction edits are applied before any associated
-			command is executed.
+			command is executed.  The selected action is always
+			resolved/executed using the language server that
+			provided that action.
 
 			Use |:LspFixAll| and |:LspOrganizeImports| for
 			dedicated source actions over the current file.
 
 							*:LspFixAll*
 :LspFixAll [query]	Request code actions with only:source.fixAll for the
-			current file and apply one action directly.
+			current file from all eligible language servers and
+			apply one action directly.
 
 			If [query] is omitted, the first matching action is
 			applied (equivalent to "only:source.fixAll#1").
@@ -1113,7 +1127,8 @@ Commands to modify, rename, or format your code using the language server.
 						*:LspOrganizeImports*
 :LspOrganizeImports [query]
 			Request code actions with only:source.organizeImports
-			for the current file and apply one action directly.
+			for the current file from all eligible language
+			servers and apply one action directly.
 
 			If [query] is omitted, the first matching action is
 			applied (equivalent to
@@ -2998,9 +3013,19 @@ It behaves like |:LspPeekReferences| and |:LspShowReferences|.  For example: >
 
 It's possible to run multiple language servers for a given buffer.
 
-By default the language server defined first will be used for as much as it
-supports, then the next and so on. With the exception that diagnostics from
-all running language servers will be combined.
+By default, most features use one language server at a time: the language
+server defined first is used for as much as it supports, then the next and so
+on.  Diagnostics from all running language servers are combined.
+
+Code actions are an exception: |:LspCodeAction|, |:LspFixAll|, and
+|:LspOrganizeImports| request actions from all eligible attached language
+servers and present a merged action list.
+
+When an action is selected, it is always resolved/executed by the language
+server that produced that action.
+
+If duplicate action titles exist in the merged list, the action menu appends
+the source server name only for those duplicate-title entries.
 
 This means that you can define a language server that only supports a subset
 of features at first and then define the general purpose language server after

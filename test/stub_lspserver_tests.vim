@@ -460,6 +460,93 @@ def g:Test_ProcessShowMessageRequest_ValidMessage()
   assert_equal(1, responses[0].error->empty())
 enddef
 
+def g:Test_CodeActionMenu_ServerLabelOnlyForDuplicateTitles()
+  g:LspOptionsSet({usePopupInCodeAction: true})
+
+  var actions = [
+    {
+      title: 'Duplicate action',
+      __lsp_server_id: 1,
+      __lsp_server_name: 'srvA',
+    },
+    {
+      title: 'Duplicate action',
+      __lsp_server_id: 2,
+      __lsp_server_name: 'srvB',
+    },
+    {
+      title: 'Unique action',
+      __lsp_server_id: 1,
+      __lsp_server_name: 'srvA',
+    }
+  ]
+
+  codeaction.ApplyCodeAction({}, actions, '')
+
+  var popups = popup_list()
+  assert_equal(1, popups->len())
+  var bnr = winbufnr(popups[0])
+  assert_equal([
+    ' 1. Duplicate action [srvA] ',
+    ' 2. Duplicate action [srvB] ',
+    ' 3. Unique action '
+  ], getbufline(bnr, 1, '$'))
+
+  popup_close(popups[0])
+  g:LspOptionsSet({usePopupInCodeAction: false})
+enddef
+
+def g:Test_ApplyCodeAction_RoutesToOriginServer()
+  silent! edit XCodeActionRouting.txt
+  setline(1, ['test'])
+
+  var execCmds1: list<string> = []
+  var execCmds2: list<string> = []
+  var srv1 = MakeTestLspServer([])
+  var srv2 = MakeTestLspServer([])
+
+  srv1.name = 'srv1'
+  srv1.running = true
+  srv1.ready = true
+  srv1.executeCommand = (cmd: dict<any>) => {
+    execCmds1->add(cmd->get('command', ''))
+  }
+
+  srv2.name = 'srv2'
+  srv2.running = true
+  srv2.ready = true
+  srv2.executeCommand = (cmd: dict<any>) => {
+    execCmds2->add(cmd->get('command', ''))
+  }
+
+  buf.BufLspServerSet(bufnr(), srv1)
+  buf.BufLspServerSet(bufnr(), srv2)
+
+  var actions = [
+    {
+      title: 'Same title',
+      command: 'from-server-1',
+      __lsp_server_id: srv1.id,
+      __lsp_server_name: srv1.name,
+    },
+    {
+      title: 'Same title',
+      command: 'from-server-2',
+      __lsp_server_id: srv2.id,
+      __lsp_server_name: srv2.name,
+    }
+  ]
+
+  codeaction.ApplyCodeAction({}, actions, '2')
+
+  assert_equal([], execCmds1)
+  assert_equal(['from-server-2'], execCmds2)
+
+  buf.BufLspServerRemove(bufnr(), srv1)
+  buf.BufLspServerRemove(bufnr(), srv2)
+  :bw!
+enddef
+
 # Only here to because the test runner needs it
 def g:StartLangServer(): bool
   return true

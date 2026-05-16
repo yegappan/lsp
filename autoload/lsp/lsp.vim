@@ -1226,23 +1226,89 @@ enddef
 
 # Perform a code action
 # Uses LSP "textDocument/codeAction" request
+def CurbufGetCodeActionServersChecked(): list<dict<any>>
+  var fname: string = @%
+  var ft = &filetype
+  if fname->empty() || ft->empty()
+    return []
+  endif
+
+  # Code actions are aggregated from all attached servers that advertise and
+  # have the feature enabled for this buffer.
+  var lspservers: list<dict<any>> = buf.CurbufGetServers()->filter((_, lspserver) =>
+	lspserver.isCodeActionProvider && lspserver.featureEnabled('codeAction'))
+
+  if lspservers->empty()
+    util.ErrMsg($'Language server for "{ft}" file type supporting "codeAction" feature is not found')
+    return []
+  endif
+
+  lspservers = lspservers->filter((_, lspserver) => lspserver.running)
+  if lspservers->empty()
+    util.ErrMsg($'Language server for "{ft}" file type is not running')
+    return []
+  endif
+
+  lspservers = lspservers->filter((_, lspserver) => lspserver.ready)
+  if lspservers->empty()
+    util.ErrMsg($'Language server for "{ft}" file type is not ready')
+    return []
+  endif
+
+  return lspservers
+enddef
+
+def CodeActionReply(state: dict<any>, lspserver: dict<any>,
+		actionlist: list<dict<any>>, selectorQuery: string,
+		rpcError: dict<any>)
+  # The request-side parser may normalize selectors (for example only:/kind:).
+  # All callbacks for one invocation produce the same selector, so capture once.
+  if state.selectorQuery == ''
+    state.selectorQuery = selectorQuery
+  endif
+
+  if rpcError->empty() && !actionlist->empty()
+    for act in actionlist
+      var action = act->deepcopy()
+      # Persist source-server metadata so selection-time execution can be
+      # routed back to the server that produced this action.
+      action.__lsp_server_id = lspserver.id
+      action.__lsp_server_name = lspserver.name
+      state.actions->add(action)
+    endfor
+  endif
+
+  # Wait until every server has replied before opening a single merged menu.
+  state.pending -= 1
+  if state.pending > 0
+    return
+  endif
+
+  codeaction.ApplyCodeAction({}, state.actions, state.selectorQuery)
+enddef
+
 export def CodeAction(line1: number, line2: number, query: string)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked('codeAction')
-  if lspserver->empty()
+  var lspservers = CurbufGetCodeActionServersChecked()
+  if lspservers->empty()
     return
   endif
 
   var fname: string = @%
-  lspserver.codeAction(fname, line1, line2, query)
+  # Shared mutable aggregation state captured by all async callbacks.
+  var state = {
+    pending: lspservers->len(),
+    selectorQuery: '',
+    actions: []
+  }
+
+  for lspserver in lspservers
+    lspserver.codeActionAsync(fname, line1, line2, query,
+	function(CodeActionReply, [state]))
+  endfor
 enddef
 
 # Perform a source code action for the whole file.
 export def SourceCodeAction(kind: string, queryArg: string)
-  var lspserver: dict<any> = buf.CurbufGetServerChecked('codeAction')
-  if lspserver->empty()
-    return
-  endif
-
   var query = $'only:{kind}'
   var selector = queryArg->trim()
   if selector == ''
@@ -1250,7 +1316,7 @@ export def SourceCodeAction(kind: string, queryArg: string)
   endif
   query ..= $'#{selector}'
 
-  lspserver.codeAction(@%, 1, line('$'), query)
+  CodeAction(1, line('$'), query)
 enddef
 
 # Code lens
