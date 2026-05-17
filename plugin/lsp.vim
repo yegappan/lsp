@@ -170,6 +170,11 @@ if has('gui_running')
   endif
 endif
 
+# Convenience option to avoid needing to add autocmd to vimrc
+if exists('g:lsp_options') && g:lsp_options->type() == v:t_dict
+  g:LspOptionsSet(g:lsp_options)
+endif
+
 # Invoke autocmd to register LSP servers and to set LSP options
 if exists('#User#LspSetup')
   :doautocmd <nomodeline> User LspSetup

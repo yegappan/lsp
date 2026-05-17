@@ -2028,6 +2028,22 @@ diagnostic messages, you can add the following line to your .vimrc file: >
 
 	call g:LspOptionsSet({'autoHighlightDiags': false})
 <
+                                                 *g:lsp_options*
+For convenience the options above can also be set using this global variable
+in your vimrc. The value must be a dictionary, and supports the same options
+as calling LspOptionsSet() directly. LspOptionsSet() is automatically called
+on plugin load when g:lsp_options is set. For example, in your vimrc, this: >
+
+    vim9script
+    g:lsp_options = {autoHighlightDiags: true}
+<
+Is equivalent to this: >
+
+    vim9script
+    var lspOpts = {autoHighlightDiags: true}
+    autocmd User LspSetup g:LspOptionsSet(lspOpts)
+<
+
 				    *LspOptionsGet()* *g:LspOptionsGet()*
 The g:LspOptionsGet() function returns a |Dict| of all the LSP plugin options,
 To get a particular option value you can use the following: >
