@@ -13,14 +13,8 @@ import './buffer.vim' as buf
 # Notification: textDocument/publishDiagnostics
 # Param: PublishDiagnosticsParams
 def ProcessDiagNotif(lspserver: dict<any>, reply: dict<any>): void
-  # For pull-capable servers, diagnostics come from textDocument/diagnostic.
-  # Ignore push notifications from such servers.
-  if lspserver.isDiagnosticsProvider
-    return
-  endif
-
   var params = reply.params
-  diag.DiagNotification(lspserver, params.uri, params.diagnostics)
+  diag.DiagNotification(lspserver, params.uri, params.diagnostics, 'push')
 enddef
 
 # Convert LSP message type to a string
