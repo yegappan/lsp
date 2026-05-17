@@ -46,19 +46,6 @@ def g:LspServerRunning(ftype: string): bool
   return lsp.ServerRunning(ftype)
 enddef
 
-augroup LSPAutoCmds
-  au!
-  autocmd BufNewFile,BufReadPost,FileType * lsp.AddFile(expand('<abuf>')->str2nr())
-  # Note that when BufWipeOut is invoked, the current buffer may be different
-  # from the buffer getting wiped out.
-  autocmd BufWipeOut * lsp.RemoveFile(expand('<abuf>')->str2nr())
-  autocmd BufWinEnter * lsp.BufferLoadedInWin(expand('<abuf>')->str2nr())
-  # Pull fresh diagnostics when a file is modified outside Vim and reloaded
-  autocmd FileChangedShellPost * lsp.BufferExternallyChanged(expand('<abuf>')->str2nr())
-augroup END
-
-autocmd VimLeavePre * silent! lsp.FastShutdownExitAllServers()
-
 # LSP commands
 command! -nargs=? -bar -range LspCodeAction lsp.CodeAction(<line1>, <line2>, <q-args>)
 command! -nargs=? -bar LspFixAll lsp.SourceCodeAction('source.fixAll', <q-args>)
@@ -175,9 +162,28 @@ if exists('g:lsp_options') && g:lsp_options->type() == v:t_dict
   g:LspOptionsSet(g:lsp_options)
 endif
 
-# Invoke autocmd to register LSP servers and to set LSP options
-if exists('#User#LspSetup')
-  :doautocmd <nomodeline> User LspSetup
-endif
+def LspEnable()
+  augroup LSPAutoCmds
+    au!
+    autocmd BufNewFile,BufReadPost,FileType * lsp.AddFile(expand('<abuf>')->str2nr())
+    # Note that when BufWipeOut is invoked, the current buffer may be different
+    # from the buffer getting wiped out.
+    autocmd BufWipeOut * lsp.RemoveFile(expand('<abuf>')->str2nr())
+    autocmd BufWinEnter * lsp.BufferLoadedInWin(expand('<abuf>')->str2nr())
+    # Pull fresh diagnostics when a file is modified outside Vim and reloaded
+    autocmd FileChangedShellPost * lsp.BufferExternallyChanged(expand('<abuf>')->str2nr())
 
+    autocmd VimLeavePre * silent! lsp.FastShutdownExitAllServers()
+  augroup END
+
+  # Invoke autocmd to register LSP servers and to set LSP options
+  if exists('#User#LspSetup')
+    :doautocmd <nomodeline> User LspSetup
+  endif
+enddef
+
+augroup LspEnable
+  au!
+  autocmd VimEnter * LspEnable()
+augroup END
 # vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab
