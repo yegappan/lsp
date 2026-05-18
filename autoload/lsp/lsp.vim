@@ -28,6 +28,8 @@ import './semantichighlight.vim'
 var ftypeServerMap: dict<list<dict<any>>> = {}
 
 var lspInitializedOnce = false
+var lspUserSetupOnce = false
+var lspEnabled = false
 
 def LspInitOnce()
   # Define all plugin highlights/proptypes once per Vim session.
@@ -53,6 +55,61 @@ def LspInitOnce()
   semantichighlight.InitOnce()
 
   lspInitializedOnce = true
+enddef
+
+def RegisterEvents()
+  augroup LspAutoCmds
+    autocmd!
+    autocmd BufNewFile,BufReadPost,FileType * AddFile(expand('<abuf>')->str2nr())
+    # Note that when BufWipeOut is invoked, the current buffer may be different
+    # from the buffer getting wiped out.
+    autocmd BufWipeOut * RemoveFile(expand('<abuf>')->str2nr())
+    autocmd BufWinEnter * BufferLoadedInWin(expand('<abuf>')->str2nr())
+    # Pull fresh diagnostics when a file is modified outside Vim and reloaded
+    autocmd FileChangedShellPost * BufferExternallyChanged(expand('<abuf>')->str2nr())
+  augroup END
+enddef
+
+def DeregisterEvents()
+  augroup LspAutoCmds
+    autocmd!
+  augroup END
+enddef
+
+export def LspEnable()
+  if lspEnabled
+    return
+  endif
+
+  if !lspUserSetupOnce
+    # Invoke LspSetup user autocmd once
+    if exists('#User#LspSetup')
+      :doautocmd <nomodeline> User LspSetup
+    endif
+    lspUserSetupOnce = true
+  endif
+
+  RegisterEvents()
+
+  for binfo in getbufinfo()
+    AddFile(binfo.bufnr)
+  endfor
+
+  lspEnabled = true
+enddef
+
+export def LspDisable()
+  if !lspEnabled
+    return
+  endif
+
+  DeregisterEvents()
+
+  for binfo in getbufinfo()
+    RemoveFile(binfo.bufnr)
+  endfor
+
+  lspEnabled = false
 enddef
 
 # Returns the LSP servers for the a specific filetype. Based on how well there
@@ -556,7 +613,7 @@ def BufferInit(lspserverId: number, bnr: number): void
         doautocmd <nomodeline> User LspAttached
       else
         # Delay doautocmd until entering the buffer
-        execute 'autocmd LSPAutoCmds BufEnter <buffer=' .. bnr .. '>'
+        execute 'autocmd LspAutoCmds BufEnter <buffer=' .. bnr .. '>'
               \ .. ' ++once doautocmd <nomodeline> User LspAttached'
       endif
     endif

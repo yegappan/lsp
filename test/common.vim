@@ -22,6 +22,9 @@ def g:LoadLspPlugin()
 
   g:LSPTest = true
   source ../plugin/lsp.vim
+
+  # Call g:LspEnable() because VimEnter only triggered after test runner sourced
+  g:LspEnable()
 enddef
 
 # The WaitFor*() functions are reused from the Vim test suite.
