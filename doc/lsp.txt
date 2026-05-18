@@ -1546,6 +1546,16 @@ autoPopulateDiags	|Boolean| option. Automatically populate the location
 			is added to each location list items attribute
 			'user_data'.
 
+						*lsp-opt-codeActionPopupDetails*
+codeActionPopupDetails	|String| option. Configure the details of the code popup.
+			This option accepts one of the following values:
+			    full                 - Title, full kind and server are displayed
+			    full-kind-and-server - Action title and full kind are displayed
+			    kind                 - Action title and kind are displayed
+			    kind-and-server      - Action title, kind and server are displayed (default)
+			    server               - Action title and server are displayed
+			    short                - Only the action is displayed
+
 						*lsp-opt-completionMatcher*
 completionMatcher	|String| option.  Enable fuzzy or case insensitive
 			completion for language servers that replies with a
