@@ -926,25 +926,88 @@ def g:Test_CodeActionMenuMetadata()
     {
       title: 'Apply fallback fix',
       kind: 'quickfix',
+      __lsp_server_name: 'ExampleServer',
     },
     {
       title: 'Apply preferred fix',
       kind: 'source.fixAll',
       isPreferred: true,
+      __lsp_server_name: 'ExampleServer',
     }
   ]
 
+  g:LspOptionsSet({codeActionPopupDetails: 'short'})
   codeaction.ApplyCodeAction(lspserver, actions, '')
 
   var popups = popup_list()
   assert_equal(1, popups->len())
   var bnr = winbufnr(popups[0])
   assert_equal([
-    ' 1. *[source.fixAll] Apply preferred fix ',
-    ' 2. [quickfix] Apply fallback fix '
+    ' 1. *Apply preferred fix ',
+    ' 2. Apply fallback fix '
   ], getbufline(bnr, 1, '$'))
-
   popup_close(popups[0])
+
+  g:LspOptionsSet({codeActionPopupDetails: 'kind'})
+  codeaction.ApplyCodeAction(lspserver, actions, '')
+
+  popups = popup_list()
+  assert_equal(1, popups->len())
+  bnr = winbufnr(popups[0])
+  assert_equal([
+    ' 1. *Apply preferred fix      [source] ',
+    ' 2. Apply fallback fix      [quickfix] '
+  ], getbufline(bnr, 1, '$'))
+  popup_close(popups[0])
+
+  g:LspOptionsSet({codeActionPopupDetails: 'full-kind'})
+  codeaction.ApplyCodeAction(lspserver, actions, '')
+
+  popups = popup_list()
+  assert_equal(1, popups->len())
+  bnr = winbufnr(popups[0])
+  assert_equal([
+    ' 1. *Apply preferred fix    [source.fixAll] ',
+    ' 2. Apply fallback fix           [quickfix] '
+  ], getbufline(bnr, 1, '$'))
+  popup_close(popups[0])
+
+  g:LspOptionsSet({codeActionPopupDetails: 'server'})
+  codeaction.ApplyCodeAction(lspserver, actions, '')
+
+  popups = popup_list()
+  assert_equal(1, popups->len())
+  bnr = winbufnr(popups[0])
+  assert_equal([
+    ' 1. *Apply preferred fix    [ExampleServer] ',
+    ' 2. Apply fallback fix      [ExampleServer] '
+  ], getbufline(bnr, 1, '$'))
+  popup_close(popups[0])
+
+  g:LspOptionsSet({codeActionPopupDetails: 'kind-and-server'})
+  codeaction.ApplyCodeAction(lspserver, actions, '')
+
+  popups = popup_list()
+  assert_equal(1, popups->len())
+  bnr = winbufnr(popups[0])
+  assert_equal([
+    ' 1. *Apply preferred fix      [source] [ExampleServer] ',
+    ' 2. Apply fallback fix      [quickfix] [ExampleServer] '
+  ], getbufline(bnr, 1, '$'))
+  popup_close(popups[0])
+
+  g:LspOptionsSet({codeActionPopupDetails: 'full-kind-and-server'})
+  codeaction.ApplyCodeAction(lspserver, actions, '')
+
+  popups = popup_list()
+  assert_equal(1, popups->len())
+  bnr = winbufnr(popups[0])
+  assert_equal([
+    ' 1. *Apply preferred fix    [source.fixAll] [ExampleServer] ',
+    ' 2. Apply fallback fix           [quickfix] [ExampleServer] '
+  ], getbufline(bnr, 1, '$'))
+  popup_close(popups[0])
+
   g:LspOptionsSet({usePopupInCodeAction: false})
 enddef
 
