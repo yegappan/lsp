@@ -160,15 +160,13 @@ def SortDiags(diags: list<dict<any>>): list<dict<any>>
   return diags->sort(DiagsSortFunc)
 enddef
 
-# Deduplicate diagnostics, if the same dignostic is sent in
+# Deduplicate diagnostics, if the same diagnostic is sent in
 # both push and pull channels
 def DeduplicateDiags(diags: list<dict<any>>): list<dict<any>>
   var result = []
   var seen = {}
   for d in diags
-    var key = printf('%d:%d:%s:%s',
-                     d.range.start.line, d.range.start.character,
-                     d->get('code', '')->string(), d.message)
+    var key = $"{d.range.start.line}:{d.range.start.character}:{d->get('code', '')->string()}:{d.message}"
     if !seen->has_key(key)
       seen[key] = true
       result->add(d)
@@ -425,7 +423,7 @@ enddef
 # process a diagnostic notification message from the LSP server
 # Notification: textDocument/publishDiagnostics
 # Param: PublishDiagnosticsParams
-export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<dict<any>>, channel: string): void
+export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<dict<any>>, sync_kind: string): void
   # Diagnostics are disabled for this server?
   if !lspserver.featureEnabled('diagnostics')
     return
@@ -454,19 +452,19 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<d
   # TODO: Is the buffer (bnr) always a loaded buffer? Should we load it here?
   var lastlnum: number = bnr->getbufinfo()[0].linecount
 
-  var serverId = lspserver.id->string()
+  var serverId = lspserver.id
   var serverDiags: dict<dict<list<any>>> = diagsMap->has_key(bnr) ?
       diagsMap[bnr].serverDiagnostics : {}
   var channelDiags: dict<list<any>> = serverDiags->has_key(serverId) ?
       serverDiags[serverId] : {}
-  channelDiags[channel] = newDiags
+  channelDiags[sync_kind] = newDiags
   serverDiags[serverId] = channelDiags
 
   var dedupedDiags = []
   for diags in channelDiags->values()
     dedupedDiags->extend(diags)
-    dedupedDiags = DeduplicateDiags(dedupedDiags)
   endfor
+  dedupedDiags = DeduplicateDiags(dedupedDiags)
 
   # store the diagnostic for each line separately
   var diagsByLnum: dict<list<dict<any>>> = {}
