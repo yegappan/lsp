@@ -166,7 +166,12 @@ def DeduplicateDiags(diags: list<dict<any>>): list<dict<any>>
   var result = []
   var seen = {}
   for d in diags
-    var key = $"{d.range.start.line}:{d.range.start.character}:{d->get('code', '')->string()}:{d.message}"
+    var key = string([
+      d.range.start.line,
+      d.range.start.character,
+      d->get('code', ''),
+      d.message
+    ])
     if !seen->has_key(key)
       seen[key] = true
       result->add(d)
