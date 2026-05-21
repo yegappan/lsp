@@ -460,13 +460,13 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<d
   var serverId = lspserver.id
   var serverDiags: dict<dict<list<any>>> = diagsMap->has_key(bnr) ?
       diagsMap[bnr].serverDiagnostics : {}
-  var channelDiags: dict<list<any>> = serverDiags->has_key(serverId) ?
+  var kindDiags: dict<list<any>> = serverDiags->has_key(serverId) ?
       serverDiags[serverId] : {}
-  channelDiags[sync_kind] = newDiags
-  serverDiags[serverId] = channelDiags
+  kindDiags[sync_kind] = newDiags
+  serverDiags[serverId] = kindDiags
 
   var dedupedDiags = []
-  for diags in channelDiags->values()
+  for diags in kindDiags->values()
     dedupedDiags->extend(diags)
   endfor
   dedupedDiags = DeduplicateDiags(dedupedDiags)
@@ -487,16 +487,21 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<d
     diagsByLnum[lnum]->add(diag)
   endfor
 
+  # store the diagnostic for each line separately
   var serverDiagsByLnum: dict<dict<list<any>>> = diagsMap->has_key(bnr) ?
       diagsMap[bnr].serverDiagnosticsByLnum : {}
   serverDiagsByLnum[serverId] = diagsByLnum
 
-  # store the diagnostic for each line separately
   var joinedServerDiags: list<dict<any>> = []
-  for chanDiags in serverDiags->values()
-    for diags in chanDiags->values()
-      joinedServerDiags->extend(diags)
+  for kndDiags in serverDiags->values()
+    # De-duplicate diagnostics across push and pull for each server
+    var dedupedServerDiags = []
+    for diags in kndDiags->values()
+      dedupedServerDiags->extend(diags)
     endfor
+    dedupedServerDiags = DeduplicateDiags(dedupedServerDiags)
+
+    joinedServerDiags->extend(dedupedServerDiags)
   endfor
 
   var sortedDiags = SortDiags(joinedServerDiags)
