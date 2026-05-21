@@ -440,7 +440,18 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<d
   endif
   var bnr: number = fname->bufnr()
 
-  var newDiags: list<dict<any>> = diags_arg->slice(0, opt.lspOptions.maxDiagnostics)
+  var serverId = lspserver.id
+  var serverDiags: dict<dict<list<any>>> = diagsMap->has_key(bnr) ?
+      diagsMap[bnr].serverDiagnostics : {}
+  var kindDiags: dict<list<any>> = serverDiags->has_key(serverId) ?
+      serverDiags[serverId] : {}
+
+  # Count existing diagnostics from this server for other sync kinds
+  var otherDiagCount = kindDiags
+      ->keys()
+      ->filter((_, k) => k != sync_kind)
+      ->reduce((acc, k) => acc + kindDiags[k]->len(), 0)
+  var newDiags: list<dict<any>> = diags_arg->slice(0, opt.lspOptions.maxDiagnostics - otherDiagCount)
 
   if lspserver.needOffsetEncoding
     # Decode the position encoding in all the diags
@@ -456,12 +467,6 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<d
 
   # TODO: Is the buffer (bnr) always a loaded buffer? Should we load it here?
   var lastlnum: number = bnr->getbufinfo()[0].linecount
-
-  var serverId = lspserver.id
-  var serverDiags: dict<dict<list<any>>> = diagsMap->has_key(bnr) ?
-      diagsMap[bnr].serverDiagnostics : {}
-  var kindDiags: dict<list<any>> = serverDiags->has_key(serverId) ?
-      serverDiags[serverId] : {}
   kindDiags[sync_kind] = newDiags
   serverDiags[serverId] = kindDiags
 
