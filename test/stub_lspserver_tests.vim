@@ -5,6 +5,9 @@ import '../autoload/lsp/lspserver.vim' as lserver
 import '../autoload/lsp/codeaction.vim' as codeaction
 import '../autoload/lsp/signature.vim' as signature
 import '../autoload/lsp/completion.vim' as completion
+import '../autoload/lsp/handlers.vim' as handlers
+import '../autoload/lsp/diag.vim' as diag
+import '../autoload/lsp/util.vim' as util
 import '../autoload/lsp/buffer.vim' as buf
 
 def CaptureNotification(notifications: list<dict<any>>, method: string,
@@ -279,6 +282,129 @@ def g:Test_PullDiagnostics_RetriggersServerCancelledRequest()
   assert_equal([bufnr()], queued)
 
   buf.BufLspServerRemove(bufnr(), lspserver)
+  :%bw!
+enddef
+
+def g:Test_DiagNotification_PushAndPull_AreBothRetained()
+  g:LspOptionsSet({autoHighlightDiags: false})
+  silent! edit XPushPullDiagnosticsRetained.rs
+  setline(1, ['fn main() {}'])
+
+  var lspserver = MakeTestLspServer([])
+  lspserver.features = {diagnostics: true}
+  lspserver.featureEnabled = (_) => true
+
+  var uri = util.LspBufnrToUri(bufnr())
+  var pullDiag = {
+    range: {
+      start: {line: 0, character: 0},
+      end: {line: 0, character: 2}
+    },
+    code: 'E001',
+    message: 'pull diagnostic'
+  }
+  var pushDiag = {
+    range: {
+      start: {line: 0, character: 5},
+      end: {line: 0, character: 7}
+    },
+    code: 'W001',
+    message: 'push diagnostic'
+  }
+
+  diag.DiagNotification(lspserver, uri, [pullDiag], 'pull')
+  diag.DiagNotification(lspserver, uri, [pushDiag], 'push')
+
+  var allDiags = diag.GetDiagsForBuf(bufnr())
+  assert_equal(2, allDiags->len())
+  assert_equal('pull diagnostic', allDiags[0].message)
+  assert_equal('push diagnostic', allDiags[1].message)
+
+  # Clearing push diagnostics must not clear previously pulled diagnostics.
+  diag.DiagNotification(lspserver, uri, [], 'push')
+  allDiags = diag.GetDiagsForBuf(bufnr())
+  assert_equal(1, allDiags->len())
+  assert_equal('pull diagnostic', allDiags[0].message)
+
+  diag.DiagRemoveFile(bufnr())
+  g:LspOptionsSet({autoHighlightDiags: true})
+  :%bw!
+enddef
+
+def g:Test_DiagNotification_DeduplicatesAcrossPushAndPull()
+  g:LspOptionsSet({autoHighlightDiags: false})
+  silent! edit XPushPullDiagnosticsDedup.rs
+  setline(1, ['fn main() {}'])
+
+  var lspserver = MakeTestLspServer([])
+  lspserver.features = {diagnostics: true}
+  lspserver.featureEnabled = (_) => true
+
+  var uri = util.LspBufnrToUri(bufnr())
+  var sharedDiag = {
+    range: {
+      start: {line: 0, character: 1},
+      end: {line: 0, character: 3}
+    },
+    code: 'DUP',
+    message: 'duplicate across channels'
+  }
+  var pushOnlyDiag = {
+    range: {
+      start: {line: 0, character: 8},
+      end: {line: 0, character: 10}
+    },
+    code: 'PUSH',
+    message: 'push only'
+  }
+
+  diag.DiagNotification(lspserver, uri, [sharedDiag], 'pull')
+  diag.DiagNotification(lspserver, uri, [sharedDiag, pushOnlyDiag], 'push')
+
+  var allDiags = diag.GetDiagsForBuf(bufnr())
+  assert_equal(2, allDiags->len())
+  assert_equal('duplicate across channels', allDiags[0].message)
+  assert_equal('push only', allDiags[1].message)
+
+  diag.DiagRemoveFile(bufnr())
+  g:LspOptionsSet({autoHighlightDiags: true})
+  :%bw!
+enddef
+
+def g:Test_ProcessNotif_PublishDiagnostics_NotIgnoredForPullCapableServer()
+  g:LspOptionsSet({autoHighlightDiags: false})
+  silent! edit XPushDiagnosticsForPullServer.rs
+  setline(1, ['fn main() {}'])
+
+  var lspserver = MakeTestLspServer([])
+  lspserver.isDiagnosticsProvider = true
+  lspserver.features = {diagnostics: true}
+  lspserver.featureEnabled = (_) => true
+
+  var uri = util.LspBufnrToUri(bufnr())
+  var reply = {
+    method: 'textDocument/publishDiagnostics',
+    params: {
+      uri: uri,
+      diagnostics: [{
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 0, character: 2}
+        },
+        code: 'PUSH',
+        message: 'publish diagnostics processed'
+      }]
+    }
+  }
+
+  handlers.ProcessNotif(lspserver, reply)
+
+  var allDiags = diag.GetDiagsForBuf(bufnr())
+  assert_equal(1, allDiags->len())
+  assert_equal('publish diagnostics processed', allDiags[0].message)
+
+  diag.DiagRemoveFile(bufnr())
+  g:LspOptionsSet({autoHighlightDiags: true})
   :%bw!
 enddef
 
