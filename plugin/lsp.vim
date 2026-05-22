@@ -176,9 +176,14 @@ if exists('g:lsp_options') && g:lsp_options->type() == v:t_dict
 endif
 
 if get(g:, 'lsp_enable', true)
-  augroup LspEnable
-    au!
-    autocmd VimEnter * lsp.LspEnable()
-  augroup END
+  if v:vim_did_enter
+    # allow for plugin load, e.g. packadd lsp, after VimEnter
+    lsp.LspEnable()
+  else
+    augroup LspEnable
+      au!
+      autocmd VimEnter * lsp.LspEnable()
+    augroup END
+  endif
 endif
 # vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab
