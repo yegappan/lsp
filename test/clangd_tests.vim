@@ -68,6 +68,7 @@ def g:Test_LspFormat()
     int j;
   END
   setline(1, lines)
+  g:WaitForServerFileLoad(0)
   :redraw!
   :LspFormat
   var expected: list<string> =<< trim DATA
