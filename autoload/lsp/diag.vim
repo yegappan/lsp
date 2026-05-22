@@ -8,8 +8,14 @@ import './util.vim'
 
 # [bnr] = {
 #   serverDiagnostics: {
-#     lspServer1Id: [diag, diag, diag]
-#     lspServer2Id: [diag, diag, diag]
+#     lspServer1Id: {
+#       push: [diag, diag, diag],
+#       pull: [diag, diag, diag]
+#     },
+#     lspServer2Id: {
+#       push: [diag, diag, diag],
+#       pull: [diag, diag, diag]
+#     }
 #   },
 #   serverDiagnosticsByLnum: {
 #     lspServer1Id: { [lnum]: [diag, diag diag] },
@@ -152,6 +158,27 @@ enddef
 # Sort diagnostics ascending based on line and character offset
 def SortDiags(diags: list<dict<any>>): list<dict<any>>
   return diags->sort(DiagsSortFunc)
+enddef
+
+# Deduplicate diagnostics, if the same diagnostic is sent in
+# both push and pull channels
+def DeduplicateDiags(diags: list<dict<any>>): list<dict<any>>
+  var result = []
+  var seen = {}
+  for d in diags
+    var key = string([
+      d.range.start.line,
+      d.range.start.character,
+      d->get('code', ''),
+      d.message
+    ])
+    if !seen->has_key(key)
+      seen[key] = true
+      result->add(d)
+    endif
+  endfor
+
+  return result
 enddef
 
 # Remove the diagnostics stored for buffer "bnr"
@@ -401,7 +428,7 @@ enddef
 # process a diagnostic notification message from the LSP server
 # Notification: textDocument/publishDiagnostics
 # Param: PublishDiagnosticsParams
-export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<dict<any>>): void
+export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<dict<any>>, sync_kind: string): void
   # Diagnostics are disabled for this server?
   if !lspserver.featureEnabled('diagnostics')
     return
@@ -413,7 +440,18 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<d
   endif
   var bnr: number = fname->bufnr()
 
-  var newDiags: list<dict<any>> = diags_arg->slice(0, opt.lspOptions.maxDiagnostics)
+  var serverId = lspserver.id
+  var serverDiags: dict<dict<list<any>>> = diagsMap->has_key(bnr) ?
+      diagsMap[bnr].serverDiagnostics : {}
+  var kindDiags: dict<list<any>> = serverDiags->has_key(serverId) ?
+      serverDiags[serverId] : {}
+
+  # Count existing diagnostics from this server for other sync kinds
+  var otherDiagCount = kindDiags
+      ->keys()
+      ->filter((_, k) => k != sync_kind)
+      ->reduce((acc, k) => acc + kindDiags[k]->len(), 0)
+  var newDiags: list<dict<any>> = diags_arg->slice(0, opt.lspOptions.maxDiagnostics - otherDiagCount)
 
   if lspserver.needOffsetEncoding
     # Decode the position encoding in all the diags
@@ -429,12 +467,18 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<d
 
   # TODO: Is the buffer (bnr) always a loaded buffer? Should we load it here?
   var lastlnum: number = bnr->getbufinfo()[0].linecount
+  kindDiags[sync_kind] = newDiags
+  serverDiags[serverId] = kindDiags
+
+  var dedupedDiags = []
+  for diags in kindDiags->values()
+    dedupedDiags->extend(diags)
+  endfor
+  dedupedDiags = DeduplicateDiags(dedupedDiags)
 
   # store the diagnostic for each line separately
   var diagsByLnum: dict<list<dict<any>>> = {}
-
-  var diagWithinRange: list<dict<any>> = []
-  for diag in newDiags
+  for diag in dedupedDiags
     var d_start = diag.range.start
     if d_start.line + 1 > lastlnum
       # Make sure the line number is a valid buffer line number
@@ -446,22 +490,23 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<d
       diagsByLnum[lnum] = []
     endif
     diagsByLnum[lnum]->add(diag)
-
-    diagWithinRange->add(diag)
   endfor
 
-  var serverDiags: dict<list<any>> = diagsMap->has_key(bnr) ?
-      diagsMap[bnr].serverDiagnostics : {}
-  serverDiags[lspserver.id] = diagWithinRange
-
+  # store the diagnostic for each line separately
   var serverDiagsByLnum: dict<dict<list<any>>> = diagsMap->has_key(bnr) ?
       diagsMap[bnr].serverDiagnosticsByLnum : {}
-  serverDiagsByLnum[lspserver.id] = diagsByLnum
+  serverDiagsByLnum[serverId] = diagsByLnum
 
-  # store the diagnostic for each line separately
   var joinedServerDiags: list<dict<any>> = []
-  for diags in serverDiags->values()
-    joinedServerDiags->extend(diags)
+  for kndDiags in serverDiags->values()
+    # De-duplicate diagnostics across push and pull for each server
+    var dedupedServerDiags = []
+    for diags in kndDiags->values()
+      dedupedServerDiags->extend(diags)
+    endfor
+    dedupedServerDiags = DeduplicateDiags(dedupedServerDiags)
+
+    joinedServerDiags->extend(dedupedServerDiags)
   endfor
 
   var sortedDiags = SortDiags(joinedServerDiags)

@@ -819,7 +819,7 @@ def PullDiagnostics(lspserver: dict<any>, bnr: number)
     if items->empty() && waitForInitialProgress
       return
     endif
-    diag.DiagNotification(lspserver, uri, items)
+    diag.DiagNotification(lspserver, uri, items, 'pull')
   elseif reportKind != 'unchanged'
     util.WarnMsg($'Unsupported diagnostic report kind "{reportKind}"')
   endif
