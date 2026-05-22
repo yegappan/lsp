@@ -68,7 +68,6 @@ def g:Test_LspEnableDisable()
     int j;
   END
   setline(1, lines)
-  var bnr = bufnr()
   g:WaitForServerFileLoad(1)
 
   g:WaitForAssert(() => assert_false(empty(lsp#diag#GetDiagsForBuf())))

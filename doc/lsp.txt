@@ -2056,7 +2056,9 @@ The plugin can be enabled after startup using the |g:LspEnable()| function.
 The g:LspEnable() function enables the LSP plugin after Vim startup.
 
 				    *LspDisable()* *g:LspDisable()*
-The g:LspDisable() function disables the LSP plugin after Vim startup.
+The g:LspDisable() function disables LSP features for buffers after Vim
+startup. It does not stop language servers that are already running. To
+stop running servers, use |:LspServer| stop.
 
 				    *LspOptionsGet()* *g:LspOptionsGet()*
 The g:LspOptionsGet() function returns a |Dict| of all the LSP plugin options,

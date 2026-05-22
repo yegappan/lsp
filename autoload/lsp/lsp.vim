@@ -543,6 +543,30 @@ def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
   autocmd_add(acmds)
 enddef
 
+def RemoveBufLocalAutocmds(bnr: number): void
+  silent! autocmd_delete([{bufnr: bnr, group: 'LSPBufferAutocmds'}])
+enddef
+
+def AddBufListener(lspserver: dict<any>, bnr: number): void
+  # Add a per-buffer listener so incremental text changes are pushed to the
+  # server and pull diagnostics are debounced from edits.
+  var listenerId = listener_add((_bnr: number, start: number, end: number, added: number, changes: list<dict<number>>) => {
+    lspserver.textdocDidChange(bnr)
+    if lspserver.isDiagnosticsProvider
+      lspserver.queuePullDiagnostics(bnr)
+    endif
+  }, bnr)
+  var listenerIds = bnr->getbufvar('LspListenerIds', [])
+  setbufvar(bnr, 'LspListenerIds', listenerIds + [listenerId])
+enddef
+
+def RemoveBufListener(bnr: number): void
+  for listenerId in bnr->getbufvar('LspListenerIds', [])
+    listener_remove(listenerId)
+  endfor
+  setbufvar(bnr, 'LspListenerIds', [])
+enddef
+
 # The LSP server with ID "lspserverId" is ready, initialize the LSP features
 # for buffer "bnr".
 def BufferInit(lspserverId: number, bnr: number): void
@@ -554,14 +578,7 @@ def BufferInit(lspserverId: number, bnr: number): void
   var ftype: string = bnr->getbufvar('&filetype')
   lspserver.textdocDidOpen(bnr, ftype)
 
-  # Add a per-buffer listener so incremental text changes are pushed to the
-  # server and pull diagnostics are debounced from edits.
-  listener_add((_bnr: number, start: number, end: number, added: number, changes: list<dict<number>>) => {
-    lspserver.textdocDidChange(bnr)
-    if lspserver.isDiagnosticsProvider
-      lspserver.queuePullDiagnostics(bnr)
-    endif
-  }, bnr)
+  AddBufListener(lspserver, bnr)
 
   AddBufLocalAutocmds(lspserver, bnr)
 
@@ -678,11 +695,19 @@ enddef
 # Notify LSP server to remove a file
 export def RemoveFile(bnr: number): void
   var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)
+  if !lspservers->empty()
+    RemoveBufLocalAutocmds(bnr)
+    RemoveBufListener(bnr)
+  endif
   # Iterate over a copy because BufLspServerRemove mutates the underlying list.
   for lspserver in lspservers->copy()
     if lspserver->empty()
       continue
     endif
+    silent! autocmd_delete([{group: 'LSPBufferAutocmds',
+                   event: 'User',
+                   pattern: $'LspServerReady_{lspserver.id}',
+                   cmd: $'BufferInit({lspserver.id}, {bnr})'}])
     if lspserver.running
       lspserver.textdocDidClose(bnr)
     endif
