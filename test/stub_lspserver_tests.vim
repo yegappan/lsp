@@ -617,7 +617,7 @@ def g:Test_CodeActionMenu_ServerLabelOnlyForDuplicateTitles()
   assert_equal([
     ' 1. Duplicate action    [srvA] ',
     ' 2. Duplicate action    [srvB] ',
-    ' 3. Unique action '
+    ' 3. Unique action       [srvA] '
   ], getbufline(bnr, 1, '$'))
 
   popup_close(popups[0])
