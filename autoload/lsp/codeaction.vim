@@ -386,49 +386,6 @@ export def CodeActionReply(state: dict<any>, lspserver: dict<any>,
   ApplyCodeAction({}, state.actions, state.selectorQuery)
 enddef
 
-# Callback for AutoFix single-line command (legacy/fallback)
-def AutoFixReply(state: dict<any>, lspserver: dict<any>,
-		actionlist: list<dict<any>>, _selectorQuery: string,
-		rpcError: dict<any>)
-  # Aggregate actions across servers; one server error should not block others.
-  if rpcError->empty() && !actionlist->empty()
-    for act in actionlist
-      var action = act->deepcopy()
-      action.__lsp_server_id = lspserver.id
-      action.__lsp_server_name = lspserver.name
-      state.actions->add(action)
-    endfor
-  endif
-
-  state.pending -= 1
-  if state.pending > 0
-    return
-  endif
-
-  if state.actions->empty()
-    util.WarnMsg('No code action is available')
-    return
-  endif
-
-  var preferred: list<dict<any>> = []
-  for action in state.actions
-    if action->get('isPreferred', false)
-      preferred->add(action)
-    endif
-  endfor
-
-  if preferred->len() == 1
-    # Single preferred action: apply immediately without opening a menu.
-    ApplyCodeAction({}, preferred, '1')
-  elseif preferred->len() > 1
-    # Multiple preferred actions: show only preferred options for selection.
-    ApplyCodeAction({}, preferred, '')
-  else
-    # No preferred action available: fall back to the standard action menu.
-    ApplyCodeAction({}, state.actions, '')
-  endif
-enddef
-
 # Helper: Process a single diagnostic from an AutoFix range
 export def AutoFixProcessDiag(diags: list<dict<any>>,
 			      idx: number, state: dict<any>): void
