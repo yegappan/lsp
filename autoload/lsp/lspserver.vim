@@ -505,7 +505,7 @@ def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel,
   try
     RpcCb(lspserver, result, error)
   catch
-    lspserver.errorLog($'Callback for {method} raised exception: {v:exception} stack trace:{v:stacktrace}')
+    lspserver.errorLog($'Callback for {method} raised exception: {v:exception}')
   endtry
 enddef
 
