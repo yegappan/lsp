@@ -930,6 +930,59 @@ def g:Test_LspAutoFix_Range_SkipNoPreferred()
   :bw!
 enddef
 
+def g:Test_LspAutoFix_Range_MultiplePreferred_ShowsMenu()
+  silent! edit XLspAutoFixRangePreferredMenu.txt
+  set filetype=text
+  setline(1, ['a'])
+  g:LspOptionsSet({usePopupInCodeAction: true})
+
+  var diags = [
+    {'range': {'start': {'line': 0, 'character': 0}, 'end': {'line': 0, 'character': 1}}, 'message': 'diag1'},
+  ]
+  SeedBufferDiagnostics(diags)
+
+  var execCmds: list<string> = []
+  var srv = MakeCodeActionServer('srv1', [], execCmds)
+  srv.codeActionAsync = (_fname, line1, _line2, _query, Cbfunc) => {
+    Cbfunc(srv, [
+      {
+        title: 'Preferred one',
+        isPreferred: true,
+        command: 'preferred.one',
+        diagnostics: [{
+          range: {
+            start: {line: line1 - 1, character: 0},
+            end: {line: line1 - 1, character: 1}}}]},
+      {
+        title: 'Preferred two',
+        isPreferred: true,
+        command: 'preferred.two',
+        diagnostics: [{
+          range: {
+            start: {line: line1 - 1, character: 0},
+            end: {line: line1 - 1, character: 1}}}]}
+    ], '', {})
+  }
+  buf.BufLspServerSet(bufnr(), srv)
+
+  lsp.AutoFix(1, 1)
+
+  var popups = popup_list()
+  assert_equal(1, popups->len())
+  var bnr = winbufnr(popups[0])
+  var lines = getbufline(bnr, 1, '$')
+  assert_equal(2, lines->len())
+  assert_match('Preferred one', lines[0])
+  assert_match('Preferred two', lines[1])
+  assert_equal([], execCmds)
+
+  popup_close(popups[0])
+  g:LspOptionsSet({usePopupInCodeAction: false})
+  ClearBufferDiagnostics()
+  buf.BufLspServerRemove(bufnr(), srv)
+  :bw!
+enddef
+
 def g:Test_LspAutoFix_Range_ContinuesOnRpcError()
   silent! edit XLspAutoFixContinueOnRpcError.txt
   set filetype=text
