@@ -609,12 +609,14 @@ def g:Test_CodeActionMenu_ServerLabelOnlyForDuplicateTitles()
 
   codeaction.ApplyCodeAction({}, actions, '')
 
+  g:LspOptionsSet({codeActionPopupDetails: 'short'})
+
   var popups = popup_list()
   assert_equal(1, popups->len())
   var bnr = winbufnr(popups[0])
   assert_equal([
-    ' 1. Duplicate action [srvA] ',
-    ' 2. Duplicate action [srvB] ',
+    ' 1. Duplicate action    [srvA] ',
+    ' 2. Duplicate action    [srvB] ',
     ' 3. Unique action '
   ], getbufline(bnr, 1, '$'))
 

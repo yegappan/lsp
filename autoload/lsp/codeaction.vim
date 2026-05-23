@@ -87,22 +87,97 @@ def SortCodeActions(actions: list<dict<any>>): list<dict<any>>
   return ranked->map((_, item) => item.action)
 enddef
 
-def ActionMenuText(act: dict<any>): string
-  var prefix: string = ''
+def ActionMenuText(actions: list<dict<any>>): list<string>
+  var duplicateTitles = GetDuplicateActionTitles(actions)
+  var actionListLength = actions->len()
 
-  if act->get('isPreferred', false)
-    prefix = '*'
-  endif
-  var kind: string = act->get('kind', '')
-  if kind != ''
-    prefix ..= $'[{kind}] '
-  endif
+  var bitfield = opt.lspOptions.codeActionPopupDetailsBitfield
+  var hasKind: bool = and(bitfield, opt.CODEACTIONDETAILS_KIND) != 0
+  var hasFullKind: bool = and(bitfield, opt.CODEACTIONDETAILS_FULLKIND) != 0
+  var hasServer: bool = and(bitfield, opt.CODEACTIONDETAILS_SERVER) != 0
 
-  var title = act.title->substitute('\r\n', '\\r\\n', 'g')
-  title = title->substitute('\n', '\\n', 'g')
+  var strings: list<dict<string>> = []
+  var widths: list<dict<number>> = []
+  var longest = { title: 0, kind: 0, server: 0}
 
-  # Normalize newlines so each action remains a single menu row.
-  return $'{prefix}{title}'
+  for act in actions
+    var hasDuplicateTitle: bool = duplicateTitles->has_key(act->get('title', ''))
+    var width: dict<number> = {}
+    var string: dict<string> = {}
+
+    string.title = act.title->substitute('\r\n\|\n', '\\n', 'g')
+    if act->get('isPreferred', false)
+      string.title = '*' .. string.title
+    endif
+
+    string.kind = ''
+    if hasKind
+      string.kind = substitute(act->get('kind', ''), '\..*$', '', '')
+    elseif hasFullKind
+      string.kind = act->get('kind', '')
+    endif
+
+    if !empty(string.kind)
+      string.kind = printf("[%s]", string.kind)
+    endif
+
+    string.server = ''
+    if hasServer || hasDuplicateTitle
+      string.server = printf("[%s]", act->get('__lsp_server_name', ''))
+    endif
+
+    strings->add(string)
+
+    # Compute widths
+    width.title = strdisplaywidth(string.title)
+    width.kind = strdisplaywidth(string.kind)
+    width.server = strdisplaywidth(string.server)
+    width.postfix = width.server + width.kind
+    widths->add(width)
+
+    # Compute maxima
+    longest.title = max([longest.title, width.title])
+    longest.kind = max([longest.kind, width.kind])
+    longest.server = max([longest.server, width.server])
+  endfor
+
+  var popupText: list<string> = []
+
+  var minPadding = 4
+  var numWidth = actionListLength->string()->len()
+  var longestPostfix = longest.kind + longest.server
+  var popupWidth = longest.title + longestPostfix + minPadding
+
+  for i in actionListLength->range()
+    var act = actions[i]
+    var hasDuplicateTitle: bool = duplicateTitles->has_key(act->get('title', ''))
+
+    var numPrefix = printf(' %*d. ', numWidth, i + 1)
+    var line: string
+
+    if !hasKind && !hasFullKind && !hasServer && !hasDuplicateTitle
+      line = numPrefix .. strings[i].title .. ' '
+    else
+      var postfix = ''
+      if !empty(strings[i].kind)
+	postfix ..= strings[i].kind
+      endif
+
+      if !empty(strings[i].server)
+	if !empty(postfix)
+	  postfix ..= ' '
+	endif
+	postfix ..= strings[i].server
+      endif
+
+      var padding = max([minPadding, popupWidth - widths[i].title - widths[i].postfix -
+	(longest.server - widths[i].server)])
+      line = numPrefix .. strings[i].title .. repeat(' ', padding) .. postfix .. ' '
+    endif
+    popupText->add(line)
+  endfor
+
+  return popupText
 enddef
 
 def GetDuplicateActionTitles(actions: list<dict<any>>): dict<bool>
@@ -145,18 +220,6 @@ def ResolveActionServer(defaultServer: dict<any>, action: dict<any>): dict<any>
   return lspserver
 enddef
 
-def ActionMenuTextWithServerLabel(act: dict<any>, duplicateTitles: dict<bool>): string
-  var text = ActionMenuText(act)
-
-  # Only duplicate titles get source labels, keeping unique entries concise.
-  if duplicateTitles->has_key(act->get('title', ''))
-      && act->has_key('__lsp_server_name')
-    return $'{text} [{act.__lsp_server_name}]'
-  endif
-
-  return text
-enddef
-
 # Process the list of code actions returned by the LSP server, ask the user to
 # choose one action from the list and then apply it.
 # If "query" is a number, then apply the corresponding action in the list.
@@ -182,16 +245,7 @@ export def ApplyCodeAction(lspserver: dict<any>, actionlist: list<dict<any>>, qu
     return
   endif
 
-  # Compute once for the current menu render.
-  var duplicateTitles = GetDuplicateActionTitles(actions)
-
-  var text: list<string> = []
-  var act: dict<any>
-  for i in actions->len()->range()
-    act = actions[i]
-    var t = ActionMenuTextWithServerLabel(act, duplicateTitles)
-    text->add(printf(" %d. %s ", i + 1, t))
-  endfor
+  var text = ActionMenuText(actions)
 
   var choice: number
 

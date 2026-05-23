@@ -4,6 +4,10 @@ export const COMPLETIONMATCHER_CASE = 1
 export const COMPLETIONMATCHER_ICASE = 2
 export const COMPLETIONMATCHER_FUZZY = 3
 
+export const CODEACTIONDETAILS_SERVER   = 0x1
+export const CODEACTIONDETAILS_KIND     = 0x2
+export const CODEACTIONDETAILS_FULLKIND = 0x4
+
 # LSP plugin options
 # User can override these by calling the OptionsSet() function.
 export var lspOptions: dict<any> = {
@@ -24,6 +28,10 @@ export var lspOptions: dict<any> = {
 
   # Automatically populate the location list with new diagnostics
   autoPopulateDiags: false,
+
+  # Default code action details are 'kind-and-server'
+  codeActionPopupDetails: 'kind-and-server',
+  codeActionPopupDetailsBitfield: 3,
 
   # icase | fuzzy | case match for language servers that replies with a full
   # list of completion items
@@ -255,6 +263,24 @@ export def OptionsSet(opts: dict<any>)
     lspOptions.completionMatcherValue = COMPLETIONMATCHER_FUZZY
   else
     lspOptions.completionMatcherValue = COMPLETIONMATCHER_CASE
+  endif
+
+  # For faster comparison, convert the 'codeActionPopupDetails' option value from a
+  # string to a number.
+  if lspOptions.codeActionPopupDetails == 'short'
+    lspOptions.codeActionPopupDetailsBitfield = 0
+  elseif lspOptions.codeActionPopupDetails == 'server'
+    lspOptions.codeActionPopupDetailsBitfield = CODEACTIONDETAILS_SERVER
+  elseif lspOptions.codeActionPopupDetails == 'kind'
+    lspOptions.codeActionPopupDetailsBitfield = CODEACTIONDETAILS_KIND
+  elseif lspOptions.codeActionPopupDetails == 'kind-and-server'
+    lspOptions.codeActionPopupDetailsBitfield = or(CODEACTIONDETAILS_KIND, CODEACTIONDETAILS_SERVER)
+  elseif lspOptions.codeActionPopupDetails == 'full-kind'
+    lspOptions.codeActionPopupDetailsBitfield = CODEACTIONDETAILS_FULLKIND
+  elseif lspOptions.codeActionPopupDetails == 'full-kind-and-server'
+    lspOptions.codeActionPopupDetailsBitfield = or(CODEACTIONDETAILS_FULLKIND, CODEACTIONDETAILS_SERVER)
+  else
+    lspOptions.codeActionPopupDetailsBitfield = or(CODEACTIONDETAILS_KIND, CODEACTIONDETAILS_SERVER)
   endif
 
   # Apply the changed options
