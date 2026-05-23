@@ -167,7 +167,7 @@ def ApplyCompletionItemLabelDetails(item: dict<any>, d: dict<any>)
 
   var detailText = labelDetails->get('detail', v:none)
   if detailText->type() == v:t_string
-    var detailLine = detailText->split("\n")[0]
+    var detailLine = detailText->empty() ? '' : detailText->split("\n")[0]
     if !detailLine->empty()
       d.abbr ..= detailLine
     endif
@@ -178,7 +178,7 @@ def ApplyCompletionItemLabelDetails(item: dict<any>, d: dict<any>)
     return
   endif
 
-  var descLine = descText->split("\n")[0]
+  var descLine = descText->empty() ? '' : descText->split("\n")[0]
   if descLine->empty()
     return
   endif
