@@ -203,7 +203,8 @@ def ResolveActionServer(defaultServer: dict<any>, action: dict<any>): dict<any>
   var lspserver = defaultServer
 
   # Multi-server actions include source metadata injected at aggregation time.
-  # Look up the live server by id so resolve/executeCommand is routed correctly.
+  # Look up the live server by id so resolve/executeCommand is routed
+  # correctly.
   if action->has_key('__lsp_server_id')
     lspserver = buf.BufLspServerGetById(bufnr(), action.__lsp_server_id)
     if lspserver->empty() || !lspserver.running || !lspserver.ready
@@ -230,7 +231,8 @@ enddef
 # configured by the user, then display the list of items in a popup menu.
 # Otherwise display the items in an input list and prompt the user to select
 # an action.
-export def ApplyCodeAction(lspserver: dict<any>, actionlist: list<dict<any>>, query: string): void
+export def ApplyCodeAction(lspserver: dict<any>,
+			   actionlist: list<dict<any>>, query: string): void
   var actions = actionlist
 
   if opt.lspOptions.hideDisabledCodeActions
@@ -312,6 +314,230 @@ export def ApplyCodeAction(lspserver: dict<any>, actionlist: list<dict<any>>, qu
   endif
 
   HandleCodeAction(actionServer, action)
+enddef
+
+# Check if current buffer has code action capable servers that are running and
+# ready
+export def CurbufGetCodeActionServersChecked(): list<dict<any>>
+  var fname: string = @%
+  var ft = &filetype
+  if fname->empty() || ft->empty()
+    return []
+  endif
+
+  # Code actions are aggregated from all attached servers that advertise and
+  # have the feature enabled for this buffer.
+  var lspservers: list<dict<any>> = buf.CurbufGetServers()->filter((_, lspserver) =>
+	lspserver.isCodeActionProvider && lspserver.featureEnabled('codeAction'))
+
+  if lspservers->empty()
+    util.ErrMsg($'Language server for "{ft}" file type supporting "codeAction" feature is not found')
+    return []
+  endif
+
+  lspservers = lspservers->filter((_, lspserver) => lspserver.running)
+  # Keep existing command-level UX: fail early when all candidates are down.
+  if lspservers->empty()
+    util.ErrMsg($'Language server for "{ft}" file type is not running')
+    return []
+  endif
+
+  lspservers = lspservers->filter((_, lspserver) => lspserver.ready)
+  # As above, mirror single-server readiness checks for user-facing errors.
+  if lspservers->empty()
+    util.ErrMsg($'Language server for "{ft}" file type is not ready')
+    return []
+  endif
+
+  return lspservers
+enddef
+
+# Callback for multi-server code action aggregation in CodeAction command
+export def CodeActionReply(state: dict<any>, lspserver: dict<any>,
+			   actionlist: list<dict<any>>, selectorQuery: string,
+			   rpcError: dict<any>)
+  # The request-side parser may normalize selectors (for example only:/kind:).
+  # All callbacks for one invocation produce the same selector, so capture
+  # once.
+  if state.selectorQuery == ''
+    state.selectorQuery = selectorQuery
+  endif
+
+  # Aggregate partial success: an error from one server must not hide actions
+  # returned by other servers.
+  if rpcError->empty() && !actionlist->empty()
+    for act in actionlist
+      var action = act->deepcopy()
+      # Persist source-server metadata so selection-time execution can be
+      # routed back to the server that produced this action.
+      action.__lsp_server_id = lspserver.id
+      action.__lsp_server_name = lspserver.name
+      state.actions->add(action)
+    endfor
+  endif
+
+  # Wait until every server has replied before opening a single merged menu.
+  state.pending -= 1
+  if state.pending > 0
+    return
+  endif
+
+  # Use {} here because each action carries its own source-server metadata.
+  ApplyCodeAction({}, state.actions, state.selectorQuery)
+enddef
+
+# Callback for AutoFix single-line command (legacy/fallback)
+def AutoFixReply(state: dict<any>, lspserver: dict<any>,
+		actionlist: list<dict<any>>, _selectorQuery: string,
+		rpcError: dict<any>)
+  # Aggregate actions across servers; one server error should not block others.
+  if rpcError->empty() && !actionlist->empty()
+    for act in actionlist
+      var action = act->deepcopy()
+      action.__lsp_server_id = lspserver.id
+      action.__lsp_server_name = lspserver.name
+      state.actions->add(action)
+    endfor
+  endif
+
+  state.pending -= 1
+  if state.pending > 0
+    return
+  endif
+
+  if state.actions->empty()
+    util.WarnMsg('No code action is available')
+    return
+  endif
+
+  var preferred: list<dict<any>> = []
+  for action in state.actions
+    if action->get('isPreferred', false)
+      preferred->add(action)
+    endif
+  endfor
+
+  if preferred->len() == 1
+    # Single preferred action: apply immediately without opening a menu.
+    ApplyCodeAction({}, preferred, '1')
+  elseif preferred->len() > 1
+    # Multiple preferred actions: show only preferred options for selection.
+    ApplyCodeAction({}, preferred, '')
+  else
+    # No preferred action available: fall back to the standard action menu.
+    ApplyCodeAction({}, state.actions, '')
+  endif
+enddef
+
+# Helper: Process a single diagnostic from an AutoFix range
+export def AutoFixProcessDiag(diags: list<dict<any>>,
+			      idx: number, state: dict<any>): void
+  if idx >= diags->len()
+    return
+  endif
+
+  var diag = diags[idx]
+  var dline = diag.range.start.line + 1
+  var servers = state.servers
+  var fname = state.fname
+
+  for lspserver in servers
+    lspserver.codeActionAsync(fname, dline, dline, '',
+      (lsp, actions, _, rpcErr) => AutoFixDiagActionReply(lsp, actions, rpcErr, diags, idx, diag, state))
+  endfor
+enddef
+
+# Helper: Handle code action reply for AutoFix diagnostic
+def AutoFixDiagActionReply(lspserver: dict<any>, actions: list<dict<any>>,
+    rpcError: dict<any>, diags: list<dict<any>>, idx: number, diag: dict<any>,
+    state: dict<any>): void
+  if !rpcError->empty()
+    state.pending -= 1
+    if state.pending == 0 && !state.handled && !state.errorOccurred
+      AutoFixProcessDiag(diags, idx + 1, state)
+    endif
+    return
+  endif
+
+  # Filter actions to those that match this diagnostic
+  var matchingActions = []
+  var preferred = []
+  for act in actions
+    var matches = false
+    if act->has_key('diagnostics')
+      for ad in act.diagnostics
+        if ad.range->string() == diag.range->string()
+          matches = true
+          break
+        endif
+      endfor
+    else
+      matches = true
+    endif
+
+    if matches
+      matchingActions->add(act)
+      if act->get('isPreferred', false)
+        preferred->add(act)
+      endif
+    endif
+  endfor
+
+  # Decide which action(s) to process
+  var actionsToShow = []
+  if !preferred->empty()
+    # Prefer the preferred actions
+    actionsToShow = preferred
+  elseif matchingActions->len() == 1
+    # Single non-preferred action: apply it anyway
+    actionsToShow = matchingActions
+  else
+    # No preferred and multiple non-preferred (or no actions at all): skip
+    state.pending -= 1
+    if state.pending == 0 && !state.handled && !state.errorOccurred
+      AutoFixProcessDiag(diags, idx + 1, state)
+    endif
+    return
+  endif
+
+  if actionsToShow->len() == 1
+    try
+      HandleCodeAction(lspserver, actionsToShow[0])
+    catch
+      state.errorOccurred = true
+      return
+    endtry
+    state.handled = true
+    AutoFixProcessDiag(diags, idx + 1, state)
+  else
+    var menu = []
+    for act in actionsToShow
+      menu->add(ActionMenuText(act))
+    endfor
+    var choice = inputlist(['Select code action:'] + menu)
+    AutoFixDiagOnChosenAction(choice, actionsToShow, lspserver, diags, idx, state)
+  endif
+enddef
+
+# Helper: Handle user choice for multiple code actions in AutoFix
+def AutoFixDiagOnChosenAction(chosenIdx: number, actions: list<dict<any>>,
+			      lspserver: dict<any>, diags: list<dict<any>>,
+			      idx: number, state: dict<any>): void
+  if chosenIdx < 1 || chosenIdx > actions->len()
+    # User cancelled
+    AutoFixProcessDiag(diags, idx + 1, state)
+    return
+  endif
+
+  var chosen = actions[chosenIdx - 1]
+  try
+    HandleCodeAction(lspserver, chosen)
+  catch
+    state.errorOccurred = true
+    return
+  endtry
+  state.handled = true
+  AutoFixProcessDiag(diags, idx + 1, state)
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab

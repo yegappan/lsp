@@ -61,6 +61,7 @@ augroup END
 
 # LSP commands
 command! -nargs=? -bar -range LspCodeAction lsp.CodeAction(<line1>, <line2>, <q-args>)
+command! -nargs=0 -bar -range LspAutoFix lsp.AutoFix(<line1>, <line2>)
 command! -nargs=? -bar LspFixAll lsp.SourceCodeAction('source.fixAll', <q-args>)
 command! -nargs=? -bar LspOrganizeImports lsp.SourceCodeAction('source.organizeImports', <q-args>)
 command! -nargs=0 -bar LspCodeLens lsp.CodeLens()
@@ -186,4 +187,5 @@ if get(g:, 'lsp_enable', true)
     augroup END
   endif
 endif
+
 # vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab

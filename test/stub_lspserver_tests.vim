@@ -2,6 +2,7 @@ vim9script
 # Unit tests using a stub language server
 
 import '../autoload/lsp/lspserver.vim' as lserver
+import '../autoload/lsp/lsp.vim' as lsp
 import '../autoload/lsp/codeaction.vim' as codeaction
 import '../autoload/lsp/signature.vim' as signature
 import '../autoload/lsp/completion.vim' as completion
@@ -42,6 +43,36 @@ def MakeTestLspServer(notifications: list<dict<any>>): dict<any>
   lspserver.textDocumentSync = 2
   lspserver.sendNotification = function(CaptureNotification, [notifications])
   return lspserver
+enddef
+
+def MakeCodeActionServer(name: string, actions: list<dict<any>>,
+		execCmds: list<string>): dict<any>
+  var lspserver = MakeTestLspServer([])
+  lspserver.name = name
+  lspserver.running = true
+  lspserver.ready = true
+  lspserver.isCodeActionProvider = true
+  lspserver.featureEnabled = (_feature: string): bool => true
+  lspserver.codeActionAsync = (_, _, _, query, Cbfunc) => {
+    Cbfunc(lspserver, actions->deepcopy(), query, {})
+  }
+  lspserver.executeCommand = (cmd: dict<any>) => {
+    execCmds->add(cmd->get('command', ''))
+  }
+  return lspserver
+enddef
+
+def SeedBufferDiagnostics(diags: list<dict<any>>): void
+  g:LspOptionsSet({autoHighlightDiags: false})
+  var diagSrv = MakeTestLspServer([])
+  diagSrv.features = {diagnostics: true}
+  diagSrv.featureEnabled = (_) => true
+  diag.DiagNotification(diagSrv, util.LspBufnrToUri(bufnr()), diags, 'push')
+enddef
+
+def ClearBufferDiagnostics(): void
+  diag.DiagRemoveFile(bufnr())
+  g:LspOptionsSet({autoHighlightDiags: true})
 enddef
 
 def CaptureResponse(responses: list<dict<any>>, request: dict<any>,
@@ -672,6 +703,259 @@ def g:Test_ApplyCodeAction_RoutesToOriginServer()
 
   buf.BufLspServerRemove(bufnr(), srv1)
   buf.BufLspServerRemove(bufnr(), srv2)
+  :bw!
+enddef
+
+def g:Test_LspAutoFix_AppliesSinglePreferredAction()
+  silent! edit XLspAutoFixPreferred.txt
+  set filetype=text
+  setline(1, ['line'])
+  cursor(1, 1)
+
+  SeedBufferDiagnostics([
+    {
+      range: {
+        start: {line: 0, character: 0},
+        end: {line: 0, character: 1}
+      },
+      message: 'diag'
+    }
+  ])
+
+  var execCmds: list<string> = []
+  var actions = [
+    {
+      title: 'Apply preferred fix',
+      isPreferred: true,
+      command: 'preferred.fix',
+    },
+    {
+      title: 'Apply fallback fix',
+      command: 'fallback.fix',
+    }
+  ]
+  var srv = MakeCodeActionServer('srv1', actions, execCmds)
+  buf.BufLspServerSet(bufnr(), srv)
+
+  lsp.AutoFix()
+
+  assert_equal(['preferred.fix'], execCmds)
+  assert_equal([], popup_list())
+
+  ClearBufferDiagnostics()
+  buf.BufLspServerRemove(bufnr(), srv)
+  :bw!
+enddef
+
+def g:Test_LspAutoFix_PrefersPreferredActionForDiagnostic()
+  silent! edit XLspAutoFixPreferredSelection.txt
+  set filetype=text
+  setline(1, ['line'])
+  cursor(1, 1)
+
+  SeedBufferDiagnostics([
+    {
+      range: {
+        start: {line: 0, character: 0},
+        end: {line: 0, character: 1}
+      },
+      message: 'diag'
+    }
+  ])
+
+  var execCmds: list<string> = []
+  var actions = [
+    {
+      title: 'Preferred one',
+      isPreferred: true,
+      command: 'preferred.one',
+    },
+    {
+      title: 'Fallback',
+      command: 'fallback',
+    }
+  ]
+  var srv = MakeCodeActionServer('srv1', actions, execCmds)
+  buf.BufLspServerSet(bufnr(), srv)
+
+  lsp.AutoFix()
+
+  assert_equal(['preferred.one'], execCmds)
+  assert_equal([], popup_list())
+
+  ClearBufferDiagnostics()
+  buf.BufLspServerRemove(bufnr(), srv)
+  :bw!
+enddef
+
+def g:Test_LspAutoFix_NoPreferredMultipleActionsSkipsDiagnostic()
+  silent! edit XLspAutoFixNoPreferredMulti.txt
+  set filetype=text
+  setline(1, ['line'])
+  cursor(1, 1)
+
+  SeedBufferDiagnostics([
+    {
+      range: {
+        start: {line: 0, character: 0},
+        end: {line: 0, character: 1}
+      },
+      message: 'diag'
+    }
+  ])
+
+  var execCmds: list<string> = []
+  var actions = [
+    {
+      title: 'Fix A',
+      command: 'fix.a',
+    },
+    {
+      title: 'Fix B',
+      command: 'fix.b',
+    }
+  ]
+  var srv = MakeCodeActionServer('srv1', actions, execCmds)
+  buf.BufLspServerSet(bufnr(), srv)
+
+  lsp.AutoFix()
+
+  assert_equal([], execCmds)
+  assert_equal([], popup_list())
+
+  ClearBufferDiagnostics()
+  buf.BufLspServerRemove(bufnr(), srv)
+  :bw!
+enddef
+
+def g:Test_LspAutoFix_NoDiagnosticsShowsMessage()
+  silent! edit XLspAutoFixNoDiagnostics.txt
+  set filetype=text
+  setline(1, ['line'])
+  cursor(1, 1)
+
+  var execCmds: list<string> = []
+  var srv = MakeCodeActionServer('srv1', [], execCmds)
+  buf.BufLspServerSet(bufnr(), srv)
+
+  var beforeMessages = execute('messages')
+  lsp.AutoFix()
+  var afterMessages = execute('messages')
+
+  assert_true(afterMessages->len() >= beforeMessages->len())
+  assert_true(afterMessages->stridx('No diagnostics found in the selected range') >= 0)
+  assert_equal([], execCmds)
+
+  buf.BufLspServerRemove(bufnr(), srv)
+  :bw!
+enddef
+
+def g:Test_LspAutoFix_Range_MultipleDiagnostics()
+  silent! edit XLspAutoFixRange.txt
+  set filetype=text
+  setline(1, [
+    'a',
+    'b',
+    'c',
+    'd',
+    'e',
+  ])
+  # Simulate diagnostics on lines 2, 3, 4 (descending order)
+  var diags = [
+    {'range': {'start': {'line': 1, 'character': 0}, 'end': {'line': 1, 'character': 1}}, 'message': 'diag2'},
+    {'range': {'start': {'line': 2, 'character': 0}, 'end': {'line': 2, 'character': 1}}, 'message': 'diag3'},
+    {'range': {'start': {'line': 3, 'character': 0}, 'end': {'line': 3, 'character': 1}}, 'message': 'diag4'},
+  ]
+  SeedBufferDiagnostics(diags)
+
+  # Each line's code action returns a preferred action for that diagnostic.
+  var execCmds: list<string> = []
+  var srv = MakeCodeActionServer('srv1', [], execCmds)
+  srv.codeActionAsync = (_fname, line1, _line2, _query, Cbfunc) => {
+    var idx = line1 - 1
+    if idx >= 1 && idx <= 3
+      var diagnum = idx + 1
+      var acts = [{
+        title: 'Fix diag' .. diagnum,
+        isPreferred: true,
+        command: 'fix.diag' .. diagnum,
+        diagnostics: [{
+          range: {
+            start: {line: line1 - 1, character: 0},
+            end: {line: line1 - 1, character: 1}}}]}]
+      Cbfunc(srv, acts, '', {})
+    else
+      Cbfunc(srv, [], '', {})
+    endif
+  }
+  buf.BufLspServerSet(bufnr(), srv)
+  # Range: lines 2-4 (inclusive)
+  lsp.AutoFix(2, 4)
+  # Should apply fixes for diag4, diag3, diag2 (descending)
+  assert_equal(['fix.diag4', 'fix.diag3', 'fix.diag2'], execCmds)
+
+  ClearBufferDiagnostics()
+  buf.BufLspServerRemove(bufnr(), srv)
+  :bw!
+enddef
+
+def g:Test_LspAutoFix_Range_SkipNoPreferred()
+  silent! edit XLspAutoFixSkipNoPreferred.txt
+  set filetype=text
+  setline(1, ['a', 'b'])
+  var diags = [
+    {'range': {'start': {'line': 0, 'character': 0}, 'end': {'line': 0, 'character': 1}}, 'message': 'diag1'},
+    {'range': {'start': {'line': 1, 'character': 0}, 'end': {'line': 1, 'character': 1}}, 'message': 'diag2'},
+  ]
+  SeedBufferDiagnostics(diags)
+
+  var execCmds: list<string> = []
+  var srv = MakeCodeActionServer('srv1', [], execCmds)
+  srv.codeActionAsync = (_fname, line1, _line2, _query, Cbfunc) => {
+    if line1 == 1
+      # No preferred for diag1
+      Cbfunc(srv, [{'title': 'Not preferred', 'command': 'notpreferred'}], '', {})
+    else
+      # Preferred for diag2
+      Cbfunc(srv, [{'title': 'Preferred', 'isPreferred': true, 'command': 'preferred', 'diagnostics': [{'range': {'start': {'line': 1, 'character': 0}, 'end': {'line': 1, 'character': 1}}}]}], '', {})
+    endif
+  }
+  buf.BufLspServerSet(bufnr(), srv)
+  lsp.AutoFix(1, 2)
+  # line 2 preferred fix is applied first, then the single non-preferred fix.
+  assert_equal(['preferred', 'notpreferred'], execCmds)
+
+  ClearBufferDiagnostics()
+  buf.BufLspServerRemove(bufnr(), srv)
+  :bw!
+enddef
+
+def g:Test_LspAutoFix_Range_ContinuesOnRpcError()
+  silent! edit XLspAutoFixContinueOnRpcError.txt
+  set filetype=text
+  setline(1, ['a', 'b', 'c'])
+  var diags = [
+    {'range': {'start': {'line': 0, 'character': 0}, 'end': {'line': 0, 'character': 1}}, 'message': 'diag1'},
+    {'range': {'start': {'line': 1, 'character': 0}, 'end': {'line': 1, 'character': 1}}, 'message': 'diag2'},
+    {'range': {'start': {'line': 2, 'character': 0}, 'end': {'line': 2, 'character': 1}}, 'message': 'diag3'},
+  ]
+  SeedBufferDiagnostics(diags)
+
+  var execCmds: list<string> = []
+  var srv = MakeCodeActionServer('srv1', [], execCmds)
+  srv.codeActionAsync = (_fname, line1, _line2, _query, Cbfunc) => {
+    if line1 == 3
+      Cbfunc(srv, [], '', {code: -32603, message: 'simulated rpc error'})
+    else
+      Cbfunc(srv, [{'title': 'Preferred', 'isPreferred': true, 'command': 'ok.' .. line1, 'diagnostics': [{'range': {'start': {'line': line1 - 1, 'character': 0}, 'end': {'line': line1 - 1, 'character': 1}}}]}], '', {})
+    endif
+  }
+  buf.BufLspServerSet(bufnr(), srv)
+  lsp.AutoFix(1, 3)
+  assert_equal(['ok.2', 'ok.1'], execCmds)
+
+  ClearBufferDiagnostics()
+  buf.BufLspServerRemove(bufnr(), srv)
   :bw!
 enddef
 

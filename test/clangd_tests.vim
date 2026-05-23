@@ -926,9 +926,12 @@ def g:Test_LspCodeAction()
 
   # empty file
   assert_equal('', execute('LspCodeAction'))
+  assert_equal('', execute('LspAutoFix'))
 
   # file without an LSP server
   edit a.raku
+  assert_equal('Error: Language server for "raku" file type supporting "codeAction" feature is not found',
+	       execute('LspAutoFix')->split("\n")[0])
   assert_equal('Error: Language server for "raku" file type supporting "codeAction" feature is not found',
 	       execute('LspCodeAction')->split("\n")[0])
   assert_equal('Error: Language server for "raku" file type supporting "codeAction" feature is not found',

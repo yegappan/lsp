@@ -514,6 +514,9 @@ these commands is provided later in this section.
 :LspCodeAction		Request code actions from all eligible language
 			servers attached to the current buffer and apply
 			the selected action for the current line.
+:LspAutoFix		Request code actions for the current line or a
+			user-specified range and automatically apply the
+			preferred action(s) for each diagnostic.
 :LspFixAll [query]	Request source.fixAll code actions for the current
 			file from all eligible language servers and apply
 			the selected action.
@@ -1112,6 +1115,34 @@ Commands to modify, rename, or format your code using the language server.
 
 			Use |:LspFixAll| and |:LspOrganizeImports| for
 			dedicated source actions over the current file.
+
+							*:LspAutoFix*
+
+:LspAutoFix		Request code actions from all eligible language
+			servers attached to the current buffer for the current
+			line or a specified range (via visual selection or Ex
+			range).
+
+			For each diagnostic strictly within the range (sorted
+			from bottom to top):
+			- Requests code actions for the diagnostic's line.
+			- Filters actions to those marked isPreferred and
+			  relevant to the diagnostic.
+			- If multiple preferred actions are available, prompts
+			  the user to choose one (using popup menu or
+			  |inputlist()| depending on
+			  |lsp-opt-usePopupInCodeAction|).
+			- If no preferred actions are available for a
+			  diagnostic, skips it.
+			- Applies the chosen preferred action.
+			- If an error occurs while applying a code action,
+			  stops further processing.
+
+			If invoked without a range, defaults to the current
+			line.
+
+			If no diagnostics are found in the range, shows a
+			warning message.
 
 							*:LspFixAll*
 :LspFixAll [query]	Request code actions with only:source.fixAll for the
@@ -3059,8 +3090,8 @@ By default, most features use one language server at a time: the language
 server defined first is used for as much as it supports, then the next and so
 on.  Diagnostics from all running language servers are combined.
 
-Code actions are an exception: |:LspCodeAction|, |:LspFixAll|, and
-|:LspOrganizeImports| request actions from all eligible attached language
+Code actions are an exception: |:LspCodeAction|, |:LspAutoFix|, |:LspFixAll|,
+and |:LspOrganizeImports| request actions from all eligible attached language
 servers and present a merged action list.
 
 When an action is selected, it is always resolved/executed by the language

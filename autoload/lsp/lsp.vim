@@ -1324,69 +1324,7 @@ enddef
 # Perform a code action
 # Uses LSP "textDocument/codeAction" request
 def CurbufGetCodeActionServersChecked(): list<dict<any>>
-  var fname: string = @%
-  var ft = &filetype
-  if fname->empty() || ft->empty()
-    return []
-  endif
-
-  # Code actions are aggregated from all attached servers that advertise and
-  # have the feature enabled for this buffer.
-  var lspservers: list<dict<any>> = buf.CurbufGetServers()->filter((_, lspserver) =>
-	lspserver.isCodeActionProvider && lspserver.featureEnabled('codeAction'))
-
-  if lspservers->empty()
-    util.ErrMsg($'Language server for "{ft}" file type supporting "codeAction" feature is not found')
-    return []
-  endif
-
-  lspservers = lspservers->filter((_, lspserver) => lspserver.running)
-  # Keep existing command-level UX: fail early when all candidates are down.
-  if lspservers->empty()
-    util.ErrMsg($'Language server for "{ft}" file type is not running')
-    return []
-  endif
-
-  lspservers = lspservers->filter((_, lspserver) => lspserver.ready)
-  # As above, mirror single-server readiness checks for user-facing errors.
-  if lspservers->empty()
-    util.ErrMsg($'Language server for "{ft}" file type is not ready')
-    return []
-  endif
-
-  return lspservers
-enddef
-
-def CodeActionReply(state: dict<any>, lspserver: dict<any>,
-		actionlist: list<dict<any>>, selectorQuery: string,
-		rpcError: dict<any>)
-  # The request-side parser may normalize selectors (for example only:/kind:).
-  # All callbacks for one invocation produce the same selector, so capture once.
-  if state.selectorQuery == ''
-    state.selectorQuery = selectorQuery
-  endif
-
-  # Aggregate partial success: an error from one server must not hide actions
-  # returned by other servers.
-  if rpcError->empty() && !actionlist->empty()
-    for act in actionlist
-      var action = act->deepcopy()
-      # Persist source-server metadata so selection-time execution can be
-      # routed back to the server that produced this action.
-      action.__lsp_server_id = lspserver.id
-      action.__lsp_server_name = lspserver.name
-      state.actions->add(action)
-    endfor
-  endif
-
-  # Wait until every server has replied before opening a single merged menu.
-  state.pending -= 1
-  if state.pending > 0
-    return
-  endif
-
-  # Use {} here because each action carries its own source-server metadata.
-  codeaction.ApplyCodeAction({}, state.actions, state.selectorQuery)
+  return codeaction.CurbufGetCodeActionServersChecked()
 enddef
 
 export def CodeAction(line1: number, line2: number, query: string)
@@ -1406,8 +1344,51 @@ export def CodeAction(line1: number, line2: number, query: string)
   for lspserver in lspservers
     # Fan out requests in parallel; callback merges replies into shared state.
     lspserver.codeActionAsync(fname, line1, line2, query,
-	function(CodeActionReply, [state]))
+	function(codeaction.CodeActionReply, [state]))
   endfor
+enddef
+
+export def AutoFix(line1: number = 0, line2: number = 0)
+  var lspservers = CurbufGetCodeActionServersChecked()
+  if lspservers->empty()
+    return
+  endif
+
+  var fname: string = @%
+  var bnr = bufnr()
+  # Default to current line if no range is given
+  var start = line1 > 0 ? line1 : line('.')
+  var end_ = line2 > 0 ? line2 : line('.')
+
+  # Collect all diagnostics strictly within the range
+  var allDiags = diag.GetDiagsForBuf(bnr)
+  var rangeDiags = []
+  for d in allDiags
+    var dline = d.range.start.line + 1
+    if dline >= start && dline <= end_
+      rangeDiags->add(d)
+    endif
+  endfor
+  # Sort by line descending (bottom to top)
+  rangeDiags->sort((a, b) => b.range.start.line - a.range.start.line)
+
+  if rangeDiags->empty()
+    util.WarnMsg('No diagnostics found in the selected range')
+    return
+  endif
+
+  # Setup state for diagnostic processing
+  var state = {
+    servers: lspservers,
+    fname: fname,
+    bnr: bnr,
+    pending: lspservers->len(),
+    handled: false,
+    errorOccurred: false
+  }
+
+  # Start processing diagnostics from the first one
+  codeaction.AutoFixProcessDiag(rangeDiags, 0, state)
 enddef
 
 # Perform a source code action for the whole file.
