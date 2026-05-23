@@ -46,18 +46,18 @@ def g:LspServerRunning(ftype: string): bool
   return lsp.ServerRunning(ftype)
 enddef
 
-augroup LSPAutoCmds
-  au!
-  autocmd BufNewFile,BufReadPost,FileType * lsp.AddFile(expand('<abuf>')->str2nr())
-  # Note that when BufWipeOut is invoked, the current buffer may be different
-  # from the buffer getting wiped out.
-  autocmd BufWipeOut * lsp.RemoveFile(expand('<abuf>')->str2nr())
-  autocmd BufWinEnter * lsp.BufferLoadedInWin(expand('<abuf>')->str2nr())
-  # Pull fresh diagnostics when a file is modified outside Vim and reloaded
-  autocmd FileChangedShellPost * lsp.BufferExternallyChanged(expand('<abuf>')->str2nr())
-augroup END
+def g:LspEnable()
+  lsp.LspEnable()
+enddef
 
-autocmd VimLeavePre * silent! lsp.FastShutdownExitAllServers()
+def g:LspDisable()
+  lsp.LspDisable()
+enddef
+
+augroup LspExit
+  au!
+  autocmd VimLeavePre * silent! lsp.FastShutdownExitAllServers()
+augroup END
 
 # LSP commands
 command! -nargs=? -bar -range LspCodeAction lsp.CodeAction(<line1>, <line2>, <q-args>)
@@ -175,9 +175,15 @@ if exists('g:lsp_options') && g:lsp_options->type() == v:t_dict
   g:LspOptionsSet(g:lsp_options)
 endif
 
-# Invoke autocmd to register LSP servers and to set LSP options
-if exists('#User#LspSetup')
-  :doautocmd <nomodeline> User LspSetup
+if get(g:, 'lsp_enable', true)
+  if v:vim_did_enter
+    # allow for plugin load, e.g. packadd lsp, after VimEnter
+    lsp.LspEnable()
+  else
+    augroup LspEnable
+      au!
+      autocmd VimEnter * lsp.LspEnable()
+    augroup END
+  endif
 endif
-
 # vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab

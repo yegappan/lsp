@@ -59,6 +59,28 @@ var lspServers = [{
 call LspAddServer(lspServers)
 
 
+# Test for disabling and then re-enabling LSP
+def g:Test_LspEnableDisable()
+  :silent! edit XLspEnableDisable.c
+  :sleep 200m
+  var lines: list<string> =<< trim END
+    int i:
+    int j;
+  END
+  setline(1, lines)
+  g:WaitForServerFileLoad(1)
+
+  g:WaitForAssert(() => assert_false(empty(lsp#diag#GetDiagsForBuf())))
+
+  g:LspDisable()
+  g:WaitForAssert(() => assert_true(empty(lsp#diag#GetDiagsForBuf())))
+
+  g:LspEnable()
+  g:WaitForAssert(() => assert_false(empty(lsp#diag#GetDiagsForBuf())))
+
+  :%bw!
+enddef
+
 # Test for formatting a file using LspFormat
 def g:Test_LspFormat()
   :silent! edit XLspFormat.c
@@ -68,6 +90,7 @@ def g:Test_LspFormat()
     int j;
   END
   setline(1, lines)
+  g:WaitForServerFileLoad(0)
   :redraw!
   :LspFormat
   var expected: list<string> =<< trim DATA
