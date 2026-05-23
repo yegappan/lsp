@@ -206,7 +206,8 @@ def ResolveActionServer(defaultServer: dict<any>, action: dict<any>): dict<any>
   # Look up the live server by id so resolve/executeCommand is routed
   # correctly.
   if action->has_key('__lsp_server_id')
-    lspserver = buf.BufLspServerGetById(bufnr(), action.__lsp_server_id)
+    var sourceBufnr = action->get('__lsp_bufnr', bufnr())
+    lspserver = buf.BufLspServerGetById(sourceBufnr, action.__lsp_server_id)
     if lspserver->empty() || !lspserver.running || !lspserver.ready
       util.WarnMsg('Code action source LSP server is no longer available')
       return {}
@@ -372,6 +373,7 @@ export def CodeActionReply(state: dict<any>, lspserver: dict<any>,
       # routed back to the server that produced this action.
       action.__lsp_server_id = lspserver.id
       action.__lsp_server_name = lspserver.name
+      action.__lsp_bufnr = state.bnr
       state.actions->add(action)
     endfor
   endif
@@ -431,6 +433,7 @@ def AutoFixDiagActionReply(lspserver: dict<any>, actions: list<dict<any>>,
         var action = act->deepcopy()
         action.__lsp_server_id = lspserver.id
         action.__lsp_server_name = lspserver.name
+        action.__lsp_bufnr = state.bnr
         state.diagActions->add(action)
       endif
     endfor

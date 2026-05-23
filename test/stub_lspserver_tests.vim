@@ -706,6 +706,64 @@ def g:Test_ApplyCodeAction_RoutesToOriginServer()
   :bw!
 enddef
 
+def g:Test_ApplyCodeAction_RoutesToOriginServer_AfterBufferSwitch()
+  silent! edit XCodeActionRoutingOrigin.txt
+  setline(1, ['origin'])
+  var originBnr = bufnr()
+
+  var execCmds1: list<string> = []
+  var execCmds2: list<string> = []
+  var srv1 = MakeTestLspServer([])
+  var srv2 = MakeTestLspServer([])
+
+  srv1.name = 'srv1'
+  srv1.running = true
+  srv1.ready = true
+  srv1.executeCommand = (cmd: dict<any>) => {
+    execCmds1->add(cmd->get('command', ''))
+  }
+
+  srv2.name = 'srv2'
+  srv2.running = true
+  srv2.ready = true
+  srv2.executeCommand = (cmd: dict<any>) => {
+    execCmds2->add(cmd->get('command', ''))
+  }
+
+  buf.BufLspServerSet(originBnr, srv1)
+  buf.BufLspServerSet(originBnr, srv2)
+
+  var actions = [
+    {
+      title: 'Same title',
+      command: 'from-server-1',
+      __lsp_server_id: srv1.id,
+      __lsp_server_name: srv1.name,
+      __lsp_bufnr: originBnr,
+    },
+    {
+      title: 'Same title',
+      command: 'from-server-2',
+      __lsp_server_id: srv2.id,
+      __lsp_server_name: srv2.name,
+      __lsp_bufnr: originBnr,
+    }
+  ]
+
+  silent! edit! XCodeActionRoutingOther.txt
+  setline(1, ['other'])
+  assert_notequal(originBnr, bufnr())
+
+  codeaction.ApplyCodeAction({}, actions, '2')
+
+  assert_equal([], execCmds1)
+  assert_equal(['from-server-2'], execCmds2)
+
+  buf.BufLspServerRemove(originBnr, srv1)
+  buf.BufLspServerRemove(originBnr, srv2)
+  :%bw!
+enddef
+
 def g:Test_LspAutoFix_AppliesSinglePreferredAction()
   silent! edit XLspAutoFixPreferred.txt
   set filetype=text

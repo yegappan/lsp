@@ -1334,8 +1334,10 @@ export def CodeAction(line1: number, line2: number, query: string)
   endif
 
   var fname: string = @%
+  var bnr = bufnr()
   # Shared mutable aggregation state captured by all async callbacks.
   var state = {
+    bnr: bnr,
     pending: lspservers->len(),
     selectorQuery: '',
     actions: []
