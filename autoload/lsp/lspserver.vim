@@ -506,7 +506,7 @@ def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel,
     RpcCb(lspserver, result, error)
   catch
     # backwards compatibility for old callback signature
-    if v:exception =~# '\v:(E118):' && v:throwpoint =~# 'AsyncRpcCb'
+    if v:exception =~# '\v:(E118):' && v:throwpoint =~# 'AsyncRpcCb,\s\+line\s\+\d'
       try
         RpcCb(lspserver, result)
       catch
