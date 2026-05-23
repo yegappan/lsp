@@ -393,6 +393,10 @@ export def AutoFixProcessDiag(diags: list<dict<any>>,
     return
   endif
 
+  # Track replies and candidate actions per diagnostic.
+  state.pending = state.servers->len()
+  state.diagActions = []
+
   var diag = diags[idx]
   var dline = diag.range.start.line + 1
   var servers = state.servers
@@ -408,71 +412,61 @@ enddef
 def AutoFixDiagActionReply(lspserver: dict<any>, actions: list<dict<any>>,
     rpcError: dict<any>, diags: list<dict<any>>, idx: number, diag: dict<any>,
     state: dict<any>): void
-  if !rpcError->empty()
-    state.pending -= 1
-    if state.pending == 0 && !state.handled && !state.errorOccurred
-      AutoFixProcessDiag(diags, idx + 1, state)
-    endif
+  # Collect matching actions from successful replies.
+  if rpcError->empty() && !actions->empty()
+    for act in actions
+      var matches = false
+      if act->has_key('diagnostics')
+        for ad in act.diagnostics
+          if ad.range->string() == diag.range->string()
+            matches = true
+            break
+          endif
+        endfor
+      else
+        matches = true
+      endif
+
+      if matches
+        var action = act->deepcopy()
+        action.__lsp_server_id = lspserver.id
+        action.__lsp_server_name = lspserver.name
+        state.diagActions->add(action)
+      endif
+    endfor
+  endif
+
+  # Wait for all servers before deciding for this diagnostic.
+  state.pending -= 1
+  if state.pending > 0
     return
   endif
 
-  # Filter actions to those that match this diagnostic
-  var matchingActions = []
-  var preferred = []
-  for act in actions
-    var matches = false
-    if act->has_key('diagnostics')
-      for ad in act.diagnostics
-        if ad.range->string() == diag.range->string()
-          matches = true
-          break
-        endif
-      endfor
-    else
-      matches = true
-    endif
-
-    if matches
-      matchingActions->add(act)
-      if act->get('isPreferred', false)
-        preferred->add(act)
-      endif
+  var preferred: list<dict<any>> = []
+  for action in state.diagActions
+    if action->get('isPreferred', false)
+      preferred->add(action)
     endif
   endfor
 
-  # Decide which action(s) to process
-  var actionsToShow = []
-  if !preferred->empty()
-    # Prefer the preferred actions
-    actionsToShow = preferred
-  elseif matchingActions->len() == 1
-    # Single non-preferred action: apply it anyway
-    actionsToShow = matchingActions
-  else
-    # No preferred and multiple non-preferred (or no actions at all): skip
-    state.pending -= 1
-    if state.pending == 0 && !state.handled && !state.errorOccurred
-      AutoFixProcessDiag(diags, idx + 1, state)
+  try
+    if !preferred->empty()
+      if preferred->len() == 1
+        ApplyCodeAction({}, preferred, '1')
+      else
+        ApplyCodeAction({}, preferred, '')
+      endif
+    elseif state.diagActions->len() == 1
+      # Single non-preferred action: apply it anyway.
+      ApplyCodeAction({}, state.diagActions, '1')
     endif
+  catch
+    state.errorOccurred = true
     return
-  endif
+  endtry
 
-  if actionsToShow->len() == 1
-    try
-      HandleCodeAction(lspserver, actionsToShow[0])
-    catch
-      state.errorOccurred = true
-      return
-    endtry
-    state.handled = true
+  if !state.errorOccurred
     AutoFixProcessDiag(diags, idx + 1, state)
-  else
-    var menu = []
-    for act in actionsToShow
-      menu->add(ActionMenuText(act))
-    endfor
-    var choice = inputlist(['Select code action:'] + menu)
-    AutoFixDiagOnChosenAction(choice, actionsToShow, lspserver, diags, idx, state)
   endif
 enddef
 

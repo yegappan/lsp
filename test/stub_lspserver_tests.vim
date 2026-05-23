@@ -959,6 +959,49 @@ def g:Test_LspAutoFix_Range_ContinuesOnRpcError()
   :bw!
 enddef
 
+def g:Test_LspAutoFix_Range_MultiServer_WaitsForAllReplies()
+  silent! edit XLspAutoFixRangeMultiServer.txt
+  set filetype=text
+  setline(1, ['a', 'b'])
+  var diags = [
+    {'range': {'start': {'line': 0, 'character': 0}, 'end': {'line': 0, 'character': 1}}, 'message': 'diag1'},
+    {'range': {'start': {'line': 1, 'character': 0}, 'end': {'line': 1, 'character': 1}}, 'message': 'diag2'},
+  ]
+  SeedBufferDiagnostics(diags)
+
+  var execErr: list<string> = []
+  var execOk: list<string> = []
+  var srvErr = MakeCodeActionServer('srvErr', [], execErr)
+  var srvOk = MakeCodeActionServer('srvOk', [], execOk)
+
+  srvErr.codeActionAsync = (_fname, _line1, _line2, _query, Cbfunc) => {
+    Cbfunc(srvErr, [], '', {code: -32603, message: 'simulated rpc error'})
+  }
+  srvOk.codeActionAsync = (_fname, line1, _line2, _query, Cbfunc) => {
+    Cbfunc(srvOk, [{
+      title: 'Preferred',
+      isPreferred: true,
+      command: 'ok.' .. line1,
+      diagnostics: [{
+        range: {
+          start: {line: line1 - 1, character: 0},
+          end: {line: line1 - 1, character: 1}}}]}], '', {})
+  }
+
+  buf.BufLspServerSet(bufnr(), srvErr)
+  buf.BufLspServerSet(bufnr(), srvOk)
+
+  lsp.AutoFix(1, 2)
+
+  assert_equal([], execErr)
+  assert_equal(['ok.2', 'ok.1'], execOk)
+
+  ClearBufferDiagnostics()
+  buf.BufLspServerRemove(bufnr(), srvErr)
+  buf.BufLspServerRemove(bufnr(), srvOk)
+  :bw!
+enddef
+
 # Only here to because the test runner needs it
 def g:StartLangServer(): bool
   return true
