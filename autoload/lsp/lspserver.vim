@@ -505,7 +505,16 @@ def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel,
   try
     RpcCb(lspserver, result, error)
   catch
-    lspserver.errorLog($'Callback for {method} raised exception: {v:exception}')
+    # backwards compatibility for old callback signature
+    if v:exception =~# '\v:(E118):' && v:throwpoint =~# 'AsyncRpcCb'
+      try
+        RpcCb(lspserver, result)
+      catch
+        lspserver.errorLog($'Callback for {method} raised exception: {v:exception}')
+      endtry
+    else
+      lspserver.errorLog($'Callback for {method} raised exception: {v:exception}')
+    endif
   endtry
 enddef
 
