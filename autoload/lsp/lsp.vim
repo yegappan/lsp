@@ -1382,12 +1382,12 @@ export def AutoFix(line1: number = 0, line2: number = 0)
     servers: lspservers,
     fname: fname,
     bnr: bnr,
-    pending: lspservers->len(),
-    handled: false,
     errorOccurred: false
   }
 
-  # Start processing diagnostics from the first one
+  # Start processing diagnostics from the first one.
+  # Per-diagnostic pending/action aggregation is initialized in
+  # codeaction.AutoFixProcessDiag().
   codeaction.AutoFixProcessDiag(rangeDiags, 0, state)
 enddef
 

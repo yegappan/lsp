@@ -470,25 +470,4 @@ def AutoFixDiagActionReply(lspserver: dict<any>, actions: list<dict<any>>,
   endif
 enddef
 
-# Helper: Handle user choice for multiple code actions in AutoFix
-def AutoFixDiagOnChosenAction(chosenIdx: number, actions: list<dict<any>>,
-			      lspserver: dict<any>, diags: list<dict<any>>,
-			      idx: number, state: dict<any>): void
-  if chosenIdx < 1 || chosenIdx > actions->len()
-    # User cancelled
-    AutoFixProcessDiag(diags, idx + 1, state)
-    return
-  endif
-
-  var chosen = actions[chosenIdx - 1]
-  try
-    HandleCodeAction(lspserver, chosen)
-  catch
-    state.errorOccurred = true
-    return
-  endtry
-  state.handled = true
-  AutoFixProcessDiag(diags, idx + 1, state)
-enddef
-
 # vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab
