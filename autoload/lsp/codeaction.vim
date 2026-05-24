@@ -222,6 +222,18 @@ def ResolveActionServer(defaultServer: dict<any>, action: dict<any>): dict<any>
   return lspserver
 enddef
 
+def NotifyApplyDone(OnDone: func): void
+  if OnDone == null_function
+    return
+  endif
+  # Range AutoFix uses this hook to continue only after a selection path
+  # (query/inputlist/popup) has fully resolved.
+  # Cancel contract for popup-driven selection:
+  # - Esc/regular cancel resolves as soft cancel and calls this continuation.
+  # - Ctrl-C resolves as hard cancel and intentionally does not call this.
+  OnDone()
+enddef
+
 # Process the list of code actions returned by the LSP server, ask the user to
 # choose one action from the list and then apply it.
 # If "query" is a number, then apply the corresponding action in the list.
@@ -233,7 +245,8 @@ enddef
 # Otherwise display the items in an input list and prompt the user to select
 # an action.
 export def ApplyCodeAction(lspserver: dict<any>,
-			   actionlist: list<dict<any>>, query: string): void
+			   actionlist: list<dict<any>>, query: string,
+			   OnDone: func = null_function): void
   var actions = actionlist
 
   if opt.lspOptions.hideDisabledCodeActions
@@ -245,6 +258,7 @@ export def ApplyCodeAction(lspserver: dict<any>,
   if actions->empty()
     # no action can be performed
     util.WarnMsg('No code action is available')
+    NotifyApplyDone(OnDone)
     return
   endif
 
@@ -271,8 +285,16 @@ export def ApplyCodeAction(lspserver: dict<any>,
       wrap: 0,
       title: 'Code action',
       callback: (_, result) => {
+  # Distinct cancel semantics for range AutoFix chaining:
+  # - Ctrl-C closes with result -9 and stops further processing.
+  # - Esc/normal cancel returns <= 0 and continues to next diagnostic.
+  if result == -9
+    return
+  endif
+
 	# Invalid item selected or closed the popup
 	if result <= 0 || result > text->len()
+    NotifyApplyDone(OnDone)
 	  return
 	endif
 
@@ -282,12 +304,20 @@ export def ApplyCodeAction(lspserver: dict<any>,
   var action = actions[result - 1]
   var actionServer = ResolveActionServer(lspserver, action)
   if actionServer->empty()
+    NotifyApplyDone(OnDone)
     return
   endif
   HandleCodeAction(actionServer, action)
+  NotifyApplyDone(OnDone)
       },
       filter: (winid, key) => {
-	if key == 'h' || key == 'l'
+  if key == "\<C-C>" || key == "\x03"
+    # Hard cancel: stop chaining AutoFix to next diagnostic.
+    winid->popup_close(-9)
+  elseif key == "\<Esc>"
+    # Soft cancel: continue AutoFix with next diagnostic.
+    winid->popup_close(-1)
+  elseif key == 'h' || key == 'l'
 	  winid->popup_close(-1)
 	elseif key->str2nr() > 0
 	  # assume less than 10 entries are present
@@ -299,11 +329,14 @@ export def ApplyCodeAction(lspserver: dict<any>,
       },
     })
     popup_create(text, popupAttrs)
+    # Popup path resolves asynchronously via popup callback.
+    return
   else
     choice = inputlist(['Code action:'] + text)
   endif
 
   if choice < 1 || choice > text->len()
+    NotifyApplyDone(OnDone)
     return
   endif
 
@@ -311,10 +344,12 @@ export def ApplyCodeAction(lspserver: dict<any>,
   # Route execution to the server that supplied this action.
   var actionServer = ResolveActionServer(lspserver, action)
   if actionServer->empty()
+    NotifyApplyDone(OnDone)
     return
   endif
 
   HandleCodeAction(actionServer, action)
+  NotifyApplyDone(OnDone)
 enddef
 
 # Check if current buffer has code action capable servers that are running and
@@ -406,14 +441,16 @@ export def AutoFixProcessDiag(diags: list<dict<any>>,
 
   for lspserver in servers
     lspserver.codeActionAsync(fname, dline, dline, '',
-      (lsp, actions, _, rpcErr) => AutoFixDiagActionReply(lsp, actions, rpcErr, diags, idx, diag, state))
+      (lsp, actions, _, rpcErr) => AutoFixDiagActionReply(lsp, actions,
+					rpcErr, diags, idx, diag, state))
   endfor
 enddef
 
 # Helper: Handle code action reply for AutoFix diagnostic
 def AutoFixDiagActionReply(lspserver: dict<any>, actions: list<dict<any>>,
-    rpcError: dict<any>, diags: list<dict<any>>, idx: number, diag: dict<any>,
-    state: dict<any>): void
+			   rpcError: dict<any>, diags: list<dict<any>>,
+			   idx: number, diag: dict<any>,
+			   state: dict<any>): void
   # Collect matching actions from successful replies.
   if rpcError->empty() && !actions->empty()
     for act in actions
@@ -452,25 +489,32 @@ def AutoFixDiagActionReply(lspserver: dict<any>, actions: list<dict<any>>,
     endif
   endfor
 
+  # Continue to the next diagnostic only after the current selection path is
+  # resolved. Popup mode is async; query/inputlist complete synchronously.
+  var ContinueAutoFix = () => {
+    if !state.errorOccurred
+      AutoFixProcessDiag(diags, idx + 1, state)
+    endif
+  }
+
   try
     if !preferred->empty()
       if preferred->len() == 1
-        ApplyCodeAction({}, preferred, '1')
+        ApplyCodeAction({}, preferred, '1', ContinueAutoFix)
       else
-        ApplyCodeAction({}, preferred, '')
+        ApplyCodeAction({}, preferred, '', ContinueAutoFix)
       endif
     elseif state.diagActions->len() == 1
       # Single non-preferred action: apply it anyway.
-      ApplyCodeAction({}, state.diagActions, '1')
+      ApplyCodeAction({}, state.diagActions, '1', ContinueAutoFix)
+    else
+      # No suitable action for this diagnostic; continue immediately.
+      ContinueAutoFix()
     endif
   catch
     state.errorOccurred = true
     return
   endtry
-
-  if !state.errorOccurred
-    AutoFixProcessDiag(diags, idx + 1, state)
-  endif
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab

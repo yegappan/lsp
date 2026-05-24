@@ -1132,6 +1132,10 @@ Commands to modify, rename, or format your code using the language server.
 			  the user to choose one (using popup menu or
 			  |inputlist()| depending on
 			  |lsp-opt-usePopupInCodeAction|).
+			  When popup mode is used, pressing <Esc> cancels the
+			  current diagnostic selection and continues with the
+			  next diagnostic in the range. Pressing <C-C> cancels
+			  the popup and stops applying further diagnostics.
 			- If no preferred actions are available for a
 			  diagnostic, skips it.
 			- Applies the chosen preferred action.
@@ -2002,6 +2006,10 @@ vsnipSupport		|Boolean| option.  Enable hrsh7th/vim-vsnip support.
 usePopupInCodeAction    |Boolean| option.  When using the |:LspCodeAction|
 			command, use a popup menu instead of |inputlist()|
 			when no [query] is given.
+			In popup mode, <Esc> performs a normal cancel.  For
+			|:LspAutoFix| range processing, this means continue
+			with the next diagnostic.  <C-C> performs a hard
+			cancel and stops further range processing.
 			By default this is set to false.
 
 					*lsp-opt-useQuickfixForLocations*

@@ -1041,6 +1041,196 @@ def g:Test_LspAutoFix_Range_MultiplePreferred_ShowsMenu()
   :bw!
 enddef
 
+def g:Test_LspAutoFix_Range_PopupDefersNextDiagnostic()
+  silent! edit XLspAutoFixPopupDefersNextDiag.txt
+  set filetype=text
+  setline(1, ['a', 'b'])
+  g:LspOptionsSet({usePopupInCodeAction: true})
+
+  var diags = [
+    {'range': {'start': {'line': 0, 'character': 0}, 'end': {'line': 0, 'character': 1}}, 'message': 'diag1'},
+    {'range': {'start': {'line': 1, 'character': 0}, 'end': {'line': 1, 'character': 1}}, 'message': 'diag2'},
+  ]
+  SeedBufferDiagnostics(diags)
+
+  var execCmds: list<string> = []
+  var srv = MakeCodeActionServer('srv1', [], execCmds)
+  srv.codeActionAsync = (_fname, line1, _line2, _query, Cbfunc) => {
+    if line1 == 1
+      Cbfunc(srv, [
+        {
+          title: 'Preferred one',
+          isPreferred: true,
+          command: 'preferred.one',
+          diagnostics: [{
+            range: {
+              start: {line: 0, character: 0},
+              end: {line: 0, character: 1}}}]},
+        {
+          title: 'Preferred two',
+          isPreferred: true,
+          command: 'preferred.two',
+          diagnostics: [{
+            range: {
+              start: {line: 0, character: 0},
+              end: {line: 0, character: 1}}}]}
+      ], '', {})
+    else
+      Cbfunc(srv, [{
+        title: 'Second diag preferred',
+        isPreferred: true,
+        command: 'second.diag',
+        diagnostics: [{
+          range: {
+            start: {line: 1, character: 0},
+            end: {line: 1, character: 1}}}]}], '', {})
+    endif
+  }
+  buf.BufLspServerSet(bufnr(), srv)
+
+  lsp.AutoFix(1, 2)
+  # AutoFix processes diagnostics bottom-to-top, so line 2 is applied before
+  # the line 1 popup selection is shown.
+  assert_equal(['second.diag'], execCmds)
+
+  var popups = popup_list()
+  assert_equal(1, popups->len())
+  popup_close(popups[0], 1)
+
+  assert_equal(['second.diag', 'preferred.one'], execCmds)
+
+  g:LspOptionsSet({usePopupInCodeAction: false})
+  ClearBufferDiagnostics()
+  buf.BufLspServerRemove(bufnr(), srv)
+  :bw!
+enddef
+
+def g:Test_LspAutoFix_Range_PopupCtrlCStopsNextDiagnostic()
+  silent! edit XLspAutoFixPopupCtrlCStops.txt
+  set filetype=text
+  setline(1, ['a', 'b'])
+  g:LspOptionsSet({usePopupInCodeAction: true})
+
+  var diags = [
+    {'range': {'start': {'line': 0, 'character': 0}, 'end': {'line': 0, 'character': 1}}, 'message': 'diag1'},
+    {'range': {'start': {'line': 1, 'character': 0}, 'end': {'line': 1, 'character': 1}}, 'message': 'diag2'},
+  ]
+  SeedBufferDiagnostics(diags)
+
+  var execCmds: list<string> = []
+  var srv = MakeCodeActionServer('srv1', [], execCmds)
+  srv.codeActionAsync = (_fname, line1, _line2, _query, Cbfunc) => {
+    if line1 == 1
+      Cbfunc(srv, [
+        {
+          title: 'Preferred one',
+          isPreferred: true,
+          command: 'preferred.one',
+          diagnostics: [{
+            range: {
+              start: {line: 0, character: 0},
+              end: {line: 0, character: 1}}}]},
+        {
+          title: 'Preferred two',
+          isPreferred: true,
+          command: 'preferred.two',
+          diagnostics: [{
+            range: {
+              start: {line: 0, character: 0},
+              end: {line: 0, character: 1}}}]}
+      ], '', {})
+    else
+      Cbfunc(srv, [{
+        title: 'Second diag preferred',
+        isPreferred: true,
+        command: 'second.diag',
+        diagnostics: [{
+          range: {
+            start: {line: 1, character: 0},
+            end: {line: 1, character: 1}}}]}], '', {})
+    endif
+  }
+  buf.BufLspServerSet(bufnr(), srv)
+
+  lsp.AutoFix(1, 2)
+  assert_equal(['second.diag'], execCmds)
+
+  var popups = popup_list()
+  assert_equal(1, popups->len())
+  # Simulate Ctrl-C hard cancel sentinel used by popup filter.
+  popup_close(popups[0], -9)
+
+  assert_equal(['second.diag'], execCmds)
+
+  g:LspOptionsSet({usePopupInCodeAction: false})
+  ClearBufferDiagnostics()
+  buf.BufLspServerRemove(bufnr(), srv)
+  :bw!
+enddef
+
+def g:Test_LspAutoFix_Range_PopupEscapeContinuesNextDiagnostic()
+  silent! edit XLspAutoFixPopupEscapeContinues.txt
+  set filetype=text
+  setline(1, ['a', 'b'])
+  g:LspOptionsSet({usePopupInCodeAction: true})
+
+  var diags = [
+    {'range': {'start': {'line': 0, 'character': 0}, 'end': {'line': 0, 'character': 1}}, 'message': 'diag1'},
+    {'range': {'start': {'line': 1, 'character': 0}, 'end': {'line': 1, 'character': 1}}, 'message': 'diag2'},
+  ]
+  SeedBufferDiagnostics(diags)
+
+  var execCmds: list<string> = []
+  var srv = MakeCodeActionServer('srv1', [], execCmds)
+  srv.codeActionAsync = (_fname, line1, _line2, _query, Cbfunc) => {
+    if line1 == 1
+      Cbfunc(srv, [
+        {
+          title: 'Preferred one',
+          isPreferred: true,
+          command: 'preferred.one',
+          diagnostics: [{
+            range: {
+              start: {line: 0, character: 0},
+              end: {line: 0, character: 1}}}]},
+        {
+          title: 'Preferred two',
+          isPreferred: true,
+          command: 'preferred.two',
+          diagnostics: [{
+            range: {
+              start: {line: 0, character: 0},
+              end: {line: 0, character: 1}}}]}
+      ], '', {})
+    else
+      Cbfunc(srv, [{
+        title: 'Second diag preferred',
+        isPreferred: true,
+        command: 'second.diag',
+        diagnostics: [{
+          range: {
+            start: {line: 1, character: 0},
+            end: {line: 1, character: 1}}}]}], '', {})
+    endif
+  }
+  buf.BufLspServerSet(bufnr(), srv)
+
+  lsp.AutoFix(1, 2)
+  assert_equal(['second.diag'], execCmds)
+
+  var popups = popup_list()
+  assert_equal(1, popups->len())
+  # Simulate Esc soft cancel result used by popup filter.
+  popup_close(popups[0], -1)
+
+  assert_equal(['second.diag'], execCmds)
+
+  g:LspOptionsSet({usePopupInCodeAction: false})
+  ClearBufferDiagnostics()
+  buf.BufLspServerRemove(bufnr(), srv)
+  :bw!
+enddef
+
 def g:Test_LspAutoFix_Range_ContinuesOnRpcError()
   silent! edit XLspAutoFixContinueOnRpcError.txt
   set filetype=text
