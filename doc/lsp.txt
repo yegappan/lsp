@@ -140,6 +140,15 @@ when a language server attaches to a buffer: >
         nnoremap <buffer> <silent> <leader>ca <cmd>LspCodeAction<cr>
     }
 
+	autocmd User LspDetached {
+		silent! unmap <buffer> gd
+		silent! unmap <buffer> K
+		silent! unmap <buffer> [d
+		silent! unmap <buffer> ]d
+		silent! unmap <buffer> <leader>rn
+		silent! unmap <buffer> <leader>ca
+	}
+
 ==============================================================================
 							*lsp-server-add*
 4. Adding a Language Server~
@@ -2512,6 +2521,46 @@ LspAttached			A |User| autocommand fired after all language
 				the server becomes ready, then the autocommand
 				is delayed until the next time you enter that
 				buffer.
+
+							*LspDetached*
+LspDetached			A |User| autocommand fired when a language
+				server buffer teardown completes. This can
+				happen when a buffer is wiped out, when
+				|LspDisable()| removes the buffer from all
+				attached servers, or when teardown removes a
+				specific server from the buffer.
+
+				This autocommand is fired once per buffer
+				after all attached language servers are
+				detached. It can be used to clean up
+				buffer-local mappings, popups, or other
+				LSP-related state.
+
+				Detach context is available in
+				|g:LspDetachedContext| as a Dictionary with:
+				- "bufnr": detached buffer number
+				- "file": detached buffer file name
+				- "servers": list of detached server names
+
+							*g:LspDetachedContext*
+g:LspDetachedContext		A |Dictionary| containing details for the
+				most recent |LspDetached| event.
+
+				The Dictionary has the following keys:
+				  bufnr		Detached buffer number.
+				  file		Detached buffer file name
+						(absolute path when available).
+				  servers	|List| of detached language
+						server names.
+
+				Example: >
+
+				  autocmd User LspDetached {
+				    var ctx = get(g:, 'LspDetachedContext', {})
+				    echom $'Detached {ctx->get("file", "")} '
+						.. $'(buf {ctx->get("bufnr", -1)})'
+				  }
+<
 
 							*LspDiagsUpdated*
 LspDiagsUpdated			A |User| autocommand invoked when new

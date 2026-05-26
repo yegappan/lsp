@@ -544,7 +544,11 @@ def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
 enddef
 
 def RemoveBufLocalAutocmds(bnr: number): void
-  silent! autocmd_delete([{bufnr: bnr, group: 'LSPBufferAutocmds'}])
+  try
+    autocmd_delete([{bufnr: bnr, group: 'LSPBufferAutocmds'}])
+  catch /E367:/
+    # The tests can call RemoveFile() without creating this augroup.
+  endtry
 enddef
 
 def AddBufListener(lspserver: dict<any>, bnr: number): void
@@ -695,7 +699,16 @@ enddef
 # Notify LSP server to remove a file
 export def RemoveFile(bnr: number): void
   var lspservers: list<dict<any>> = buf.BufLspServersGet(bnr)
-  if !lspservers->empty()
+  var detachedBufName = bnr->bufname()
+  var detachedBufPath = detachedBufName->empty()
+    ? ''
+    : detachedBufName->fnamemodify(':p')
+  var detachedServerNames = lspservers->copy()
+    ->filter((_, lspsrv) => !lspsrv->empty())
+    ->map((_, lspsrv) => lspsrv.name)
+  var hasLspDetachedAutocmd = exists('#User#LspDetached')
+  var hadAttachedServers = !lspservers->empty()
+  if hadAttachedServers
     RemoveBufLocalAutocmds(bnr)
     RemoveBufListener(bnr)
   endif
@@ -704,16 +717,31 @@ export def RemoveFile(bnr: number): void
     if lspserver->empty()
       continue
     endif
-    silent! autocmd_delete([{group: 'LSPBufferAutocmds',
-                   event: 'User',
-                   pattern: $'LspServerReady_{lspserver.id}',
-                   cmd: $'BufferInit({lspserver.id}, {bnr})'}])
+    try
+      autocmd_delete([{group: 'LSPBufferAutocmds',
+                     event: 'User',
+                     pattern: $'LspServerReady_{lspserver.id}',
+                     cmd: $'BufferInit({lspserver.id}, {bnr})'}])
+    catch /E367:/
+      # The tests can call RemoveFile() without creating this augroup.
+    endtry
     if lspserver.running
       lspserver.textdocDidClose(bnr)
     endif
     diag.DiagRemoveFile(bnr)
     buf.BufLspServerRemove(bnr, lspserver)
   endfor
+
+  if hadAttachedServers && hasLspDetachedAutocmd
+    # User autocommands allow only one match pattern; provide detach details
+    # through a global context dict for handlers.
+    g:LspDetachedContext = {
+      bufnr: bnr,
+      file: detachedBufPath,
+      servers: detachedServerNames
+    }
+    doautocmd <nomodeline> User LspDetached
+  endif
 enddef
 
 # Buffer 'bnr' is loaded in a window, refresh visuals and UI state.

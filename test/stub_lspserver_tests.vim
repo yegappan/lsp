@@ -544,6 +544,103 @@ def g:Test_ProcessMessages_MalformedResponse_BothResultAndError_Dropped()
   assert_match('Dropping malformed response message:', traceMsgs[0])
 enddef
 
+def g:Test_LspDetached_AutocmdFiresForSingleServer()
+  silent! edit XLspDetachedSingleServer.txt
+  setline(1, ['single'])
+
+  g:detachEvents = 0
+  g:detachedFile = ''
+  g:detachedBufnr = -1
+  g:detachedServers = []
+  var expectedFile = expand('%:p')
+  var expectedBufnr = bufnr()
+  augroup LspDetachedTest
+    autocmd!
+    autocmd User LspDetached {
+      g:detachEvents += 1
+      g:detachedFile = get(g:, 'LspDetachedContext', {})->get('file', '')
+      g:detachedBufnr = get(g:, 'LspDetachedContext', {})->get('bufnr', -1)
+      g:detachedServers = get(g:, 'LspDetachedContext', {})->get('servers', [])->copy()
+    }
+  augroup END
+
+  var srv = MakeTestLspServer([])
+  buf.BufLspServerSet(bufnr(), srv)
+
+  lsp.RemoveFile(bufnr())
+
+  assert_equal(1, g:detachEvents)
+  assert_equal(expectedFile, g:detachedFile)
+  assert_equal(expectedBufnr, g:detachedBufnr)
+  assert_equal(['test'], g:detachedServers)
+
+  augroup LspDetachedTest
+    autocmd!
+  augroup END
+  unlet g:detachEvents g:detachedFile g:detachedBufnr g:detachedServers
+  :bw!
+enddef
+
+def g:Test_LspDetached_AutocmdFiresOncePerBufferWithMultipleServers()
+  silent! edit XLspDetachedMultipleServers.txt
+  setline(1, ['multiple'])
+
+  g:detachEvents = 0
+  g:detachedFile = ''
+  g:detachedBufnr = -1
+  g:detachedServers = []
+  var expectedFile = expand('%:p')
+  var expectedBufnr = bufnr()
+  augroup LspDetachedTest
+    autocmd!
+    autocmd User LspDetached {
+      g:detachEvents += 1
+      g:detachedFile = get(g:, 'LspDetachedContext', {})->get('file', '')
+      g:detachedBufnr = get(g:, 'LspDetachedContext', {})->get('bufnr', -1)
+      g:detachedServers = get(g:, 'LspDetachedContext', {})->get('servers', [])->copy()
+    }
+  augroup END
+
+  var srv1 = MakeTestLspServer([])
+  var srv2 = MakeTestLspServer([])
+  buf.BufLspServerSet(bufnr(), srv1)
+  buf.BufLspServerSet(bufnr(), srv2)
+
+  lsp.RemoveFile(bufnr())
+
+  assert_equal(1, g:detachEvents)
+  assert_equal(expectedFile, g:detachedFile)
+  assert_equal(expectedBufnr, g:detachedBufnr)
+  assert_equal(['test', 'test'], g:detachedServers)
+
+  augroup LspDetachedTest
+    autocmd!
+  augroup END
+  unlet g:detachEvents g:detachedFile g:detachedBufnr g:detachedServers
+  :bw!
+enddef
+
+def g:Test_LspDetached_AutocmdNotFiredWithoutAttachedServer()
+  silent! edit XLspDetachedNoServer.txt
+  setline(1, ['none'])
+
+  g:detachEvents = 0
+  augroup LspDetachedTest
+    autocmd!
+    autocmd User LspDetached g:detachEvents += 1
+  augroup END
+
+  lsp.RemoveFile(bufnr())
+
+  assert_equal(0, g:detachEvents)
+
+  augroup LspDetachedTest
+    autocmd!
+  augroup END
+  unlet g:detachEvents
+  :bw!
+enddef
+
 def g:Test_ProcessApplyEditReq_SuccesssfulEdit()
   var lspserver = MakeTestLspServer([])
   var responses: list<dict<any>> = []
