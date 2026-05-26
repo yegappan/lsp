@@ -363,7 +363,8 @@ export def CurbufGetCodeActionServersChecked(): list<dict<any>>
 
   # Code actions are aggregated from all attached servers that advertise and
   # have the feature enabled for this buffer.
-  var lspservers: list<dict<any>> = buf.CurbufGetServers()->filter((_, lspserver) =>
+  var lspservers: list<dict<any>> = buf.CurbufGetServers()->copy()
+  lspservers = lspservers->filter((_, lspserver) =>
 	lspserver.isCodeActionProvider && lspserver.featureEnabled('codeAction'))
 
   if lspservers->empty()
