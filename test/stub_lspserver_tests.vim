@@ -544,6 +544,91 @@ def g:Test_ProcessMessages_MalformedResponse_BothResultAndError_Dropped()
   assert_match('Dropping malformed response message:', traceMsgs[0])
 enddef
 
+def g:Test_LspAttached_AutocmdContextSingleServer()
+  silent! edit XLspAttachedSingleServer.txt
+  setline(1, ['single'])
+
+  g:attachEvents = 0
+  g:attachedFile = ''
+  g:attachedBufnr = -1
+  g:attachedServers = []
+  var expectedFile = expand('%:p')
+  var expectedBufnr = bufnr()
+  augroup LspAttachedTest
+    autocmd!
+    autocmd User LspAttached {
+      g:attachEvents += 1
+      g:attachedFile = get(g:, 'LspAttachedContext', {})->get('file', '')
+      g:attachedBufnr = get(g:, 'LspAttachedContext', {})->get('bufnr', -1)
+      g:attachedServers = get(g:, 'LspAttachedContext', {})->get('servers', [])->copy()
+    }
+  augroup END
+
+  var srv = MakeTestLspServer([])
+  buf.BufLspServerSet(bufnr(), srv)
+
+  lsp.FireLspAttachedAutocmd(bufnr())
+
+  assert_equal(1, g:attachEvents)
+  assert_equal(expectedFile, g:attachedFile)
+  assert_equal(expectedBufnr, g:attachedBufnr)
+  assert_equal(['test'], g:attachedServers)
+
+  buf.BufLspServerRemove(bufnr(), srv)
+  augroup LspAttachedTest
+    autocmd!
+  augroup END
+  unlet g:attachEvents
+  unlet g:attachedFile
+  unlet g:attachedBufnr
+  unlet g:attachedServers
+  :bw!
+enddef
+
+def g:Test_LspAttached_AutocmdContextMultipleServers()
+  silent! edit XLspAttachedMultipleServers.txt
+  setline(1, ['multiple'])
+
+  g:attachEvents = 0
+  g:attachedFile = ''
+  g:attachedBufnr = -1
+  g:attachedServers = []
+  var expectedFile = expand('%:p')
+  var expectedBufnr = bufnr()
+  augroup LspAttachedTest
+    autocmd!
+    autocmd User LspAttached {
+      g:attachEvents += 1
+      g:attachedFile = get(g:, 'LspAttachedContext', {})->get('file', '')
+      g:attachedBufnr = get(g:, 'LspAttachedContext', {})->get('bufnr', -1)
+      g:attachedServers = get(g:, 'LspAttachedContext', {})->get('servers', [])->copy()
+    }
+  augroup END
+
+  var srv1 = MakeTestLspServer([])
+  var srv2 = MakeTestLspServer([])
+  buf.BufLspServerSet(bufnr(), srv1)
+  buf.BufLspServerSet(bufnr(), srv2)
+
+  lsp.FireLspAttachedAutocmd(bufnr())
+
+  assert_equal(1, g:attachEvents)
+  assert_equal(expectedFile, g:attachedFile)
+  assert_equal(expectedBufnr, g:attachedBufnr)
+  assert_equal(['test', 'test'], g:attachedServers)
+
+  buf.BufLspServerRemove(bufnr(), srv1)
+  buf.BufLspServerRemove(bufnr(), srv2)
+  augroup LspAttachedTest
+    autocmd!
+  augroup END
+  unlet g:attachEvents
+  unlet g:attachedFile
+  unlet g:attachedBufnr
+  unlet g:attachedServers
+  :bw!
+enddef
+
 def g:Test_LspDetached_AutocmdFiresForSingleServer()
   silent! edit XLspDetachedSingleServer.txt
   setline(1, ['single'])

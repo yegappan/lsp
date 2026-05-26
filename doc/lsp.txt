@@ -3,7 +3,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: May 16 2026
+Last change: May 26 2026
 
 ==============================================================================
 CONTENTS                                                     *lsp-contents*
@@ -2522,6 +2522,31 @@ LspAttached			A |User| autocommand fired after all language
 				is delayed until the next time you enter that
 				buffer.
 
+				Attach context is available in
+				|g:LspAttachedContext| as a Dictionary with:
+				- "bufnr": attached buffer number
+				- "file": attached buffer file name
+				- "servers": list of attached server names
+
+							*g:LspAttachedContext*
+g:LspAttachedContext		A |Dictionary| containing details for the
+				most recent |LspAttached| event.
+
+				The Dictionary has the following keys:
+				  bufnr		Attached buffer number.
+				  file		Attached buffer file name
+						(absolute path when available).
+				  servers	|List| of attached language
+						server names.
+
+				Example: >
+
+				  autocmd User LspAttached {
+				    var ctx = get(g:, 'LspAttachedContext', {})
+				    echom $'Attached {ctx->get("file", "")} '
+						.. $'(buf {ctx->get("bufnr", -1)})'
+				  }
+<
 							*LspDetached*
 LspDetached			A |User| autocommand fired when a language
 				server buffer teardown completes. This can

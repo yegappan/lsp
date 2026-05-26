@@ -571,6 +571,23 @@ def RemoveBufListener(bnr: number): void
   setbufvar(bnr, 'LspListenerIds', [])
 enddef
 
+export def FireLspAttachedAutocmd(bnr: number): void
+  var attachedBufName = bnr->bufname()
+  var attachedBufPath = attachedBufName->empty()
+    ? ''
+    : attachedBufName->fnamemodify(':p')
+  var attachedServerNames = buf.BufLspServersGet(bnr)->copy()
+    ->filter((_, lspsrv) => !lspsrv->empty())
+    ->map((_, lspsrv) => lspsrv.name)
+
+  g:LspAttachedContext = {
+    bufnr: bnr,
+    file: attachedBufPath,
+    servers: attachedServerNames
+  }
+  doautocmd <nomodeline> User LspAttached
+enddef
+
 # The LSP server with ID "lspserverId" is ready, initialize the LSP features
 # for buffer "bnr".
 def BufferInit(lspserverId: number, bnr: number): void
@@ -631,11 +648,11 @@ def BufferInit(lspserverId: number, bnr: number): void
 
     if exists('#User#LspAttached')
       if bnr == bufnr()
-        doautocmd <nomodeline> User LspAttached
+        FireLspAttachedAutocmd(bnr)
       else
         # Delay doautocmd until entering the buffer
         execute 'autocmd LspAutoCmds BufEnter <buffer=' .. bnr .. '>'
-              \ .. ' ++once doautocmd <nomodeline> User LspAttached'
+              \ .. $' ++once FireLspAttachedAutocmd({bnr})'
       endif
     endif
   endif
