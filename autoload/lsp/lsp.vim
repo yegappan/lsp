@@ -122,7 +122,9 @@ def LspGetServers(bnr: number, ftype: string): list<dict<any>>
 
   var bufDir = bnr->bufname()->fnamemodify(':p:h')
 
-  return ftypeServerMap[ftype]->filter((key, lspserver) => {
+  var servermap: list<dict<any>> = ftypeServerMap[ftype]->copy()
+
+  return servermap->filter((key, lspserver) => {
     # Don't run the server if no path is found
     if !lspserver.runIfSearchFiles->empty()
       var path = util.FindNearestRootDir(bufDir, lspserver.runIfSearchFiles)
