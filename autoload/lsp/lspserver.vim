@@ -473,6 +473,13 @@ def Rpc(lspserver: dict<any>, method: string, params: any, opts: dict<any> = {})
   return {}
 enddef
 
+# legacy script function to get v:stacktrace to avoid function compile errors on
+# Vim versions that do not include it (only added to Vim in version 9.1.0984)
+# get(v:, 'stacktrace') in a vim9 function throws E1075: Namespace not supported: v:, 'stacktrace'
+function GetStackTrace()
+  return get(v:, 'stacktrace')
+endfunction
+
 # LSP server asynchronous RPC callback
 def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel, reply: dict<any>)
   if lspserver.debug
@@ -507,7 +514,7 @@ def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel,
   catch
     # backwards compatibility for old callback signature
     if v:exception =~# '\v:(E118):' && (
-	( exists('v:stacktrace') && expand('<script>:p') == v:stacktrace[-1]['filepath'] )
+	( exists('v:stacktrace') && expand('<script>:p') == GetStackTrace()[-1]['filepath'] )
 	|| v:throwpoint =~# 'AsyncRpcCb,\s\+line\s\+\d' )
       try
         RpcCb(lspserver, result)
