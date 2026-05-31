@@ -3,7 +3,7 @@
 
 Author: Yegappan Lakshmanan  (yegappan AT yahoo DOT com)
 For Vim version 9.0 and above
-Last change: May 26 2026
+Last change: May 31 2026
 
 ==============================================================================
 CONTENTS                                                     *lsp-contents*
@@ -132,22 +132,22 @@ To make the features easy to use, it is recommended to define mappings
 when a language server attaches to a buffer: >
 
     autocmd User LspAttached {
-        nnoremap <buffer> <silent> gd <cmd>LspGotoDefinition<cr>
-        nnoremap <buffer> <silent> K  <cmd>LspHover<cr>
-        nnoremap <buffer> <silent> [d <cmd>LspDiag prev<cr>
-        nnoremap <buffer> <silent> ]d <cmd>LspDiag next<cr>
-        nnoremap <buffer> <silent> <leader>rn <cmd>LspRename<cr>
-        nnoremap <buffer> <silent> <leader>ca <cmd>LspCodeAction<cr>
+	nnoremap <buffer> <silent> gd <cmd>LspGotoDefinition<cr>
+	nnoremap <buffer> <silent> K  <cmd>LspHover<cr>
+	nnoremap <buffer> <silent> [d <cmd>LspDiag prev<cr>
+	nnoremap <buffer> <silent> ]d <cmd>LspDiag next<cr>
+	nnoremap <buffer> <silent> <leader>rn <cmd>LspRename<cr>
+	nnoremap <buffer> <silent> <leader>ca <cmd>LspCodeAction<cr>
     }
 
-	autocmd User LspDetached {
-		silent! unmap <buffer> gd
-		silent! unmap <buffer> K
-		silent! unmap <buffer> [d
-		silent! unmap <buffer> ]d
-		silent! unmap <buffer> <leader>rn
-		silent! unmap <buffer> <leader>ca
-	}
+    autocmd User LspDetached {
+	silent! unmap <buffer> gd
+	silent! unmap <buffer> K
+	silent! unmap <buffer> [d
+	silent! unmap <buffer> ]d
+	silent! unmap <buffer> <leader>rn
+	silent! unmap <buffer> <leader>ca
+    }
 
 ==============================================================================
 							*lsp-server-add*
@@ -2511,31 +2511,25 @@ LspSetup			A |User| autocommand fired when the LSP plugin
 				|LspOptionsSet()| function.
 
 							*LspAttached*
-LspAttached			A |User| autocommand fired after all language
-				servers attached to a buffer are ready and the
-				buffer-specific LSP features have been
-				initialized.  Can be used to configure
-				buffer-local mappings or options.
+LspAttached			A |User| autocommand fired after all the
+				language servers attached to a buffer are
+				ready and the buffer-specific LSP features
+				have been initialized.  Can be used to
+				configure buffer-local mappings or options.
 
 				If the buffer is not the current buffer when
-				the server becomes ready, then the autocommand
-				is delayed until the next time you enter that
-				buffer.
-
-				Attach context is available in
-				|g:LspAttachedContext| as a Dictionary with:
-				- "bufnr": attached buffer number
-				- "file": attached buffer file name
-				- "servers": list of attached server names
+				all the servers become ready, then the
+				autocommand is delayed until the next time you
+				enter that buffer.
 
 							*g:LspAttachedContext*
-g:LspAttachedContext		A |Dictionary| containing details for the
-				most recent |LspAttached| event.
+				The attach context is available in the
+				|g:LspAttachedContext| global variable as a
+				Dictionary with the following items:
 
-				The Dictionary has the following keys:
-				  bufnr		Attached buffer number.
-				  file		Attached buffer file name
-						(absolute path when available).
+				  bufnr		attached buffer number
+				  file		attached buffer file name
+						(absolute path).
 				  servers	|List| of attached language
 						server names.
 
@@ -2548,12 +2542,11 @@ g:LspAttachedContext		A |Dictionary| containing details for the
 				  }
 <
 							*LspDetached*
-LspDetached			A |User| autocommand fired when a language
-				server buffer teardown completes. This can
-				happen when a buffer is wiped out, when
-				|LspDisable()| removes the buffer from all
-				attached servers, or when teardown removes a
-				specific server from the buffer.
+LspDetached			A |User| autocommand fired when a buffer is
+				removed from all the attached language
+				servers. This can happen when a buffer is
+				wiped out, when |LspDisable()| removes the
+				buffer from all the attached servers.
 
 				This autocommand is fired once per buffer
 				after all attached language servers are
@@ -2561,20 +2554,13 @@ LspDetached			A |User| autocommand fired when a language
 				buffer-local mappings, popups, or other
 				LSP-related state.
 
-				Detach context is available in
-				|g:LspDetachedContext| as a Dictionary with:
-				- "bufnr": detached buffer number
-				- "file": detached buffer file name
-				- "servers": list of detached server names
-
 							*g:LspDetachedContext*
-g:LspDetachedContext		A |Dictionary| containing details for the
-				most recent |LspDetached| event.
+				The detach context is available in the
+				|g:LspDetachedContext| global variable as a
+				Dictionary with the following items:
 
-				The Dictionary has the following keys:
-				  bufnr		Detached buffer number.
-				  file		Detached buffer file name
-						(absolute path when available).
+				  bufnr		detached buffer number
+				  file		detached buffer file name
 				  servers	|List| of detached language
 						server names.
 
