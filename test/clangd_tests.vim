@@ -2700,6 +2700,47 @@ def g:Test_DocumentSymbol()
   :%bw!
 enddef
 
+# Test for LspAttached autocmd
+def g:Test_LspAttached_Autocmd()
+  g:save_lspctx = {}
+  augroup TestLspAttached
+    autocmd User LspAttached g:save_lspctx = g:LspAttachedContext
+  augroup END
+
+  :silent! edit XlspAttached.c
+  sleep 200m
+  g:WaitForServerFileLoad(0)
+
+  assert_equal('XlspAttached.c', g:save_lspctx.file->fnamemodify(':t'))
+
+  :unlet! g:save_lspctx
+  :%bw!
+  augroup TestLspAttached
+    au!
+  augroup END
+enddef
+
+# Test for LspDetached autocmd
+def g:Test_LspDetached_Autocmd()
+  g:save_lspctx = {}
+  augroup TestLspDetached
+    autocmd User LspDetached g:save_lspctx = g:LspDetachedContext
+  augroup END
+
+  :silent! edit XlspDetached.c
+  sleep 200m
+  g:WaitForServerFileLoad(0)
+  :bw!
+
+  assert_equal('XlspDetached.c', g:save_lspctx.file->fnamemodify(':t'))
+
+  :unlet! g:save_lspctx
+  :%bw!
+  augroup TestLspDetached
+    au!
+  augroup END
+enddef
+
 # TODO:
 # 1. Add a test for autocompletion with a single match while ignoring case.
 #    After the full matched name is typed, the completion popup should still

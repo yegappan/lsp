@@ -573,7 +573,25 @@ def RemoveBufListener(bnr: number): void
   setbufvar(bnr, 'LspListenerIds', [])
 enddef
 
+# LspAttached autocmd per buffer state
+var bufAttachStates: dict<dict<any>>
+
+# Returns true if the LspAttached autocmd is either pending or already fired
+# for buffer 'bnr'.
+def LspAttached(bnr: number): bool
+  var acmd_state: dict<any> =  bufAttachStates->get(bnr, {})
+
+  if acmd_state->empty()
+    return false
+  endif
+
+  return acmd_state->get('pending', false) || acmd_state->get('fired', false)
+enddef
+
+# Invoke the LspAttached autocmd for buffer 'bnr'
 export def FireLspAttachedAutocmd(bnr: number): void
+  bufAttachStates[bnr] = {pending: false, fired: true}
+
   var attachedBufName = bnr->bufname()
   var attachedBufPath = attachedBufName->empty()
     ? ''
@@ -649,6 +667,11 @@ def BufferInit(lspserverId: number, bnr: number): void
     endfor
 
     if exists('#User#LspAttached')
+      if LspAttached(bnr)
+        return
+      endif
+
+      bufAttachStates[bnr] = {pending: true, fired: false}
       if bnr == bufnr()
         FireLspAttachedAutocmd(bnr)
       else
@@ -686,6 +709,9 @@ export def AddFile(bnr: number): void
   if lspservers->empty()
     return
   endif
+
+  # Start all the lsp servers registered for this buffer file type (if needed)
+  var attachedServers: list<dict<any>> = []
   for lspserver in lspservers
     if lspserver.stoppedByUser
       continue
@@ -697,8 +723,12 @@ export def AddFile(bnr: number): void
       endif
       lspserver.startServer(bnr)
     endif
-    buf.BufLspServerSet(bnr, lspserver)
 
+    buf.BufLspServerSet(bnr, lspserver)
+    attachedServers->add(lspserver)
+  endfor
+
+  for lspserver in attachedServers
     if lspserver.ready
       BufferInit(lspserver.id, bnr)
     else
@@ -760,6 +790,10 @@ export def RemoveFile(bnr: number): void
       servers: detachedServerNames
     }
     doautocmd <nomodeline> User LspDetached
+  endif
+
+  if bufAttachStates->has_key(bnr)
+    bufAttachStates->remove(bnr)
   endif
 enddef
 
