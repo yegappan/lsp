@@ -506,7 +506,15 @@ def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel,
     RpcCb(lspserver, result, error)
   catch
     # backwards compatibility for old callback signature
-    if v:exception =~# '\v:(E118):' && v:throwpoint =~# 'AsyncRpcCb,\s\+line\s\+\d'
+    var retry: bool = false
+    if v:exception =~# '\v:(E118):'
+      if exists_compiled('v:stacktrace')
+	retry = expand('<script>:p') == v:stacktrace[-1]['filepath']
+      else
+	retry = v:throwpoint =~# 'AsyncRpcCb,\s\+line\s\+\d'
+      endif
+    endif
+    if retry
       try
         RpcCb(lspserver, result)
       catch
