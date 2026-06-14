@@ -341,7 +341,7 @@ export def DiagsRefresh(bnr: number, all: bool = false)
 
         prop_add(lnum, 0, {bufnr: bnr,
 			   type: DiagSevToVirtualTextHLName(d_severity),
-                           text: $'{symbol} {diag.message}',
+                           text: $'{symbol} {diag.msg}',
                            text_align: diag_align,
                            text_wrap: diag_wrap,
                            text_padding_left: padding})
@@ -593,7 +593,7 @@ def DiagsUpdateLocList(bnr: number, calledByCmd: bool = false): bool
     var d_range = diag.range
     var d_start = d_range.start
     var d_end = d_range.end
-    text = diag.message->substitute("\n\\+", "\n", 'g')
+    text = diag.msg
     qflist->add({filename: fname,
 		    lnum: d_start.line + 1,
 		    col: util.GetLineByteFromPos(bnr, d_start) + 1,
@@ -723,7 +723,7 @@ def ShowCurrentDiagInStatusLine()
       code = $'[{diag.code}] '
     endif
     var msgNoLineBreak = code ..
-	diag.message->substitute("[[:cntrl:]]", ' ', 'g')
+	diag.msg
     :echo msgNoLineBreak[ : max_width]
   else
     # clear the previous message
