@@ -396,6 +396,26 @@ To enable the inlay hint support, include the following in the above code to add
     \   }
 ```
 
+<a name="haskell-language-server"/></a>
+## Haskell Language Server
+**Language**: Haskell
+
+**Home Page**: [https://github.com/haskell/haskell-language-server](https://github.com/haskell/haskell-language-server)
+
+Sample code to add the Haskell language server to the LSP plugin:
+enabled:
+```vim
+call LspAddServer([#{name: 'hls',
+                 \   filetype: ['haskell', 'lhaskell'],
+                 \   rootSearch: ['*.cabal', 'stack.yaml', 'cabal.project', 'package.yaml', 'hie.yaml'],
+                 \   path: 'haskell-language-server-wrapper',
+                 \   args: ['--lsp'],
+                 \   features: {
+                 \     documentFormatting: v:true
+                 \ }
+                 \ }])
+```
+
 <a name="html-language-server"/></a>
 ## HTML Language Server
 **Language**: html
