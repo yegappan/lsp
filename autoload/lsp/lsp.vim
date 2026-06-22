@@ -685,11 +685,6 @@ enddef
 
 # A new buffer is opened. If LSP is supported for this buffer, then add it
 export def AddFile(bnr: number): void
-  if buf.BufHasLspServer(bnr)
-    # LSP server for this buffer is already initialized and running
-    return
-  endif
-
   # Skip remote files
   if util.LspUriRemote(bnr->bufname()->fnamemodify(':p'))
     return
@@ -711,9 +706,18 @@ export def AddFile(bnr: number): void
   endif
 
   # Start all the lsp servers registered for this buffer file type (if needed)
+  var attachedServerIds: list<number> = buf.BufLspServersGet(bnr)
+    ->copy()
+    ->filter((_, lspsrv) => !lspsrv->empty())
+    ->map((_, lspsrv) => lspsrv.id)
   var attachedServers: list<dict<any>> = []
   for lspserver in lspservers
     if lspserver.stoppedByUser
+      continue
+    endif
+
+    if attachedServerIds->index(lspserver.id) != -1
+      # This server is already attached to the buffer
       continue
     endif
 
