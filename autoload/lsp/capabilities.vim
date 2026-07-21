@@ -562,6 +562,9 @@ export def GetClientCaps(): dict<any>
       inlayHint: {
 	dynamicRegistration: false
       },
+      onTypeFormatting: {
+	dynamicRegistration: false
+      },
       publishDiagnostics: {
 	relatedInformation: false,
 	versionSupport: true,

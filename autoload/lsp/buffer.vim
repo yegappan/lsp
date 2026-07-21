@@ -44,6 +44,7 @@ var SupportedCheckFns = {
   diagnostics: (lspserver) => lspserver.isDiagnosticsProvider,
   definition: (lspserver) => lspserver.isDefinitionProvider,
   documentFormatting: (lspserver) => lspserver.isDocumentFormattingProvider,
+  documentOnTypeFormatting: (lspserver) => lspserver.isDocumentOnTypeFormattingProvider,
   documentRangeFormatting: (lspserver) => lspserver.isDocumentRangeFormattingProvider,
   documentHighlight: (lspserver) => lspserver.isDocumentHighlightProvider,
   documentSymbol: (lspserver) => lspserver.isDocumentSymbolProvider,

@@ -138,6 +138,7 @@ call LspOptionsSet(#{
         \   maxDiagnostics: 200,
         \   omniComplete: v:null,
         \   omniCompleteAllowBare: v:false,
+        \   onTypeFormatting: v:false,
         \   outlineOnRight: v:false,
         \   outlineWinSize: 20,
         \   popupBorder: v:true,

@@ -1482,6 +1482,111 @@ def TextDocFormat(lspserver: dict<any>, fname: string, rangeFormat: bool,
   textedit.ApplyTextEdits(bnr, reply.result)
 enddef
 
+# Adjust 'origPos' (a decoded, 0-indexed {line, character} position) to
+# account for having applied 'edits' (also decoded, in original-document
+# order/coordinates) to the buffer.
+#
+# textedit.ApplyTextEdits() does not track cursor movement.  On-type
+# formatting edits routinely insert text immediately before the just-typed
+# character (e.g. indenting the line the server just reformatted), so the
+# cursor needs to be moved past that inserted text to keep typing naturally.
+# Only edits that end at or before 'origPos' are relevant here: on-type
+# formatting edits are always local to the trigger point.
+def AdjustPositionForOnTypeEdits(origPos: dict<number>,
+				 edits: list<dict<any>>): dict<number>
+  var sorted = edits->copy()->sort((a, b) => {
+    if a.range.start.line != b.range.start.line
+      return a.range.start.line - b.range.start.line
+    endif
+    return a.range.start.character - b.range.start.character
+  })
+
+  var lineDelta = 0
+  var character = origPos.character
+  var adjustedOnOrigLine = false
+
+  for e in sorted
+    var s = e.range.start
+    var en = e.range.end
+    if en.line > origPos.line
+	|| (en.line == origPos.line && en.character > origPos.character)
+      # This edit is at or after 'origPos'; on-type formatting edits are
+      # expected to precede the just-typed character.
+      continue
+    endif
+
+    var newTextLines = e.newText->split("\n", true)
+    lineDelta += (newTextLines->len() - 1) - (en.line - s.line)
+
+    if en.line == origPos.line
+      if newTextLines->len() == 1
+	character = character - en.character + s.character +
+					newTextLines[0]->strcharlen()
+      else
+	character = character - en.character + newTextLines[-1]->strcharlen()
+      endif
+      adjustedOnOrigLine = true
+    endif
+  endfor
+
+  return {line: origPos.line + lineDelta,
+	  character: adjustedOnOrigLine ? character : origPos.character}
+enddef
+
+# Request on-type formatting edits for the character just typed and apply
+# them to the buffer, then place the cursor after any inserted text so that
+# typing can continue naturally.
+# Request: "textDocument/onTypeFormatting"
+# Param: DocumentOnTypeFormattingParams
+def TextDocOnTypeFormat(lspserver: dict<any>, ch: string)
+  if !lspserver.isDocumentOnTypeFormattingProvider
+    util.ErrMsg('LSP server does not support on-type formatting')
+    return
+  endif
+
+  var bnr: number = @%->bufnr()
+  if bnr == -1
+    return
+  endif
+
+  # interface DocumentOnTypeFormattingParams
+  #   interface TextDocumentIdentifier
+  #   interface Position
+  #   ch: string
+  #   interface FormattingOptions
+  var param = lspserver.getTextDocPosition(false)
+  param.ch = ch
+  param.options = {
+    tabSize: shiftwidth(),
+    insertSpaces: &expandtab ? true : false,
+  }
+  var origPos = param.position->copy()
+
+  var reply = lspserver.rpc('textDocument/onTypeFormatting', param)
+
+  # result: TextEdit[] | null
+  if reply->empty() || reply.result->empty()
+    return
+  endif
+
+  if lspserver.needOffsetEncoding
+    reply.result->map((_, textEdit) => {
+      lspserver.decodeRange(bnr, textEdit.range)
+      return textEdit
+    })
+    lspserver.decodePosition(bnr, origPos)
+  endif
+
+  var newPos = AdjustPositionForOnTypeEdits(origPos, reply.result)
+
+  # interface TextEdit
+  # Apply each of the text edit operations
+  textedit.ApplyTextEdits(bnr, reply.result)
+
+  var byteIdx = util.GetLineByteFromPos(bnr, newPos)
+  cursor(newPos.line + 1, byteIdx + 1)
+enddef
+
 def DecodeCallHierarchyItem(lspserver: dict<any>, item: dict<any>)
   if !lspserver.needOffsetEncoding
     return
@@ -2529,6 +2634,7 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     docHighlight: function(DocHighlight, [lspserver]),
     getDocSymbols: function(GetDocSymbols, [lspserver]),
     textDocFormat: function(TextDocFormat, [lspserver]),
+    textDocOnTypeFormat: function(TextDocOnTypeFormat, [lspserver]),
     prepareCallHierarchy: function(PrepareCallHierarchy, [lspserver]),
     incomingCalls: function(IncomingCalls, [lspserver]),
     getIncomingCalls: function(GetIncomingCalls, [lspserver]),

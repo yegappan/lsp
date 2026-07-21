@@ -5,6 +5,7 @@ import '../autoload/lsp/hover.vim' as hover
 import '../autoload/lsp/buffer.vim' as buf
 import '../autoload/lsp/signature.vim' as signature
 import '../autoload/lsp/codeaction.vim' as codeaction
+import '../autoload/lsp/ontypeformat.vim' as ontypeformat
 
 source common.vim
 
@@ -336,6 +337,53 @@ def g:Test_LspFormat_Fallback()
 
   # Restore default to avoid impacting other tests.
   g:LspOptionsSet({formatFallback: false})
+  :%bw!
+enddef
+
+# Test for on-type formatting (opt-in), triggered by typing a newline.
+def g:Test_LspOnTypeFormatting()
+  g:LspOptionsSet({onTypeFormatting: true})
+
+  :silent! edit XLspOnTypeFormat.c
+  sleep 200m
+  var lines = ['int f1() {', 'int i;', '}']
+  setline(1, lines)
+  g:WaitForServerFileLoad(0)
+  :redraw!
+
+  var bnr = bufnr()
+
+  # The on-type-formatting trigger autocmd should be registered for this
+  # buffer, since clangd advertises documentOnTypeFormattingProvider.
+  var acmds = autocmd_get({group: 'LspOnTypeFormatting', bufnr: bnr})
+  assert_equal(1, acmds->len())
+  assert_equal('TextChangedI', acmds[0].event)
+
+  # Simulate the user positioned at the end of the under-indented "int i;"
+  # line pressing Enter: prime the "previous line" state ontypeformat.vim
+  # tracks to detect a newline, apply the newline the same way Vim would,
+  # and invoke the on-type-formatting handler directly.  (Driving this via
+  # feedkeys() and relying on the real TextChangedI autocmd to fire is not
+  # reliable in this test harness -- the same reason the 24x7 completion
+  # tests above call completion.LspComplete() directly instead of typing.)
+  setbufvar(bnr, 'LspOnTypeFormatPrevLine', 2)
+  append(2, '')
+  cursor(3, 1)
+  :startinsert!
+  ontypeformat.OnTypeFormat(bnr)
+  :stopinsert
+
+  # clangd's on-type formatting (triggered on "\n") should reindent the
+  # "int i;" line and the newly created blank line to match the
+  # surrounding braces.
+  var expected = ['int f1() {', '  int i;', '  ', '}']
+  g:WaitForAssert(() => assert_equal(expected, getline(1, '$')))
+  # Cursor should land after the auto-inserted indent, ready to continue
+  # typing, not before it.
+  assert_equal([3, 3], [line('.'), col('.')])
+
+  # Restore default to avoid impacting other tests.
+  g:LspOptionsSet({onTypeFormatting: false})
   :%bw!
 enddef
 
