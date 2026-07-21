@@ -3,6 +3,7 @@ vim9script
 
 import '../autoload/lsp/completion.vim' as completion
 import '../autoload/lsp/buffer.vim' as buf
+import '../autoload/lsp/capabilities.vim' as capabilities
 
 # Test for no duplicates in helptags
 def g:Test_Helptags()
@@ -284,6 +285,24 @@ def g:Test_Completion_Preselect_NoopWithoutPreselect()
   assert_equal('gamma', lspserver.completeItems[2].word)
 
   :%bw!
+enddef
+
+# Regression test for documentOnTypeFormattingProvider trigger char capture.
+def g:Test_OnTypeFormattingCapability()
+  var lspserver = {
+    caps: {
+      documentOnTypeFormattingProvider: {
+        firstTriggerCharacter: '}',
+        moreTriggerCharacter: [';', "\n"],
+      }
+    },
+    forceOffsetEncoding: '',
+  }
+
+  capabilities.ProcessServerCaps(lspserver, lspserver.caps)
+
+  assert_true(lspserver.isDocumentOnTypeFormattingProvider)
+  assert_equal(['}', ';', "\n"], lspserver.onTypeFormattingTriggers)
 enddef
 
 # Only here to because the test runner needs it

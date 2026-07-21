@@ -268,9 +268,14 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
 
   # documentOnTypeFormattingProvider
   if lspserver.caps->has_key('documentOnTypeFormattingProvider')
-      lspserver.isDocumentOnTypeFormattingProvider = true
+    lspserver.isDocumentOnTypeFormattingProvider = true
+    var onTypeProvider = lspserver.caps.documentOnTypeFormattingProvider
+    lspserver.onTypeFormattingTriggers =
+	[onTypeProvider.firstTriggerCharacter] +
+	onTypeProvider->get('moreTriggerCharacter', [])
   else
-      lspserver.isDocumentOnTypeFormattingProvider = false
+    lspserver.isDocumentOnTypeFormattingProvider = false
+    lspserver.onTypeFormattingTriggers = []
   endif
 
   # renameProvider

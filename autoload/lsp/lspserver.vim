@@ -2440,6 +2440,7 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     caps: {},
     callHierarchyType: '',
     completionTriggerChars: [],
+    onTypeFormattingTriggers: [],
     customNotificationHandlers: serverParams.customNotificationHandlers->deepcopy(),
     customRequestHandlers: serverParams.customRequestHandlers->deepcopy(),
     debug: serverParams.debug,
