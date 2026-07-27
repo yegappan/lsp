@@ -567,7 +567,7 @@ export def TagFunc(lspserver: dict<any>,
     var bnr = util.LspUriToBufnr(uri)
     var rstart = range.start
     var startByteIdx = util.GetLineByteFromPos(bnr, rstart)
-    tagitem.cmd = $"/\\%{rstart.line + 1}l\\%{startByteIdx + 1}c"
+    tagitem.cmd = $"/\\%{rstart.line + 1}l\\%{startByteIdx + 1}c/"
 
     retval->add(tagitem)
   endfor
