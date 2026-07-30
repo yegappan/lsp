@@ -53,7 +53,7 @@ export def OmniComplSet(ftype: string, enabled: bool)
 enddef
 
 # Map LSP complete item kind to a character
-def LspCompleteItemKindChar(kind: number): string
+export def LspCompleteItemKindChar(kind: number): string
   var kindMap: list<string> = [
     '',
     'Text',

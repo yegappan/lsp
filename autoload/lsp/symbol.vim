@@ -569,6 +569,10 @@ export def TagFunc(lspserver: dict<any>,
     var startByteIdx = util.GetLineByteFromPos(bnr, rstart)
     tagitem.cmd = $"/\\%{rstart.line + 1}l\\%{startByteIdx + 1}c/"
 
+    if tagloc->has_key('kind')
+      tagitem.kind = tagloc.kind
+    endif
+
     retval->add(tagitem)
   endfor
 

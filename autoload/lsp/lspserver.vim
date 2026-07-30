@@ -2378,6 +2378,9 @@ def TagFunc(lspserver: dict<any>, pat: string, flags: string, info: dict<any>): 
       if sym->get('name', '') != pat
 	continue
       endif
+      if sym->has_key('kind')
+	sym.kind = completion.LspCompleteItemKindChar(sym.kind)
+      endif
       taglocations->add(sym.location)
     endfor
 
