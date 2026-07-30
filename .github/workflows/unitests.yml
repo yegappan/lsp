@@ -20,9 +20,11 @@ jobs:
           # install clangd language server
           sudo apt install -y clangd-15
           # install nodejs
-          sudo apt install -y curl
-          curl -fsSL https://deb.nodesource.com/setup_18.x | sudo bash -
+          sudo apt install -y curl ca-certificates gnupg
+          curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash -
           sudo apt install -y nodejs
+          echo "node version: $(node -v)"
+          echo "npm version: $(npm -v)"
           # install the typescript language server
           sudo npm install -g typescript-language-server typescript
           # install the golang language server
