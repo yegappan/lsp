@@ -54,6 +54,7 @@ If your preferred server is not listed below, you can adapt the configurations f
 [Solargraph](#solargraph)<br>
 [Svelte Language Server](#svelte-language-server)<br>
 [Swift Language Server](#swift-language-server)<br>
+[Tailwindcss Language Server](#tailwindcss-language-server)<br>
 [Typescript/Javascript Language Server](#typescript-language-server)<br>
 [Vala Language Server](#vala-language-server)<br>
 [Verible](#verible)<br>
@@ -750,6 +751,21 @@ call LspAddServer([#{name: 'swiftls',
                  \   path: '/usr/bin/xcrun',
                  \   args: ['sourcekit-lsp']
                  \ }])
+```
+
+<a name="tailwindcss-language-server"/></a>
+## Tailwind CSS Language Server
+**Language**: CSS
+
+**Home Page**: [https://github.com/tailwindlabs/tailwindcss-intellisense](https://github.com/tailwindlabs/tailwindcss-intellisense)
+
+Sample code to add the tailwindcss language server to the LSP plugin:
+```vim
+call LspAddServer([#{name: 'tailwindcss',
+	            \    path: '/usr/local/bin/tailwindcss-language-server',
+	            \    args: ['stdio'],
+	            \    syncInit: v:true
+	            \  }])
 ```
 
 <a name="typescript-language-server"/></a>
