@@ -38,6 +38,12 @@ export def OnTypeFormat(bnr: number)
     ch = "\n"
   else
     var col = charcol('.')
+    if col < 2
+      # Nothing precedes the cursor (e.g. text was deleted back to column
+      # 1); there is no just-typed character to detect.  Negative string
+      # indexing below would otherwise wrap to the end of the line.
+      return
+    endif
     var curText = getline('.')
     ch = curText[col - 2]
   endif

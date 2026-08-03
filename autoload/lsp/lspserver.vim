@@ -1549,6 +1549,9 @@ def TextDocOnTypeFormat(lspserver: dict<any>, ch: string)
     return
   endif
 
+  # Send the pending buffer changes to the language server
+  bnr->listener_flush()
+
   # interface DocumentOnTypeFormattingParams
   #   interface TextDocumentIdentifier
   #   interface Position
