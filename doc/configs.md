@@ -43,6 +43,7 @@ If your preferred server is not listed below, you can adapt the configurations f
 [Language Server Bitbake](#language-server-bitbake)<br>
 [Lua Language Server](#lua-language-server)<br>
 [Marksman Language Server](#marksman-language-server)<br>
+[Odin Language Server](#odin-language-server)<br>
 [Omnisharp Language Server](#omnisharp-language-server)<br>
 [Perl Navigator](#perl-navigator)<br>
 [PHP Intelephense](#php-intelephense)<br>
@@ -539,6 +540,21 @@ call LspAddServer([#{name: 'marksman',
                  \   filetype: 'md',
                  \   path: 'marksman-linux-x64',
                  \   args: ['server'],
+                 \ }])
+```
+
+<a name="odin-language-server"/></a>
+## Odin Language Server
+**Language**: Odin
+
+**Home Page**: [OLS](https://github.com/DanielGavin/ols)
+
+Sample code to add the odin language server to the LSP plugin:
+```vim
+call LspAddServer([#{name: 'odinls',
+                 \  filetype: ['odin'],
+                 \  path: '/usr/local/bin/ols',
+                 \  args: [],
                  \ }])
 ```
 
