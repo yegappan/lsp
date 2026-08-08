@@ -204,7 +204,7 @@ export def LspFileToUri(fname: string): string
     # We're in Cygwin, convert POSIX style paths to Windows style.
     # The substitution is to remove the '^@' escape character from the end of
     # line.
-    uri = system($'cygpath -m {uri}')->substitute('^\(\p*\).*$', '\=submatch(1)', "")
+    uri = system($'cygpath -m {uri->shellescape()}')->substitute('^\(\p*\).*$', '\=submatch(1)', "")
   endif
 
   var on_windows: bool = false
