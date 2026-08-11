@@ -185,7 +185,8 @@ enddef
 # Returns if the URI refers to a remote file (e.g. ssh://)
 # Credit: vim-lsp plugin
 export def LspUriRemote(uri: string): bool
-  return uri =~ '^\w\+::' || uri =~ '^[a-z][a-z0-9+.-]*://'
+  var normalized_uri = uri->substitute('\\', '/', 'g')
+  return normalized_uri =~ '^\w\+::' || normalized_uri =~ '^[a-z][a-z0-9+.-]*://'
 enddef
 
 var resolvedUris = {}
