@@ -122,7 +122,7 @@ def ProcessProgressNotif(lspserver: dict<any>, reply: dict<any>)
     endif
   endif
 
-  if lspserver.isDiagnosticsProvider
+  if lspserver->get('isDiagnosticsProvider', false)
     lspserver.queuePullDiagnosticsAllBuffers()
   endif
 
