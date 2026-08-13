@@ -158,7 +158,8 @@ register a language server for that file type(s).
 
 					*LspAddServer()* *g:LspAddServer()*
 To register one or more language servers, use the LspAddServer() function with
-a list of language server details in the .vimrc file.
+a list of language server details in the .vimrc file, or define the variable
+|g:lsp_servers| before loading the plugin.
 
 To register a language server, add the following lines to your .vimrc file
 (use only the language servers that you need from the below list).
@@ -384,7 +385,7 @@ Additionally the following configurations can be made:
 		    languageId: GetLanguageId,
 		}])
 <
-			This ensures 
+			This ensures
 
 			1. docker-language-server works with docker-compose.yaml
 			2. docker-language-server works with Dockerfile
@@ -485,7 +486,8 @@ function accepts a list of language servers with the above information.
 
 If you used [vim-plug](https://github.com/junegunn/vim-plug) to install the
 LSP plugin, then you need to use the LspSetup User autocmd to initialize the
-language server and to set the language server options.  For example: >
+language server and to set the language server options, or you can set the
+variable |g:lsp_servers|.  For example: >
 
     vim9script
 
@@ -2100,6 +2102,40 @@ Is equivalent to this: >
     vim9script
     var lspOpts = {autoHighlightDiags: true}
     autocmd User LspSetup g:LspOptionsSet(lspOpts)
+<
+						*g:lsp_servers*
+For convenience the server list can also be set through the variable
+|g:lsp_servers| that shall be set before loading the plugin, for example by
+defining it in in your |.vimrc|. The value must be a dictionary, and shall
+support the same options as calling |LspAddServer()|
+directly. |LspAddServer()| is automatically called on plugin load when
+|g:lsp_servers| is set. For example, in your vimrc, this: >
+
+    vim9script
+    var lspServers = [
+		     {
+		        name: 'clangd',
+		        filetype: ['c', 'cpp'],
+		        path: '/usr/local/bin/clangd',
+		        args: ['--background-index']
+		      }
+		   ]
+
+    g:lsp_servers = lspServers
+<
+Is equivalent to this: >
+
+    vim9script
+    var lspServers = [
+		     {
+		        name: 'clangd',
+		        filetype: ['c', 'cpp'],
+		        path: '/usr/local/bin/clangd',
+		        args: ['--background-index']
+		      }
+		   ]
+
+    autocmd User LspSetup g:LspAddServer(lspServers)
 <
 						*g:lsp_enable*
 The plugin is automatically enabled on Vim startup by default. You can use
