@@ -176,7 +176,7 @@ if exists('g:lsp_options') && g:lsp_options->type() == v:t_dict
   g:LspOptionsSet(g:lsp_options)
 endif
 
-if exists('g:lsp_servers') && g:lsp_servers->type() == v:t_dict
+if exists('g:lsp_servers') && g:lsp_servers->type() == v:t_list
   g:LspAddServer(g:lsp_servers)
 endif
 
