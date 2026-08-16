@@ -165,7 +165,7 @@ export def LspUriToFile(uri: string): string
       uri_decoded = uri_decoded->substitute('^\(\a\):',
 	'\="/" .. submatch(1)', '')
     else
-      uri_decoded = uri_decoded->substitute('/', '\\', 'g')
+      uri_decoded = uri_decoded->tr('/', '\')
     endif
   # On GNU/Linux (pattern not end with `:`)
   elseif uri_decoded =~? '^file:///\a'
@@ -185,7 +185,7 @@ enddef
 # Returns if the URI refers to a remote file (e.g. ssh://)
 # Credit: vim-lsp plugin
 export def LspUriRemote(uri: string): bool
-  var normalized_uri = uri->substitute('\\', '/', 'g')
+  var normalized_uri = uri->tr('\', '/')
   return normalized_uri =~ '^\w\+::' || normalized_uri =~ '^[a-z][a-z0-9+.-]*://'
 enddef
 
@@ -215,7 +215,7 @@ export def LspFileToUri(fname: string): string
 
   if on_windows
     # MS-Windows
-    uri = uri->substitute('\\', '/', 'g')
+    uri = uri->tr('\', '/')
   endif
 
   var uri_encoded: string = UriEncode(uri)
