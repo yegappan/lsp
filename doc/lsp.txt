@@ -2106,10 +2106,10 @@ Is equivalent to this: >
 						*g:lsp_servers*
 For convenience the server list can also be set through the variable
 |g:lsp_servers| that shall be set before loading the plugin, for example by
-defining it in in your |.vimrc|. The value must be a dictionary, and shall
-support the same options as calling |LspAddServer()|
-directly. |LspAddServer()| is automatically called on plugin load when
-|g:lsp_servers| is set. For example, in your vimrc, this: >
+defining it in in your |.vimrc|. The value must be a list of dictionaries, and
+shall support the same options as calling |LspAddServer()| directly.
+|LspAddServer()| is automatically called on plugin load when |g:lsp_servers|
+is set. For example, in your vimrc, this: >
 
     vim9script
     var lspServers = [
