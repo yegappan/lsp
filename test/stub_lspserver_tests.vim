@@ -1569,7 +1569,7 @@ def g:Test_TextdocDidChange_IncrementalSync_NoEolAnchorsToLastLineEnd()
   silent! edit XIncrementalNoEol.txt
   var oldLines = ['abc', 'def', 'ghi']
   setline(1, oldLines)
-  set noeol
+  setlocal noeol
 
   var notifications: list<dict<any>> = []
   var lspserver = MakeTestLspServer(notifications)
