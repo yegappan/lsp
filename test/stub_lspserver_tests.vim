@@ -41,6 +41,9 @@ def MakeTestLspServer(notifications: list<dict<any>>): dict<any>
 	workspaceConfig: {}
       })
   lspserver.textDocumentSync = 2
+  # Not set by NewLspServer() -- only assigned while processing the
+  # "initialize" response -- but the incremental-sync code path needs it.
+  lspserver.posEncoding = 32
   lspserver.sendNotification = function(CaptureNotification, [notifications])
   return lspserver
 enddef
@@ -1483,6 +1486,108 @@ def g:Test_LspAutoFix_Range_MultiServer_WaitsForAllReplies()
   buf.BufLspServerRemove(bufnr(), srvErr)
   buf.BufLspServerRemove(bufnr(), srvOk)
   :bw!
+enddef
+
+def g:Test_TextdocDidChange_IncrementalSync_MultiHunkDeleteAppliesBottomUp()
+  # Regression test for #836: ":%d" produces two diff hunks; emitting them
+  # top-down sends the second hunk's range against a document already
+  # shrunk by the first, desyncing the server.
+  if !exists('*diff')
+    # incrementalSync needs diff(); options.OptionsSet() forces it back off
+    # without it, same as the plugin itself falling back to full sync.
+    return
+  endif
+  g:LspOptionsSet({incrementalSync: true})
+  silent! edit XIncrementalMultiHunkDelete.c
+  var oldLines = ['#include <stdio.h>', '', 'int main() {',
+	'    printf("hello world\n");', '    return 0;', '}']
+  setline(1, oldLines)
+
+  var notifications: list<dict<any>> = []
+  var lspserver = MakeTestLspServer(notifications)
+  var bnr = bufnr()
+  lspserver.cachedBufferContent[bnr] = oldLines
+  lspserver.cachedBufferEol[bnr] = true
+
+  :%d
+  lspserver.textdocDidChange(bnr)
+
+  assert_equal(1, notifications->len())
+  assert_equal('textDocument/didChange', notifications[0].method)
+  var changes = notifications[0].params.contentChanges
+  assert_equal(2, changes->len())
+  assert_equal({line: 2, character: 0}, changes[0].range.start)
+  assert_equal({line: 6, character: 0}, changes[0].range.end)
+  assert_equal('', changes[0].text)
+  assert_equal({line: 0, character: 0}, changes[1].range.start)
+  assert_equal({line: 1, character: 0}, changes[1].range.end)
+  assert_equal('', changes[1].text)
+
+  g:LspOptionsSet({incrementalSync: false})
+  :%bw!
+enddef
+
+def g:Test_TextdocDidChange_IncrementalSync_MultiHunkInsertDescendingOrder()
+  if !exists('*diff')
+    return
+  endif
+  g:LspOptionsSet({incrementalSync: true})
+  silent! edit XIncrementalMultiHunkInsert.txt
+  var oldLines = ['one', 'two', 'three']
+  setline(1, oldLines)
+
+  var notifications: list<dict<any>> = []
+  var lspserver = MakeTestLspServer(notifications)
+  var bnr = bufnr()
+  lspserver.cachedBufferContent[bnr] = oldLines
+  lspserver.cachedBufferEol[bnr] = true
+
+  setline(1, ['zero', 'one', 'two', 'inserted', 'three'])
+  lspserver.textdocDidChange(bnr)
+
+  var changes = notifications[0].params.contentChanges
+  assert_equal(2, changes->len())
+  assert_equal({line: 2, character: 0}, changes[0].range.start)
+  assert_equal({line: 2, character: 0}, changes[0].range.end)
+  assert_equal("inserted\n", changes[0].text)
+  assert_equal({line: 0, character: 0}, changes[1].range.start)
+  assert_equal({line: 0, character: 0}, changes[1].range.end)
+  assert_equal("zero\n", changes[1].text)
+
+  g:LspOptionsSet({incrementalSync: false})
+  :%bw!
+enddef
+
+def g:Test_TextdocDidChange_IncrementalSync_NoEolAnchorsToLastLineEnd()
+  # Regression test: without a trailing newline, a hunk reaching the end of
+  # the document must anchor to the end of the last line, not to a
+  # {line: lineCount, character: 0} position that doesn't exist.
+  if !exists('*diff')
+    return
+  endif
+  g:LspOptionsSet({incrementalSync: true})
+  silent! edit XIncrementalNoEol.txt
+  var oldLines = ['abc', 'def', 'ghi']
+  setline(1, oldLines)
+  setlocal noeol
+
+  var notifications: list<dict<any>> = []
+  var lspserver = MakeTestLspServer(notifications)
+  var bnr = bufnr()
+  lspserver.cachedBufferContent[bnr] = oldLines
+  lspserver.cachedBufferEol[bnr] = false
+
+  :$d
+  lspserver.textdocDidChange(bnr)
+
+  var changes = notifications[0].params.contentChanges
+  assert_equal(1, changes->len())
+  assert_equal({line: 1, character: 3}, changes[0].range.start)
+  assert_equal({line: 2, character: 3}, changes[0].range.end)
+  assert_equal('', changes[0].text)
+
+  g:LspOptionsSet({incrementalSync: false})
+  :%bw!
 enddef
 
 # Only here to because the test runner needs it
