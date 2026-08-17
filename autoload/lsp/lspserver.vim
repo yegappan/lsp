@@ -663,6 +663,20 @@ def HunkText(newBufLines: list<string>, hunk: dict<number>, hasEol: bool): strin
   return text
 enddef
 
+# Length of "line" in the position encoding negotiated with the server
+# ("posEncoding": 8, 16 or 32).  Used to anchor a range to the end of a line
+# that only exists in a cached (old-document) snapshot, so
+# offset.EncodePosition() (which reads the live buffer) doesn't apply.
+def EncodedLineLen(lspserver: dict<any>, line: string): number
+  if lspserver.posEncoding == 8
+    return line->strlen()
+  elseif lspserver.posEncoding == 16
+    return line->strutf16len(true)
+  else
+    return line->strchars()
+  endif
+enddef
+
 # Send a file/document opened notification to the language server.
 def TextdocDidOpen(lspserver: dict<any>, bnr: number, ftype: string): void
   # Notification: 'textDocument/didOpen'
@@ -679,6 +693,7 @@ def TextdocDidOpen(lspserver: dict<any>, bnr: number, ftype: string): void
 
   var newBufLines = bnr->getbufline(1, '$')
   lspserver.cachedBufferContent[bnr] = newBufLines
+  lspserver.cachedBufferEol[bnr] = bnr->getbufvar('&eol')
 
   if !lspserver.supportsDidOpenClose
     return
@@ -711,6 +726,9 @@ def TextdocDidClose(lspserver: dict<any>, bnr: number): void
   endif
   if lspserver.cachedBufferContent->has_key(bnr)
     lspserver.cachedBufferContent->remove(bnr)
+  endif
+  if lspserver.cachedBufferEol->has_key(bnr)
+    lspserver.cachedBufferEol->remove(bnr)
   endif
   if lspserver.diagnosticResultIds->has_key(bnr)
     lspserver.diagnosticResultIds->remove(bnr)
@@ -869,25 +887,54 @@ def TextdocDidChange(lspserver: dict<any>, bnr: number): void
     var newBufLines = bnr->getbufline(1, '$')
     var hasEol = bnr->getbufvar('&eol')
     if lspserver.cachedBufferContent->has_key(bnr)
+	&& lspserver.cachedBufferEol[bnr] == hasEol
       # Compute line-level diffs against the last snapshot and convert each
-      # hunk into an LSP TextDocumentContentChangeEvent.
+      # hunk into an LSP TextDocumentContentChangeEvent.  Hunks are emitted
+      # bottom-up: the LSP spec applies contentChanges entries sequentially,
+      # so a top-down hunk's range would be interpreted against a document
+      # already shifted by an earlier hunk in the same notification.
       contentChanges = []
-      var diffs = diff(lspserver.cachedBufferContent[bnr], newBufLines,
-		       {output: 'indices'})
-      for hunk in diffs
+      var oldBufLines = lspserver.cachedBufferContent[bnr]
+      var oldLineCount = oldBufLines->len()
+      var diffs = diff(oldBufLines, newBufLines, {output: 'indices'})
+      for hunk in diffs->copy()->reverse()
+	var startLine = hunk.from_idx
+	var startChar = 0
+	var endLine = hunk.from_idx + hunk.from_count
+	var endChar = 0
+	var text = HunkText(newBufLines, hunk, hasEol)
+	if !hasEol && endLine == oldLineCount
+	  # The old document has no trailing newline, so
+	  # {line: oldLineCount, character: 0} isn't a valid position in it;
+	  # anchor to the end of the last line instead.  When the hunk
+	  # doesn't start at the first line, pull the start back over the
+	  # newline that precedes it too, so that line's break is removed.
+	  endLine = oldLineCount - 1
+	  endChar = EncodedLineLen(lspserver, oldBufLines[endLine])
+	  if startLine > 0
+	    startLine -= 1
+	    startChar = EncodedLineLen(lspserver, oldBufLines[startLine])
+	    if !text->empty()
+	      text = "\n" .. text
+	    endif
+	  endif
+	endif
 	contentChanges->add({
 	  range: {
-	    start: {line: hunk.from_idx, character: 0},
-	    end:   {line: hunk.from_idx + hunk.from_count, character: 0}
+	    start: {line: startLine, character: startChar},
+	    end:   {line: endLine, character: endChar}
 	  },
-	  text: HunkText(newBufLines, hunk, hasEol)
+	  text: text
 	})
       endfor
     else
-      # No cached snapshot available; fall back to a full-text change.
+      # No cached snapshot available, or its line-ending state doesn't
+      # match the current buffer (the old-document end-of-file math above
+      # would be wrong); fall back to a full-text change.
       contentChanges = [{text: LinesText(newBufLines, hasEol)}]
     endif
     lspserver.cachedBufferContent[bnr] = newBufLines
+    lspserver.cachedBufferEol[bnr] = hasEol
   endif
 
   if contentChanges->empty()
@@ -2465,6 +2512,7 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     selection: {},
     signaturePopup: -1,
     cachedBufferContent: {},
+    cachedBufferEol: {},
     syncInit: serverParams.syncInit,
     traceLevel: serverParams.traceLevel,
     typeHierFilePopup: -1,
