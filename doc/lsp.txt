@@ -1797,6 +1797,14 @@ omniCompleteAllowBare   |Boolean| option. Defines whether or not the
 			less noisy |lsp-opt-autoComplete| solution, see
 			|lsp-ins-force|
 
+						*lsp-opt-onTypeFormatting*
+onTypeFormatting	|Boolean| option.  Reformat code as you type, using the
+			language server's on-type formatting support (for
+			example, reindenting a line after pressing <Enter>).
+			By default this is set to false, since it edits the
+			buffer while you are typing.  See |lsp-on-type-format|
+			for more information.
+
 						*lsp-opt-outlineOnRight*
 outlineOnRight		|Boolean| option.  When true, open the outline window
 			on the right side of the screen.  When false (the
@@ -2444,6 +2452,13 @@ To format code using the 'gq' command, you can set the 'formatexpr' option: >
 
     setlocal formatexpr=lsp#lsp#FormatExpr()
 <
+						*lsp-on-type-format*
+If the language server supports it and the |lsp-opt-onTypeFormatting| option
+is set to true, code is reformatted as you type, whenever you type one of the
+trigger characters the language server designates (for example, clangd
+reindents the current line when you press <Enter>).  This option is disabled
+by default, since it edits the buffer while you are typing.
+
 ==============================================================================
 							*lsp-call-hierarchy*
 11. Call Hierarchy~

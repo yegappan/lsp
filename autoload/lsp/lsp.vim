@@ -23,6 +23,7 @@ import './codeaction.vim'
 import './hover.vim'
 import './inlayhints.vim'
 import './semantichighlight.vim'
+import './ontypeformat.vim'
 
 # filetype to LSP server map
 var ftypeServerMap: dict<list<dict<any>>> = {}
@@ -53,6 +54,7 @@ def LspInitOnce()
   signature.InitOnce()
   symbol.InitOnce()
   semantichighlight.InitOnce()
+  ontypeformat.InitOnce()
 
   lspInitializedOnce = true
 enddef
@@ -663,6 +665,11 @@ def BufferInit(lspserverId: number, bnr: number): void
       var semanticServer = buf.BufLspServerGet(bnr, 'semanticTokens')
       if !semanticServer->empty() && lspsrv.id == semanticServer.id
 	semantichighlight.BufferInit(lspserver, bnr)
+      endif
+
+      var onTypeFormatServer = buf.BufLspServerGet(bnr, 'documentOnTypeFormatting')
+      if !onTypeFormatServer->empty() && lspsrv.id == onTypeFormatServer.id
+	ontypeformat.BufferInit(lspsrv, bnr)
       endif
     endfor
 
@@ -1347,8 +1354,8 @@ export def TextDocFormat(range_args: number, line1: number, line2: number)
   endif
 enddef
 
-# TODO: Add support for textDocument.onTypeFormatting?
-# Will this slow down Vim?
+# Support for textDocument/onTypeFormatting is implemented in
+# autoload/lsp/ontypeformat.vim (opt-in via the 'onTypeFormatting' option).
 
 # Display all the locations where the current symbol is called from.
 # Uses LSP "callHierarchy/incomingCalls" request
