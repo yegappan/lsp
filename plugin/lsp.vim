@@ -176,6 +176,10 @@ if exists('g:lsp_options') && g:lsp_options->type() == v:t_dict
   g:LspOptionsSet(g:lsp_options)
 endif
 
+if exists('g:lsp_servers') && g:lsp_servers->type() == v:t_list
+  g:LspAddServer(g:lsp_servers)
+endif
+
 if get(g:, 'lsp_enable', true)
   if v:vim_did_enter
     # allow for plugin load, e.g. packadd lsp, after VimEnter
