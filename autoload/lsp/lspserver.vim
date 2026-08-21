@@ -850,7 +850,11 @@ enddef
 
 # Send a file/document change notification to the language server.
 # Params: DidChangeTextDocumentParams
-def TextdocDidChange(lspserver: dict<any>, bnr: number): void
+def TextdocDidChange(
+    lspserver: dict<any>,
+    bnr: number,
+    full: bool = false,
+    changes: list<dict<any>> = null_list): void
   # Notification: 'textDocument/didChange'
   # Params: DidChangeTextDocumentParams
 
@@ -861,9 +865,17 @@ def TextdocDidChange(lspserver: dict<any>, bnr: number): void
 
   var contentChanges: list<dict<any>>
 
-  if lspserver.textDocumentSync == 1 || !opt.lspOptions.incrementalSync
+  if lspserver.textDocumentSync == 1 || !opt.lspOptions.incrementalSync || full
     # TextDocumentSyncKind: Full — send the entire buffer on every change.
     contentChanges = [{text: BufferText(bnr)}]
+  elseif has('patch-9.2.970')
+    contentChanges = changes->mapnew((_, v) => ({
+      range: {
+	start: {line: v.lnum - 1, character: 0},
+	end:   {line: v.end - 1,  character: 0},
+      },
+      text: v.text->empty() ? '' : v.text->join("\n") .. "\n",
+    }))
   elseif exists_compiled('*diff')
     # TextDocumentSyncKind: Incremental — send only the changed lines.
     var newBufLines = bnr->getbufline(1, '$')
