@@ -971,8 +971,11 @@ the symbol under the cursor.
 			Clicking the popup also closes it.  In normal use,
 			moving the cursor or using other keys will close it.
 
-			If you want to show the symbol documentation in the
-			|preview-window| instead of in a popup window set >
+			You can press |K| in popup mode to move the popup window
+			to the preview window.
+
+			If you want to always show the symbol documentation in
+			the |preview-window| instead of in a popup window set >
 
 			    LspOptionsSet({'hoverInPreview': true})
 <

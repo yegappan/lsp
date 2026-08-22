@@ -157,14 +157,19 @@ def HoverShowInPopup(hoverText: list<any>, hoverKind: string)
     moved: 'any',
     close: 'click',
     fixed: true,
+    mapping: false,
     maxwidth: 80,
     filter: HoverWinFilterKey,
     callback: HoverPopupClosed,
     padding: [0, 1, 0, 1]
   }
+  var hoverPopupBuf = bufadd(null_string)
+  setbufvar(hoverPopupBuf, '&bufhidden', 'wipe')
+  setbufvar(hoverPopupBuf, '&buftype', 'popup')
+  setbufvar(hoverPopupBuf, '&filetype', hoverKind)
   popupAttrs = opt.PopupConfigure('Hover', popupAttrs)
-  hoverPopupWin = hoverText->popup_atcursor(popupAttrs)
-  win_execute(hoverPopupWin, $'setlocal ft={hoverKind}')
+  hoverPopupWin = hoverPopupBuf->popup_atcursor(popupAttrs)
+  hoverPopupWin->popup_settext(hoverText)
 enddef
 
 # Render 'hoverText' to the user.  Dispatches to HoverShowEmpty when there is
@@ -332,9 +337,13 @@ def HoverWinFilterKey(hoverWin: number, key: string): bool
     # Forward the key as a normal-mode command so the popup scrolls.
     win_execute(hoverWin, $'normal! {key}')
     keyHandled = true
-  endif
-
-  if key == "\<Esc>"
+  elseif key == 'K'
+    execute 'pbuffer' hoverWin->winbufnr()
+    wincmd P
+    hoverWin->popup_close()
+    setlocal nolist
+    keyHandled = true
+  elseif key == "\<Esc>"
     hoverWin->popup_close()
     keyHandled = true
   endif
