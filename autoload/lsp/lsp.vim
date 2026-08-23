@@ -26,7 +26,7 @@ import './semantichighlight.vim'
 import './ontypeformat.vim'
 
 # filetype to LSP server map
-var ftypeServerMap: dict<list<dict<any>>> = {}
+export var ftypeServerMap: dict<list<dict<any>>> = {}
 
 var lspInitializedOnce = false
 var lspUserSetupOnce = false
@@ -118,8 +118,7 @@ enddef
 # score, LSP servers with the same score are being returned.
 # Returns an empty list if the servers is not found.
 def LspGetServers(bnr: number, ftype: string): list<dict<any>>
-  # E1302 var maybe deleted already
-  if !exists('ftypeServerMap') || !ftypeServerMap->has_key(ftype)
+  if !ftypeServerMap->has_key(ftype)
     return []
   endif
 
@@ -377,8 +376,7 @@ enddef
 # Get LSP server running status for filetype "ftype"
 # Return true if running, or false if not found or not running
 export def ServerRunning(ftype: string): bool
-  # E1302 var maybe deleted already
-  if exists('ftypeServerMap') && ftypeServerMap->has_key(ftype)
+  if ftypeServerMap->has_key(ftype)
     var lspservers = ftypeServerMap[ftype]
     for lspserver in lspservers
       if lspserver.running
@@ -578,7 +576,7 @@ def RemoveBufListener(bnr: number): void
 enddef
 
 # LspAttached autocmd per buffer state
-var bufAttachStates: dict<dict<any>>
+export var bufAttachStates: dict<dict<any>>
 
 # Returns true if the LspAttached autocmd is either pending or already fired
 # for buffer 'bnr'.
@@ -805,10 +803,9 @@ export def RemoveFile(bnr: number): void
     doautocmd <nomodeline> User LspDetached
   endif
 
-  # XXX: E1001 var maybe not found since wipeout?
-  # if bufAttachStates->has_key(bnr)
-  #   bufAttachStates->remove(bnr)
-  # endif
+  if bufAttachStates->has_key(bnr)
+    bufAttachStates->remove(bnr)
+  endif
 enddef
 
 # Buffer 'bnr' is loaded in a window, refresh visuals and UI state.
