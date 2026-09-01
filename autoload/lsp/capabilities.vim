@@ -3,6 +3,7 @@ vim9script
 # Functions for managing the LSP server and client capabilities
 
 import './options.vim' as opt
+import './protocol.vim'
 
 # Process the server capabilities
 #   interface ServerCapabilities
@@ -37,8 +38,7 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
   # textDocumentSync capabilities
   lspserver.supportsDidSave = false
   lspserver.supportsDidOpenClose = false
-  # Default to TextDocumentSyncKind.None
-  lspserver.textDocumentSync = 0
+  lspserver.textDocumentSync = protocol.TextDocumentSyncKindNone
   if lspserver.caps->has_key('textDocumentSync')
     if lspserver.caps.textDocumentSync->type() == v:t_bool
       # Backward-compat mode: treat a boolean as open/close support only.
@@ -47,7 +47,7 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
       # Old short-form: a non-zero TextDocumentSyncKind implies open/close
       # support (that was the contract before TextDocumentSyncOptions existed).
       lspserver.textDocumentSync = lspserver.caps.textDocumentSync
-      lspserver.supportsDidOpenClose = lspserver.caps.textDocumentSync != 0
+      lspserver.supportsDidOpenClose = lspserver.caps.textDocumentSync != protocol.TextDocumentSyncKindNone
     elseif lspserver.caps.textDocumentSync->type() == v:t_dict
       # "openClose"
       if lspserver.caps.textDocumentSync->has_key('openClose')
@@ -68,10 +68,11 @@ export def ProcessServerCaps(lspserver: dict<any>, caps: dict<any>)
       endif
     endif
   endif
-  if lspserver.textDocumentSync == 2 && !exists('*diff')
+  if lspserver.textDocumentSync == protocol.TextDocumentSyncKindIncremental
+	&& !exists('*diff')
     # Incremental sync needs the diff() function.  If it is not supported,
     # then fallback to full sync.
-    lspserver.textDocumentSync = 1
+    lspserver.textDocumentSync = protocol.TextDocumentSyncKindFull
   endif
 
   # completionProvider

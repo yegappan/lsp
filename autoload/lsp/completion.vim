@@ -5,6 +5,7 @@ vim9script
 import './util.vim'
 import './buffer.vim' as buf
 import './options.vim' as opt
+import './protocol.vim'
 import './textedit.vim'
 import './snippet.vim'
 import './codeaction.vim'
@@ -458,14 +459,15 @@ def BuildCompletionMenuItem(item: dict<any>, lspserver: dict<any>,
                                    start_idx, chcol, curLine)
   d.word = word
 
-  var insertTextFormat = item->get('insertTextFormat', 1)
-  var insertTextMode = item->get('insertTextMode', 1)
+  var insertTextFormat = item->get('insertTextFormat', protocol.InsertTextFormatPlainText)
+  var insertTextMode = item->get('insertTextMode', protocol.InsertTextModeAsIs)
 
-  if insertTextMode == 2 && insertTextFormat != 2
+  if insertTextMode == protocol.InsertTextModeAdjustIndentation
+	&& insertTextFormat != protocol.InsertTextFormatSnippet
     d.word = AdjustCompletionTextIndent(d.word)
   endif
 
-  if insertTextFormat == 2
+  if insertTextFormat == protocol.InsertTextFormatSnippet
     # snippet completion. Needs a snippet plugin to expand the snippet.
     d.word = MakeValidWord(d.word)
   elseif shouldFilterByPrefix
@@ -835,10 +837,11 @@ enddef
 # Return trigger kind and trigger char. If completion trigger is not a keyword
 # and not one of the triggerCharacters, return -1 for triggerKind.
 def GetTriggerAttributes(lspserver: dict<any>): list<any>
-  var triggerKind: number = 1
+  var triggerKind: number = protocol.CompletionTriggerKindInvoked
   var triggerChar: string = ''
 
-  # Trigger kind is 1 for keyword and 2 for trigger char initiated completion.
+  # Keyword-initiated completion keeps CompletionTriggerKind.Invoked; a
+  # trigger character bumps it to CompletionTriggerKind.TriggerCharacter.
   var line: string = getline('.')
   var cur_col = charcol('.')
   if line[cur_col - 2] !~ '\k'
@@ -847,18 +850,19 @@ def GetTriggerAttributes(lspserver: dict<any>): list<any>
     if trigidx == -1
       triggerKind = -1
     else
-      triggerKind = 2
+      triggerKind = protocol.CompletionTriggerKindTriggerCharacter
       triggerChar = trigChars[trigidx]
     endif
   endif
   return [triggerKind, triggerChar]
 enddef
 
-# Retrigger completion for incomplete lists (CompletionTriggerKind = 3).
+# Retrigger completion for incomplete lists.
 def AdjustCompletionTriggerAttributes(lspserver: dict<any>, triggerKind: number,
                                      triggerChar: string): list<any>
-  if triggerKind == 1 && lspserver->get('completeItemsIsIncomplete', false)
-    return [3, '']
+  if triggerKind == protocol.CompletionTriggerKindInvoked
+	&& lspserver->get('completeItemsIsIncomplete', false)
+    return [protocol.CompletionTriggerKindTriggerForIncompleteCompletions, '']
   endif
 
   return [triggerKind, triggerChar]
@@ -881,7 +885,7 @@ def g:LspOmniFunc(findstart: number, base: string): any
         return -2
       endif
       # Override triggerKind if we want to complete anyway.
-      triggerKind = 1
+      triggerKind = protocol.CompletionTriggerKindInvoked
     endif
 
     [triggerKind, triggerChar] =

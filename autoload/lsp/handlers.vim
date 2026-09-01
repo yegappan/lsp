@@ -8,6 +8,7 @@ import './util.vim'
 import './diag.vim'
 import './textedit.vim'
 import './buffer.vim' as buf
+import './protocol.vim'
 
 # process a diagnostic notification message from the LSP server
 # Notification: textDocument/publishDiagnostics
@@ -31,19 +32,19 @@ enddef
 # Notification: window/showMessage
 # Param: ShowMessageParams
 def ProcessShowMsgNotif(lspserver: dict<any>, reply: dict<any>)
-  var msgType = reply.params->get('type', 4)
-  if msgType >= 4
+  var msgType = reply.params->get('type', protocol.MessageTypeLog)
+  if msgType >= protocol.MessageTypeLog
     # ignore log messages from the LSP server (too chatty)
     # TODO: Add a configuration to control the message level that will be
     # displayed. Also store these messages and provide a command to display
     # them.
     return
   endif
-  if msgType == 1
+  if msgType == protocol.MessageTypeError
     util.ErrMsg($'Lsp({lspserver.name}) {reply.params.message}')
-  elseif msgType == 2
+  elseif msgType == protocol.MessageTypeWarning
     util.WarnMsg($'Lsp({lspserver.name}) {reply.params.message}')
-  elseif msgType == 3
+  elseif msgType == protocol.MessageTypeInfo
     util.InfoMsg($'Lsp({lspserver.name}) {reply.params.message}')
   endif
 enddef
