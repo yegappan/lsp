@@ -25,30 +25,48 @@ def LspRunTests()
     return
   endif
 
-  for f in fns
-    v:errors = []
-    v:errmsg = ''
-    try
-      # ISOLATION: Clear hidden buffers and reset options that might leak
-      # silent! %bwipeout! is good, but we also ensure no leftover windows
-      silent! :%bwipeout!
-
-      # Execute the test function
-      exe $'call {f}()'
-    catch
-      add(v:errors, $'EXCEPTION: {f} -> {v:exception} at {v:throwpoint}')
-    endtry
-
-    # Check for both v:errors (assertions) and v:errmsg (Vim core errors)
-    if v:errmsg != ''
-      add(v:errors, $'ERROR: {f} generated {v:errmsg}')
+  var passes: list<any> = exists('g:LSPTest_passes')
+        ? g:LSPTest_passes : [v:null]
+  for pass in passes
+    if pass != v:null && exists('*g:LSPTest_setupPass')
+      if !g:LSPTest_setupPass(pass, all_results)
+	# Failed to setup this pass of test run
+        add(all_results, $'Skipping this round of tests')
+	continue
+      endif
     endif
 
-    if !v:errors->empty()
-      extend(all_results, v:errors)
-      add(all_results, $'{f}: FAIL')
-    else
-      add(all_results, $'{f}: pass')
+    g:StartLangServer()
+
+    for f in fns
+      v:errors = []
+      v:errmsg = ''
+      try
+        # ISOLATION: Clear hidden buffers and reset options that might leak
+        # silent! %bwipeout! is good, but we also ensure no leftover windows
+        silent! :%bwipeout!
+
+        # Execute the test function
+        exe $'call {f}()'
+      catch
+        add(v:errors, $'EXCEPTION: {f} -> {v:exception} at {v:throwpoint}')
+      endtry
+
+      # Check for both v:errors (assertions) and v:errmsg (Vim core errors)
+      if v:errmsg != ''
+        add(v:errors, $'ERROR: {f} generated {v:errmsg}')
+      endif
+
+      if !v:errors->empty()
+        extend(all_results, v:errors)
+        add(all_results, $'{f}: FAIL')
+      else
+        add(all_results, $'{f}: pass')
+      endif
+    endfor
+
+    if pass != v:null && exists('*g:StopLangServer')
+      g:StopLangServer()
     endif
   endfor
 
@@ -65,8 +83,6 @@ try
 
   if filereadable(g:TestName)
     exe $'source {g:TestName}'
-    # Start the server; if this fails, the catch block will log it
-    g:StartLangServer()
     LspRunTests()
   else
     writefile([$'FAIL: Test file "{g:TestName}" not found'], 'results.txt', 'a')

@@ -6,11 +6,31 @@ import '../autoload/lsp/buffer.vim' as buf
 import '../autoload/lsp/signature.vim' as signature
 import '../autoload/lsp/codeaction.vim' as codeaction
 import '../autoload/lsp/ontypeformat.vim' as ontypeformat
+import '../autoload/lsp/lsp.vim' as lsp
 
 source common.vim
 
-var lspOpts = {autoComplete: false}
+var lspOpts = {autoComplete: false, incrementalSync: false}
 g:LspOptionsSet(lspOpts)
+g:LSPTest_passes = [false, true]
+
+def g:LSPTest_setupPass(optVal: bool, results: list<string>): bool
+  g:LspOptionsSet({incrementalSync: optVal})
+  var curOptVal: bool = g:LspOptionsGet().incrementalSync
+  results->add('')
+  results->add($'[incrementalSync = {curOptVal}]')
+  return curOptVal == optVal
+enddef
+
+def g:StopLangServer(): void
+  # Ensure we're in a C/C++ buffer so lsp.Server() can find clangd.
+  :silent! edit! Xtest.c
+  var srv = lsp.Server()
+  if !srv->empty() && srv.running
+    srv.stopServer()
+  endif
+  :bw!
+enddef
 
 g:LSPTest_modifyDiags = false
 
