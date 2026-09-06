@@ -14,6 +14,14 @@ import './buffer.vim' as buf
 # Param: PublishDiagnosticsParams
 def ProcessDiagNotif(lspserver: dict<any>, reply: dict<any>): void
   var params = reply.params
+  for i in params.diagnostics
+    var len = i.message->stridx("\n")
+    if len != -1
+      i.msg = i.message->strpart(0, len)
+    else
+      i.msg = i.message
+    endif
+  endfor
   diag.DiagNotification(lspserver, params.uri, params.diagnostics, 'push')
 enddef
 
