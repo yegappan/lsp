@@ -5,6 +5,7 @@ vim9script
 import './util.vim'
 import './buffer.vim' as buf
 import './options.vim' as opt
+import './protocol.vim'
 
 # Initialize the highlight group and the text property type used for
 # inlay hints.
@@ -66,14 +67,14 @@ export def InlayHintsReply(lspserver: dict<any>, inlayHints: any,
       label = $'{label} '
     endif
 
-    var kind = hint->has_key('kind') ? hint.kind->string() : '1'
+    var kind = hint->has_key('kind') ? hint.kind->string() : protocol.InlayHintKindType->string()
     try
       lspserver.decodePosition(bnr, hint.position)
       var byteIdx = util.GetLineByteFromPos(bnr, hint.position)
-      if kind == "'type'" || kind == '1'
+      if kind == "'type'" || kind == protocol.InlayHintKindType->string()
 	prop_add(hint.position.line + 1, byteIdx + 1,
 	  {type: 'LspInlayHintsType', text: label, bufnr: bnr})
-      elseif kind == "'parameter'" || kind == '2'
+      elseif kind == "'parameter'" || kind == protocol.InlayHintKindParameter->string()
 	prop_add(hint.position.line + 1, byteIdx + 1,
 	  {type: 'LspInlayHintsParam', text: label, bufnr: bnr})
       endif
