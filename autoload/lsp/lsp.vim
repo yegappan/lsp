@@ -1239,11 +1239,33 @@ def DocHighlightAutoTimerCb(bnr: number, _timerid: number)
   g:LspDocHighlight(bnr, 'silent')
 enddef
 
+# Returns true if the cursor is on one of the symbol references highlighted
+# in buffer 'bnr' and the buffer has not changed since they were highlighted.
+def CursorOnDocHighlight(bnr: number): bool
+  if !bnr->getbufvar('LspDocHighlightActive', false)
+      || bnr->getbufvar('LspDocHighlightTick', -1) != bnr->getbufvar('changedtick')
+    return false
+  endif
+
+  var propNames = ['LspTextRef', 'LspReadRef', 'LspWriteRef']
+  var col = col('.')
+  return !prop_list(line('.'), {bufnr: bnr})
+    ->filter((_, p) => propNames->index(p.type) != -1
+			&& col >= p.col && col < p.col + p.length)
+    ->empty()
+enddef
+
 # Clear the symbol reference highlight when the cursor moves and schedule a
 # debounced request to highlight the symbol under the new cursor position.
 # Rapid cursor movement (e.g. scrolling) restarts the delay, so only one
 # request is sent when the cursor comes to rest.
 def LspDocHighlightAutoSchedule(bnr: number)
+  if CursorOnDocHighlight(bnr)
+    # Still on a reference to the highlighted symbol (e.g. moving within the
+    # same word), the current highlight is still valid.
+    return
+  endif
+
   DocHighlightAutoStop(bnr)
   g:LspDocHighlightClear(bnr)
 

@@ -1398,6 +1398,7 @@ def DocHighlightReply(lspserver: dict<any>, docHighlightReply: any,
   # Remember that the buffer has reference highlights, so that clearing them
   # on every cursor movement can be skipped when there is nothing to clear.
   setbufvar(bnr, 'LspDocHighlightActive', true)
+  setbufvar(bnr, 'LspDocHighlightTick', bnr->getbufvar('changedtick'))
 
   for docHL in docHighlightReply
     lspserver.decodeRange(bnr, docHL.range)

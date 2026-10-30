@@ -1475,6 +1475,21 @@ def g:Test_LspAutoHighlight()
   assert_equal(['LspTextRef'], prop_list(1)->map((_, p) => p.type))
   assert_equal(['LspWriteRef'], prop_list(4)->map((_, p) => p.type))
 
+  # Moving within the symbol or to another reference of it keeps the
+  # highlight and doesn't send a new request
+  var seq = getbufvar(bufnr(), 'LspDocHighlightSeq')
+  cursor(1, 15)
+  doautocmd CursorMoved
+  cursor(4, 3) # arg = 2;
+  doautocmd CursorMoved
+  assert_equal(seq, getbufvar(bufnr(), 'LspDocHighlightSeq'))
+  assert_equal(['LspTextRef'], prop_list(1)->map((_, p) => p.type))
+
+  # After a buffer change, the highlight is requested again
+  setline(8, '} ')
+  doautocmd CursorMoved
+  assert_notequal(seq, getbufvar(bufnr(), 'LspDocHighlightSeq'))
+
   # Moving the cursor away from the symbol clears the highlight
   cursor(5, 3) # if (arg == 2) {
   doautocmd CursorMoved
