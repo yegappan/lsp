@@ -1451,6 +1451,74 @@ def g:Test_LspHighlight()
   :%bw!
 enddef
 
+# Test for the 'autoHighlight' and 'autoHighlightDelay' options
+def g:Test_LspAutoHighlight()
+  g:LspOptionsSet({autoHighlight: true})
+  silent! edit XLspAutoHighlight.c
+  sleep 200m
+  var lines: list<string> =<< trim END
+    void f1(int arg)
+    {
+      int i = arg;
+      arg = 2;
+      if (arg == 2) {
+        arg = 3;
+      }
+    }
+  END
+  setline(1, lines)
+  g:WaitForServerFileLoad(0)
+
+  # Moving the cursor to a symbol highlights all its references
+  cursor(1, 13)
+  doautocmd CursorMoved
+  assert_equal(['LspTextRef'], prop_list(1)->map((_, p) => p.type))
+  assert_equal(['LspWriteRef'], prop_list(4)->map((_, p) => p.type))
+
+  # Moving the cursor away from the symbol clears the highlight
+  cursor(5, 3) # if (arg == 2) {
+  doautocmd CursorMoved
+  assert_equal([], prop_list(1))
+  assert_equal([], prop_list(4))
+
+  # Use real timers and asynchronous replies for the remaining checks
+  var saveLspTest = get(g:, 'LSPTest', false)
+  g:LSPTest = false
+
+  # Cursor movement within the delay restarts the timer and doesn't send a
+  # request
+  g:LspOptionsSet({autoHighlightDelay: 1000})
+  cursor(1, 13)
+  doautocmd CursorMoved
+  var timer1 = getbufvar(bufnr(), 'LspDocHighlightTimer', -1)
+  assert_true(timer1 != -1)
+  doautocmd CursorMoved
+  var timer2 = getbufvar(bufnr(), 'LspDocHighlightTimer', -1)
+  assert_true(timer2 != -1)
+  assert_notequal(timer1, timer2)
+  assert_equal([], timer_info(timer1))
+  assert_equal([], prop_list(1))
+
+  # After the delay, the symbol under the cursor is highlighted
+  g:LspOptionsSet({autoHighlightDelay: 1})
+  doautocmd CursorMoved
+  g:WaitForAssert(() => assert_equal(['LspTextRef'],
+					prop_list(1)->map((_, p) => p.type)))
+  assert_equal(-1, getbufvar(bufnr(), 'LspDocHighlightTimer', -1))
+
+  # A reply for a request that was invalidated by clearing the highlight is
+  # dropped
+  :LspHighlightClear
+  g:LspDocHighlight(bufnr(), 'silent')
+  :LspHighlightClear
+  sleep 500m
+  assert_equal([], prop_list(1))
+
+  g:LSPTest = saveLspTest
+  g:LspOptionsSet({autoHighlight: false, autoHighlightDelay: 100})
+  :%bw!
+enddef
+
 # Test for :LspHover
 def g:Test_LspHover()
   silent! edit XLspHover.c

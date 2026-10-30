@@ -529,7 +529,7 @@ def AddBufLocalAutocmds(lspserver: dict<any>, bnr: number): void
     acmds->add({bufnr: bnr,
 		event: 'CursorMoved',
 		group: 'LSPBufferAutocmds',
-		cmd: $'call LspDocHighlightClear({bnr}) | call LspDocHighlight({bnr}, "silent")'})
+		cmd: $'LspDocHighlightAutoSchedule({bnr})'})
   endif
 
   if opt.lspOptions.hoverOnCursorHold && lspserver.isHoverProvider
@@ -1219,12 +1219,59 @@ def g:LspDocHighlight(bnr: number = bufnr(), cmdmods: string = '')
   lspserver.docHighlight(bnr, cmdmods)
 enddef
 
+# Cancel the pending auto-highlight timer for buffer 'bnr', if one exists.
+def DocHighlightAutoStop(bnr: number)
+  var timerid = bnr->getbufvar('LspDocHighlightTimer', -1)
+  if timerid != -1
+    timer_stop(timerid)
+    setbufvar(bnr, 'LspDocHighlightTimer', -1)
+  endif
+enddef
+
+def DocHighlightAutoTimerCb(bnr: number, _timerid: number)
+  setbufvar(bnr, 'LspDocHighlightTimer', -1)
+  # The cursor may have left the buffer or entered insert mode in the
+  # meantime.
+  if bufnr() != bnr || mode() =~# '^[iR]'
+    return
+  endif
+
+  g:LspDocHighlight(bnr, 'silent')
+enddef
+
+# Clear the symbol reference highlight when the cursor moves and schedule a
+# debounced request to highlight the symbol under the new cursor position.
+# Rapid cursor movement (e.g. scrolling) restarts the delay, so only one
+# request is sent when the cursor comes to rest.
+def LspDocHighlightAutoSchedule(bnr: number)
+  DocHighlightAutoStop(bnr)
+  g:LspDocHighlightClear(bnr)
+
+  var delay = opt.lspOptions.autoHighlightDelay
+  if get(g:, 'LSPTest') || delay <= 0
+    g:LspDocHighlight(bnr, 'silent')
+    return
+  endif
+
+  setbufvar(bnr, 'LspDocHighlightTimer',
+	    timer_start(delay, function(DocHighlightAutoTimerCb, [bnr])))
+enddef
+
 # clear the symbol reference highlight
 def g:LspDocHighlightClear(bnr: number = bufnr())
   var lspserver: dict<any> = buf.CurbufGetServerChecked('documentHighlight')
   if lspserver->empty()
     return
   endif
+
+  # Invalidate any in-flight highlight request for this buffer
+  setbufvar(bnr, 'LspDocHighlightSeq', bnr->getbufvar('LspDocHighlightSeq', 0) + 1)
+
+  # prop_remove() scans the whole buffer, skip it when nothing is highlighted
+  if !bnr->getbufvar('LspDocHighlightActive', false)
+    return
+  endif
+  setbufvar(bnr, 'LspDocHighlightActive', false)
 
   var propNames = ['LspTextRef', 'LspReadRef', 'LspWriteRef']
   if has('patch-9.0.0233')

@@ -1395,6 +1395,10 @@ def DocHighlightReply(lspserver: dict<any>, docHighlightReply: any,
     return
   endif
 
+  # Remember that the buffer has reference highlights, so that clearing them
+  # on every cursor movement can be skipped when there is nothing to clear.
+  setbufvar(bnr, 'LspDocHighlightActive', true)
+
   for docHL in docHighlightReply
     lspserver.decodeRange(bnr, docHL.range)
     var kind: number = docHL->get('kind', protocol.DocumentHighlightKindText)
@@ -1437,10 +1441,21 @@ def DocHighlight(lspserver: dict<any>, bnr: number, cmdmods: string): void
   # Send the pending buffer changes to the language server
   bnr->listener_flush()
 
+  # Tag the request so that a reply which arrives after the highlight was
+  # cleared (cursor moved) or the buffer was modified can be dropped.
+  var reqSeq = bnr->getbufvar('LspDocHighlightSeq', 0) + 1
+  setbufvar(bnr, 'LspDocHighlightSeq', reqSeq)
+  var reqTick = bnr->getbufvar('changedtick')
+
   # interface DocumentHighlightParams
   #   interface TextDocumentPositionParams
   var params = lspserver.getTextDocPosition(false)
   lspserver.rpc_a('textDocument/documentHighlight', params, (_, reply, error) => {
+    if bnr->getbufvar('LspDocHighlightSeq', 0) != reqSeq
+	|| bnr->getbufvar('changedtick', -1) != reqTick
+      # stale reply
+      return
+    endif
     DocHighlightReply(lspserver, reply, error, bnr, cmdmods)
   })
 enddef
