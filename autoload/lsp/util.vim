@@ -156,6 +156,12 @@ export def LspUriToFile(uri: string): string
   # Replace all the %xx numbers (e.g. %20 for space) in the URI to character
   var uri_decoded: string = UriDecode(uri)
 
+  # csharp:/... is a virtual document URI; leave it alone here so callers can
+  # materialize it through the server before opening a real buffer.
+  if uri_decoded =~# '^csharp:'
+    return uri_decoded
+  endif
+
   # File URIs on MS-Windows start with file:///[a-zA-Z]:'
   if uri_decoded =~? '^file:///\a:'
     # MS-Windows URI
@@ -175,11 +181,51 @@ export def LspUriToFile(uri: string): string
   return uri_decoded
 enddef
 
+var csharpMetadataCache: dict<string> = {}
+
+# csharp-ls emits virtual document URIs like:
+#   csharp:/.../decompiled/RimWorld.Plant.cs
+# Those must be materialized with the csharp/metadata request before Vim can
+# open them as a regular file.
+export def LspUriToRealFile(uri: string, lspserver: dict<any> = {}): string
+  var file = LspUriToFile(uri)
+  if uri !~# '^csharp:'
+    return file
+  endif
+
+  if csharpMetadataCache->has_key(uri)
+    return csharpMetadataCache[uri]
+  endif
+  if lspserver->empty()
+    return file
+  endif
+
+  var response = lspserver.rpc('csharp/metadata',
+    {textDocument: {uri: uri}},
+    {handleError: false})
+  if response->empty() || !response->has_key('result')
+    return file
+  endif
+
+  var metadata = response.result
+  if metadata->type() != v:t_dict || !metadata->has_key('source')
+    return file
+  endif
+
+  var path = tempname() .. '.cs'
+  if writefile(metadata.source->split("\n", true), path) != 0
+    return file
+  endif
+
+  csharpMetadataCache[uri] = path
+  return path
+enddef
+
 # Convert a LSP file URI (file://<absolute_path>) to a Vim buffer number.
 # If the file is not in a Vim buffer, then adds the buffer.
 # Returns 0 on error.
-export def LspUriToBufnr(uri: string): number
-  return LspUriToFile(uri)->bufadd()
+export def LspUriToBufnr(uri: string, lspserver: dict<any> = {}): number
+  return LspUriToRealFile(uri, lspserver)->bufadd()
 enddef
 
 # Returns if the URI refers to a remote file (e.g. ssh://)
@@ -337,9 +383,10 @@ enddef
 # Jump to the LSP "location".  The "location" contains the file name, line
 # number and character number. The user specified window command modifiers
 # (e.g. topleft) are in "cmdmods".
-export def JumpToLspLocation(location: dict<any>, cmdmods: string)
+export def JumpToLspLocation(location: dict<any>, cmdmods: string,
+			    lspserver: dict<any> = {})
   var [uri, range] = LspLocationParse(location)
-  var fname = LspUriToFile(uri)
+  var fname = LspUriToRealFile(uri, lspserver)
 
   # jump to the file and line containing the symbol
   var bnr: number = fname->bufnr()
