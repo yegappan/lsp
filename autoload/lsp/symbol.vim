@@ -225,7 +225,7 @@ export def WorkspaceSymbolPopup(lspserver: dict<any>, query: string,
     endif
 
     # interface SymbolInformation
-    fileName = util.LspUriToFile(symbol.location.uri)
+    fileName = util.LspUriToRealFile(symbol.location.uri, lspserver)
 
     symName = symbol.name
     if symbol->has_key('containerName') && symbol.containerName != ''
@@ -291,7 +291,7 @@ def UpdatePeekFilePopup(lspserver: dict<any>, locations: list<dict<any>>)
 
   var n = line('.', lspserver.peekSymbolPopup) - 1
   var [uri, range] = util.LspLocationParse(locations[n])
-  var fname: string = util.LspUriToFile(uri)
+  var fname: string = util.LspUriToRealFile(uri, lspserver)
 
   var bnr: number = fname->bufnr()
   if bnr == -1
@@ -374,7 +374,7 @@ def PeekLocations(lspserver: dict<any>, locations: list<dict<any>>,
   var menuItems: list<string> = []
   for loc in locations
     var [uri, range] = util.LspLocationParse(loc)
-    var fname: string = util.LspUriToFile(uri)
+    var fname: string = util.LspUriToRealFile(uri, lspserver)
     var bnr: number = fname->bufnr()
     if bnr == -1
       bnr = fname->bufadd()
@@ -426,7 +426,7 @@ export def ShowLocations(lspserver: dict<any>, locations: list<dict<any>>,
   var qflist: list<dict<any>> = []
   for loc in locations
     var [uri, range] = util.LspLocationParse(loc)
-    var fname: string = util.LspUriToFile(uri)
+    var fname: string = util.LspUriToRealFile(uri, lspserver)
     var bnr: number = fname->bufnr()
     if bnr == -1
       bnr = fname->bufadd()
@@ -489,7 +489,7 @@ enddef
 # highlight the range in "location".
 def PeekSymbolLocation(lspserver: dict<any>, location: dict<any>)
   var [uri, range] = util.LspLocationParse(location)
-  var fname = util.LspUriToFile(uri)
+  var fname = util.LspUriToRealFile(uri, lspserver)
   var bnum = fname->bufadd()
   if bnum == 0
     # Failed to create or find a buffer
@@ -547,7 +547,7 @@ export def GotoSymbol(lspserver: dict<any>, location: dict<any>,
   else
     # Save the current cursor location in the tag stack.
     util.PushCursorToTagStack()
-    util.JumpToLspLocation(location, cmdmods)
+    util.JumpToLspLocation(location, cmdmods, lspserver)
   endif
 enddef
 
@@ -563,7 +563,7 @@ export def TagFunc(lspserver: dict<any>,
     tagitem.name = pat
 
     var [uri, range] = util.LspLocationParse(tagloc)
-    tagitem.filename = util.LspUriToFile(uri)
+    tagitem.filename = util.LspUriToRealFile(uri, lspserver)
     var bnr = util.LspUriToBufnr(uri)
     var rstart = range.start
     var startByteIdx = util.GetLineByteFromPos(bnr, rstart)
@@ -592,7 +592,7 @@ def ProcessSymbolInfoTable(lspserver: dict<any>,
   var symInfo: dict<any>
 
   for syminfo in symbolInfoTable
-    fname = util.LspUriToFile(syminfo.location.uri)
+    fname = util.LspUriToRealFile(syminfo.location.uri, lspserver)
     symbolType = SymbolKindToName(syminfo.kind)
     name = syminfo.name
     if syminfo->has_key('containerName')
