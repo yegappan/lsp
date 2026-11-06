@@ -176,6 +176,10 @@ export var lspOptions: dict<any> = {
   # Delay in milliseconds for semantic highlighting requests
   semanticHighlightDelay: 1000,
 
+  # Start a separate language server instance for each workspace root
+  # directory
+  serverPerRoot: false,
+
   # Show diagnostic text in a balloon when the mouse is over the diagnostic
   showDiagInBalloon: true,
 
