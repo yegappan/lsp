@@ -1492,12 +1492,12 @@ def g:Test_TextdocDidChange_IncrementalSync_MultiHunkDeleteAppliesBottomUp()
   # Regression test for #836: ":%d" produces two diff hunks; emitting them
   # top-down sends the second hunk's range against a document already
   # shrunk by the first, desyncing the server.
-  if !exists('*diff')
-    # incrementalSync needs diff(); options.OptionsSet() forces it back off
-    # without it, same as the plugin itself falling back to full sync.
+  g:LspOptionsSet({incrementalSync: true})
+  if !g:LspOptionsGet().incrementalSync
+    # options.OptionsSet() forces incrementalSync off when diff() is not
+    # usable, same as the plugin itself falling back to full sync.
     return
   endif
-  g:LspOptionsSet({incrementalSync: true})
   silent! edit XIncrementalMultiHunkDelete.c
   var oldLines = ['#include <stdio.h>', '', 'int main() {',
 	'    printf("hello world\n");', '    return 0;', '}']
@@ -1528,10 +1528,12 @@ def g:Test_TextdocDidChange_IncrementalSync_MultiHunkDeleteAppliesBottomUp()
 enddef
 
 def g:Test_TextdocDidChange_IncrementalSync_MultiHunkInsertDescendingOrder()
-  if !exists('*diff')
+  g:LspOptionsSet({incrementalSync: true})
+  if !g:LspOptionsGet().incrementalSync
+    # options.OptionsSet() forces incrementalSync off when diff() is not
+    # usable, same as the plugin itself falling back to full sync.
     return
   endif
-  g:LspOptionsSet({incrementalSync: true})
   silent! edit XIncrementalMultiHunkInsert.txt
   var oldLines = ['one', 'two', 'three']
   setline(1, oldLines)
@@ -1562,10 +1564,12 @@ def g:Test_TextdocDidChange_IncrementalSync_NoEolAnchorsToLastLineEnd()
   # Regression test: without a trailing newline, a hunk reaching the end of
   # the document must anchor to the end of the last line, not to a
   # {line: lineCount, character: 0} position that doesn't exist.
-  if !exists('*diff')
+  g:LspOptionsSet({incrementalSync: true})
+  if !g:LspOptionsGet().incrementalSync
+    # options.OptionsSet() forces incrementalSync off when diff() is not
+    # usable, same as the plugin itself falling back to full sync.
     return
   endif
-  g:LspOptionsSet({incrementalSync: true})
   silent! edit XIncrementalNoEol.txt
   var oldLines = ['abc', 'def', 'ghi']
   setline(1, oldLines)
