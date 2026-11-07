@@ -1932,6 +1932,29 @@ semanticHighlightDelay	|Number| option.  Delay in milliseconds for semantic
 			more requests to the language server.
 			By default this is set to 1000.
 
+						*lsp-opt-serverPerRoot*
+serverPerRoot		|Boolean| option.  Start a separate instance of a
+			language server for each workspace root directory.
+			The root directory of a buffer is determined in the
+			same way as the root sent to the language server in
+			the "initialize" request (see |lsp-cfg-rootSearch|).
+			A buffer is attached to the server instance for its
+			root directory.  This is useful when working on
+			multiple projects (e.g. git worktrees) in the same
+			Vim session.  The ":LspServer restart", ":LspServer
+			start" and ":LspServer stop" commands act only on the
+			server instances for the root of the current buffer.
+			Each server instance is started with its root
+			directory as the current directory.  This can be used
+			to derive per-root settings from the current
+			directory in the server command, e.g. the workspace
+			data directory of jdtls: >
+			  path: 'sh',
+			  args: ['-c', 'jdtls -data "$HOME/.jdtls/${PWD##*/}"']
+<			When this is set to false, a single instance of each
+			language server is used for all the buffers.
+			By default this is set to false.
+
 						*lsp-opt-showDiagInBalloon*
 showDiagInBalloon	|Boolean| option.  When the mouse is over a range of
 			text referenced by a diagnostic, display the

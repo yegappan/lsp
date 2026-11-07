@@ -82,6 +82,14 @@ def StartServer(lspserver: dict<any>, bnr: number): number
 		err_cb: function(Error_cb, [lspserver]),
 		exit_cb: function(Exit_cb, [lspserver])}
 
+  if opt.lspOptions.serverPerRoot
+    # Run the server in its workspace root directory
+    var rootPath = GetRootPath(lspserver.rootSearchFiles, bnr)
+    if rootPath->isdirectory()
+      opts.cwd = rootPath
+    endif
+  endif
+
   lspserver.data = ''
   lspserver.caps = {}
   lspserver.omniCompletePending = false
@@ -178,20 +186,11 @@ def ServerInitReply(lspserver: dict<any>, initResult: dict<any>,
   endif
 enddef
 
-# Request: "initialize"
-# Param: InitializeParams
-def InitServer(lspserver: dict<any>, bnr: number)
-  # interface 'InitializeParams'
-  var initparams: dict<any> = {}
-  initparams.processId = getpid()
-  initparams.clientInfo = {
-	name: 'Vim',
-	version: v:versionlong->string(),
-      }
-
-  # Compute the rootpath (based on the directory of the buffer)
+# Compute the workspace root directory for the buffer "bnr" (based on the
+# directory of the buffer).  Returns an empty string if the root is one of the
+# ignored paths.
+export def GetRootPath(rootSearchFiles: list<string>, bnr: number): string
   var rootPath = ''
-  var rootSearchFiles = lspserver.rootSearchFiles
   var bufDir = bnr->bufname()->fnamemodify(':p:h')
   if !rootSearchFiles->empty()
     rootPath = util.FindNearestRootDir(bufDir, rootSearchFiles)
@@ -215,6 +214,22 @@ def InitServer(lspserver: dict<any>, bnr: number)
   if util.IsIgnoredRoot(rootPath, opt.lspOptions.workspaceIgnoredPaths)
     rootPath = ''
   endif
+
+  return rootPath
+enddef
+
+# Request: "initialize"
+# Param: InitializeParams
+def InitServer(lspserver: dict<any>, bnr: number)
+  # interface 'InitializeParams'
+  var initparams: dict<any> = {}
+  initparams.processId = getpid()
+  initparams.clientInfo = {
+	name: 'Vim',
+	version: v:versionlong->string(),
+      }
+
+  var rootPath = GetRootPath(lspserver.rootSearchFiles, bnr)
 
   if rootPath->empty()
     lspserver.workspaceFolders = []
