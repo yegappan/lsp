@@ -377,56 +377,55 @@ def PromotePreselectedCompletionItem(completeItems: list<dict<any>>)
   endif
 enddef
 
-# Derive completion insert word and InsertReplace tail-delete length.
-def GetCompletionWordAndTailDelete(item: dict<any>, matcher: number,
-                                  prefix: string, starttext: string,
-                                  start_idx: number, chcol: number,
-                                  curLine: number): list<any>
-  var word = item->get('insertText', item->get('label', ''))
-  var tailDeleteChars = 0
-
-  # TODO: Add proper support for item.textEdit.newText and item.textEdit.range.
-  # Keep in mind that item.textEdit.range can start way before the typed
-  # keyword.
-  if !item->has_key('textEdit') || matcher == opt.COMPLETIONMATCHER_FUZZY
-    return [word, tailDeleteChars]
-  endif
-
-  var start_charcol: number
-  if !prefix->empty()
-    start_charcol = charidx(starttext, start_idx) + 1
-  else
-    start_charcol = chcol
-  endif
-
-  var textEdit = item.textEdit
+# Return the range replaced by the textEdit of a completion item.  For an
+# InsertReplaceEdit, the insert range is used.  Returns an empty Dict if the
+# item doesn't have a textEdit with a range.
+def CompletionItemEditRange(item: dict<any>): dict<any>
+  var textEdit = item->get('textEdit', {})
   if textEdit->type() != v:t_dict
-    return [word, tailDeleteChars]
+    return {}
   endif
 
-  var textEditRange: dict<any> = {}
-  if textEdit->has_key('range') && textEdit.range->type() == v:t_dict
-    textEditRange = textEdit.range
-  elseif textEdit->has_key('insert') && textEdit.insert->type() == v:t_dict
-    textEditRange = textEdit.insert
+  var editRange = textEdit->get('range', textEdit->get('insert', {}))
+  if editRange->type() != v:t_dict || editRange->get('start', {})->type() != v:t_dict
+    return {}
+  endif
+
+  return editRange
+enddef
+
+# Return the character index in the current line where the text inserted by
+# the completion "item" starts.  This is the start of the textEdit range, if
+# it is in the current line and not after the cursor.  Otherwise
+# "keywordStart" is returned.
+def CompletionItemStartIdx(item: dict<any>, curLine: number,
+                           cursorIdx: number, keywordStart: number): number
+  var editRange = CompletionItemEditRange(item)
+  if editRange->empty() || editRange.start->get('line', -1) != curLine
+    return keywordStart
+  endif
+
+  var startIdx = util.GetCharIdxWithoutCompChar(bufnr(), editRange.start)
+  if startIdx < 0 || startIdx > cursorIdx
+    return keywordStart
+  endif
+
+  return startIdx
+enddef
+
+# Derive the text inserted by the completion "item" (without the text between
+# the completion start and the start of the item) and the InsertReplace
+# tail-delete length.
+def GetCompletionWordAndTailDelete(item: dict<any>, curLine: number): list<any>
+  var textEdit = item->get('textEdit', {})
+  if textEdit->type() != v:t_dict || !textEdit->has_key('newText')
+    return [item->get('insertText', item->get('label', '')), 0]
   endif
 
   # For InsertReplaceEdit, remove the replace-only tail after accepting the
   # completion item.
-  tailDeleteChars = GetInsertReplaceTailDeleteChars(bufnr(), item, curLine)
-
-  if textEdit->has_key('newText') && textEditRange->has_key('start')
-    var textEditStartCol =
-      util.GetCharIdxWithoutCompChar(bufnr(), textEditRange.start)
-    if textEditStartCol != start_charcol
-      var offset = max([0, start_charcol - textEditStartCol - 1])
-      word = textEdit.newText[offset : ]
-    else
-      word = textEdit.newText
-    endif
-  endif
-
-  return [word, tailDeleteChars]
+  return [textEdit.newText,
+          GetInsertReplaceTailDeleteChars(bufnr(), item, curLine)]
 enddef
 
 # Return true when item passes prefix filtering for the configured matcher.
@@ -438,7 +437,7 @@ def CompletionItemPrefixMatched(item: dict<any>, word: string, prefix: string,
 
   var filterText: string = item->get('filterText', word)
   if matcher == opt.COMPLETIONMATCHER_ICASE
-    return filterText->tolower()->stridx(prefix) == 0
+    return filterText->tolower()->stridx(prefix->tolower()) == 0
   elseif matcher == opt.COMPLETIONMATCHER_FUZZY
     return !matchfuzzy([filterText], prefix)->empty()
   endif
@@ -447,17 +446,24 @@ def CompletionItemPrefixMatched(item: dict<any>, word: string, prefix: string,
 enddef
 
 # Build one completion menu item. Returns {} when the item should be skipped.
+#
+# The completion starts at the character index "startIdx" in the current line
+# "ltext".  The text inserted by "item" starts at "itemStartIdx" which can be
+# after "startIdx" (e.g. the textEdit range of another item starts before the
+# keyword).  The text between them is prepended to the word.  "cursorIdx" is
+# the character index of the cursor.
 def BuildCompletionMenuItem(item: dict<any>, lspserver: dict<any>,
                            lspOpts: dict<any>, matcher: number,
-                           shouldFilterByPrefix: bool, prefix: string,
-                           starttext: string, start_idx: number,
-                           chcol: number, curLine: number): dict<any>
+                           shouldFilterByPrefix: bool, ltext: string,
+                           startIdx: number, itemStartIdx: number,
+                           cursorIdx: number, curLine: number): dict<any>
   var d: dict<any> = {}
 
   var [word, insertReplaceTailDeleteChars] =
-    GetCompletionWordAndTailDelete(item, matcher, prefix, starttext,
-                                   start_idx, chcol, curLine)
+    GetCompletionWordAndTailDelete(item, curLine)
   d.word = word
+  # Text typed so far that is replaced by this item
+  var prefix = ltext->strcharpart(itemStartIdx, cursorIdx - itemStartIdx)
 
   var insertTextFormat = item->get('insertTextFormat', protocol.InsertTextFormatPlainText)
   var insertTextMode = item->get('insertTextMode', protocol.InsertTextModeAsIs)
@@ -476,6 +482,11 @@ def BuildCompletionMenuItem(item: dict<any>, lspserver: dict<any>,
       return {}
     endif
   endif
+
+  # Text between the completion start and the start of this item
+  var leadText = ltext->strcharpart(startIdx, itemStartIdx - startIdx)
+  d.lsp_filterText = leadText .. item->get('filterText', d.word)
+  d.word = leadText .. d.word
 
   d.abbr = item.label
   d.dup = 1
@@ -610,6 +621,7 @@ def DispatchCompletionItems(lspserver: dict<any>,
   endif
 
   lspserver.completeItems = completeItems
+  lspserver.omniCompleteStart = start_col - 1
   lspserver.omniCompletePending = false
 enddef
 
@@ -640,14 +652,13 @@ export def CompletionReply(lspserver: dict<any>, cItems: any,
   var lspOpts = opt.lspOptions
 
   # Get the keyword prefix before the current cursor column.
-  var chcol = charcol('.')
-  var starttext = chcol == 1 ? '' : getline('.')[ : chcol - 2]
-  var [prefix, start_idx, end_idx] = starttext->matchstrpos('\k*$')
+  var ltext = getline('.')
+  var cursorIdx = charcol('.') - 1
+  var prefix = ltext->strcharpart(0, cursorIdx)->matchstr('\k*$')
   if lspOpts.completionMatcherValue == opt.COMPLETIONMATCHER_ICASE
     prefix = prefix->tolower()
   endif
-
-  var start_col = start_idx + 1
+  var keywordStartIdx = cursorIdx - prefix->strcharlen()
 
   if lspOpts.ultisnipsSupport
     snippet.CompletionUltiSnips(prefix, items)
@@ -663,13 +674,23 @@ export def CompletionReply(lspserver: dict<any>, cItems: any,
   var shouldFilterByPrefix =
     !lspserver.completeItemsIsIncomplete || lspOpts.useBufferCompletion
 
+  # The completion starts at the earliest start of the textEdit ranges of the
+  # items or at the start of the keyword before the cursor.
+  var curLine = line('.') - 1
+  var itemStarts = items->mapnew((_, item) =>
+    CompletionItemStartIdx(item, curLine, cursorIdx, keywordStartIdx))
+  var startIdx = itemStarts->min()
+  if items->empty() || startIdx > keywordStartIdx
+    startIdx = keywordStartIdx
+  endif
+
   var completeItems: list<dict<any>> = []
   var seenItemKeys: dict<bool> = {}
-  var curLine = line('.') - 1
-  for item in items
+  for idx in range(items->len())
+    var item = items[idx]
     var d = BuildCompletionMenuItem(item, lspserver, lspOpts, matcher,
-                                    shouldFilterByPrefix, prefix,
-                                    starttext, start_idx, chcol, curLine)
+                                    shouldFilterByPrefix, ltext, startIdx,
+                                    itemStarts[idx], cursorIdx, curLine)
     if d->empty()
       continue
     endif
@@ -692,8 +713,8 @@ export def CompletionReply(lspserver: dict<any>, cItems: any,
   endfor
 
   FinalizeCompletionItems(completeItems, matcher)
-  DispatchCompletionItems(lspserver, completeItems, start_col,
-                          lspOpts.autoComplete)
+  DispatchCompletionItems(lspserver, completeItems,
+                          ltext->byteidx(startIdx) + 1, lspOpts.autoComplete)
 enddef
 
 # Check if completion item is selected
@@ -894,23 +915,23 @@ def g:LspOmniFunc(findstart: number, base: string): any
     # first send all the changes in the current buffer to the LSP server
     listener_flush()
 
+    # By default, the completion starts at the keyword before the cursor
+    var line = getline('.')->strpart(0, col('.') - 1)
+    lspserver.omniCompleteStart = line->len() - line->matchstr('\k\+$')->len()
     lspserver.omniCompletePending = true
     lspserver.completeItems = []
 
     # initiate a request to LSP server to get list of completions
     lspserver.getCompletion(triggerKind, triggerChar)
 
-    # locate the start of the word
-    var line = getline('.')->strpart(0, col('.') - 1)
-    var keyword = line->matchstr('\k\+$')
-    lspserver.omniCompleteKeyword = keyword
-    return line->len() - keyword->len()
-  else
-    # Wait for the list of matches from the LSP server
+    # Wait for the list of matches from the LSP server.  The start of the
+    # completion depends on the textEdit range of the items.
     var count: number = 0
     while lspserver.omniCompletePending && count < 1000
       if complete_check()
-	return v:none
+	lspserver.omniCompletePending = false
+	lspserver.completeItems = []
+	return -3
       endif
       sleep 2m
       count += 1
@@ -919,28 +940,28 @@ def g:LspOmniFunc(findstart: number, base: string): any
     if lspserver.omniCompletePending
       lspserver.omniCompletePending = false
       lspserver.completeItems = []
-      return v:none
     endif
 
+    return lspserver.omniCompleteStart
+  else
     var res: list<dict<any>> = lspserver.completeItems
-    var prefix = lspserver.omniCompleteKeyword
 
     # Don't attempt to filter on the items, when "isIncomplete" is set
-    if prefix->empty() || lspserver.completeItemsIsIncomplete
+    if base->empty() || lspserver.completeItemsIsIncomplete
       return res
     endif
 
     var lspOpts = opt.lspOptions
     if lspOpts.completionMatcherValue == opt.COMPLETIONMATCHER_FUZZY
-      return res->matchfuzzy(prefix, { key: 'word' })
+      return res->matchfuzzy(base, {key: 'lsp_filterText'})
     endif
 
     if lspOpts.completionMatcherValue == opt.COMPLETIONMATCHER_ICASE
       return res->filter((i, v) =>
-	v.word->tolower()->stridx(prefix->tolower()) == 0)
+	v.lsp_filterText->tolower()->stridx(base->tolower()) == 0)
     endif
 
-    return res->filter((i, v) => v.word->stridx(prefix) == 0)
+    return res->filter((i, v) => v.lsp_filterText->stridx(base) == 0)
   endif
 enddef
 
