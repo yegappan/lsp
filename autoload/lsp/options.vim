@@ -258,8 +258,10 @@ export def OptionsSet(opts: dict<any>)
   if !has('patch-9.0.1157')
     lspOptions.showDiagWithVirtualText = false
   endif
+  # Incremental text document sync needs diff(), which returns 0 when Vim is
+  # built without the internal diff library (e.g. macOS /usr/bin/vim).
   if !exists('*diff')
-    # incremental text document sync needs the diff() function
+      || type(call('diff', [['a'], ['b'], {output: 'indices'}])) != v:t_list
     lspOptions.incrementalSync = false
   endif
 
