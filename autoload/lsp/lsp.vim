@@ -1159,6 +1159,14 @@ export def Hover(cmdmods: string)
     return
   endif
 
+  if opt.lspOptions.hoverAllServers
+    var lspservers = hover.HoverAllServersGet(bufnr())
+    if lspservers->len() > 1
+      hover.HoverAll(lspservers, cmdmods)
+      return
+    endif
+  endif
+
   lspserver.hover(cmdmods)
 enddef
 

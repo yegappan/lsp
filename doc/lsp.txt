@@ -1605,6 +1605,20 @@ codeActionPopupDetails	|String| option. Configure the details of the code popup.
 			    server               - Action title and server are displayed
 			    short                - Only the action is displayed
 
+					*lsp-opt-completionAllServers*
+completionAllServers	|Boolean| option.  When more than one language server
+			attached to a buffer provides completion, send the
+			completion request to all of them and show the
+			completion items from all the servers together in the
+			completion menu (in the order the servers are attached
+			to the buffer).  A completion item is resolved by the
+			language server which returned it and the text edits
+			and the command after the completion are also from
+			that server.  When this is set to false, the
+			completion request is sent only to one language server
+			(see |lsp-features|).
+			By default this is set to false.
+
 						*lsp-opt-completionMatcher*
 completionMatcher	|String| option.  Enable fuzzy or case insensitive
 			completion for language servers that replies with a
@@ -1686,6 +1700,19 @@ hideDisabledCodeActions |Boolean| option.  Hide code actions marked as
 						*lsp-opt-highlightDiagInline*
 highlightDiagInline	|Boolean| option.  Highlight the diagnostics inline.
 			By default this is set to true.
+
+						*lsp-opt-hoverAllServers*
+hoverAllServers		|Boolean| option.  When more than one language server
+			attached to a buffer provides hover information, send
+			the hover request to all of them and show the results
+			together (in the order the servers are attached to the
+			buffer).  When more than one server returns a result,
+			the result of each server is preceded by a heading
+			with the server name.  An error from a server is
+			displayed only when no server returns a result.  When
+			this is set to false, the hover request is sent only
+			to one language server (see |lsp-features|).
+			By default this is set to false.
 
 						*lsp-opt-hoverInPreview*
 hoverInPreview		|Boolean| option. Show |:LspHover| in a preview window
