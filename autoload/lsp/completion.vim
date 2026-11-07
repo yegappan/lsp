@@ -116,6 +116,31 @@ def MakeValidWord(str_arg: string): string
   return valid
 enddef
 
+# Convert the LSP snippet "text" to plain text: the tabstops are removed, the
+# placeholders and the variables are replaced with their (default) text and a
+# choice is replaced with the first value.  Used when a snippet plugin is not
+# used to expand the snippet.
+def SnippetToPlainText(text: string): string
+  # Replace the escaped characters with control characters
+  const escChars = "\\$}|,"
+  var str = text->substitute('\\\([\\$}|,]\)',
+    (m) => nr2char(escChars->stridx(m[1]) + 1), 'g')
+  str = str->substitute('\$\%(\d\+\|\h\w*\)', '', 'g')
+  # Expand the innermost tabstops, placeholders, choices and variables until
+  # there is none left
+  while true
+    var expanded = str
+      ->substitute('\${\%(\d\+\|\h\w*\)\%(:\([^${}]*\)\)\=}', '\1', 'g')
+      ->substitute('\${\d\+|\([^,|${}]*\)[^|${}]*|}', '\1', 'g')
+    if expanded == str
+      break
+    endif
+    str = expanded
+  endwhile
+  return str->substitute('[\x01-\x05]',
+    (m) => escChars[char2nr(m[0]) - 1], 'g')
+enddef
+
 # Apply InsertTextMode.adjustIndentation (2) for plain-text completion text.
 def AdjustCompletionTextIndent(text: string): string
   if text->stridx("\n") < 0
@@ -474,8 +499,12 @@ def BuildCompletionMenuItem(item: dict<any>, lspserver: dict<any>,
   endif
 
   if insertTextFormat == protocol.InsertTextFormatSnippet
-    # snippet completion. Needs a snippet plugin to expand the snippet.
-    d.word = MakeValidWord(d.word)
+    if lspOpts.ultisnipsSupport || lspOpts.vsnipSupport
+      # snippet completion. Needs a snippet plugin to expand the snippet.
+      d.word = MakeValidWord(d.word)
+    else
+      d.word = SnippetToPlainText(d.word)
+    endif
   elseif shouldFilterByPrefix
     # Filter only for complete lists or when buffer completion is enabled.
     if !CompletionItemPrefixMatched(item, d.word, prefix, matcher)

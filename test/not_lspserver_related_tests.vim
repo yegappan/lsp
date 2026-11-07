@@ -486,6 +486,43 @@ def g:Test_OmniComplete_AsyncReply()
   :%bw!
 enddef
 
+# Test for a snippet completion item inserted as plain text
+def g:Test_Completion_SnippetAsPlainText()
+  silent! edit XCompletionSnippet.txt
+  setline(1, ['x'])
+  cursor(1, 2)
+  var lspserver = {
+    name: 'test',
+    omniCompletePending: true,
+    completionLazyDoc: false,
+    completeItems: [],
+    completeItemsIsIncomplete: false,
+  }
+  var snippets = {
+    'v-if="$1"': 'v-if=""',
+    'v-for="${1:value} in ${2:source}"': 'v-for="value in source"',
+    'foo(${1:a}, ${2:${3:b}})$0': 'foo(a, b)',
+    '${1|one,two|} \$x \} \\': 'one $x } \',
+    '${TM_FILENAME:file} $TM_LINE_NUMBER': 'file ',
+  }
+  completion.CompletionReply(lspserver, snippets->keys()->mapnew((_, v) => ({
+    label: 'x', insertText: v, insertTextFormat: 2})), {})
+  assert_equal(snippets->values()->sort(),
+	       lspserver.completeItems->mapnew((_, v) => v.word)->sort())
+
+  # textEdit with a snippet
+  :%bw!
+  silent! edit XOmniCompleteSnippet.vue
+  setlocal omnifunc=g:LspOmniFunc
+  setline(1, ['  <p v-i'])
+  var srv = AttachCompletionStubServer(9105,
+    [TextEditItem('v-if', 'v-if="$1"', 0, 5, 8)->extend({insertTextFormat: 2})])
+  feedkeys("A\<C-X>\<C-O>", 'xt')
+  assert_equal('  <p v-if=""', getline(1))
+  buf.BufLspServerRemove(bufnr(), srv)
+  :%bw!
+enddef
+
 # Only here to because the test runner needs it
 def g:StartLangServer(): bool
   return true
