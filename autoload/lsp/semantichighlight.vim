@@ -245,6 +245,11 @@ export def UpdateTokens(lspserver: dict<any>, semTokens: dict<any>,
     return
   endif
 
+  # The buffer may have been wiped out or unloaded before the reply arrived
+  if !bufloaded(bnr)
+    return
+  endif
+
   # Validate buffer hasn't changed since request
   if getbufvar(bnr, 'changedtick') != requestTick
     # Clear the data as our local copy will be out of sync
