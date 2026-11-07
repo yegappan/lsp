@@ -342,4 +342,17 @@ def g:Test_WorkspaceIgnoredPaths_NormalRoot()
   assert_false(util.IsIgnoredRoot(root, ignored))
 enddef
 
+# URIs with a scheme other than "file" (e.g. "jdt://" URIs of Java class
+# files) are used as buffer names as is, and sent back unchanged.
+def g:Test_NonFileUri_RoundTrip()
+  var uri = 'jdt://contents/java.base/java.util/List.class?=demo/%5C/jdk%5C/lib%5C/jrt-fs.jar%60java.base=/%3Cjava.util%28List.class'
+  assert_equal(uri, util.LspUriToFile(uri))
+  assert_equal(uri, util.LspFileToUri(uri))
+  var bnr = util.LspUriToBufnr(uri)
+  assert_equal(uri, bufname(bnr))
+  assert_equal(uri, util.LspBufnrToUri(bnr))
+  assert_equal('/tmp/a b.txt', util.LspUriToFile('file:///tmp/a%20b.txt'))
+  exe $'bwipe! {bnr}'
+enddef
+
 # vim: tabstop=8 shiftwidth=2 softtabstop=2 noexpandtab
