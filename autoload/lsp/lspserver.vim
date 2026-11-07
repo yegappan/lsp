@@ -485,8 +485,10 @@ def Rpc(lspserver: dict<any>, method: string, params: any, opts: dict<any> = {})
   return {}
 enddef
 
-# LSP server asynchronous RPC callback
-def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel, reply: dict<any>)
+# LSP server asynchronous RPC callback.  If "handleError" is false, then an
+# error message is not displayed for an error reply.
+def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func,
+	       handleError: bool, chan: channel, reply: dict<any>)
   if lspserver.debug
     lspserver.traceLog($'Got response {reply->json_encode()}')
   endif
@@ -498,7 +500,9 @@ def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel,
     if reply->has_key('error')
       # Capture error details
       error = reply.error
-      ProcessLspServerError(method, error)
+      if handleError
+	ProcessLspServerError(method, error)
+      endif
     elseif !reply->has_key('result')
       # No result and no error is itself an error
       error = {
@@ -506,7 +510,9 @@ def AsyncRpcCb(lspserver: dict<any>, method: string, RpcCb: func, chan: channel,
         message: 'Internal error',
         data: $'request {method} failed (no result)'
       }
-      util.ErrMsg($'request {method} failed (no result)')
+      if handleError
+	util.ErrMsg($'request {method} failed (no result)')
+      endif
     elseif reply.result != v:null
       # Success case
       result = reply.result
@@ -540,8 +546,10 @@ enddef
 
 # Send an async RPC request message to the LSP server with a callback function.
 # Returns the LSP message id.  This id can be used to cancel the RPC request
-# (if needed).  Returns -1 on error.
-def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func): number
+# (if needed).  Returns -1 on error.  If "opts.handleError" is false, then an
+# error message is not displayed for an error reply.
+def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func,
+	     opts: dict<any> = {}): number
   var req = {
     method: method,
     params: params
@@ -554,12 +562,13 @@ def AsyncRpc(lspserver: dict<any>, method: string, params: any, Cbfunc: func): n
   endif
 
   # Do the asynchronous RPC call
-  var Fn = function('AsyncRpcCb', [lspserver, method, Cbfunc])
+  var handleError: bool = opts->get('handleError', true)
+  var Fn = function('AsyncRpcCb', [lspserver, method, Cbfunc, handleError])
 
   var reply: dict<any>
   if get(g:, 'LSPTest')
     # When running LSP tests, make this a synchronous RPC call
-    reply = Rpc(lspserver, method, params)
+    reply = Rpc(lspserver, method, params, {handleError: handleError})
     Fn(test_null_channel(), reply)
   else
     # Otherwise, make an asynchronous RPC call

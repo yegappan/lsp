@@ -66,8 +66,16 @@ export var lspOptions: dict<any> = {
   # Debounce delay in milliseconds before requesting hover on CursorHold
   hoverDelay: 300,
 
+  # Request hover information from all the language servers attached to a
+  # buffer and show the results together
+  hoverAllServers: false,
+
   # Show completion documentation in the preview window instead of in a popup
   completionInPreview: false,
+
+  # Request completion items from all the language servers attached to a
+  # buffer and show the items together
+  completionAllServers: false,
 
   # Automatically close the preview window after exiting the completion menu
   # when using completionInPreview
