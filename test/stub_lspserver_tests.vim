@@ -1590,6 +1590,57 @@ def g:Test_TextdocDidChange_IncrementalSync_NoEolAnchorsToLastLineEnd()
   :%bw!
 enddef
 
+# Test for the workspace/inlayHint/refresh and workspace/semanticTokens/refresh
+# requests: the visible buffers provided by the server are updated
+def g:Test_ProcessRequest_InlayHintAndSemanticTokensRefresh()
+  g:LspOptionsSet({showInlayHints: true, semanticHighlight: true})
+
+  var responses: list<dict<any>> = []
+  var lspserver = MakeRequestTestLspServer(responses)
+  lspserver.ready = true
+  lspserver.isInlayHintProvider = true
+  lspserver.isClangdInlayHintsProvider = false
+  lspserver.isSemanticTokensProvider = true
+  var inlayHintBufs: list<number> = []
+  var semanticTokensBufs: list<number> = []
+  lspserver.inlayHintsShow = (bnr) => inlayHintBufs->add(bnr)
+  lspserver.semanticHighlightUpdate = (bnr) => semanticTokensBufs->add(bnr)
+
+  # A hidden buffer and a visible buffer
+  silent! edit XRefreshHidden.txt
+  var hiddenBnr = bufnr()
+  buf.BufLspServerSet(hiddenBnr, lspserver)
+  silent! hide edit XRefreshVisible.txt
+  var visibleBnr = bufnr()
+  buf.BufLspServerSet(visibleBnr, lspserver)
+  setbufvar(hiddenBnr, 'LspInlayHintsNeedsUpdate', false)
+
+  lspserver.processRequest({id: 30, method: 'workspace/inlayHint/refresh'})
+  assert_equal([{id: 30, result: null, error: {}}], responses)
+  assert_equal([visibleBnr], inlayHintBufs)
+  # The hidden buffer is updated later
+  assert_true(getbufvar(hiddenBnr, 'LspInlayHintsNeedsUpdate'))
+
+  responses->filter('0')
+  lspserver.processRequest({id: 31, method: 'workspace/semanticTokens/refresh',
+			    params: null})
+  assert_equal([{id: 31, result: null, error: {}}], responses)
+  assert_equal([visibleBnr], semanticTokensBufs)
+
+  # Not updated when disabled
+  g:LspOptionsSet({showInlayHints: false, semanticHighlight: false})
+  inlayHintBufs = []
+  semanticTokensBufs = []
+  lspserver.processRequest({id: 32, method: 'workspace/inlayHint/refresh'})
+  lspserver.processRequest({id: 33, method: 'workspace/semanticTokens/refresh'})
+  assert_equal([], inlayHintBufs)
+  assert_equal([], semanticTokensBufs)
+
+  buf.BufLspServerRemove(hiddenBnr, lspserver)
+  buf.BufLspServerRemove(visibleBnr, lspserver)
+  :%bw!
+enddef
+
 # Only here to because the test runner needs it
 def g:StartLangServer(): bool
   return true

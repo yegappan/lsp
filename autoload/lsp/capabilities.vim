@@ -649,6 +649,12 @@ export def GetClientCaps(): dict<any>
 	resourceOperations: ['rename', 'create', 'delete']
       },
       configuration: true,
+      inlayHint: {
+	refreshSupport: true
+      },
+      semanticTokens: {
+	refreshSupport: true
+      },
       symbol: {
 	dynamicRegistration: false
       }
