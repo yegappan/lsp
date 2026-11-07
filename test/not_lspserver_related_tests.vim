@@ -306,6 +306,223 @@ def g:Test_OnTypeFormattingCapability()
   assert_equal(['}', ';', "\n"], lspserver.onTypeFormattingTriggers)
 enddef
 
+# Return a stub language server attached to the current buffer which replies
+# to a completion request with "cItems".
+def AttachCompletionStubServer(id: number, cItems: any): dict<any>
+  var lspserver: dict<any> = {
+    id: id,
+    name: 'test',
+    running: true,
+    ready: true,
+    isCompletionProvider: true,
+    completionTriggerChars: ['.'],
+    completionLazyDoc: false,
+    omniCompletePending: false,
+    completeItems: [],
+    completeItemsIsIncomplete: false,
+    features: {completion: true},
+  }
+  lspserver.featureEnabled = (_) => true
+  lspserver.getCompletion = (_, _) => {
+    completion.CompletionReply(lspserver, cItems->deepcopy(), {})
+  }
+  buf.BufLspServerSet(bufnr(), lspserver)
+  return lspserver
+enddef
+
+# Return a completion item which replaces the text from column "startCol" to
+# "endCol" (0-based) in line "lnum" (0-based) with "newText".
+def TextEditItem(label: string, newText: string, lnum: number, startCol: number,
+		 endCol: number): dict<any>
+  return {
+    label: label,
+    textEdit: {
+      newText: newText,
+      range: {
+	start: {line: lnum, character: startCol},
+	end: {line: lnum, character: endCol}
+      }
+    }
+  }
+enddef
+
+# Test for the start of the completion and the inserted text when the textEdit
+# range of a completion item starts before the keyword
+def g:Test_Completion_TextEditRangeBeforeKeyword()
+  for matcher in ['case', 'icase', 'fuzzy']
+    g:LspOptionsSet({completionMatcher: matcher})
+
+    # typescript: the textEdit of one of the items replaces the "."
+    silent! edit XCompletionTextEdit.ts
+    setline(1, ['    this.con'])
+    cursor(1, 13)
+    var myProp = TextEditItem('my-prop', '["my-prop"]', 0, 8, 9)
+    myProp.filterText = '.my-prop'
+    var cItems = [TextEditItem('context', 'context', 0, 9, 12), myProp]
+    var lspserver = {
+      name: 'test',
+      omniCompletePending: true,
+      completionLazyDoc: false,
+      completeItems: [],
+      completeItemsIsIncomplete: false,
+    }
+    completion.CompletionReply(lspserver, cItems, {})
+    assert_false(lspserver.omniCompletePending)
+    assert_equal(8, lspserver.omniCompleteStart)
+    assert_equal(['.context'],
+		 lspserver.completeItems->mapnew((_, v) => v.word))
+
+    # The "my-prop" item replaces the "."
+    setline(1, ['    this.my'])
+    cursor(1, 12)
+    myProp.textEdit.range.end.character = 9
+    cItems = [TextEditItem('context', 'context', 0, 9, 11), myProp]
+    lspserver.omniCompletePending = true
+    completion.CompletionReply(lspserver, cItems, {})
+    assert_equal(8, lspserver.omniCompleteStart)
+    assert_equal(['["my-prop"]'],
+		 lspserver.completeItems->mapnew((_, v) => v.word))
+
+    # terraform: the textEdit range starts at "var"
+    setline(1, ['  value = var.g'])
+    cursor(1, 16)
+    cItems = [TextEditItem('var.greeting', 'var.greeting', 0, 10, 15)]
+    lspserver.omniCompletePending = true
+    completion.CompletionReply(lspserver, cItems, {})
+    assert_equal(10, lspserver.omniCompleteStart)
+    assert_equal(['var.greeting'],
+		 lspserver.completeItems->mapnew((_, v) => v.word))
+
+    # vue: the textEdit range starts at "v-" or "@".  An item without a
+    # textEdit starts at the keyword.
+    setline(1, ['  <span v-i'])
+    cursor(1, 12)
+    cItems = [TextEditItem('v-if', 'v-if', 0, 8, 11),
+	      TextEditItem('@click', '@click', 0, 8, 11),
+	      {label: 'id'}]
+    lspserver.omniCompletePending = true
+    completion.CompletionReply(lspserver, cItems, {})
+    assert_equal(8, lspserver.omniCompleteStart)
+    assert_equal(['v-id', 'v-if'],
+		 lspserver.completeItems->mapnew((_, v) => v.word)->sort())
+
+    :%bw!
+  endfor
+  g:LspOptionsSet({completionMatcher: 'case'})
+enddef
+
+# Test for omni completion with completion items replacing the text before the
+# keyword
+def g:Test_OmniComplete_TextEditRangeBeforeKeyword()
+  for matcher in ['case', 'fuzzy']
+    g:LspOptionsSet({completionMatcher: matcher})
+
+    silent! edit XOmniCompleteTextEdit.ts
+    setlocal omnifunc=g:LspOmniFunc
+    setline(1, ['    this.con'])
+    var lspserver = AttachCompletionStubServer(9101,
+      [TextEditItem('context', 'context', 0, 9, 12),
+       TextEditItem('my-prop', '["my-prop"]', 0, 8, 9)
+	 ->extend({filterText: '.my-prop'})])
+    feedkeys("A\<C-X>\<C-O>", 'xt')
+    assert_equal('    this.context', getline(1))
+    buf.BufLspServerRemove(bufnr(), lspserver)
+    :%bw!
+
+    silent! edit XOmniCompleteTextEdit.tf
+    setlocal omnifunc=g:LspOmniFunc
+    setline(1, ['  value = var.g'])
+    lspserver = AttachCompletionStubServer(9102,
+      [TextEditItem('var.greeting', 'var.greeting', 0, 10, 15)])
+    feedkeys("A\<C-X>\<C-O>", 'xt')
+    assert_equal('  value = var.greeting', getline(1))
+    buf.BufLspServerRemove(bufnr(), lspserver)
+    :%bw!
+
+    silent! edit XOmniCompleteTextEdit.vue
+    setlocal omnifunc=g:LspOmniFunc
+    setline(1, ['  <span v-i'])
+    lspserver = AttachCompletionStubServer(9103,
+      [TextEditItem('v-if', 'v-if', 0, 8, 11),
+       TextEditItem('@click', '@click', 0, 8, 11)])
+    feedkeys("A\<C-X>\<C-O>", 'xt')
+    assert_equal('  <span v-if', getline(1))
+    # Items starting with "@" are not filtered out
+    setline(1, ['  <span @'])
+    lspserver.getCompletion = (_, _) => {
+      completion.CompletionReply(lspserver,
+	[TextEditItem('v-if', 'v-if', 0, 8, 9),
+	 TextEditItem('@click', '@click', 0, 8, 9)], {})
+    }
+    lspserver.completionTriggerChars = ['@']
+    feedkeys("A\<C-X>\<C-O>", 'xt')
+    assert_equal('  <span @click', getline(1))
+    buf.BufLspServerRemove(bufnr(), lspserver)
+    :%bw!
+  endfor
+  g:LspOptionsSet({completionMatcher: 'case'})
+enddef
+
+# Test for omni completion when the reply from the language server arrives
+# after the omni completion function is called
+def g:Test_OmniComplete_AsyncReply()
+  silent! edit XOmniCompleteAsyncReply.txt
+  setlocal filetype=text
+  setlocal omnifunc=g:LspOmniFunc
+  setlocal completeopt=menuone,noinsert
+  setline(1, ['foo.'])
+  var lspserver = AttachCompletionStubServer(9104, [])
+  lspserver.getCompletion = (_, _) => {
+    timer_start(20, (_) => {
+      completion.CompletionReply(lspserver, [{label: 'bar'}, {label: 'baz'}], {})
+    })
+  }
+  inoremap <buffer> <F3> <ScriptCmd>g:LspTestWords = complete_info(['items']).items->mapnew((_, v) => v.word)<CR>
+  g:LspTestWords = []
+  feedkeys("A\<C-X>\<C-O>\<F3>\<C-E>\<Esc>", 'xt')
+  assert_equal(['bar', 'baz'], g:LspTestWords)
+  unlet g:LspTestWords
+  buf.BufLspServerRemove(bufnr(), lspserver)
+  :%bw!
+enddef
+
+# Test for a snippet completion item inserted as plain text
+def g:Test_Completion_SnippetAsPlainText()
+  silent! edit XCompletionSnippet.txt
+  setline(1, ['x'])
+  cursor(1, 2)
+  var lspserver = {
+    name: 'test',
+    omniCompletePending: true,
+    completionLazyDoc: false,
+    completeItems: [],
+    completeItemsIsIncomplete: false,
+  }
+  var snippets = {
+    'v-if="$1"': 'v-if=""',
+    'v-for="${1:value} in ${2:source}"': 'v-for="value in source"',
+    'foo(${1:a}, ${2:${3:b}})$0': 'foo(a, b)',
+    '${1|one,two|} \$x \} \\': 'one $x } \',
+    '${TM_FILENAME:file} $TM_LINE_NUMBER': 'file ',
+  }
+  completion.CompletionReply(lspserver, snippets->keys()->mapnew((_, v) => ({
+    label: 'x', insertText: v, insertTextFormat: 2})), {})
+  assert_equal(snippets->values()->sort(),
+	       lspserver.completeItems->mapnew((_, v) => v.word)->sort())
+
+  # textEdit with a snippet
+  :%bw!
+  silent! edit XOmniCompleteSnippet.vue
+  setlocal omnifunc=g:LspOmniFunc
+  setline(1, ['  <p v-i'])
+  var srv = AttachCompletionStubServer(9105,
+    [TextEditItem('v-if', 'v-if="$1"', 0, 5, 8)->extend({insertTextFormat: 2})])
+  feedkeys("A\<C-X>\<C-O>", 'xt')
+  assert_equal('  <p v-if=""', getline(1))
+  buf.BufLspServerRemove(bufnr(), srv)
+  :%bw!
+enddef
+
 # Only here to because the test runner needs it
 def g:StartLangServer(): bool
   return true
