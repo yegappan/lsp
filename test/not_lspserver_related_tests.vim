@@ -463,6 +463,29 @@ def g:Test_OmniComplete_TextEditRangeBeforeKeyword()
   g:LspOptionsSet({completionMatcher: 'case'})
 enddef
 
+# Test for omni completion when the reply from the language server arrives
+# after the omni completion function is called
+def g:Test_OmniComplete_AsyncReply()
+  silent! edit XOmniCompleteAsyncReply.txt
+  setlocal filetype=text
+  setlocal omnifunc=g:LspOmniFunc
+  setlocal completeopt=menuone,noinsert
+  setline(1, ['foo.'])
+  var lspserver = AttachCompletionStubServer(9104, [])
+  lspserver.getCompletion = (_, _) => {
+    timer_start(20, (_) => {
+      completion.CompletionReply(lspserver, [{label: 'bar'}, {label: 'baz'}], {})
+    })
+  }
+  inoremap <buffer> <F3> <ScriptCmd>g:LspTestWords = complete_info(['items']).items->mapnew((_, v) => v.word)<CR>
+  g:LspTestWords = []
+  feedkeys("A\<C-X>\<C-O>\<F3>\<C-E>\<Esc>", 'xt')
+  assert_equal(['bar', 'baz'], g:LspTestWords)
+  unlet g:LspTestWords
+  buf.BufLspServerRemove(bufnr(), lspserver)
+  :%bw!
+enddef
+
 # Only here to because the test runner needs it
 def g:StartLangServer(): bool
   return true

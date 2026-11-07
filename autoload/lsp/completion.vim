@@ -925,14 +925,11 @@ def g:LspOmniFunc(findstart: number, base: string): any
     lspserver.getCompletion(triggerKind, triggerChar)
 
     # Wait for the list of matches from the LSP server.  The start of the
-    # completion depends on the textEdit range of the items.
+    # completion depends on the textEdit range of the items.  Don't use
+    # complete_check() here: before the matches are searched, it can report
+    # an interrupt and the completion is then cancelled.
     var count: number = 0
     while lspserver.omniCompletePending && count < 1000
-      if complete_check()
-	lspserver.omniCompletePending = false
-	lspserver.completeItems = []
-	return -3
-      endif
       sleep 2m
       count += 1
     endwhile
