@@ -51,6 +51,17 @@ def AssertServerRoot(lspserver: dict<any>, dir: string)
 	       initReq.workspaceFolders->mapnew((_, f) => f.uri))
 enddef
 
+# Assert that the process of "lspserver" is running in the directory "dir"
+def AssertServerCwd(lspserver: dict<any>, dir: string)
+  var procCwd = $'/proc/{lspserver.job->job_info().process}/cwd'
+  if !isdirectory(procCwd)
+    # Not supported on this system
+    return
+  endif
+  assert_equal(dir->fnamemodify(':p')->resolve()->trim('/', 2),
+	       procCwd->resolve()->trim('/', 2))
+enddef
+
 # Test for the default behavior: a single server instance for all the roots
 def g:Test_ServerPerRoot_Disabled()
   CreateRoots()
@@ -59,6 +70,8 @@ def g:Test_ServerPerRoot_Disabled()
   var srv1 = EditAndGetServer('Xroot1/main.go')
   var srv2 = EditAndGetServer('Xroot2/main.go')
   assert_equal(srv1.id, srv2.id)
+  # The server runs in the current directory
+  AssertServerCwd(srv1, getcwd())
 
   :%bw!
   DeleteRoots()
@@ -74,6 +87,9 @@ def g:Test_ServerPerRoot_Enabled()
   assert_notequal(srv1.id, srv2.id)
   AssertServerRoot(srv1, 'Xroot1')
   AssertServerRoot(srv2, 'Xroot2')
+  # The new server instance runs in its root directory.  The first server may
+  # have been started by a previous test with "serverPerRoot" off.
+  AssertServerCwd(srv2, 'Xroot2')
 
   # Another file in the same root uses the same server instance
   var srv3 = EditAndGetServer('Xroot1/util.go')
@@ -94,6 +110,7 @@ def g:Test_ServerPerRoot_Enabled()
   assert_equal('run', srv1.job->job_status())
   assert_notequal(pid2, srv2.job->job_info().process)
   AssertServerRoot(srv2, 'Xroot2')
+  AssertServerCwd(srv2, 'Xroot2')
   # The current buffer is attached to the same instance again
   assert_equal([srv2.id], buf.BufLspServersGet(bufnr())->mapnew((_, s) => s.id))
   # The buffers of the other root are still attached to their instance
@@ -101,6 +118,12 @@ def g:Test_ServerPerRoot_Enabled()
     assert_equal([srv1.id],
 		 buf.BufLspServersGet(bufnr(fname))->mapnew((_, s) => s.id))
   endfor
+
+  # After a restart, the first server also runs in its root directory
+  :edit Xroot1/main.go
+  :LspServer restart
+  g:WaitForAssert(() => assert_true(srv1.ready), 10000)
+  AssertServerCwd(srv1, 'Xroot1')
 
   :%bw!
   g:LspOptionsSet({serverPerRoot: false})

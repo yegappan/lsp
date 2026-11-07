@@ -1944,7 +1944,14 @@ serverPerRoot		|Boolean| option.  Start a separate instance of a
 			Vim session.  The ":LspServer restart", ":LspServer
 			start" and ":LspServer stop" commands act only on the
 			server instances for the root of the current buffer.
-			When this is set to false, a single instance of each
+			Each server instance is started with its root
+			directory as the current directory.  This can be used
+			to derive per-root settings from the current
+			directory in the server command, e.g. the workspace
+			data directory of jdtls: >
+			  path: 'sh',
+			  args: ['-c', 'jdtls -data "$HOME/.jdtls/${PWD##*/}"']
+<			When this is set to false, a single instance of each
 			language server is used for all the buffers.
 			By default this is set to false.
 

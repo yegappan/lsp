@@ -82,6 +82,14 @@ def StartServer(lspserver: dict<any>, bnr: number): number
 		err_cb: function(Error_cb, [lspserver]),
 		exit_cb: function(Exit_cb, [lspserver])}
 
+  if opt.lspOptions.serverPerRoot
+    # Run the server in its workspace root directory
+    var rootPath = GetRootPath(lspserver.rootSearchFiles, bnr)
+    if rootPath->isdirectory()
+      opts.cwd = rootPath
+    endif
+  endif
+
   lspserver.data = ''
   lspserver.caps = {}
   lspserver.omniCompletePending = false
