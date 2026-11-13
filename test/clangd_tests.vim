@@ -1102,6 +1102,30 @@ def g:Test_CodeActionMenuMetadata()
   ], getbufline(bnr, 1, '$'))
   popup_close(popups[0])
 
+  # The server column stays aligned when an action has no kind
+  var mixedActions = [
+    {
+      title: 'Show issue details',
+      __lsp_server_name: 'sonarlint-ls',
+    },
+    {
+      title: 'Use ==',
+      kind: 'quickfix',
+      __lsp_server_name: 'clangd',
+    }
+  ]
+  g:LspOptionsSet({codeActionPopupDetails: 'kind-and-server'})
+  codeaction.ApplyCodeAction(lspserver, mixedActions, '')
+
+  popups = popup_list()
+  assert_equal(1, popups->len())
+  bnr = winbufnr(popups[0])
+  assert_equal([
+    ' 1. Show issue details               [sonarlint-ls] ',
+    ' 2. Use ==                [quickfix] [clangd] '
+  ], getbufline(bnr, 1, '$'))
+  popup_close(popups[0])
+
   g:LspOptionsSet({usePopupInCodeAction: false})
 enddef
 

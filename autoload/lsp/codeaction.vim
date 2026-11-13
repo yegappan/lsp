@@ -164,7 +164,9 @@ def ActionMenuText(actions: list<dict<any>>): list<string>
       endif
 
       if !empty(strings[i].server)
-	if !empty(postfix)
+	# Actions without a kind still need the separator to keep the server
+	# column aligned with the actions that have one.
+	if !empty(postfix) || longest.kind > 0
 	  postfix ..= ' '
 	endif
 	postfix ..= strings[i].server
