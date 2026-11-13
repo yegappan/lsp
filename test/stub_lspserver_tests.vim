@@ -122,6 +122,58 @@ def g:Test_RequestValidation_InvalidRequest()
     {id: 6, method: 'window/workDoneProgress/create'}, -32600)
 enddef
 
+# Send a "workspace/configuration" request for "items" and return the result
+def WorkspaceConfiguration(workspaceConfig: dict<any>, items: list<any>): any
+  var responses: list<dict<any>> = []
+  var lspserver = MakeRequestTestLspServer(responses)
+  lspserver.workspaceConfig = workspaceConfig
+  lspserver.processRequest({id: 1, method: 'workspace/configuration',
+    params: {items: items}})
+  assert_equal(1, responses->len())
+  assert_equal({}, responses[0].error)
+  return responses[0].result
+enddef
+
+def g:Test_WorkspaceConfiguration_MultipleItems()
+  var config = {
+    section1: {
+      string: 'value',
+      number: 3,
+      bool: true,
+      list: ['a', 'b'],
+      dict: {key: 'value'}
+    }
+  }
+
+  # When several settings are requested, the result has one entry per item,
+  # in the same order.  Settings of any type are returned and the ones that
+  # are not configured are null.
+  assert_equal(['value', null, 3, true, null, ['a', 'b'], {key: 'value'}, null],
+    WorkspaceConfiguration(config, [
+      {section: 'section1.string'},
+      {section: 'section1.missing'},
+      {section: 'section1.number'},
+      {section: 'section1.bool'},
+      {section: 'section2'},
+      {section: 'section1.list'},
+      {section: 'section1.dict'},
+      {section: 'section1.string.missing'}
+    ]))
+
+  # Without a section, the whole configuration is returned
+  assert_equal([config, config],
+    WorkspaceConfiguration(config, [{}, {section: ''}]))
+enddef
+
+def g:Test_WorkspaceConfiguration_NotConfigured()
+  # Without a workspace configuration, every requested setting is null
+  assert_equal([null, null, null], WorkspaceConfiguration({}, [
+      {section: 'section1.setting1'},
+      {section: 'section2'},
+      {}
+    ]))
+enddef
+
 def g:Test_RequestValidation_InvalidParamsAndMethodNotFound()
   var responses: list<dict<any>> = []
   var lspserver = MakeRequestTestLspServer(responses)

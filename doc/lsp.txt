@@ -269,7 +269,8 @@ To add a language server, the following information is needed:
 			documentation for the values that will be accepted in
 			this notification.  This configuration is also used to
 			respond to the "workspace/configuration" request
-			message from the language server.
+			message from the language server.  Settings that are
+			not configured are returned as null.
 						*lsp-cfg-rootSearch*
 	rootSearch	(Optional) a List of file and directory names used to
 			locate the root path or uri of the workspace.  The

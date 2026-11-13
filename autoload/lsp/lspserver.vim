@@ -583,19 +583,20 @@ def FeatureEnabled(lspserver: dict<any>, feature: string): bool
   return lspserver.features->get(feature, true)
 enddef
 
-# Retrieve the Workspace configuration asked by the server.
+# Retrieve the Workspace configuration asked by the server. If the setting is
+# not configured, then null is returned, as required by the LSP specification.
 # Request: workspace/configuration
-def WorkspaceConfigGet(lspserver: dict<any>, configItem: dict<any>): dict<any>
+def WorkspaceConfigGet(lspserver: dict<any>, configItem: dict<any>): any
   if lspserver.workspaceConfig->empty()
-    return {}
+    return null
   endif
   if !configItem->has_key('section') || configItem.section->empty()
     return lspserver.workspaceConfig
   endif
-  var config: dict<any> = lspserver.workspaceConfig
+  var config: any = lspserver.workspaceConfig
   for part in configItem.section->split('\.')
-    if !config->has_key(part)
-      return {}
+    if config->type() != v:t_dict || !config->has_key(part)
+      return null
     endif
     config = config[part]
   endfor
