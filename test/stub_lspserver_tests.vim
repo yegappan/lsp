@@ -1748,7 +1748,8 @@ def g:Test_ServerExit_Unexpected()
   delete(logfile)
 enddef
 
-# ":LspServer restart" starts the server again after it has exited
+# ":LspServer restart" starts the server again after it has exited and
+# ":LspServer stop" removes the symbol highlights
 def g:Test_RestartServer()
   if exepath('python3')->empty()
     return
@@ -1789,9 +1790,14 @@ def g:Test_RestartServer()
 		'initialize', 'initialized'],
 	       logfile->readfile()->map((_, line) => line->json_decode().method))
 
+  # Stopping the server removes the symbol highlights
+  setline(1, 'abc')
+  prop_add(1, 1, {type: 'LspTextRef', length: 3})
+
   job = lspserver.job
   :LspServer stop
 
+  assert_equal([], prop_list(1))
   assert_equal(0, WaitForJobExit(job))
 
   :%bw!

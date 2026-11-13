@@ -773,7 +773,12 @@ export def RemoveFile(bnr: number): void
   if hadAttachedServers
     RemoveBufLocalAutocmds(bnr)
     RemoveBufListener(bnr)
+
+    if lspInitializedOnce && bnr->bufloaded()
+      DocHighlightRemove(bnr)
+    endif
   endif
+
   # Iterate over a copy because BufLspServerRemove mutates the underlying list.
   for lspserver in lspservers->copy()
     if lspserver->empty()
@@ -1236,6 +1241,11 @@ def g:LspDocHighlightClear(bnr: number = bufnr())
     return
   endif
 
+  DocHighlightRemove(bnr)
+enddef
+
+# Remove the symbol reference highlights from buffer "bnr"
+def DocHighlightRemove(bnr: number)
   var propNames = ['LspTextRef', 'LspReadRef', 'LspWriteRef']
   if has('patch-9.0.0233')
     prop_remove({types: propNames, bufnr: bnr, all: true})
