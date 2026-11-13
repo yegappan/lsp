@@ -891,6 +891,13 @@ def AddBuffersToLsp(ftype: string)
   endfor
 enddef
 
+# Start a restarted LSP server again after it has exited
+def StartStoppedServer(lspserver: dict<any>, bnr: number, ftype: string)
+  lspserver.stoppedByUser = false
+  lspserver.startServer(bnr->bufexists() ? bnr : bufnr())
+  AddBuffersToLsp(ftype)
+enddef
+
 # Restart the LSP server for the current buffer
 def RestartServer()
   var ftype: string = &filetype
@@ -909,15 +916,18 @@ def RestartServer()
     endif
   endfor
 
-  for lspserver in lspservers
-    # Stop the server (if running)
-    if lspserver.running
-      lspserver.stopServer()
-    endif
-    lspserver.stoppedByUser = false
+  var bnr = bufnr()
 
-    # Start the server again
-    lspserver.startServer(bufnr())
+  for lspserver in lspservers
+    if lspserver.running
+      # Start the server again when it has exited.  Until then keep
+      # AddFile() from starting it.
+      lspserver.stoppedByUser = true
+      lspserver.stopServer(function(StartStoppedServer, [lspserver, bnr, ftype]))
+    else
+      lspserver.stoppedByUser = false
+      lspserver.startServer(bnr)
+    endif
   endfor
 
   AddBuffersToLsp(ftype)

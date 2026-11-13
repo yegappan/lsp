@@ -32,6 +32,17 @@ import './buffer.vim' as buf
 const DIAG_PULL_DEBOUNCE_MSEC = 200
 const LSP_ERROR_SERVER_CANCELLED = -32802
 
+# Time limits for stopping a language server
+
+# Maximum wait for the "shutdown" reply before sending "exit"
+const STOP_SHUTDOWN_TIMEOUT_MSEC = 10000
+
+# Wait after "exit" before closing stdin (some servers ignore "exit")
+const STOP_EXIT_GRACE_MSEC = 100
+
+# Wait after "exit" before killing the server
+const STOP_KILL_TIMEOUT_MSEC = 2000
+
 # LSP server standard output handler
 # LSP responses from server handled by channel job in LSP mode
 def Output_cb(lspserver: dict<any>, chan: channel, msg: any): void
@@ -53,6 +64,23 @@ enddef
 
 # LSP server exit callback
 def Exit_cb(lspserver: dict<any>, job: job, status: number): void
+  if job != lspserver.job
+    # an old job replaced by a new one
+    return
+  endif
+
+  if lspserver.stopRequested
+    # expected exit, StopServer() has cleaned up
+    var cbs: list<func> = lspserver.stoppedCbs
+    lspserver.stoppedCbs = []
+
+    for Cb in cbs
+      Cb()
+    endfor
+
+    return
+  endif
+
   util.WarnMsg($'{strftime("%m/%d/%y %T")}: LSP server ({lspserver.name}) exited with status {status}')
   if lspserver.diagnosticPullTimer != -1
     timer_stop(lspserver.diagnosticPullTimer)
@@ -83,6 +111,8 @@ def StartServer(lspserver: dict<any>, bnr: number): number
 		exit_cb: function(Exit_cb, [lspserver])}
 
   lspserver.data = ''
+  lspserver.stopRequested = false
+  lspserver.stoppedCbs = []
   lspserver.caps = {}
   lspserver.omniCompletePending = false
   lspserver.completionLazyDoc = false
@@ -259,6 +289,7 @@ def ShutdownServer(lspserver: dict<any>, resp_timeout: number = -1): void
   if resp_timeout != -1
     opts.timeout = resp_timeout
   endif
+  lspserver.stopRequested = true
   lspserver.rpc('shutdown', v:null, opts)
   if lspserver.debug
     lspserver.traceLog($'Sent shutdown request with {resp_timeout}ms timeout')
@@ -269,34 +300,62 @@ enddef
 def ExitServer(lspserver: dict<any>): void
   # Notification: 'exit'
   # Params: void
-  lspserver.sendNotification('exit')
+  lspserver.stopRequested = true
+  lspserver.sendMessage({jsonrpc: '2.0', method: 'exit'})
 enddef
 
-# Stop a LSP server
-def StopServer(lspserver: dict<any>): number
+# Stop a job that didn't exit by itself
+def StopJob(job: job, how: string)
+  if job->job_status() != 'run'
+    return
+  endif
+
+  if how == 'eof'
+    job->job_getchannel()->ch_close_in()
+  else
+    job->job_stop(how)
+  endif
+enddef
+
+# Stop a LSP server without waiting for it: "shutdown", "exit" after the
+# reply, then close stdin and kill if needed.  "StoppedCb" is called when the
+# server has exited.
+def StopServer(lspserver: dict<any>, StoppedCb: func = null_function): number
   if !lspserver.running
     util.WarnMsg($'LSP server {lspserver.name} is not running')
     return 0
   endif
 
-  # Send the shutdown request to the server
-  lspserver.shutdownServer()
-
-  # Notify the server to exit
-  lspserver.exitServer()
-
-  # Wait for the server to process the exit notification and exit for a
-  # maximum of 2 seconds.
-  var maxCount: number = 1000
   var job = lspserver.job
-  while job->job_status() == 'run' && maxCount > 0
-    sleep 2m
-    maxCount -= 1
-  endwhile
+  lspserver.stopRequested = true
+
+  if StoppedCb != null_function
+    lspserver.stoppedCbs->add(StoppedCb)
+  endif
+
+  var state = {exitSent: false}
+
+  var ExitJob = () => {
+    if state.exitSent || job->job_status() != 'run'
+      return
+    endif
+
+    state.exitSent = true
+    lspserver.traceLog('Sent exit notification')
+    job->ch_sendexpr({method: 'exit'})
+
+    timer_start(STOP_EXIT_GRACE_MSEC, (_) => StopJob(job, 'eof'))
+    timer_start(STOP_KILL_TIMEOUT_MSEC, (_) => StopJob(job, 'term'))
+    timer_start(STOP_KILL_TIMEOUT_MSEC * 2, (_) => StopJob(job, 'kill'))
+  }
 
   if job->job_status() == 'run'
-    job->job_stop()
+    # "exit" must not be sent before the "shutdown" reply
+    lspserver.traceLog('Sent shutdown request')
+    job->ch_sendexpr({method: 'shutdown'}, {callback: (_, _) => ExitJob()})
+    timer_start(STOP_SHUTDOWN_TIMEOUT_MSEC, (_) => ExitJob())
   endif
+
   if lspserver.diagnosticPullTimer != -1
     timer_stop(lspserver.diagnosticPullTimer)
     lspserver.diagnosticPullTimer = -1
@@ -442,10 +501,12 @@ enddef
 # Send a sync RPC request message to the LSP server and return the received
 # reply.  In case of an error, an empty Dict is returned.
 def Rpc(lspserver: dict<any>, method: string, params: any, opts: dict<any> = {}): dict<any>
-  var req = {
-    method: method,
-    params: params
-  }
+  var req: dict<any> = {method: method}
+
+  # "params": null is invalid, leave it out
+  if params->type() != v:t_none
+    req.params = params
+  endif
 
   var job = lspserver.job
   if job->job_status() != 'run'
@@ -2620,6 +2681,8 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     running: false,
     ready: false,
     stoppedByUser: false,
+    stopRequested: false,
+    stoppedCbs: [],
     job: v:none,
     data: '',
     caps: {},

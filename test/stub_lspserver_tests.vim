@@ -1590,6 +1590,214 @@ def g:Test_TextdocDidChange_IncrementalSync_NoEolAnchorsToLastLineEnd()
   :%bw!
 enddef
 
+# Start the stub language server in stub_lspserver.py
+def StartStubServer(logfile: string, extraArgs: list<string> = []): dict<any>
+  delete(logfile)
+  var lspserver = lserver.NewLspServer({
+	name: 'stub',
+	path: exepath('python3'),
+	args: ['stub_lspserver.py', logfile] + extraArgs,
+	customNotificationHandlers: {},
+	customRequestHandlers: {},
+	debug: false,
+	features: {},
+	forceOffsetEncoding: '',
+	initializationOptions: {},
+	languageId: '',
+	processDiagHandler: StubDiagHandler,
+	rootSearch: [],
+	runIfSearch: [],
+	runUnlessSearch: [],
+	syncInit: false,
+	traceLevel: 'off',
+	workspaceConfig: {}
+      })
+
+  lspserver.startServer(bufnr())
+  assert_true(lspserver.ready)
+
+  return lspserver
+enddef
+
+# Wait for a job to exit and return its exit status (-2 if it didn't exit)
+def WaitForJobExit(job: job): number
+  for _ in range(500)
+    if job->job_status() != 'run'
+      return job->job_info().exitval
+    endif
+
+    sleep 10m
+  endfor
+
+  job->job_stop('kill')
+
+  return -2
+enddef
+
+# Messages the stub language server received after the initialization
+def StubServerStopLog(logfile: string): list<dict<any>>
+  return logfile->readfile()
+    ->map((_, line) => line->json_decode())
+    ->filter((_, msg) => msg.method == 'shutdown' || msg.method == 'exit')
+enddef
+
+# Stopping a server sends "shutdown" without params and then "exit", doesn't
+# block, doesn't kill the server and is silent.
+def g:Test_StopServer_ShutdownAndExit()
+  if exepath('python3')->empty()
+    return
+  endif
+
+  var logfile = 'Xstub_stop.log'
+  var lspserver = StartStubServer(logfile)
+  var job = lspserver.job
+  var stopped: list<bool> = []
+
+  :messages clear
+  lspserver.stopServer(() => {
+    stopped->add(true)
+  })
+
+  assert_false(lspserver.running)
+  assert_false(lspserver.ready)
+  assert_equal([], stopped)
+
+  assert_equal(0, WaitForJobExit(job))
+  sleep 50m
+
+  assert_equal([true], stopped)
+  assert_notmatch('Warn:\|Error:', execute('messages'))
+
+  assert_equal([
+    {jsonrpc: '2.0', id: 2, method: 'shutdown'},
+    {jsonrpc: '2.0', method: 'exit'}], StubServerStopLog(logfile))
+
+  delete(logfile)
+enddef
+
+# A server ignoring "exit" stops when its stdin is closed
+def g:Test_StopServer_ServerIgnoresExit()
+  if exepath('python3')->empty()
+    return
+  endif
+
+  var logfile = 'Xstub_stop.log'
+  var lspserver = StartStubServer(logfile, ['--ignore-exit'])
+  var job = lspserver.job
+
+  :messages clear
+  lspserver.stopServer()
+
+  assert_equal(0, WaitForJobExit(job))
+  assert_equal('', job->job_info().termsig)
+  sleep 50m
+
+  assert_notmatch('Warn:\|Error:', execute('messages'))
+
+  assert_equal(['shutdown', 'exit'],
+	       StubServerStopLog(logfile)->mapnew((_, msg) => msg.method))
+
+  delete(logfile)
+enddef
+
+# The synchronous shutdown used when exiting Vim
+def g:Test_ShutdownServer_Sync()
+  if exepath('python3')->empty()
+    return
+  endif
+
+  var logfile = 'Xstub_stop.log'
+  var lspserver = StartStubServer(logfile)
+  var job = lspserver.job
+
+  :messages clear
+  lspserver.shutdownServer(1000)
+  lspserver.exitServer()
+
+  assert_equal(0, WaitForJobExit(job))
+  sleep 50m
+
+  assert_notmatch('Warn:\|Error:', execute('messages'))
+
+  assert_equal([
+    {jsonrpc: '2.0', id: 2, method: 'shutdown'},
+    {jsonrpc: '2.0', method: 'exit'}], StubServerStopLog(logfile))
+
+  delete(logfile)
+enddef
+
+# A server exiting unexpectedly is reported
+def g:Test_ServerExit_Unexpected()
+  if exepath('python3')->empty()
+    return
+  endif
+
+  var logfile = 'Xstub_stop.log'
+  var lspserver = StartStubServer(logfile)
+  var job = lspserver.job
+
+  :messages clear
+  job->job_stop('kill')
+
+  WaitForJobExit(job)
+  sleep 50m
+
+  assert_match('LSP server (stub) exited with status', execute('messages'))
+  assert_false(lspserver.running)
+
+  delete(logfile)
+enddef
+
+# ":LspServer restart" starts the server again after it has exited
+def g:Test_RestartServer()
+  if exepath('python3')->empty()
+    return
+  endif
+
+  var logfile = 'Xstub_restart.log'
+  delete(logfile)
+
+  g:LspAddServer([{
+    name: 'stubrestart',
+    filetype: 'lspstubft',
+    path: exepath('python3'),
+    args: ['stub_lspserver.py', logfile]
+  }])
+
+  :new Xstub_restart.txt
+  setlocal filetype=lspstubft
+
+  var lspserver = lsp.Server()
+  assert_true(lspserver.ready)
+  var job = lspserver.job
+
+  :messages clear
+  :LspServer restart
+
+  assert_equal(0, WaitForJobExit(job))
+  sleep 100m
+
+  assert_true(lspserver.running)
+  assert_true(lspserver.ready)
+  assert_notequal(job, lspserver.job)
+  assert_equal('run', lspserver.job->job_status())
+  assert_equal(lspserver.id, lsp.Server().id)
+
+  assert_notmatch('Warn:\|Error:', execute('messages'))
+
+  assert_equal(['initialize', 'initialized', 'shutdown', 'exit',
+		'initialize', 'initialized'],
+	       logfile->readfile()->map((_, line) => line->json_decode().method))
+
+  job = lspserver.job
+  :LspServer stop
+
+  assert_equal(0, WaitForJobExit(job))
+
+  :%bw!
+  delete(logfile)
+enddef
+
 # Only here to because the test runner needs it
 def g:StartLangServer(): bool
   return true
