@@ -470,7 +470,11 @@ export def DiagNotification(lspserver: dict<any>, uri: string, diags_arg: list<d
     newDiags = lspserver.processDiagHandler(newDiags)
   endif
 
-  # TODO: Is the buffer (bnr) always a loaded buffer? Should we load it here?
+  # The buffer may not be loaded (e.g. a hidden or unloaded buffer). The line
+  # count of an unloaded buffer is 1, which would clamp the start line of all
+  # the diagnostics below to the first line. So always load the buffer first.
+  bnr->bufload()
+
   var lastlnum: number = bnr->getbufinfo()[0].linecount
   kindDiags[sync_kind] = newDiags
   serverDiags[serverId] = kindDiags
