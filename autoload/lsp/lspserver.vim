@@ -1319,23 +1319,41 @@ def ShowReferences(lspserver: dict<any>, peek: bool): void
   var param: dict<any>
   param = lspserver.getTextDocPosition(true)
   param.context = {includeDeclaration: true}
-  var reply = lspserver.rpc('textDocument/references', param)
+  # Searching for the references can take a long time (more than the timeout
+  # of a synchronous request), so use an asynchronous request.
+  var winid = win_getid()
+  lspserver.rpc_a('textDocument/references', param,
+		  function(ShowReferencesReply, [winid, peek]))
+enddef
 
-  # Result: Location[] | null
-  if reply->empty() || reply.result->empty()
+# Process the 'textDocument/references' reply from the language server and
+# show the references.  "winid" is the window where the references were
+# requested.
+# Result: Location[] | null
+def ShowReferencesReply(winid: number, peek: bool, lspserver: dict<any>,
+			result: any, _: dict<any> = {})
+  if result->empty()
     util.WarnMsg('No references found')
     return
   endif
 
   if lspserver.needOffsetEncoding
     # Decode the position encoding in all the reference locations
-    reply.result->map((_, loc) => {
+    result->map((_, loc) => {
       lspserver.decodeLocation(loc)
       return loc
     })
   endif
 
-  symbol.ShowLocations(lspserver, reply.result, peek, 'Symbol References')
+  # Show the references for the window where they were requested
+  var curwinid = win_getid()
+  if winid != curwinid && !winid->win_gotoid()
+    return
+  endif
+  symbol.ShowLocations(lspserver, result, peek, 'Symbol References')
+  if winid != curwinid && !opt.lspOptions.keepFocusInReferences
+    curwinid->win_gotoid()
+  endif
 enddef
 
 # send custom locations request
