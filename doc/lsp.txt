@@ -2010,6 +2010,12 @@ showSignatureDocs	|Boolean| option.  Include parameter and
 						*lsp-opt-snippetSupport*
 snippetSupport		|Boolean| option.  Enable snippet completion support.
 			Need a snippet completion plugin like vim-vsnip.
+			When neither |lsp-opt-ultisnipsSupport| nor
+			|lsp-opt-vsnipSupport| is set, a snippet completion
+			item is inserted as plain text: the tabstops are
+			removed and the placeholders are replaced with their
+			text (e.g. 'v-for="${1:value} in ${2:source}"' is
+			inserted as 'v-for="value in source"').
 			By default this is set to false.
 
 						*lsp-opt-ultisnipsSupport*
