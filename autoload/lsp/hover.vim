@@ -58,6 +58,14 @@ def HoverAutoTimerCb(bnr: number, timerid: number)
     return
   endif
 
+  if opt.lspOptions.hoverAllServers
+    var lspservers = HoverAllServersGet(bnr)
+    if lspservers->len() > 1
+      HoverAll(lspservers, 'silent')
+      return
+    endif
+  endif
+
   var lspserver: dict<any> = buf.BufLspServerGet(bnr, 'hover')
   if lspserver->empty()
     return
@@ -387,6 +395,109 @@ export def HoverReply(lspserver: dict<any>, hoverResult: any,
   endif
 
   ShowHover(lspserver, hoverText, hoverKind, cmdmods)
+enddef
+
+# Returns the language servers attached to buffer "bnr" which provide hover
+# information (used when the "hoverAllServers" option is set).
+export def HoverAllServersGet(bnr: number): list<dict<any>>
+  return buf.BufLspServersGet(bnr)->copy()->filter((_, lspserver) =>
+    lspserver.running && lspserver.ready && lspserver.isHoverProvider
+      && lspserver.featureEnabled('hover'))
+enddef
+
+# Display the hover information from all the language servers in "state".
+# The non-empty results are displayed together.  When more than one server
+# returned a result, the result of each server is preceded by the server name.
+# Errors are displayed only when no server returned a result.
+def HoverAllShow(state: dict<any>)
+  if !HoverRequestContextMatches(state.reqctx)
+    return
+  endif
+
+  var sections: list<list<any>> = []
+  var errors: list<string> = []
+  for idx in range(state.lspservers->len())
+    var lspserver = state.lspservers[idx]
+    var reply = state.replies[idx]
+    if !reply.error->empty()
+      if reply.error->get('code', 0) != -32800
+	# Not a cancelled request
+	errors->add(reply.error->get('message', ''))
+      endif
+      continue
+    endif
+    var [hoverText, hoverKind] = GetHoverText(lspserver, reply.result)
+    if !hoverText->empty()
+      sections->add([lspserver.name, hoverText, hoverKind])
+    endif
+  endfor
+
+  if sections->empty() && !errors->empty()
+    if state.cmdmods !~ 'silent'
+      for emsg in errors
+	util.ErrMsg($'Hover failed: {emsg}')
+      endfor
+    endif
+    return
+  endif
+
+  if sections->len() <= 1
+    var [_, hoverText, hoverKind] = sections->get(0, ['', [], ''])
+    ShowHover(state.lspservers[0], hoverText, hoverKind, state.cmdmods)
+    return
+  endif
+
+  var hoverText: list<string> = []
+  for [name, text, kind] in sections
+    if !hoverText->empty()
+      hoverText->add('- - -')
+    endif
+    hoverText->add($'# {name}')
+    if kind == 'text'
+      hoverText->extend(['```'] + text + ['```'])
+    else
+      hoverText->extend(text)
+    endif
+  endfor
+  ShowHover(state.lspservers[0], hoverText, 'lspgfm', state.cmdmods)
+enddef
+
+# Handle a 'textDocument/hover' reply from the language server with index
+# "idx" in "state".  After all the replies are received, display them.
+def HoverAllReply(state: dict<any>, idx: number, lspserver: dict<any>,
+		  hoverResult: any, hoverError: dict<any> = {})
+  if state.replies[idx] != null
+    return
+  endif
+  state.replies[idx] = {result: hoverResult, error: hoverError}
+  state.pending -= 1
+  if state.pending == 0
+    HoverAllShow(state)
+  endif
+enddef
+
+# Request the hover information for the current cursor location from all the
+# language servers in "lspservers" and display the results together.
+export def HoverAll(lspservers: list<dict<any>>, cmdmods: string)
+  var state: dict<any> = {
+    lspservers: lspservers,
+    reqctx: HoverRequestContextGet(lspservers[0]),
+    cmdmods: cmdmods,
+    replies: lspservers->mapnew((_, _) => null),
+    pending: lspservers->len()
+  }
+
+  for idx in range(lspservers->len())
+    var lspserver = lspservers[idx]
+    var params = lspserver.getTextDocPosition(false)
+    var reqId = lspserver.rpc_a('textDocument/hover', params,
+				function(HoverAllReply, [state, idx]),
+				{handleError: false})
+    if reqId == -1 && state.replies[idx] == null
+      # Failed to send the request
+      HoverAllReply(state, idx, lspserver, null, {})
+    endif
+  endfor
 enddef
 
 # vim: tabstop=8 shiftwidth=2 softtabstop=2 expandtab

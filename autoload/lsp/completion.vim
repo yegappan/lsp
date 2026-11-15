@@ -13,6 +13,16 @@ import './codeaction.vim'
 # per-filetype omni-completion enabled/disabled table
 var ftypeOmniCtrlMap: dict<bool> = {}
 
+# When the "completionAllServers" option is set and more than one language
+# server provides completion, the servers to which the pending completion
+# request is sent.  "allServersAutoComplete" is true when the request is for
+# the insert mode auto completion (instead of omni completion).
+var allServersCompletion: list<dict<any>> = []
+var allServersAutoComplete: bool = false
+# Text of the cursor line when the omni completion starts.  When the omni
+# completion function is called to get the matches, the text is removed.
+var allServersLine: string = ''
+
 var defaultKinds: dict<string> = {
   'Text':           't',
   'Method':         'm',
@@ -610,6 +620,7 @@ def DispatchCompletionItems(lspserver: dict<any>,
   endif
 
   lspserver.completeItems = completeItems
+  lspserver.omniCompleteStart = start_col - 1
   lspserver.omniCompletePending = false
 enddef
 
@@ -624,6 +635,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any,
       lspserver.completeItems = []
       lspserver.omniCompletePending = false
     endif
+    AllServersAutoCompleteReplyDone(lspserver)
     return
   endif
 
@@ -632,6 +644,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any,
       lspserver.completeItems = []
       lspserver.omniCompletePending = false
     endif
+    AllServersAutoCompleteReplyDone(lspserver)
     return
   endif
 
@@ -694,6 +707,7 @@ export def CompletionReply(lspserver: dict<any>, cItems: any,
   FinalizeCompletionItems(completeItems, matcher)
   DispatchCompletionItems(lspserver, completeItems, start_col,
                           lspOpts.autoComplete)
+  AllServersAutoCompleteReplyDone(lspserver)
 enddef
 
 # Check if completion item is selected
@@ -868,8 +882,191 @@ def AdjustCompletionTriggerAttributes(lspserver: dict<any>, triggerKind: number,
   return [triggerKind, triggerChar]
 enddef
 
+# Filter the completion "items" using the typed "prefix" and the configured
+# matcher.
+def FilterCompletionItems(items: list<dict<any>>, prefix: string): list<dict<any>>
+  var lspOpts = opt.lspOptions
+  if lspOpts.completionMatcherValue == opt.COMPLETIONMATCHER_FUZZY
+    return items->matchfuzzy(prefix, { key: 'word' })
+  endif
+
+  if lspOpts.completionMatcherValue == opt.COMPLETIONMATCHER_ICASE
+    return items->filter((i, v) =>
+      v.word->tolower()->stridx(prefix->tolower()) == 0)
+  endif
+
+  return items->filter((i, v) => v.word->stridx(prefix) == 0)
+enddef
+
+# Returns the language servers attached to the current buffer which provide
+# completion (used when the "completionAllServers" option is set).
+def CompletionAllServersGet(): list<dict<any>>
+  return buf.CurbufGetServers()->copy()->filter((_, lspserver) =>
+    lspserver.running && lspserver.ready && lspserver.isCompletionProvider
+      && lspserver.featureEnabled('completion'))
+enddef
+
+# Send a completion request to all the language servers in "lspservers" for
+# which the character before the cursor is a keyword or a trigger character.
+# If "force" is true, then send the request to all the servers.  Returns true
+# if a request is sent.
+def CompletionAllServersRequest(lspservers: list<dict<any>>, force: bool,
+				autoComplete: bool): bool
+  var requests: list<list<any>> = []
+  for lspserver in lspservers
+    var [triggerKind, triggerChar] = GetTriggerAttributes(lspserver)
+    if triggerKind < 0
+      if !force
+	continue
+      endif
+      triggerKind = protocol.CompletionTriggerKindInvoked
+    endif
+    requests->add([lspserver] +
+      AdjustCompletionTriggerAttributes(lspserver, triggerKind, triggerChar))
+  endfor
+  if requests->empty()
+    return false
+  endif
+
+  # first send all the changes in the current buffer to the LSP server
+  listener_flush()
+
+  # By default, the completion starts at the keyword before the cursor
+  var line = getline('.')->strpart(0, col('.') - 1)
+  var startCol = line->len() - line->matchstr('\k\+$')->len()
+
+  allServersCompletion = requests->mapnew((_, r) => r[0])
+  allServersAutoComplete = autoComplete
+  for lspserver in allServersCompletion
+    lspserver.omniCompletePending = true
+    lspserver.completeItems = []
+    lspserver.omniCompleteStart = startCol
+  endfor
+  for [lspserver, triggerKind, triggerChar] in requests
+    lspserver.getCompletion(triggerKind, triggerChar)
+  endfor
+  return true
+enddef
+
+# Returns true if a completion request sent to all the language servers is
+# waiting for a reply.
+def CompletionAllServersPending(): bool
+  return allServersCompletion->util.Indexof((_, s) => s.omniCompletePending == true) != -1
+enddef
+
+# Merge the completion items received from all the language servers into a
+# single list.  "ltext" is the text of the cursor line.  If "base" is not
+# empty, then filter the items of the servers which returned a complete list.
+# The language server id is added to the "user_data" of each item to use the
+# server which returned the item for resolving it and for the actions after
+# the completion.  Returns a List with the start column (byte index) of the
+# completion and the List of items.
+def CompletionAllServersItems(ltext: string, base: string): list<any>
+  var startCol = allServersCompletion
+    ->mapnew((_, s) => s.omniCompleteStart)->min()
+  var items: list<dict<any>> = []
+  for lspserver in allServersCompletion
+    var lead = ltext->strpart(startCol, lspserver.omniCompleteStart - startCol)
+    var serverItems = lspserver.completeItems->mapnew((_, citem) => {
+      var d = citem->copy()
+      d.word = lead .. d.word
+      if d->get('user_data')->type() == v:t_dict
+	d.user_data.lspServerId = lspserver.id
+      endif
+      return d
+    })
+    if !base->empty() && !lspserver.completeItemsIsIncomplete
+      serverItems = FilterCompletionItems(serverItems, base)
+    endif
+    items->extend(serverItems)
+  endfor
+  return [startCol, items]
+enddef
+
+# Called after a completion reply is received from "lspserver".  If the reply
+# is for an insert mode completion request sent to all the language servers
+# and all the replies are received, then display the merged items.
+def AllServersAutoCompleteReplyDone(lspserver: dict<any>)
+  if !allServersAutoComplete
+      || allServersCompletion->util.Indexof((_, s) => s.id == lspserver.id) == -1
+      || CompletionAllServersPending()
+    return
+  endif
+
+  var [startCol, completeItems] = CompletionAllServersItems(getline('.'), '')
+  allServersCompletion = []
+  allServersAutoComplete = false
+
+  if completeItems->empty()
+    return
+  endif
+
+  var m = mode()
+  if m != 'i' && m != 'R' && m != 'Rv'
+    # If not in insert or replace mode, then don't start the completion
+    return
+  endif
+
+  if completeItems->len() == 1
+      && getline('.')->matchstr($'\C{completeItems[0].word}\>') != ''
+    # only one complete match. No need to show the completion popup
+    return
+  endif
+
+  completeItems->complete(startCol + 1)
+enddef
+
+# Omni completion function used when a completion request is sent to all the
+# language servers.
+def OmniCompleteAllServers(lspservers: list<dict<any>>, findstart: number,
+			   base: string): any
+  if findstart
+    if !CompletionAllServersRequest(lspservers,
+				    opt.lspOptions.omniCompleteAllowBare, false)
+      # previous character is not a keyword character or a trigger character,
+      # so cancel omni completion.
+      return -2
+    endif
+    allServersLine = getline('.')
+    return allServersCompletion[0].omniCompleteStart
+  endif
+
+  # Wait for the list of matches from the LSP servers
+  var count: number = 0
+  while CompletionAllServersPending() && count < 1000
+    if complete_check()
+      return v:none
+    endif
+    sleep 2m
+    count += 1
+  endwhile
+
+  for lspserver in allServersCompletion
+    if lspserver.omniCompletePending
+      lspserver.omniCompletePending = false
+      lspserver.completeItems = []
+    endif
+  endfor
+
+  var [_, items] = CompletionAllServersItems(allServersLine, base)
+  allServersCompletion = []
+  return items
+enddef
+
 # omni complete handler
 def g:LspOmniFunc(findstart: number, base: string): any
+  if findstart
+    allServersCompletion = []
+    if opt.lspOptions.completionAllServers
+      var lspservers = CompletionAllServersGet()
+      if lspservers->len() > 1
+	return OmniCompleteAllServers(lspservers, findstart, base)
+      endif
+    endif
+  elseif !allServersCompletion->empty()
+    return OmniCompleteAllServers(allServersCompletion, findstart, base)
+  endif
+
   var lspserver: dict<any> = buf.CurbufGetServerChecked('completion')
   if lspserver->empty()
     return -2
@@ -930,23 +1127,16 @@ def g:LspOmniFunc(findstart: number, base: string): any
       return res
     endif
 
-    var lspOpts = opt.lspOptions
-    if lspOpts.completionMatcherValue == opt.COMPLETIONMATCHER_FUZZY
-      return res->matchfuzzy(prefix, { key: 'word' })
-    endif
-
-    if lspOpts.completionMatcherValue == opt.COMPLETIONMATCHER_ICASE
-      return res->filter((i, v) =>
-	v.word->tolower()->stridx(prefix->tolower()) == 0)
-    endif
-
-    return res->filter((i, v) => v.word->stridx(prefix) == 0)
+    return FilterCompletionItems(res, prefix)
   endif
 enddef
 
 # For plugins that implement async completion this function indicates if
 # omnifunc is waiting for LSP response.
 def g:LspOmniCompletePending(): bool
+  if !allServersCompletion->empty()
+    return CompletionAllServersPending()
+  endif
   var lspserver: dict<any> = buf.CurbufGetServerChecked('completion')
   return !lspserver->empty() && lspserver.omniCompletePending
 enddef
@@ -954,6 +1144,14 @@ enddef
 # Insert mode completion handler. Used when 24x7 completion is enabled
 # (default).
 export def LspComplete(force: bool = false)
+  if opt.lspOptions.completionAllServers
+    var lspservers = CompletionAllServersGet()
+    if lspservers->len() > 1
+      CompletionAllServersRequest(lspservers, force, true)
+      return
+    endif
+  endif
+
   var lspserver: dict<any> = buf.CurbufGetServer('completion')
   if lspserver->empty() || !lspserver.running || !lspserver.ready
     return
@@ -974,17 +1172,43 @@ export def LspComplete(force: bool = false)
   lspserver.getCompletion(triggerKind, triggerChar)
 enddef
 
+# Returns the language server id added to the completion item "userData" when
+# the items from all the language servers are merged.  Returns -1 if the id is
+# not present.
+def CompletionItemServerId(userData: any): number
+  if userData->type() != v:t_dict
+    return -1
+  endif
+  return userData->get('lspServerId', -1)
+enddef
+
+# Returns the completion item "userData" without the language server id added
+# when the items from all the language servers are merged.
+def CompletionItemWithoutServerId(userData: dict<any>): dict<any>
+  return userData->copy()->filter((k, _) => k != 'lspServerId')
+enddef
+
 # Lazy complete documentation handler
 def LspResolve()
-  var lspserver: dict<any> = buf.CurbufGetServerChecked('completion')
+  var item = v:event.completed_item
+  var serverId = CompletionItemServerId(item->get('user_data'))
+  var lspserver: dict<any>
+  if serverId != -1
+    lspserver = buf.BufLspServerGetById(bufnr(), serverId)
+  else
+    lspserver = buf.CurbufGetServerChecked('completion')
+  endif
   if lspserver->empty()
     return
   endif
 
-  var item = v:event.completed_item
   if item->has_key('user_data') && !item.user_data->empty()
       if item.user_data->type() == v:t_dict && !item.user_data->has_key('documentation')
-	lspserver.resolveCompletion(item.user_data)
+	if serverId != -1
+	  lspserver.resolveCompletion(CompletionItemWithoutServerId(item.user_data))
+	else
+	  lspserver.resolveCompletion(item.user_data)
+	endif
       else
 	ShowCompletionDocumentation(item.user_data)
       endif
@@ -1071,6 +1295,16 @@ def LspCompleteDone(bnr: number)
       ClosePreviewWindow()
     endif
     return
+  endif
+
+  var serverId = CompletionItemServerId(completionData)
+  if serverId != -1
+    # Use the language server which returned the completion item
+    lspserver = buf.BufLspServerGetById(bnr, serverId)
+    if lspserver->empty()
+      return
+    endif
+    completionData = CompletionItemWithoutServerId(completionData)
   endif
 
   if !completionData->has_key('additionalTextEdits')

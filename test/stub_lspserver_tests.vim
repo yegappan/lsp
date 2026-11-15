@@ -1590,6 +1590,188 @@ def g:Test_TextdocDidChange_IncrementalSync_NoEolAnchorsToLastLineEnd()
   :%bw!
 enddef
 
+# Return a stub language server named "name" which replies to a hover request
+# with "result" (or with "error" if it is not empty).
+def MakeHoverServer(name: string, result: any, error: dict<any> = {}): dict<any>
+  var lspserver = MakeTestLspServer([])
+  lspserver.name = name
+  lspserver.running = true
+  lspserver.ready = true
+  lspserver.isHoverProvider = true
+  lspserver.rpc_a = (method, _, Cbfunc, opts = {}) => {
+    assert_equal('textDocument/hover', method)
+    lspserver.hoverHandleError = opts->get('handleError', true)
+    Cbfunc(lspserver, result, error)
+    return 1
+  }
+  return lspserver
+enddef
+
+# Return the text in the hover popup and close it
+def HoverPopupText(): list<string>
+  var popups = popup_list()
+  if popups->empty()
+    return []
+  endif
+  var text = getbufline(popups[0]->winbufnr(), 1, '$')
+  popup_clear()
+  return text
+enddef
+
+# Test for the "hoverAllServers" option
+def g:Test_HoverAllServers()
+  silent! edit XHoverAllServers.txt
+  setline(1, 'abc')
+  setlocal filetype=text
+  var srv1 = MakeHoverServer('srv1',
+			     {contents: {kind: 'markdown', value: "foo\nbar"}})
+  var srv2 = MakeHoverServer('srv2', {contents: {kind: 'plaintext',
+							value: 'baz'}})
+  var srv3 = MakeHoverServer('srv3', null)
+  for srv in [srv1, srv2, srv3]
+    buf.BufLspServerSet(bufnr(), srv)
+  endfor
+
+  # When the option is off, only one server is used
+  :LspHover
+  assert_equal(['foo', 'bar'], HoverPopupText())
+
+  # The results from all the servers in the order they are attached
+  g:LspOptionsSet({hoverAllServers: true})
+  :LspHover
+  assert_equal(['# srv1', 'foo', 'bar', '- - -', '# srv2', '```', 'baz', '```'],
+	       HoverPopupText())
+  # The error messages are not displayed by the RPC callback
+  assert_false(srv1.hoverHandleError)
+
+  # An error is not displayed when another server returns a result
+  srv2.rpc_a = (_, _, Cbfunc, _) => {
+    Cbfunc(srv2, null, {code: -32603, message: 'position outside of body'})
+    return 1
+  }
+  :messages clear
+  :LspHover
+  assert_equal(['foo', 'bar'], HoverPopupText())
+  assert_notmatch('Hover failed', execute('messages'))
+
+  # The error is displayed when no server returns a result
+  srv1.rpc_a = (_, _, Cbfunc, _) => {
+    Cbfunc(srv1, null, {})
+    return 1
+  }
+  :LspHover
+  assert_equal([], HoverPopupText())
+  assert_match('Hover failed: position outside of body', execute('messages'))
+
+  g:LspOptionsSet({hoverAllServers: false})
+  for srv in [srv1, srv2, srv3]
+    buf.BufLspServerRemove(bufnr(), srv)
+  endfor
+  :%bw!
+enddef
+
+# Return a stub language server named "name" which replies to a completion
+# request with "items".  The resolved items are added to "resolved".
+def MakeCompletionServer(name: string, items: list<dict<any>>,
+			 resolved: list<dict<any>>): dict<any>
+  var lspserver = MakeTestLspServer([])
+  lspserver.name = name
+  lspserver.running = true
+  lspserver.ready = true
+  lspserver.isCompletionProvider = true
+  lspserver.isCompletionResolveProvider = true
+  lspserver.completionTriggerChars = ['.']
+  lspserver.completionLazyDoc = false
+  lspserver.completeItems = []
+  lspserver.getCompletion = (_, _) => {
+    completion.CompletionReply(lspserver, items->deepcopy(), {})
+  }
+  lspserver.resolveCompletion = (item, _ = false) => {
+    resolved->add(item)
+    return item->deepcopy()->extend({additionalTextEdits: [{
+      range: {start: {line: 0, character: 0}, end: {line: 0, character: 0}},
+      newText: $"// {name}\n"}]})
+  }
+  return lspserver
+enddef
+
+# Test for the "completionAllServers" option with omni completion
+def g:Test_CompletionAllServers_OmniComplete()
+  g:LspOptionsSet({autoComplete: false, omniComplete: true,
+		   completionAllServers: true})
+  silent! edit XCompletionAllServers.txt
+  setlocal filetype=text
+  setlocal completeopt=menuone
+  setline(1, 'b ')
+  var resolved1: list<dict<any>> = []
+  var resolved2: list<dict<any>> = []
+  var srv1 = MakeCompletionServer('srv1',
+		  [{label: 'bar'}, {label: 'foo'}], resolved1)
+  var srv2 = MakeCompletionServer('srv2', [{label: 'baz'}], resolved2)
+  buf.BufLspServerSet(bufnr(), srv1)
+  buf.BufLspServerSet(bufnr(), srv2)
+  augroup LSPBufferAutocmds
+  augroup END
+  completion.BufferInit(srv1, bufnr(), 'text')
+  setlocal omnifunc=g:LspOmniFunc
+
+  # The items from both the servers
+  cursor(1, 2)
+  assert_equal(0, g:LspOmniFunc(1, ''))
+  var items = g:LspOmniFunc(0, 'b')
+  assert_equal(['bar', 'baz'], items->mapnew((_, v) => v.word))
+  assert_equal([srv1.id, srv2.id],
+	       items->mapnew((_, v) => v.user_data.lspServerId))
+
+  # The item is resolved by the server which returned it and the text edits
+  # from that server are applied.
+  setline(1, 'b')
+  feedkeys("A\<C-X>\<C-O>\<C-N>\<C-Y>\<Esc>", 'xt')
+  assert_equal(['// srv2', 'baz'], getline(1, '$'))
+  assert_equal([], resolved1)
+  assert_equal([{label: 'baz'}], resolved2)
+
+  # When the option is off, only one server is used
+  g:LspOptionsSet({completionAllServers: false})
+  :%d
+  setline(1, 'b ')
+  cursor(1, 2)
+  assert_equal(0, g:LspOmniFunc(1, ''))
+  items = g:LspOmniFunc(0, 'b')
+  assert_equal(['bar'], items->mapnew((_, v) => v.word))
+  assert_false(items[0].user_data->has_key('lspServerId'))
+
+  g:LspOptionsSet({autoComplete: true, omniComplete: false})
+  buf.BufLspServerRemove(bufnr(), srv1)
+  buf.BufLspServerRemove(bufnr(), srv2)
+  :%bw!
+enddef
+
+# Test for the "completionAllServers" option with auto completion
+def g:Test_CompletionAllServers_AutoComplete()
+  g:LspOptionsSet({completionAllServers: true})
+  silent! edit XCompletionAllServersAuto.txt
+  setlocal filetype=text
+  setlocal completeopt=menuone,noinsert,noselect
+  var resolved: list<dict<any>> = []
+  var srv1 = MakeCompletionServer('srv1',
+		  [{label: 'bar'}, {label: 'foo'}], resolved)
+  var srv2 = MakeCompletionServer('srv2', [{label: 'baz'}], resolved)
+  buf.BufLspServerSet(bufnr(), srv1)
+  buf.BufLspServerSet(bufnr(), srv2)
+
+  inoremap <buffer> <F2> <ScriptCmd>completion.LspComplete()<CR>
+  inoremap <buffer> <F3> <ScriptCmd>g:LspTestWords = complete_info(['items']).items->mapnew((_, v) => v.word)<CR>
+  feedkeys("ib\<F2>\<F3>\<C-E>\<Esc>", 'xt')
+  assert_equal(['bar', 'baz'], g:LspTestWords)
+  unlet g:LspTestWords
+
+  g:LspOptionsSet({completionAllServers: false})
+  buf.BufLspServerRemove(bufnr(), srv1)
+  buf.BufLspServerRemove(bufnr(), srv2)
+  :%bw!
+enddef
+
 # Only here to because the test runner needs it
 def g:StartLangServer(): bool
   return true
