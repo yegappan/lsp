@@ -1578,6 +1578,15 @@ autoHighlight		|Boolean| option. In normal mode, automatically
 			highlight all the occurrences of the symbol under the
 			cursor. By default this is set to false.
 
+						*lsp-opt-autoHighlightDelay*
+autoHighlightDelay	|Number| option. Debounce delay in milliseconds
+			before the symbol under the cursor is highlighted
+			when |lsp-opt-autoHighlight| is enabled.  Moving the
+			cursor again within this time restarts the delay, so
+			scrolling does not send a request for every line.
+			Set to 0 to highlight immediately.
+			By default this is set to 100.
+
 						*lsp-opt-autoHighlightDiags*
 autoHighlightDiags	|Boolean| option. Automatically place signs on the
 			lines with a diagnostic message from the language
