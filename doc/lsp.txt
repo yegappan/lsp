@@ -2088,6 +2088,9 @@ incrementalSync		|Boolean| option.  Specifies the method used to
 			  for large files and reduces network/CPU overhead.
 			  Note: This needs the support for the |diff()|
 			  function which was introduced in patch 9.1.0099.
+			  It is ignored when Vim is built without the
+			  internal diff library (no "internal" in
+			  'diffopt'), as |diff()| then returns no hunks.
 			- If |false|, the entire buffer content is sent on
 			  every change (full sync). This is more robust but
 			  can cause lag in very large documents.
