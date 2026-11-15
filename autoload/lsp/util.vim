@@ -153,6 +153,12 @@ enddef
 
 # Convert a LSP file URI (file://<absolute_path>) to a Vim file name
 export def LspUriToFile(uri: string): string
+  # Keep URIs of other schemes (e.g. "jdt://" URIs of Java class files) as is,
+  # so that they can be used as buffer names and sent back to the server.
+  if uri !~? '^file:' && LspUriRemote(uri)
+    return uri
+  endif
+
   # Replace all the %xx numbers (e.g. %20 for space) in the URI to character
   var uri_decoded: string = UriDecode(uri)
 
@@ -193,6 +199,11 @@ var resolvedUris = {}
 
 # Convert a Vim filename to an LSP URI (file://<absolute_path>)
 export def LspFileToUri(fname: string): string
+  # A buffer named after a non-file URI (see LspUriToFile())
+  if fname =~? '^[a-z][a-z0-9+.-]*://' && fname !~? '^file:'
+    return fname
+  endif
+
   var fname_full: string = fname->fnamemodify(':p')
 
   if resolvedUris->has_key(fname_full)
@@ -369,16 +380,16 @@ export def JumpToLspLocation(location: dict<any>, cmdmods: string)
             # if the current buffer has unsaved changes and 'hidden' is not set,
             # or if the current buffer is a special buffer, then open the file
             # in a new window
-            exe $'belowright split {fname}'
+            exe $'belowright split {fname->fnameescape()}'
           else
-            exe $'edit {fname}'
+            exe $'edit {fname->fnameescape()}'
           endif
         endif
       endif
     endif
   else
     if bnr == -1
-      exe $'{cmdmods} split {fname}'
+      exe $'{cmdmods} split {fname->fnameescape()}'
     else
       # Use "sbuffer" so that the 'switchbuf' option settings are used.
       exe $'{cmdmods} sbuffer {bnr}'

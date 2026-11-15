@@ -714,6 +714,14 @@ export def AddFile(bnr: number): void
   endif
 
   # Start all the lsp servers registered for this buffer file type (if needed)
+  AttachServers(bnr, lspservers)
+enddef
+
+# Attach the LSP servers in "lspservers" to the buffer "bnr" (starting them if
+# needed).  Unlike AddFile(), this doesn't look up the servers registered for
+# the file type of the buffer, so it can also be used for buffers that are not
+# files (e.g. a "jdt://" URI of a Java class file served by jdtls).
+export def AttachServers(bnr: number, lspservers: list<dict<any>>): void
   var attachedServerIds: list<number> = buf.BufLspServersGet(bnr)
     ->copy()
     ->filter((_, lspsrv) => !lspsrv->empty())
