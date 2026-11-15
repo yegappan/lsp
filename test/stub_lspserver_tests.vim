@@ -10,6 +10,7 @@ import '../autoload/lsp/handlers.vim' as handlers
 import '../autoload/lsp/diag.vim' as diag
 import '../autoload/lsp/util.vim' as util
 import '../autoload/lsp/buffer.vim' as buf
+import '../autoload/lsp/semantichighlight.vim' as semantichighlight
 
 def CaptureNotification(notifications: list<dict<any>>, method: string,
 			params: any = {}): void
@@ -1587,6 +1588,31 @@ def g:Test_TextdocDidChange_IncrementalSync_NoEolAnchorsToLastLineEnd()
   assert_equal('', changes[0].text)
 
   g:LspOptionsSet({incrementalSync: false})
+  :%bw!
+enddef
+
+# Test for a semantic tokens reply received after the buffer is wiped out or
+# unloaded
+def g:Test_SemanticTokens_ReplyForWipedOrUnloadedBuffer()
+  var lspserver = MakeTestLspServer([])
+  var semTokens = {resultId: '1', data: [0, 0, 3, 0, 0]}
+
+  silent! edit XSemTokensWiped.txt
+  setline(1, 'abc')
+  var bnr = bufnr()
+  var tick = b:changedtick
+  :bw!
+  semantichighlight.UpdateTokens(lspserver, semTokens, {}, bnr, tick)
+
+  silent! edit XSemTokensUnloaded.txt
+  setline(1, 'abc')
+  bnr = bufnr()
+  tick = b:changedtick
+  :hide enew
+  exe $':bunload! {bnr}'
+  semantichighlight.UpdateTokens(lspserver, semTokens, {}, bnr, tick)
+  assert_equal('', getbufvar(bnr, 'LspSemanticResultId'))
+
   :%bw!
 enddef
 
