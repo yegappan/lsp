@@ -305,6 +305,22 @@ def LspUpdateSemanticHighlight(bnr: number)
   setbufvar(bnr, 'LspSemanticTimer', timerId)
 enddef
 
+# Process a "workspace/semanticTokens/refresh" request from "lspserver".
+# Update the semantic highlighting in the visible buffers provided by
+# "lspserver".
+export def SemanticHighlightRefresh(lspserver: dict<any>)
+  if !opt.lspOptions.semanticHighlight
+    return
+  endif
+
+  for bnr in buf.BufGetServerBufnrs(lspserver)
+    if buf.BufLspServerGet(bnr, 'semanticTokens')->get('id', -1) == lspserver.id
+	&& !bnr->win_findbuf()->empty()
+      lspserver.semanticHighlightUpdate(bnr)
+    endif
+  endfor
+enddef
+
 # Initialize the semantic highlighting for the buffer 'bnr'
 export def BufferInit(lspserver: dict<any>, bnr: number)
   if !opt.lspOptions.semanticHighlight || !lspserver.isSemanticTokensProvider

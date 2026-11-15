@@ -9,6 +9,8 @@ import './diag.vim'
 import './textedit.vim'
 import './buffer.vim' as buf
 import './protocol.vim'
+import './inlayhints.vim'
+import './semantichighlight.vim'
 
 # process a diagnostic notification message from the LSP server
 # Notification: textDocument/publishDiagnostics
@@ -392,6 +394,30 @@ def ProcessDiagnosticRefreshReq(lspserver: dict<any>, request: dict<any>)
   endfor
 enddef
 
+# process the workspace/inlayHint/refresh LSP server request
+# Request: "workspace/inlayHint/refresh"
+# Param: none
+def ProcessInlayHintRefreshReq(lspserver: dict<any>, request: dict<any>)
+  if !ValidateNoParams(lspserver, request, 'workspace/inlayHint/refresh')
+    return
+  endif
+
+  lspserver.sendResponse(request, null, {})
+  inlayhints.InlayHintsRefresh(lspserver)
+enddef
+
+# process the workspace/semanticTokens/refresh LSP server request
+# Request: "workspace/semanticTokens/refresh"
+# Param: none
+def ProcessSemanticTokensRefreshReq(lspserver: dict<any>, request: dict<any>)
+  if !ValidateNoParams(lspserver, request, 'workspace/semanticTokens/refresh')
+    return
+  endif
+
+  lspserver.sendResponse(request, null, {})
+  semantichighlight.SemanticHighlightRefresh(lspserver)
+enddef
+
 # process the client/registerCapability LSP server request
 # Request: "client/registerCapability"
 # Param: RegistrationParams
@@ -506,12 +532,12 @@ const lsp_request_handlers: dict<func> =
     'workspace/applyEdit': ProcessApplyEditReq,
     'workspace/configuration': ProcessWorkspaceConfiguration,
     'workspace/diagnostic/refresh': ProcessDiagnosticRefreshReq,
+    'workspace/inlayHint/refresh': ProcessInlayHintRefreshReq,
+    'workspace/semanticTokens/refresh': ProcessSemanticTokensRefreshReq,
     'workspace/workspaceFolders': ProcessWorkspaceFoldersReq
     # TODO: Handle the following requests from the server:
     #     workspace/codeLens/refresh
-    #     workspace/inlayHint/refresh
     #     workspace/inlineValue/refresh
-    #     workspace/semanticTokens/refresh
   }
 
 # Explicitly ignored requests

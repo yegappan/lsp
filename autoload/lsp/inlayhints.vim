@@ -230,6 +230,25 @@ export def InlayHintsDisable()
   save_showInlayHints = false
 enddef
 
+# Process a "workspace/inlayHint/refresh" request from "lspserver".  Update the
+# inlay hints in the visible buffers provided by "lspserver".  The other buffers
+# are updated later (when the cursor is not moved for some time).
+export def InlayHintsRefresh(lspserver: dict<any>)
+  if !opt.lspOptions.showInlayHints
+    return
+  endif
+
+  for bnr in buf.BufGetServerBufnrs(lspserver)
+    if buf.BufLspServerGet(bnr, 'inlayHint')->get('id', -1) != lspserver.id
+      continue
+    endif
+    setbufvar(bnr, 'LspInlayHintsNeedsUpdate', true)
+    if !bnr->win_findbuf()->empty()
+      InlayHintsTimerCb(lspserver, bnr, -1)
+    endif
+  endfor
+enddef
+
 # Toggle (enable or disable) inlay hints.
 export def InlayHintsToggle()
   if opt.lspOptions.showInlayHints
