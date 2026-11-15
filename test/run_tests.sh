@@ -22,6 +22,7 @@ ALL_TESTS=(
   "stub_lspserver_tests.vim"
   "not_lspserver_related_tests.vim"
   "markdown_tests.vim"
+  "server_per_root_tests.vim"
 )
 TESTS_TO_RUN="${@:-${ALL_TESTS[@]}}"
 

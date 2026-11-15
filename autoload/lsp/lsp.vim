@@ -28,6 +28,15 @@ import './ontypeformat.vim'
 # filetype to LSP server map
 var ftypeServerMap: dict<list<dict<any>>> = {}
 
+# Registration parameters of each registered LSP server (keyed by server id).
+# Used to create additional server instances when "serverPerRoot" is set.
+var serverParamsMap: dict<dict<any>> = {}
+
+# When "serverPerRoot" is set, maps the id of a registered LSP server to a
+# dict of workspace root directory -> server instance for that root.  The
+# first root uses the registered server itself.
+var serverRootMap: dict<dict<dict<any>>> = {}
+
 var lspInitializedOnce = false
 var lspUserSetupOnce = false
 var lspEnabled = false
@@ -147,7 +156,48 @@ def LspGetServers(bnr: number, ftype: string): list<dict<any>>
 
     # Run the server
     return true
-  })
+  })->map((_, lspserver) => ServerForRoot(lspserver, bnr))
+enddef
+
+# Returns the instance of the registered LSP server "lspserver" to use for the
+# buffer "bnr".  If the "serverPerRoot" option is set, then a separate server
+# instance is used for each workspace root directory.  Otherwise returns
+# "lspserver".
+def ServerForRoot(lspserver: dict<any>, bnr: number): dict<any>
+  if !opt.lspOptions.serverPerRoot
+    return lspserver
+  endif
+
+  var rootPath = lserver.GetRootPath(lspserver.rootSearchFiles, bnr)
+  if !serverRootMap->has_key(lspserver.id)
+    # Use the registered server for the first root.  If it is already running,
+    # then it belongs to the root it was started with.
+    var firstRoot = rootPath
+    if lspserver.running
+      firstRoot = lspserver->get('workspaceFolders', [])->get(0, '')
+    endif
+    serverRootMap[lspserver.id] = {[firstRoot]: lspserver}
+  endif
+
+  var rootServers = serverRootMap[lspserver.id]
+  if !rootServers->has_key(rootPath)
+    rootServers[rootPath] = lserver.NewLspServer(serverParamsMap[lspserver.id])
+  endif
+  return rootServers[rootPath]
+enddef
+
+# Returns all the LSP server instances for the file type "ftype" (including
+# the per-root instances).
+def FtypeServersAll(ftype: string): list<dict<any>>
+  var lspservers: list<dict<any>> = []
+  for lspserver in ftypeServerMap->get(ftype, [])
+    if serverRootMap->has_key(lspserver.id)
+      lspservers->extend(serverRootMap[lspserver.id]->values())
+    else
+      lspservers->add(lspserver)
+    endif
+  endfor
+  return lspservers
 enddef
 
 # Add a LSP server for a filetype
@@ -196,11 +246,14 @@ export def ShowAllServers()
   # Add filetype to server mapping information
   lines->add('Filetype Information')
   lines->add('====================')
-  for [ftype, lspservers] in ftypeServerMap->items()
-    for lspserver in lspservers
+  for ftype in ftypeServerMap->keys()
+    for lspserver in FtypeServersAll(ftype)
       lines->add($"Filetype: '{ftype}'")
       lines->add($"Server Name: '{lspserver.name}'")
       lines->add($"Server Path: '{lspserver.path}'")
+      if opt.lspOptions.serverPerRoot
+        lines->add($"Server Root: '{lspserver->get('workspaceFolders', [])->get(0, '')}'")
+      endif
       lines->add($"Status: {lspserver.running ? 'Running' : 'Not running'}")
       lines->add('')
     endfor
@@ -331,7 +384,9 @@ enddef
 def StartServerByUser()
   var ftype: string = &filetype
 
+  var bnr = bufnr()
   var lspservers = ftypeServerMap->get(ftype, [])
+    ->mapnew((_, lspserver) => ServerForRoot(lspserver, bnr))
 
   if lspservers->empty()
     util.WarnMsg($'No Lsp servers found for "{@%}"')
@@ -356,12 +411,7 @@ def StopServerByUser()
   endif
 
   # Remove all the buffers with the same file type as the current buffer
-  var ftype: string = &filetype
-  for binfo in getbufinfo()
-    if binfo.bufnr->getbufvar('&filetype') == ftype
-      RemoveFile(binfo.bufnr)
-    endif
-  endfor
+  RemoveBuffersFromLsp(&filetype, lspservers)
 
   # Stop all the servers for this file type
   for lspserver in lspservers
@@ -376,14 +426,11 @@ enddef
 # Get LSP server running status for filetype "ftype"
 # Return true if running, or false if not found or not running
 export def ServerRunning(ftype: string): bool
-  if ftypeServerMap->has_key(ftype)
-    var lspservers = ftypeServerMap[ftype]
-    for lspserver in lspservers
-      if lspserver.running
-        return true
-      endif
-    endfor
-  endif
+  for lspserver in FtypeServersAll(ftype)
+    if lspserver.running
+      return true
+    endif
+  endfor
 
   return false
 enddef
@@ -869,8 +916,8 @@ enddef
 
 # Send shutdown/exit to all the LSP servers (fast for vim exit)
 export def FastShutdownExitAllServers()
-  for lspservers in ftypeServerMap->values()
-    for lspserver in lspservers
+  for ftype in ftypeServerMap->keys()
+    for lspserver in FtypeServersAll(ftype)
       if lspserver.running
 	FastShutdownServer(lspserver)
 	lspserver.exitServer()
@@ -891,11 +938,33 @@ def AddBuffersToLsp(ftype: string)
   endfor
 enddef
 
+# Remove the buffers with file type "ftype" from the language servers.  If the
+# "serverPerRoot" option is set, then only the buffers attached to one of the
+# servers in "lspservers" are removed.
+def RemoveBuffersFromLsp(ftype: string, lspservers: list<dict<any>>)
+  var serverIds = lspservers->mapnew((_, lspserver) => lspserver.id)
+  for binfo in getbufinfo()
+    var bnr = binfo.bufnr
+    if bnr->getbufvar('&filetype') != ftype
+      continue
+    endif
+    if opt.lspOptions.serverPerRoot
+	&& buf.BufLspServersGet(bnr)->copy()
+	  ->filter((_, s) => !s->empty() && serverIds->index(s.id) != -1)
+	  ->empty()
+      continue
+    endif
+    RemoveFile(bnr)
+  endfor
+enddef
+
 # Restart the LSP server for the current buffer
 def RestartServer()
   var ftype: string = &filetype
 
+  var bnr = bufnr()
   var lspservers = ftypeServerMap->get(ftype, [])
+    ->mapnew((_, lspserver) => ServerForRoot(lspserver, bnr))
 
   if lspservers->empty()
     util.WarnMsg($'No Lsp servers found for "{@%}"')
@@ -903,11 +972,7 @@ def RestartServer()
   endif
 
   # Remove all the buffers with the same file type as the current buffer
-  for binfo in getbufinfo()
-    if binfo.bufnr->getbufvar('&filetype') == ftype
-      RemoveFile(binfo.bufnr)
-    endif
-  endfor
+  RemoveBuffersFromLsp(ftype, lspservers)
 
   for lspserver in lspservers
     # Stop the server (if running)
@@ -1058,6 +1123,7 @@ export def AddServer(serverList: list<dict<any>>)
 
     # Freeze normalized config into a concrete server instance.
     var lspserver: dict<any> = lserver.NewLspServer(server)
+    serverParamsMap[lspserver.id] = server
 
     var ftypes = server.filetype
     if ftypes->type() == v:t_string
