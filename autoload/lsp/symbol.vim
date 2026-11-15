@@ -298,7 +298,7 @@ def UpdatePeekFilePopup(lspserver: dict<any>, locations: list<dict<any>>)
     bnr = fname->bufadd()
   endif
 
-  var popupAttrs = opt.PopupConfigure('Peek', {
+var popupAttrs = opt.PopupConfigure('Peek', {
     title: $"{fname->fnamemodify(':t')} ({fname->fnamemodify(':h')})",
     wrap: false,
     fixed: true,
@@ -307,11 +307,11 @@ def UpdatePeekFilePopup(lspserver: dict<any>, locations: list<dict<any>>)
     minwidth: winwidth(0) - 38,
     maxwidth: winwidth(0) - 38,
     cursorline: true,
-    border: [],
     mapping: false,
     line: 'cursor+1',
     col: 1
-  })
+})
+
   lspserver.peekSymbolFilePopup = popup_create(bnr, popupAttrs)
   var rstart = range.start
   var cmds =<< trim eval END
@@ -511,7 +511,6 @@ def PeekSymbolLocation(lspserver: dict<any>, location: dict<any>)
     minwidth: 10,
     maxwidth: 60,
     cursorline: true,
-    border: [],
     mapping: false,
     filter: CbFunc
   })
