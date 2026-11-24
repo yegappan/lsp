@@ -234,6 +234,7 @@ def InitServer(lspserver: dict<any>, bnr: number)
 
   initparams.trace = 'off'
   initparams.capabilities = capabilities.GetClientCaps()
+				->util.DeepExtend(lspserver.clientCapabilities)
   if !lspserver.initializationOptions->empty()
     initparams.initializationOptions = lspserver.initializationOptions
   else
@@ -2624,6 +2625,7 @@ export def NewLspServer(serverParams: dict<any>): dict<any>
     data: '',
     caps: {},
     callHierarchyType: '',
+    clientCapabilities: serverParams.clientCapabilities->deepcopy(),
     completionTriggerChars: [],
     onTypeFormattingTriggers: [],
     customNotificationHandlers: serverParams.customNotificationHandlers->deepcopy(),

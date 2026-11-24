@@ -403,6 +403,20 @@ export def Indexof(list: list<any>, CallbackFn: func(number, any): bool): number
   return -1
 enddef
 
+# Recursively merge the items of the Dict "src" into the Dict "dst".  If an
+# item is a Dict in both "dst" and "src", then the two Dicts are merged.
+# Otherwise the item in "src" replaces the item in "dst".  Returns "dst".
+export def DeepExtend(dst: dict<any>, src: dict<any>): dict<any>
+  for [key, val] in src->items()
+    if val->type() == v:t_dict && dst->get(key)->type() == v:t_dict
+      DeepExtend(dst[key], val)
+    else
+      dst[key] = val->deepcopy()
+    endif
+  endfor
+  return dst
+enddef
+
 # Find the nearest root directory containing a file or directory name from the
 # list of names in "files" starting with the directory "startDir".
 # Based on a similar implementation in the vim-lsp plugin.

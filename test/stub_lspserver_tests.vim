@@ -10,6 +10,7 @@ import '../autoload/lsp/handlers.vim' as handlers
 import '../autoload/lsp/diag.vim' as diag
 import '../autoload/lsp/util.vim' as util
 import '../autoload/lsp/buffer.vim' as buf
+import '../autoload/lsp/capabilities.vim'
 
 def CaptureNotification(notifications: list<dict<any>>, method: string,
 			params: any = {}): void
@@ -25,6 +26,7 @@ def MakeTestLspServer(notifications: list<dict<any>>): dict<any>
 	name: 'test',
 	path: 'test-lsp',
 	args: [],
+	clientCapabilities: {},
 	customNotificationHandlers: {},
 	customRequestHandlers: {},
 	debug: false,
@@ -1588,6 +1590,40 @@ def g:Test_TextdocDidChange_IncrementalSync_NoEolAnchorsToLastLineEnd()
 
   g:LspOptionsSet({incrementalSync: false})
   :%bw!
+enddef
+
+# Test for the clientCapabilities language server setting
+def g:Test_InitServer_ClientCapabilities()
+  var lspserver = MakeTestLspServer([])
+  lspserver.clientCapabilities = {
+    experimental: {serverStatusNotification: true},
+    textDocument: {hover: {contentFormat: ['plaintext']}},
+    workspace: {applyEdit: false}
+  }
+  var initRequests: list<dict<any>> = []
+  lspserver.rpc_a = (method, params, Cbfunc) => {
+    initRequests->add({method: method, params: params})
+  }
+  lspserver.initServer(bufnr())
+
+  assert_equal(1, initRequests->len())
+  assert_equal('initialize', initRequests[0].method)
+  var caps = initRequests[0].params.capabilities
+  var defaultCaps = capabilities.GetClientCaps()
+  # New capabilities are added
+  assert_equal({serverStatusNotification: true}, caps.experimental)
+  # Dict values are merged with the default capabilities
+  assert_equal(['plaintext'], caps.textDocument.hover.contentFormat)
+  assert_equal(defaultCaps.textDocument.hover->keys()->sort(),
+	       caps.textDocument.hover->keys()->sort())
+  assert_equal(defaultCaps.textDocument.completion,
+	       caps.textDocument.completion)
+  # Other values replace the default capabilities
+  assert_equal(false, caps.workspace.applyEdit)
+  assert_equal(defaultCaps.workspace.workspaceFolders,
+	       caps.workspace.workspaceFolders)
+  # The default client capabilities are not changed
+  assert_notequal(['plaintext'], defaultCaps.textDocument.hover.contentFormat)
 enddef
 
 # Only here to because the test runner needs it

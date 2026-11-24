@@ -101,6 +101,7 @@ Field|Description
 `path`|complete path to the LSP server executable (without any arguments).
 `args`|a list of command-line arguments passed to the LSP server. Each argument is a separate List item.
 `initializationOptions`|User provided initialization options. May be of any type. For example the *intelephense* PHP language server accept several options here with the License Key among others. 
+`clientCapabilities`|A dictionary of additional client capabilities sent to the LSP server. See `:help lsp-cfg-clientCapabilities`.
 `customNotificationHandlers`|A dictionary of notifications and functions that can be specified to add support for custom language server notifications.
 `customRequestHandlers`|A dictionary of request handlers and functions that can be specified to add support for custom language server requests replies.
 `features`|A dictionary of booleans that can be specified to toggle what things a given LSP is providing (folding, goto definition, etc) This is useful when running multiple servers in one buffer.
