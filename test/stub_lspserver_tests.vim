@@ -1590,6 +1590,24 @@ def g:Test_TextdocDidChange_IncrementalSync_NoEolAnchorsToLastLineEnd()
   :%bw!
 enddef
 
+# Test for validating the traceLevel language server setting
+def g:Test_AddServer_TraceLevel()
+  var servers: list<dict<any>> = [
+    {name: 'traceDebug', traceLevel: 'debug'},
+    {name: 'traceVerbose', traceLevel: 'verbose'},
+    {name: 'traceUnsupported', traceLevel: 'messages'},
+    {name: 'traceNumber', traceLevel: 1},
+    {name: 'traceDefault'}
+  ]
+  for server in servers
+    server->extend({filetype: 'XtraceLevelTest', path: v:progpath})
+  endfor
+  # The registered server settings are normalized in place
+  lsp.AddServer(servers)
+  assert_equal(['debug', 'verbose', 'off', 'off', 'off'],
+	       servers->mapnew((_, server) => server.traceLevel))
+enddef
+
 # Only here to because the test runner needs it
 def g:StartLangServer(): bool
   return true
