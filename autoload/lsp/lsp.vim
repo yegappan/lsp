@@ -1026,7 +1026,7 @@ export def AddServer(serverList: list<dict<any>>)
     endif
 
     if !server->has_key('traceLevel')
-	|| server->type() != v:t_string
+	|| server.traceLevel->type() != v:t_string
 	|| (server.traceLevel != 'off' && server.traceLevel != 'debug'
 	    && server.traceLevel != 'verbose')
       server.traceLevel = 'off'
