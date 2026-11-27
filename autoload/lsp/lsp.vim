@@ -974,6 +974,11 @@ export def AddServer(serverList: list<dict<any>>)
       server.initializationOptions = {}
     endif
 
+    if !server->has_key('clientCapabilities')
+	|| server.clientCapabilities->type() != v:t_dict
+      server.clientCapabilities = {}
+    endif
+
     if !server->has_key('forceOffsetEncoding')
 	|| server.forceOffsetEncoding->type() != v:t_string
 	|| (server.forceOffsetEncoding != 'utf-8'

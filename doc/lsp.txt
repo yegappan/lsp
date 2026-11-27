@@ -305,6 +305,33 @@ To add a language server, the following information is needed:
 
 Additionally the following configurations can be made:
 
+					*lsp-cfg-clientCapabilities*
+	clientCapabilities
+			(Optional) a |Dict| value with additional client
+			capabilities to send to this language server in the
+			"initialize" request.  This is merged recursively
+			with the default client capabilities: a |Dict| value
+			is merged with the default |Dict| value and any other
+			value replaces the default value.  Can be used to
+			enable server specific extensions.  For example, the
+			following enables the "experimental/serverStatus"
+			notification in rust-analyzer: >
+
+		vim9script
+		g:LspAddServer([{
+			filetype: ['rust'],
+			path: '/usr/local/bin/rust-analyzer',
+			args: [],
+			clientCapabilities: {
+				experimental: {serverStatusNotification: true}
+			},
+			customNotificationHandlers: {
+				'experimental/serverStatus': (lspserver, reply) => {
+					echomsg reply.params.health
+				}
+			}
+		}])
+<
 					*lsp-cfg-customNotificationHandlers*
 	customNotificationHandlers
 			(Optional) some lsp servers (e.g.
