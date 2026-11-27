@@ -26,7 +26,7 @@ import './semantichighlight.vim'
 import './ontypeformat.vim'
 
 # filetype to LSP server map
-var ftypeServerMap: dict<list<dict<any>>> = {}
+export var ftypeServerMap: dict<list<dict<any>>> = {}
 
 var lspInitializedOnce = false
 var lspUserSetupOnce = false
@@ -576,7 +576,7 @@ def RemoveBufListener(bnr: number): void
 enddef
 
 # LspAttached autocmd per buffer state
-var bufAttachStates: dict<dict<any>>
+export var bufAttachStates: dict<dict<any>>
 
 # Returns true if the LspAttached autocmd is either pending or already fired
 # for buffer 'bnr'.
