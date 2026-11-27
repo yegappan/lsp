@@ -50,10 +50,16 @@ def g:Test_LspCodeAction_multibyte()
   redraw!
   :LspCodeAction 1
   assert_equal('    printf("😊😊😊😊 = %d\n", aVar);', getline(5))
+  # Wait for the diagnostics of the edited buffer before the next request.
+  # clangd 17 and later publish them right before the code action reply, and
+  # when that notification arrives while Vim waits for the reply, Vim can pass
+  # the reply to the channel callback, so that the request times out.
+  g:WaitForServerFileLoad(2)
   cursor(6, 5)
   redraw!
   :LspCodeAction 1
   assert_equal('    printf("áb́áb́ = %d\n", aVar);', getline(6))
+  g:WaitForServerFileLoad(1)
   cursor(7, 5)
   redraw!
   :LspCodeAction 1
