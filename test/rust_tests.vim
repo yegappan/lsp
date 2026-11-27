@@ -82,10 +82,15 @@ def g:Test_LspCodeAction_CreateFile_Subdir()
     END
     setline(1, lines)
     g:WaitForServerFileLoad(1)
+    assert_false(isdirectory('baz'))
     cursor(1, 1)
     :LspCodeAction 2
-    g:WaitForServerFileLoad(0)
     assert_true(filereadable('baz/mod.rs'))
+    # The server file watcher may miss a file created together with its
+    # parent directory, so open the new file to let the server know about it.
+    :split baz/mod.rs
+    :close
+    g:WaitForServerFileLoad(0)
     :%bw!
     delete('baz', 'rf')
   finally
