@@ -45,13 +45,13 @@ endif
 
 var clangdVerDetail = systemlist($'{shellescape(clangdPath)} --version')
 var clangdVerMajor = clangdVerDetail->matchstr('.*version \d\+\..*')->substitute('.* \(\d\+\)\..*', '\1', 'g')->str2nr()
-if clangdVerMajor != 15
+if clangdVerMajor < 15
   if has('mac')
-    echoerr $'Clangd version 15 required. Please `brew install llvm@15`'
+    echoerr $'Clangd version 15 or later required. Please `brew install llvm@15`'
   elseif executable('apt')
-    echoerr $'Clangd version 15 required. Please `apt install clangd-15`'
+    echoerr $'Clangd version 15 or later required. Please `apt install clangd-15`'
   else
-    echoerr $'Clangd version 15 required. Please install clangd-15'
+    echoerr $'Clangd version 15 or later required. Please install clangd-15'
   endif
 endif
 echomsg clangdVerDetail
@@ -428,7 +428,7 @@ def g:Test_LspShowReferences()
     }
   END
   setline(1, lines)
-  :redraw!
+  g:WaitForServerFileLoad(0)
   cursor(5, 2)
   var bnr: number = bufnr()
   :LspShowReferences
@@ -538,7 +538,8 @@ def g:Test_LspDiag()
     }
   END
   setline(1, lines)
-  g:WaitForServerFileLoad(1)
+  # Since clangd 16, an implicit function declaration is an error
+  g:WaitForServerFileLoad(clangdVerMajor > 15 ? 2 : 1)
   var bnr: number = bufnr()
   :redraw!
   :LspDiag show
@@ -548,7 +549,8 @@ def g:Test_LspDiag()
   assert_equal(3, qfl->len())
   assert_equal([3, 14, 'E'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
   assert_equal([5, 2, 'W'], [qfl[1].lnum, qfl[1].col, qfl[1].type])
-  assert_equal([7, 2, 'W'], [qfl[2].lnum, qfl[2].col, qfl[2].type])
+  assert_equal([7, 2, clangdVerMajor > 15 ? 'E' : 'W'],
+	       [qfl[2].lnum, qfl[2].col, qfl[2].type])
   close
   g:LspOptionsSet({showDiagInPopup: false})
   normal gg
@@ -697,7 +699,7 @@ def g:Test_UnicodeColumnCalc()
     }
   END
   setline(1, lines)
-  :redraw!
+  g:WaitForServerFileLoad(0)
 
   cursor(5, 1) # 😊😊😊😊 = a;
   search('a')
@@ -729,21 +731,13 @@ def g:Test_LspDiag_Multi()
   setline(1, lines)
   :redraw!
   # TODO: Waiting count doesn't include Warning, Info, and Hint diags
-  if clangdVerMajor > 14
-    g:WaitForServerFileLoad(3)
-  else
-    g:WaitForServerFileLoad(2)
-  endif
+  g:WaitForServerFileLoad(3)
   :LspDiag show
   var qfl: list<dict<any>> = getloclist(0)
   assert_equal('quickfix', getwinvar(winnr('$'), '&buftype'))
   assert_equal(bnr, qfl[0].bufnr)
   assert_equal(3, qfl->len())
-  if clangdVerMajor > 14
-    assert_equal([1, 5, 'E'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
-  else
-    assert_equal([1, 5, 'W'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
-  endif
+  assert_equal([1, 5, 'E'], [qfl[0].lnum, qfl[0].col, qfl[0].type])
   assert_equal([1, 9, 'E'], [qfl[1].lnum, qfl[1].col, qfl[1].type])
   assert_equal([2, 9, 'E'], [qfl[2].lnum, qfl[2].col, qfl[2].type])
   close
@@ -1143,6 +1137,7 @@ def g:Test_LspRename()
     }
   END
   assert_equal(expected, getline(1, '$'))
+  g:WaitForServerFileLoad(0)
 
   cursor(1, 1)
   search('counter')
@@ -1469,11 +1464,7 @@ def g:Test_LspHover()
     }
   END
   setline(1, lines)
-  if clangdVerMajor > 14
-    g:WaitForServerFileLoad(1)
-  else
-    g:WaitForServerFileLoad(0)
-  endif
+  g:WaitForServerFileLoad(1)
   cursor(8, 4)
   var output = execute(':LspHover')->split("\n")
   assert_equal([], output)
@@ -1621,7 +1612,9 @@ def g:Test_LspShowSignature()
     }
   END
   setline(1, lines)
-  g:WaitForServerFileLoad(2)
+  # Since clangd 21, the unclosed call also reports "Expected ';' after
+  # expression"
+  g:WaitForServerFileLoad(clangdVerMajor > 20 ? 3 : 2)
 
   # Default output should be compact (label only) with highlighted active
   # parameter for the first argument.
@@ -2368,6 +2361,9 @@ def g:Test_LspDiagsUpdated_Autocmd()
   END
   setline(1, lines)
   g:WaitForServerFileLoad(0)
+  # The number of diagnostic updates sent while loading the file depends on the
+  # clangd version.  Count only the updates caused by the changes below.
+  g:LspAutoCmd = 0
   setline(3, '    return:')
   redraw!
   g:WaitForDiags(1)
@@ -2376,7 +2372,7 @@ def g:Test_LspDiagsUpdated_Autocmd()
   g:WaitForDiags(0)
   :%bw!
   autocmd_delete([{event: 'User', pattern: 'LspDiagsUpdated'}])
-  assert_equal(5, g:LspAutoCmd)
+  assert_equal(2, g:LspAutoCmd)
 enddef
 
 # Test custom notification handlers
@@ -2522,7 +2518,9 @@ def g:Test_OmniComplete_AfterParen()
     }
   END
   setline(1, lines)
-  g:WaitForServerFileLoad(2)
+  # Since clangd 21, the unclosed call also reports "Expected ';' after
+  # expression"
+  g:WaitForServerFileLoad(clangdVerMajor > 20 ? 3 : 2)
   redraw!
 
   cursor(4, 1)
